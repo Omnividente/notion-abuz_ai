@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #040806;
+  --color-bg-secondary: #08100c;
+  --color-bg-card: #0b1510;
+  --color-bg-card-hover: #12241b;
+  --color-bg-exhausted: #261111;
+  --color-bg-input: #0c1a12;
+  --color-text-primary: #e6f5ee;
+  --color-text-secondary: #74a088;
+  --color-text-muted: #3d5e4a;
+  --color-notion-blue: #00ff66;
+  --color-notion-blue-hover: #00d957;
+  --color-ok: #00ff88;
+  --color-warn: #d9a651;
+  --color-err: #eb5757;
+  --color-border: rgba(0, 255, 102, 0.08);
+  --color-research: #a78bfa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--color-bg-primary);
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(0, 255, 102, 0.02) 0%, transparent 80%),
+    linear-gradient(0deg, rgba(4, 8, 6, 0.96), rgba(4, 8, 6, 0.96)),
+    url('/logo.png');
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 102, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 102, 0.2);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(0, 255, 102, 0.25), inset 0 0 15px rgba(0, 255, 102, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(0, 255, 102, 0.55), inset 0 0 25px rgba(0, 255, 102, 0.2);
+  }
+}
+
+.logo-glow {
+  animation: pulse-glow 3s infinite ease-in-out;
+}
+
+.cyber-panel {
+  background: rgba(11, 21, 16, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 255, 102, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+}
+
+.cyber-text-glow {
+  text-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+}
+
+.cyber-text-glow-bright {
+  text-shadow: 0 0 12px rgba(0, 255, 102, 0.8), 0 0 20px rgba(0, 255, 102, 0.3);
+}
+
+/* Custom styled inputs & buttons for hacker theme */
+input, textarea {
+  border-color: rgba(0, 255, 102, 0.15) !important;
+}
+input:focus, textarea:focus {
+  border-color: rgba(0, 255, 102, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 102, 0.2) !important;
+}
+
