@@ -254,7 +254,7 @@ function JobRow({
               {proxyShort && (
                 <span
                   className="text-[10px] px-1.5 py-0.5 rounded bg-white/[.04] text-text-muted font-mono"
-                  title={`代理：${job.proxy}`}
+                  title={`Прокси: ${job.proxy}`}
                 >
                   via {proxyShort}
                 </span>

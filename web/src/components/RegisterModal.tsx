@@ -263,7 +263,7 @@ function ProviderTabs({
               disabled={!isEnabled}
               onClick={() => isEnabled && onSelect(p.id)}
               className={`${baseCls} ${cls}`}
-              title={isEnabled ? p.display : `${p.display}（Скоро支持）`}
+              title={isEnabled ? p.display : `${p.display} (Скоро)`}
             >
               {p.display}
               {!isEnabled && <span className="ml-1 text-[10px] tracking-tight">Скоро</span>}
@@ -396,7 +396,7 @@ function ProgressPanel({
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-semibold tracking-tight">
-              {job.state === 'running' ? 'Регистрация в процессе' : job.state === 'cancelled' ? 'Отменено' : '注册Готово'}
+              {job.state === 'running' ? 'Регистрация в процессе' : job.state === 'cancelled' ? 'Отменено' : 'Готово'}
             </span>
             {job.state === 'running' && <IconSpinner size={13} className="animate-spin text-text-muted" />}
           </div>

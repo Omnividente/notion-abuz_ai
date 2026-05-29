@@ -126,8 +126,8 @@ function AddAccountModal({ onClose, onSuccess }: { onClose: () => void; onSucces
         </div>
 
         <div className="text-[12px] text-text-secondary mb-4 space-y-1.5">
-          <p>粘贴你的 <code className="bg-white/[.08] px-1 py-0.5 rounded text-[11px]">token_v2</code> cookie，系统会自动获取账号信息。</p>
-          <p className="text-text-muted">Как получить: 打开 <code className="bg-white/[.08] px-1 py-0.5 rounded text-[11px]">notion.so</code> → F12 → Application → Cookies → 复制 <code className="bg-white/[.08] px-1 py-0.5 rounded text-[11px]">token_v2</code> 的值</p>
+          <p>Вставьте ваш <code className="bg-white/[.08] px-1 py-0.5 rounded text-[11px]">token_v2</code> cookie, система автоматически получит информацию об аккаунте.</p>
+          <p className="text-text-muted">Как получить: Откройте <code className="bg-white/[.08] px-1 py-0.5 rounded text-[11px]">notion.so</code> → F12 → Application → Cookies → Скопируйте значение <code className="bg-white/[.08] px-1 py-0.5 rounded text-[11px]">token_v2</code></p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -194,7 +194,7 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
         onSuccess()
         return
       }
-      setError(result.error || '密码错误')
+      setError(result.error || 'Неверный пароль')
       setPassword('')
       inputRef.current?.focus()
     } catch (err) {
@@ -519,7 +519,7 @@ function AccountCard({ account, onChanged }: { account: AccountInfo; onChanged: 
     <div
       className={`rounded-lg p-4 border ${noWorkspace ? 'cursor-not-allowed' : 'cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/30'} transition-all duration-200 ${cardBg}`}
       onClick={handleClick}
-      title={noWorkspace ? '账号无可访问工作区，已被排除出选号池' : undefined}
+      title={noWorkspace ? 'У аккаунта нет доступной рабочей области, он исключен из пула' : undefined}
     >
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-2.5">
@@ -551,7 +551,7 @@ function AccountCard({ account, onChanged }: { account: AccountInfo; onChanged: 
         {premium && <Badge variant="premium">AI Premium</Badge>}
         {(account.research_usage != null && account.research_usage > 0) && (
           <Badge variant={researchLimited ? 'warning' : 'research'}>
-            <IconFlask /> Research 已用 {account.research_usage}{premium ? '' : '/3'}
+            <IconFlask /> Research использовано {account.research_usage}{premium ? '' : '/3'}
           </Badge>
         )}
         {account.exhausted && !account.permanent && <Badge variant="warning">Basic blocked</Badge>}
@@ -1013,7 +1013,7 @@ export default function App() {
                     <span className="text-[11px] text-text-muted">Глобальный прокси</span>
                     <span
                       className={`inline-block w-1.5 h-1.5 rounded-full ${proxyError ? 'bg-err' : settings.notion_proxy ? 'bg-ok' : 'bg-text-muted/60'}`}
-                      title={proxyError ? proxyError : settings.notion_proxy ? '已启用代理' : '直连'}
+                      title={proxyError ? proxyError : settings.notion_proxy ? 'Прокси включен' : 'Напрямую'}
                     />
                     <input
                       type="text"
@@ -1031,7 +1031,7 @@ export default function App() {
                       placeholder="Пусто = напрямую"
                       disabled={proxySaving}
                       className={`text-[11px] bg-white/[.05] px-1.5 py-0.5 rounded font-mono outline-none border w-[160px] focus:w-[280px] transition-[width,border-color] duration-150 ${proxyError ? 'border-err text-err' : 'border-transparent focus:border-white/20 text-text-primary'} placeholder:text-text-muted/60`}
-                      title={proxyError || (settings.notion_proxy ? `当前: ${settings.notion_proxy}` : '当前: 直连')}
+                      title={proxyError || (settings.notion_proxy ? `Текущий: ${settings.notion_proxy}` : 'Текущий: Напрямую')}
                     />
                   </div>
                 </div>
@@ -1056,7 +1056,7 @@ export default function App() {
                   </label>
                   <label
                     className="flex items-center gap-2 cursor-pointer select-none"
-                    title="开启后所有请求默认进入 Режим ASK（仅回答、不写入页面）。单次覆盖：在模型名末尾追加 -ask，例如 claude-sonnet-4.6-ask"
+                    title="Если включено, все запросы по умолчанию идут в Режим ASK (только ответ, без записи). Единократное включение: добавьте -ask к модели, например claude-sonnet-4.6-ask"
                   >
                     <button
                       onClick={() => toggleSetting('ask_mode_default')}

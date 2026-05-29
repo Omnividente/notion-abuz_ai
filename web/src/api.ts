@@ -34,8 +34,8 @@ function toHex(bytes: Uint8Array): string {
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-// 在非安全上下文（如 Win10 WSL2 下通过局域网 IP 访问 HTTP）里，
-// 浏览器可能禁用 crypto.subtle，这里提供纯前端 SHA-256 回退。
+// В небезопасном контексте (например, при доступе по HTTP через локальный IP),
+// браузер может отключить crypto.subtle. Здесь предоставляется fallback SHA-256.
 function sha256hexFallback(data: Uint8Array): string {
   const paddedLength = Math.ceil((data.length + 9) / 64) * 64
   const padded = new Uint8Array(paddedLength)
@@ -107,7 +107,7 @@ async function sha256hex(message: string): Promise<string> {
       const hash = await globalThis.crypto.subtle.digest('SHA-256', data)
       return toHex(new Uint8Array(hash))
     } catch {
-      // 某些浏览器/上下文会暴露 subtle，但实际调用仍会被安全策略拦下。
+      // Некоторые браузеры предоставляют объект subtle, но вызовы блокируются политикой безопасности.
     }
   }
   return sha256hexFallback(data)
@@ -136,7 +136,7 @@ export async function checkAuth(): Promise<AuthStatus> {
     credentials: 'same-origin',
   })
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-  return readJson<AuthStatus>(resp, '认证状态接口返回了无效响应')
+  return readJson<AuthStatus>(resp, 'Интерфейс статуса аутентификации вернул недействительный ответ')
 }
 
 export async function fetchSalt(): Promise<{ salt: string; required: boolean }> {
@@ -145,7 +145,7 @@ export async function fetchSalt(): Promise<{ salt: string; required: boolean }> 
     credentials: 'same-origin',
   })
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-  return readJson<{ salt: string; required: boolean }>(resp, '登录校验配置返回了无效响应')
+  return readJson<{ salt: string; required: boolean }>(resp, 'Конфигурация проверки входа вернула недействительный ответ')
 }
 
 export async function login(password: string): Promise<{ ok: boolean; error?: string }> {
@@ -160,7 +160,7 @@ export async function login(password: string): Promise<{ ok: boolean; error?: st
     credentials: 'same-origin',
     body: JSON.stringify({ hash }),
   })
-  const data = await readJson<{ error?: string }>(resp, '登录接口返回了无效响应')
+  const data = await readJson<{ error?: string }>(resp, 'Интерфейс входа вернул недействительный ответ')
   if (!resp.ok) return { ok: false, error: data.error || 'Login failed' }
   return { ok: true }
 }
@@ -234,7 +234,7 @@ export async function addAccount(tokenV2: string): Promise<AddAccountResult> {
     credentials: 'same-origin',
     body: JSON.stringify({ token_v2: tokenV2 }),
   })
-  const data = await readJson<AddAccountResult>(resp, '添加账号接口返回了无效响应')
+  const data = await readJson<AddAccountResult>(resp, 'Интерфейс добавления аккаунта вернул недействительный ответ')
   if (!resp.ok) return { error: data.error || `HTTP ${resp.status}` }
   return data
 }

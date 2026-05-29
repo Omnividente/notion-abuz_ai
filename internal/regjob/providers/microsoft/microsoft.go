@@ -18,7 +18,7 @@ const (
 	ID      = "microsoft"
 	Display = "Microsoft"
 
-	formatHint = "每行一个账号：email----password----client_id----refresh_token"
+	formatHint = "По одному аккаунту на строку: email----password----client_id----refresh_token"
 
 	// Recommended concurrency conservatively errs low because MSA login
 	// has anti-abuse heuristics that escalate aggressively past ~5
