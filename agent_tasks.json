@@ -44,7 +44,7 @@
   "tasks": [
     {
       "id": "claude-code-notion-persona-leakage-regression",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Prevent Claude Code requests from leaking Notion persona behavior",

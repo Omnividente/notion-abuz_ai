@@ -1168,3 +1168,43 @@ func parseToolCallJSON(jsonStr string, index int) *ToolCall {
 		},
 	}
 }
+
+// isCodingAssistantRequest checks if a given system/developer message appears
+// to come from a coding assistant (like Claude Code, Cursor, etc.).
+func isCodingAssistantRequest(messages []ChatMessage) bool {
+	for _, msg := range messages {
+		if msg.Role == "system" || msg.Role == "developer" {
+			lower := strings.ToLower(msg.Content)
+			if strings.Contains(lower, "claude code") ||
+				strings.Contains(lower, "cursor") ||
+				strings.Contains(lower, "coding assistant") ||
+				strings.Contains(lower, "software engineer") ||
+				strings.Contains(lower, "repository") ||
+				strings.Contains(lower, "files") ||
+				strings.Contains(lower, "tests") ||
+				strings.Contains(lower, "patches") ||
+				strings.Contains(lower, "tools") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// injectCodingAssistantInstruction appends a short compatibility instruction
+// to prevent Notion persona leakage.
+func injectCodingAssistantInstruction(messages []ChatMessage) []ChatMessage {
+	const instruction = "You are acting as a coding assistant API behind a compatibility proxy. Follow the user's coding instructions directly. Do not answer as Notion AI, and do not refer to Notion pages, workspaces, or documents unless the user explicitly asks about Notion."
+
+	// Add instruction as a system message.
+	// We want this to be present for transcript generation.
+	// Prepending it so it gets picked up.
+
+	result := make([]ChatMessage, 0, len(messages)+1)
+	result = append(result, ChatMessage{
+		Role:    "system",
+		Content: instruction,
+	})
+	result = append(result, messages...)
+	return result
+}

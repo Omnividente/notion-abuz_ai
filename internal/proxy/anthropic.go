@@ -797,6 +797,8 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 		// Log converted internal messages
 		logConvertedMessages(messages)
 
+		isCodingAssistant := isCodingAssistantRequest(messages)
+
 		// Detect researcher mode — skip tools and file uploads
 		isResearcher := IsResearcherModel(model)
 		if isResearcher {
@@ -899,6 +901,12 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 					log.Printf("[debug]   [%d] role=%s toolcalls=%d content_len=%d: %s", i, m.Role, len(m.ToolCalls), len(m.Content), preview)
 				}
 			}
+		}
+
+		// Inject compatibility instruction for coding assistants if needed
+		if isCodingAssistant {
+			messages = injectCodingAssistantInstruction(messages)
+			log.Printf("[bridge] Injected coding assistant proxy compatibility instruction")
 		}
 
 		// Snapshot the original (pre-injection) messages so failover to a
