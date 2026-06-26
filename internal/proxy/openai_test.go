@@ -81,6 +81,59 @@ func TestConvertOpenAIChatCompletionRequest_WithFilesToolsAndJSONSchema(t *testi
 	}
 }
 
+func TestConvertOpenAIChatCompletionRequest_ReasoningEffortRouting(t *testing.T) {
+	original := SnapshotModelMap()
+	ReplaceModelMap(map[string]string{
+		"opus-4.8-high": "notion-internal-high-id",
+	})
+	defer ReplaceModelMap(original)
+
+	t.Run("reasoning_effort alias exists", func(t *testing.T) {
+		req := &OpenAIChatCompletionRequest{
+			Model:           "opus-4.8",
+			ReasoningEffort: "high",
+			Messages:        []OpenAIChatMessage{{Role: "user", Content: "test"}},
+		}
+		anthReq, err := convertOpenAIChatCompletionRequest(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if anthReq.Model != "opus-4.8-high" {
+			t.Errorf("expected model 'opus-4.8-high', got '%s'", anthReq.Model)
+		}
+	})
+
+	t.Run("reasoningEffort camel case alias exists", func(t *testing.T) {
+		req := &OpenAIChatCompletionRequest{
+			Model:                "opus-4.8",
+			ReasoningEffortCamel: "high",
+			Messages:             []OpenAIChatMessage{{Role: "user", Content: "test"}},
+		}
+		anthReq, err := convertOpenAIChatCompletionRequest(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if anthReq.Model != "opus-4.8-high" {
+			t.Errorf("expected model 'opus-4.8-high', got '%s'", anthReq.Model)
+		}
+	})
+
+	t.Run("alias absent fallback", func(t *testing.T) {
+		req := &OpenAIChatCompletionRequest{
+			Model:           "opus-4.8",
+			ReasoningEffort: "low",
+			Messages:        []OpenAIChatMessage{{Role: "user", Content: "test"}},
+		}
+		anthReq, err := convertOpenAIChatCompletionRequest(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if anthReq.Model != "opus-4.8" {
+			t.Errorf("expected model 'opus-4.8', got '%s'", anthReq.Model)
+		}
+	})
+}
+
 func TestConvertOpenAIResponsesRequest_WithFunctionCallOutput(t *testing.T) {
 	req := &OpenAIResponsesRequest{
 		Model:        "gpt-5.4",
@@ -114,6 +167,59 @@ func TestConvertOpenAIResponsesRequest_WithFunctionCallOutput(t *testing.T) {
 	if toolResult["type"] != "tool_result" || toolResult["tool_use_id"] != "call_123" {
 		t.Fatalf("tool result = %#v", toolResult)
 	}
+}
+
+func TestConvertOpenAIResponsesRequest_ReasoningEffortRouting(t *testing.T) {
+	original := SnapshotModelMap()
+	ReplaceModelMap(map[string]string{
+		"opus-4.8-high": "notion-internal-high-id",
+	})
+	defer ReplaceModelMap(original)
+
+	t.Run("reasoning_effort alias exists", func(t *testing.T) {
+		req := &OpenAIResponsesRequest{
+			Model:           "opus-4.8",
+			ReasoningEffort: "high",
+			Input:           "test input",
+		}
+		anthReq, err := convertOpenAIResponsesRequest(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if anthReq.Model != "opus-4.8-high" {
+			t.Errorf("expected model 'opus-4.8-high', got '%s'", anthReq.Model)
+		}
+	})
+
+	t.Run("reasoningEffort camel case alias exists", func(t *testing.T) {
+		req := &OpenAIResponsesRequest{
+			Model:                "opus-4.8",
+			ReasoningEffortCamel: "high",
+			Input:                "test input",
+		}
+		anthReq, err := convertOpenAIResponsesRequest(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if anthReq.Model != "opus-4.8-high" {
+			t.Errorf("expected model 'opus-4.8-high', got '%s'", anthReq.Model)
+		}
+	})
+
+	t.Run("alias absent fallback", func(t *testing.T) {
+		req := &OpenAIResponsesRequest{
+			Model:           "opus-4.8",
+			ReasoningEffort: "low",
+			Input:           "test input",
+		}
+		anthReq, err := convertOpenAIResponsesRequest(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if anthReq.Model != "opus-4.8" {
+			t.Errorf("expected model 'opus-4.8', got '%s'", anthReq.Model)
+		}
+	})
 }
 
 func TestBuildOpenAIChatCompletionResponse_FromAnthropicBlocks(t *testing.T) {

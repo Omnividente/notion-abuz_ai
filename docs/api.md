@@ -2,10 +2,20 @@
 
 [← Back to README](../README.md)
 
-`/v1/messages` accepts Anthropic Messages API payloads and is the only endpoint
-intended for external clients. All admin / dashboard surfaces live under
-`/admin/*` and `/dashboard/` and use a separate session-cookie auth model
-(see [Dashboard](dashboard.md)).
+`/v1/messages` accepts Anthropic Messages API payloads.
+`/v1/chat/completions` and `/v1/responses` accept OpenAI-compatible payloads.
+
+All admin / dashboard surfaces live under `/admin/*` and `/dashboard/` and use a
+separate session-cookie auth model (see [Dashboard](dashboard.md)).
+
+OpenAI-compatible clients like OpenCode can connect to the proxy and expect a
+near-native experience.
+
+Clients can also use the `reasoning_effort` (or `reasoningEffort`) parameter on
+OpenAI chat completions or responses endpoints. If a client sets `model="opus-4.8"`
+and `reasoning_effort="high"`, the proxy will look for an alias named `opus-4.8-high`
+in the `model_map`. If the alias exists, the request is routed there. Otherwise,
+it falls back to the original model.
 
 ## Authentication
 
