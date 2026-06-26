@@ -24,7 +24,7 @@ func TestHandleAnthropicMessages_InjectsCompatibilityInstructionForCodingAssista
 	}
 
 	reqBody := AnthropicRequest{
-		Model: "claude-opus-4-6",
+		Model:  "claude-opus-4-6",
 		System: "You are Claude Code, Anthropic's official CLI.",
 		Messages: []AnthropicMessage{
 			{Role: "user", Content: "Write a test."},

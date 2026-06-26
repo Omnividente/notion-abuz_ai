@@ -41,9 +41,9 @@ func TestIsCodingAssistantRequest(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "empty messages",
+			name:     "empty messages",
 			messages: []ChatMessage{},
-			want: false,
+			want:     false,
 		},
 		{
 			name: "coding words in user message only",
