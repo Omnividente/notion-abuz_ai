@@ -72,11 +72,17 @@ Do not modify or commit:
 - `.github/workflows/**`, unless the selected task explicitly allows workflow work
 - Deployment files, unless the selected task explicitly allows deployment work
 
-Tests must not call real Notion, Google, OpenAI, Anthropic, GitHub, or Microsoft APIs.
-Use local fakes, fixtures, and mocks.
+Unit tests must not call real Notion, Google, OpenAI, Anthropic, GitHub, or
+Microsoft APIs. Use local fakes, fixtures, and mocks.
 
 Live RDSH checks belong in `.github/workflows/rdsh_live_smoke.yml` and may use
 the repository secret `RDSH_API_KEY`. Do not print, persist, or copy that secret.
+
+Real-account local integration checks belong only in
+`.github/workflows/rdsh_local_live_smoke.yml`. That workflow may use the
+protected `live-rdsh` environment secret `LIVE_NOTION_ACCOUNTS_B64` to start the
+PR code locally and test it through `127.0.0.1`. Do not move those live checks
+into regular Go tests.
 
 ## Validation
 

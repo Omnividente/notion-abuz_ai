@@ -143,3 +143,15 @@ The repository may define `RDSH_API_KEY` as a GitHub secret. Live checks must us
 that secret only through GitHub Actions environment variables and must not print
 or store it. Live network checks belong in `.github/workflows/rdsh_live_smoke.yml`;
 unit tests must stay offline and deterministic.
+
+## Local Live Account Smoke Tests
+
+Real account checks can be run against the code from a PR through
+`.github/workflows/rdsh_local_live_smoke.yml`. That workflow decodes
+`LIVE_NOTION_ACCOUNTS_B64` from the protected `live-rdsh` GitHub environment,
+starts `notion-manager` locally, and verifies OpenAI-compatible and Anthropic
+Claude Code style requests against `127.0.0.1`.
+
+Use this workflow for integration validation only. Do not add live Notion calls
+to Go unit tests, and do not commit account files or generated runtime configs.
+See `docs/live_smoke_secrets.md` for setup and operating details.
