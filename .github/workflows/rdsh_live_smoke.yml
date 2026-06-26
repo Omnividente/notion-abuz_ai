@@ -1,0 +1,86 @@
+name: RDSH Live Smoke
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "RDSH model id or alias to smoke-test"
+        required: false
+        default: "opus-4.8-high"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rdsh-live-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      RDSH_API_KEY: ${{ secrets.RDSH_API_KEY }}
+      RDSH_BASE_URL: ${{ vars.RDSH_BASE_URL || 'https://rdsh.uchitel-izd.com:3120/v1' }}
+      SMOKE_MODEL: ${{ inputs.model || 'opus-4.8-high' }}
+
+    steps:
+      - name: Verify RDSH secret is configured
+        run: |
+          set -euo pipefail
+          if [ -z "${RDSH_API_KEY:-}" ]; then
+            echo "::error::Missing repository secret RDSH_API_KEY."
+            exit 1
+          fi
+
+      - name: Check models endpoint
+        run: |
+          set -euo pipefail
+          models_json="$(curl -fsS --max-time 30 \
+            -H "Authorization: Bearer ${RDSH_API_KEY}" \
+            "${RDSH_BASE_URL%/}/models")"
+
+          echo "$models_json" | jq -e 'any(.data[]?; .id == "opus-4.8" or .id == "sonnet-4.6" or .id == "opus-4.6")' >/dev/null
+
+      - name: Check Claude proxy persona does not leak Notion mode
+        run: |
+          set -euo pipefail
+
+          request_body="$(jq -n \
+            --arg model "$SMOKE_MODEL" \
+            '{
+              model: $model,
+              stream: false,
+              max_tokens: 48,
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a Claude Code compatible coding assistant behind an OpenAI-compatible proxy. Do not mention Notion, pages, workspaces, or documents. Follow the user instruction exactly."
+                },
+                {
+                  role: "user",
+                  content: "Reply exactly with this token and nothing else: OK_CLAUDE_PROXY"
+                }
+              ]
+            }')"
+
+          response_json="$(curl -fsS --max-time 180 \
+            -X POST "${RDSH_BASE_URL%/}/chat/completions" \
+            -H "Authorization: Bearer ${RDSH_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$request_body")"
+
+          content="$(echo "$response_json" | jq -r '.choices[0].message.content // ""')"
+          echo "Smoke content: $content"
+
+          if ! grep -q 'OK_CLAUDE_PROXY' <<<"$content"; then
+            echo "::error::RDSH smoke response did not contain the expected Claude proxy token."
+            exit 1
+          fi
+
+          if grep -Eiq 'notion|workspace|page|document' <<<"$content"; then
+            echo "::error::RDSH smoke response leaked Notion/workspace/page/document persona text."
+            exit 1
+          fi

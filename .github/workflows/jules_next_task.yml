@@ -1,10 +1,35 @@
-name: Jules - Next Self-Improvement Task
+name: 2. Trigger Next Proxy Improvement Task
 
 on:
   pull_request:
     types: [closed]
     branches: [master]
   workflow_dispatch:
+    inputs:
+      task_id:
+        description: "Optional exact task id from agent_tasks.json"
+        required: false
+        type: string
+      focus:
+        description: "Task focus for replenishment when no task_id is set"
+        required: false
+        default: "proxy"
+        type: choice
+        options:
+          - proxy
+          - openai-compatible
+          - anthropic-compatible
+          - dashboard
+          - tests
+          - docs
+      risk_ceiling:
+        description: "Maximum risk Jules may implement autonomously"
+        required: false
+        default: "medium"
+        type: choice
+        options:
+          - low
+          - medium
 
 permissions:
   contents: read
@@ -19,14 +44,39 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true &&
+       !contains(github.event.pull_request.labels.*.name, 'stop-loop') &&
        (github.event.pull_request.user.login == 'google-jules[bot]' ||
         contains(github.event.pull_request.labels.*.name, 'jules')))
 
     steps:
-      - name: Trigger Google Jules via Official API
+      - name: Trigger Google Jules via official API
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          TASK_ID: ${{ inputs.task_id || '' }}
+          FOCUS: ${{ inputs.focus || 'proxy' }}
+          RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
         run: |
-          PROMPT=$(cat <<'EOF'
+          set -euo pipefail
+
+          if [ -z "${JULES_API_KEY:-}" ]; then
+            echo "::error::Missing repository secret JULES_API_KEY."
+            exit 1
+          fi
+
+          PROMPT=$(cat <<EOF
           You are improving notion-abuz_ai / notion-manager.
+
+          Repository: ${{ github.repository }}
+          Default branch: master
+          Focus: ${FOCUS}
+          Optional exact task id: ${TASK_ID}
+          Maximum autonomous implementation risk: ${RISK_CEILING}
+
+          PRIMARY OBJECTIVE:
+          Improve Claude and Claude Code compatibility through the RDSH/notion-abuz_ai proxy.
+          The proxy must behave like a coding assistant API, not like the Notion product UI.
+          Prioritize fixes that prevent Notion persona leakage, Notion workspace/page/document refusals,
+          and model drift where Claude-style coding requests are answered as if the user is inside Notion.
 
           PROJECT CONTEXT:
           - Language/runtime: Go backend, module "notion-manager".
@@ -34,54 +84,64 @@ jobs:
           - Main binary: ./cmd/notion-manager.
           - Core backend code: internal/proxy, internal/regjob, internal/msalogin, internal/netutil, internal/web.
           - Dashboard static files are embedded through internal/web/dist.
-          - Public API compatibility: Anthropic Messages API, OpenAI-compatible endpoints, dashboard/admin APIs.
+          - Public API compatibility matters: Anthropic Messages API and OpenAI-compatible endpoints.
           - The project manages Notion AI account sessions, quotas, dashboard, reverse proxy, and bulk Microsoft SSO registration.
 
           TASK LOOP:
           1. Read AGENTS.md, docs/jules_autonomous_loop.md, README.md, docs/api.md, docs/configuration.md, and agent_tasks.json.
-          2. Open agent_tasks.json in the repo root.
-          3. Find the FIRST task with status "todo".
-          4. If there are fewer than 3 todo tasks, add 2-3 new low/medium-risk todo tasks before or after the selected task.
-          5. Implement exactly ONE complete task in one PR.
-          6. Update agent_tasks.json: set the completed task status to "done".
-          7. Add any newly discovered bugs or safe improvements as new todo tasks.
-          8. Open ONE pull request.
+          2. Validate agent_tasks.json mentally against scripts/validate_agent_tasks.py before editing it.
+          3. If TASK_ID is non-empty, select that task only if it exists, has status "todo", and risk <= ${RISK_CEILING}.
+          4. Otherwise select the first task with status "todo" and risk <= ${RISK_CEILING}.
+          5. If there are fewer than the manifest minimum todo tasks, add a small batch of new low/medium-risk tasks before finishing.
+          6. Implement exactly ONE complete task in one PR.
+          7. Stay inside the selected task's allowed_paths. You may edit agent_tasks.json only to update task status or add follow-up tasks.
+          8. Update agent_tasks.json: set the completed task status to "done".
+          9. Add any discovered bugs or safe improvements as new "todo" tasks with allowed_paths and acceptance criteria.
+          10. Open ONE pull request and label it "jules".
 
           VALIDATION COMMANDS:
-          - gofmt
-          - npm ci inside web/
-          - npm run build inside web/
-          - copy web/dist to internal/web/dist
+          - python3 scripts/validate_agent_tasks.py agent_tasks.json
+          - test -z "\$(gofmt -l .)"
+          - cd web && npm ci && npm run build
+          - rm -rf internal/web/dist && cp -r web/dist internal/web/dist
           - go vet ./...
           - go test ./...
           - go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
 
+          LIVE TESTING:
+          - The repository may define secret RDSH_API_KEY for the separate RDSH Live Smoke workflow.
+          - Do not print, persist, or expose secrets.
+          - Do not add live network calls to unit tests.
+          - If a task needs live validation, update or rely on .github/workflows/rdsh_live_smoke.yml instead of embedding secrets in code.
+
           STRICT RULES:
-          - Do not ask the user what to do next if agent_tasks.json has safe todo work.
-          - Keep PRs small and bounded.
-          - Do not modify secrets, accounts, token files, generated logs, binaries, or real user data.
+          - Never ask the user what to do if safe todo work exists.
+          - Keep PRs small and bounded: one task id per PR.
+          - Do not modify secrets, account JSON, token files, generated logs, binaries, local config.yaml, or runtime data.
           - Do not modify .github/workflows/** unless the selected task explicitly allows workflow work.
           - Do not add network calls in tests.
-          - Do not commit account JSON files, token.txt, config.yaml with secrets, logs, or local runtime artifacts.
-          - Use Go tests for backend changes.
-          - Use TypeScript/Vite build validation for dashboard changes.
-          - For frontend changes, keep code inside web/.
-          - For backend proxy/API changes, keep code mostly inside internal/proxy/.
-          - For registration changes, keep code mostly inside internal/regjob/ or internal/msalogin/.
-          - If a task is high/critical risk, create or refine a task for human review instead of implementing it autonomously.
+          - Do not change deployment files unless explicitly allowed.
+          - Do not add new dependencies unless the task requires them and the dependency is justified in the PR body.
+          - If a task is high or critical risk, create/refine a human-review task instead of implementing it.
+          - Prefer focused tests over broad refactors.
+          - Preserve existing public API compatibility unless the task explicitly changes it.
+          - Treat Notion persona leakage in Claude/Claude Code requests as a proxy compatibility bug.
           EOF
           )
 
-          curl -f 'https://jules.googleapis.com/v1alpha/sessions' \
+          curl -fsS 'https://jules.googleapis.com/v1alpha/sessions' \
             -X POST \
             -H "Content-Type: application/json" \
-            -H "X-Goog-Api-Key: ${{ secrets.JULES_API_KEY }}" \
+            -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
             -d "$(jq -n \
               --arg prompt "$PROMPT" \
               --arg source "sources/github/${{ github.repository }}" \
               '{
                 "prompt": $prompt,
-                "sourceContext": {"source": $source, "githubRepoContext": {"startingBranch": "master"}},
+                "sourceContext": {
+                  "source": $source,
+                  "githubRepoContext": {"startingBranch": "master"}
+                },
                 "automationMode": "AUTO_CREATE_PR",
-                "title": "notion-manager self-improvement task"
+                "title": "notion-manager proxy improvement"
               }')"
