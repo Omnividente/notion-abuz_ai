@@ -16,12 +16,18 @@ concurrency:
 jobs:
   test-and-merge:
     runs-on: ubuntu-latest
+    environment: live-rdsh
     if: >
       github.event.pull_request.draft == false &&
       !contains(github.event.pull_request.labels.*.name, 'no-automerge') &&
       !contains(github.event.pull_request.labels.*.name, 'human-review') &&
       (github.event.pull_request.user.login == 'google-jules[bot]' ||
        contains(github.event.pull_request.labels.*.name, 'jules'))
+    env:
+      LIVE_NOTION_ACCOUNTS_B64: ${{ secrets.LIVE_NOTION_ACCOUNTS_B64 }}
+      SMOKE_MODEL: ${{ vars.LIVE_SMOKE_MODEL || 'opus-4.8' }}
+      SMOKE_PORT: "31081"
+      SMOKE_API_KEY: "local-live-smoke-key"
 
     steps:
       - uses: actions/checkout@v4
@@ -76,6 +82,9 @@ jobs:
 
       - name: Build binary
         run: go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
+
+      - name: RDSH local live smoke
+        run: bash .github/scripts/rdsh-local-live-smoke.sh
 
       - name: Merge PR
         if: success()
