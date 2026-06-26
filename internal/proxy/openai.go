@@ -81,23 +81,23 @@ type OpenAIChatStreamOptions struct {
 }
 
 type OpenAIChatCompletionRequest struct {
-	Model               string                     `json:"model"`
-	Messages            []OpenAIChatMessage        `json:"messages"`
-	Stream              bool                       `json:"stream,omitempty"`
-	Tools               []OpenAITool               `json:"tools,omitempty"`
-	ToolChoice          interface{}                `json:"tool_choice,omitempty"`
-	ResponseFormat      *OpenAIChatResponseFormat  `json:"response_format,omitempty"`
-	StreamOptions       *OpenAIChatStreamOptions   `json:"stream_options,omitempty"`
-	Temperature         *float64                   `json:"temperature,omitempty"`
-	TopP                *float64                   `json:"top_p,omitempty"`
-	MaxTokens           int                        `json:"max_tokens,omitempty"`
-	MaxCompletionTokens int                        `json:"max_completion_tokens,omitempty"`
-	Functions           []OpenAIFunctionDefinition `json:"functions,omitempty"`
-	FunctionCall        interface{}                `json:"function_call,omitempty"`
-	Metadata            map[string]interface{}     `json:"metadata,omitempty"`
-	N                   int                        `json:"n,omitempty"`
-	ReasoningEffort     string                     `json:"reasoning_effort,omitempty"`
-	ReasoningEffortCamel string                    `json:"reasoningEffort,omitempty"`
+	Model                string                     `json:"model"`
+	Messages             []OpenAIChatMessage        `json:"messages"`
+	Stream               bool                       `json:"stream,omitempty"`
+	Tools                []OpenAITool               `json:"tools,omitempty"`
+	ToolChoice           interface{}                `json:"tool_choice,omitempty"`
+	ResponseFormat       *OpenAIChatResponseFormat  `json:"response_format,omitempty"`
+	StreamOptions        *OpenAIChatStreamOptions   `json:"stream_options,omitempty"`
+	Temperature          *float64                   `json:"temperature,omitempty"`
+	TopP                 *float64                   `json:"top_p,omitempty"`
+	MaxTokens            int                        `json:"max_tokens,omitempty"`
+	MaxCompletionTokens  int                        `json:"max_completion_tokens,omitempty"`
+	Functions            []OpenAIFunctionDefinition `json:"functions,omitempty"`
+	FunctionCall         interface{}                `json:"function_call,omitempty"`
+	Metadata             map[string]interface{}     `json:"metadata,omitempty"`
+	N                    int                        `json:"n,omitempty"`
+	ReasoningEffort      string                     `json:"reasoning_effort,omitempty"`
+	ReasoningEffortCamel string                     `json:"reasoningEffort,omitempty"`
 }
 
 type OpenAIChatCompletionChoice struct {
@@ -120,20 +120,20 @@ type OpenAIResponsesTextConfig struct {
 }
 
 type OpenAIResponsesRequest struct {
-	Model              string                     `json:"model"`
-	Input              interface{}                `json:"input"`
-	Stream             bool                       `json:"stream,omitempty"`
-	Tools              []OpenAITool               `json:"tools,omitempty"`
-	ToolChoice         interface{}                `json:"tool_choice,omitempty"`
-	Instructions       string                     `json:"instructions,omitempty"`
-	Text               *OpenAIResponsesTextConfig `json:"text,omitempty"`
-	Temperature        *float64                   `json:"temperature,omitempty"`
-	TopP               *float64                   `json:"top_p,omitempty"`
-	MaxOutputTokens    int                        `json:"max_output_tokens,omitempty"`
-	PreviousResponseID string                     `json:"previous_response_id,omitempty"`
-	Metadata           map[string]interface{}     `json:"metadata,omitempty"`
-	ReasoningEffort    string                     `json:"reasoning_effort,omitempty"`
-	ReasoningEffortCamel string                   `json:"reasoningEffort,omitempty"`
+	Model                string                     `json:"model"`
+	Input                interface{}                `json:"input"`
+	Stream               bool                       `json:"stream,omitempty"`
+	Tools                []OpenAITool               `json:"tools,omitempty"`
+	ToolChoice           interface{}                `json:"tool_choice,omitempty"`
+	Instructions         string                     `json:"instructions,omitempty"`
+	Text                 *OpenAIResponsesTextConfig `json:"text,omitempty"`
+	Temperature          *float64                   `json:"temperature,omitempty"`
+	TopP                 *float64                   `json:"top_p,omitempty"`
+	MaxOutputTokens      int                        `json:"max_output_tokens,omitempty"`
+	PreviousResponseID   string                     `json:"previous_response_id,omitempty"`
+	Metadata             map[string]interface{}     `json:"metadata,omitempty"`
+	ReasoningEffort      string                     `json:"reasoning_effort,omitempty"`
+	ReasoningEffortCamel string                     `json:"reasoningEffort,omitempty"`
 }
 
 type anthropicInvocationError struct {
