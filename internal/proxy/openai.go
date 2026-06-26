@@ -96,6 +96,8 @@ type OpenAIChatCompletionRequest struct {
 	FunctionCall        interface{}                `json:"function_call,omitempty"`
 	Metadata            map[string]interface{}     `json:"metadata,omitempty"`
 	N                   int                        `json:"n,omitempty"`
+	ReasoningEffort     string                     `json:"reasoning_effort,omitempty"`
+	ReasoningEffortCamel string                    `json:"reasoningEffort,omitempty"`
 }
 
 type OpenAIChatCompletionChoice struct {
@@ -130,6 +132,8 @@ type OpenAIResponsesRequest struct {
 	MaxOutputTokens    int                        `json:"max_output_tokens,omitempty"`
 	PreviousResponseID string                     `json:"previous_response_id,omitempty"`
 	Metadata           map[string]interface{}     `json:"metadata,omitempty"`
+	ReasoningEffort    string                     `json:"reasoning_effort,omitempty"`
+	ReasoningEffortCamel string                   `json:"reasoningEffort,omitempty"`
 }
 
 type anthropicInvocationError struct {
@@ -1237,6 +1241,13 @@ func convertOpenAIChatCompletionRequest(req *OpenAIChatCompletionRequest) (*Anth
 	if model == "" {
 		model = AppConfig.Proxy.DefaultModel
 	}
+	effort := req.ReasoningEffort
+	if effort == "" {
+		effort = req.ReasoningEffortCamel
+	}
+	if effort != "" {
+		model = ApplyReasoningEffortAlias(model, effort)
+	}
 	tools, err := convertOpenAITools(req.Tools, req.Functions)
 	if err != nil {
 		return nil, err
@@ -1268,6 +1279,13 @@ func convertOpenAIResponsesRequest(req *OpenAIResponsesRequest) (*AnthropicReque
 	model := strings.TrimSpace(req.Model)
 	if model == "" {
 		model = AppConfig.Proxy.DefaultModel
+	}
+	effort := req.ReasoningEffort
+	if effort == "" {
+		effort = req.ReasoningEffortCamel
+	}
+	if effort != "" {
+		model = ApplyReasoningEffortAlias(model, effort)
 	}
 	tools, err := convertOpenAITools(req.Tools, nil)
 	if err != nil {

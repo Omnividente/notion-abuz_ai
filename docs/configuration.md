@@ -32,6 +32,7 @@ environment variables > config.yaml > code defaults
 | `proxy.notion_api_base` | `https://www.notion.so/api/v3` | same | Notion API base URL |
 | `proxy.client_version` | `23.13.20260313.1423` | same | `x-notion-client-version` header |
 | `proxy.default_model` | `opus-4.6` | `opus-4.6` | Fallback model when request omits one |
+| `model_map` | (see below) | empty | Map custom model names to Notion internal model IDs |
 | `proxy.disable_notion_prompt` | `true` | `false` | Removes Notion's ~33k system prompt for leaner API usage |
 | `proxy.enable_web_search` | `true` | `true` | Global web-search toggle (overridable per-request) |
 | `proxy.enable_workspace_search` | `false` | `false` | Global workspace-search toggle (overridable per-request) |
@@ -72,6 +73,18 @@ export ASK_MODE_DEFAULT=false
 export NOTION_PROXY=socks5h://127.0.0.1:1080
 export QUOTA_LIVE_CHECK_SECONDS=5
 export REFRESH_CONCURRENCY=10
+```
+
+### Model Map & Reasoning Effort Routing
+
+You can define friendly aliases for models by putting them in `model_map`.
+This is particularly useful for routing OpenAI-compatible `reasoning_effort` queries.
+If you set up `opus-4.8-high: notion-internal-high-id` in your `config.yaml`, a client requesting `model="opus-4.8"` with `reasoning_effort="high"` will automatically be routed to that internal Notion ID.
+
+```yaml
+model_map:
+  opus-4.8-high: notion-internal-high-id
+  sonnet-4.6-low: notion-internal-low-id
 ```
 
 An invalid `NOTION_PROXY` is logged once at startup and dropped — runtime falls back to direct dial rather than leaking the misconfigured URL into every Notion request.

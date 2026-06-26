@@ -81,6 +81,17 @@ func ReplaceModelMap(m map[string]string) {
 	DefaultModelMap = m
 }
 
+// ApplyReasoningEffortAlias checks if model+"-"+effort exists in the configured model map.
+// If it does, it returns the alias. Otherwise, it returns the original model.
+func ApplyReasoningEffortAlias(model, effort string) string {
+	alias := model + "-" + effort
+	snap := SnapshotModelMap()
+	if _, ok := snap[alias]; ok {
+		return alias
+	}
+	return model
+}
+
 // SnapshotModelMap returns a shallow copy of DefaultModelMap (thread-safe).
 func SnapshotModelMap() map[string]string {
 	modelMapMu.RLock()

@@ -73,7 +73,7 @@
     },
     {
       "id": "openai-compatible-reasoning-effort-routing",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Route OpenAI-compatible reasoning_effort to configured model aliases",
