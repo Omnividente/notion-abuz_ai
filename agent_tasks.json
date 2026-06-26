@@ -139,7 +139,7 @@
     },
     {
       "id": "proxy-error-normalization-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add regression coverage for OpenAI and Anthropic error normalization",

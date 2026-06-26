@@ -395,3 +395,40 @@ func TestOpenAIChatStreamTranscoder_EmitsTextDelta(t *testing.T) {
 		t.Fatalf("body missing DONE: %s", body)
 	}
 }
+
+func TestOpenAIErrorNormalization_UnsupportedToolType(t *testing.T) {
+	req := &OpenAIChatCompletionRequest{
+		Model: "gpt-4",
+		Messages: []OpenAIChatMessage{
+			{Role: "user", Content: "Hello"},
+		},
+		Tools: []OpenAITool{{
+			Type: "unsupported_type",
+		}},
+	}
+
+	_, err := convertOpenAIChatCompletionRequest(req)
+	if err == nil {
+		t.Fatal("Expected error for unsupported tool type")
+	}
+	if !strings.Contains(err.Error(), "unsupported tool type") {
+		t.Errorf("Expected unsupported tool type error, got: %v", err)
+	}
+}
+
+func TestOpenAIErrorNormalization_UnsupportedMessageRole(t *testing.T) {
+	req := &OpenAIChatCompletionRequest{
+		Model: "gpt-4",
+		Messages: []OpenAIChatMessage{
+			{Role: "unsupported_role", Content: "Hello"},
+		},
+	}
+
+	_, err := convertOpenAIChatCompletionRequest(req)
+	if err == nil {
+		t.Fatal("Expected error for unsupported message role")
+	}
+	if !strings.Contains(err.Error(), "unsupported message role") {
+		t.Errorf("Expected unsupported message role error, got: %v", err)
+	}
+}
