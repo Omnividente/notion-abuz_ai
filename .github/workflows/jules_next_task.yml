@@ -1,10 +1,17 @@
-name: 2. Trigger Next Self-Improvement Task
+name: Jules - Next Self-Improvement Task
 
 on:
   pull_request:
     types: [closed]
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jules-next-task
+  cancel-in-progress: false
 
 jobs:
   next-task:
@@ -13,40 +20,55 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true &&
        (github.event.pull_request.user.login == 'google-jules[bot]' ||
-        github.event.pull_request.user.login == 'kazah4359-lgtm' ||
-        github.event.pull_request.user.login == 'b24039971' ||
         contains(github.event.pull_request.labels.*.name, 'jules')))
 
     steps:
       - name: Trigger Google Jules via Official API
         run: |
           PROMPT=$(cat <<'EOF'
-          You are building a digital brain for Magda AI Agent (Python, asyncio, aiogram Telegram bot).
+          You are improving notion-abuz_ai / notion-manager.
 
-          TASK:
-          1. Read AGENTS.md, docs/cognitive_architecture.md, docs/jules_autonomous_loop.md, docs/codex_worker_plan.md, and docs/trends.md.
+          PROJECT CONTEXT:
+          - Language/runtime: Go backend, module "notion-manager".
+          - Frontend: React + TypeScript + Vite dashboard in web/.
+          - Main binary: ./cmd/notion-manager.
+          - Core backend code: internal/proxy, internal/regjob, internal/msalogin, internal/netutil, internal/web.
+          - Dashboard static files are embedded through internal/web/dist.
+          - Public API compatibility: Anthropic Messages API, OpenAI-compatible endpoints, dashboard/admin APIs.
+          - The project manages Notion AI account sessions, quotas, dashboard, reverse proxy, and bulk Microsoft SSO registration.
+
+          TASK LOOP:
+          1. Read AGENTS.md, docs/jules_autonomous_loop.md, README.md, docs/api.md, docs/configuration.md, and agent_tasks.json.
           2. Open agent_tasks.json in the repo root.
           3. Find the FIRST task with status "todo".
-          4. Implement the ENTIRE task as described (code + integration + pytest tests).
-          5. Update agent_tasks.json: set the completed task status to "done".
-          6. MANDATORY: Add 2-3 NEW "todo" tasks to agent_tasks.json. Search the internet for current AI agent trends (June 2026). Be inspired by what Hermes Agent, OpenClaw, Claude Code, OpenAI Agents SDK are doing NOW. If you cannot search, use docs/trends.md. Tasks must be concrete, actionable, with allowed_paths and acceptance criteria.
-          7. Also keep backlog.md compatible when the task maps to an existing markdown backlog item.
-          8. If you find bugs or improvements, add them as additional "todo" tasks.
-          9. NEVER ask the user anything. Always decide and proceed autonomously. Do the task, add new tasks, open ONE PR with everything.
+          4. If there are fewer than 3 todo tasks, add 2-3 new low/medium-risk todo tasks before or after the selected task.
+          5. Implement exactly ONE complete task in one PR.
+          6. Update agent_tasks.json: set the completed task status to "done".
+          7. Add any newly discovered bugs or safe improvements as new todo tasks.
+          8. Open ONE pull request.
+
+          VALIDATION COMMANDS:
+          - gofmt
+          - npm ci inside web/
+          - npm run build inside web/
+          - copy web/dist to internal/web/dist
+          - go vet ./...
+          - go test ./...
+          - go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
 
           STRICT RULES:
-          - Implement the full module in one PR. Do NOT split into smaller PRs.
-          - Every function MUST have type hints and a docstring.
-          - Write pytest tests that use mocks for LLM calls (never call real APIs in tests).
-          - Keep existing tests passing. Run pytest mentally before submitting.
-          - Run python scripts/validate_agent_tasks.py agent_tasks.json before submitting.
-          - Do NOT refactor or modify code outside the scope of your task.
-          - Respect the allowed_paths declared by the selected task.
-          - Do NOT modify .github/workflows/**, requirements.txt, sandbox code, secrets, or deployment files unless the selected task explicitly allows it.
-          - If the selected task has risk "high" or "critical", create the PR but do not expect auto-merge without human review.
-          - Follow existing code style (see magda_agent/consciousness/core.py as reference).
-          - Use existing dependencies from requirements.txt where possible. If you need a new dependency, add it to requirements.txt.
-          - Integration: wire your module into the existing architecture as described in the task.
+          - Do not ask the user what to do next if agent_tasks.json has safe todo work.
+          - Keep PRs small and bounded.
+          - Do not modify secrets, accounts, token files, generated logs, binaries, or real user data.
+          - Do not modify .github/workflows/** unless the selected task explicitly allows workflow work.
+          - Do not add network calls in tests.
+          - Do not commit account JSON files, token.txt, config.yaml with secrets, logs, or local runtime artifacts.
+          - Use Go tests for backend changes.
+          - Use TypeScript/Vite build validation for dashboard changes.
+          - For frontend changes, keep code inside web/.
+          - For backend proxy/API changes, keep code mostly inside internal/proxy/.
+          - For registration changes, keep code mostly inside internal/regjob/ or internal/msalogin/.
+          - If a task is high/critical risk, create or refine a task for human review instead of implementing it autonomously.
           EOF
           )
 
@@ -59,7 +81,7 @@ jobs:
               --arg source "sources/github/${{ github.repository }}" \
               '{
                 "prompt": $prompt,
-                "sourceContext": {"source": $source, "githubRepoContext": {"startingBranch": "main"}},
+                "sourceContext": {"source": $source, "githubRepoContext": {"startingBranch": "master"}},
                 "automationMode": "AUTO_CREATE_PR",
-                "title": "Brain Module Implementation"
+                "title": "notion-manager self-improvement task"
               }')"
