@@ -52,14 +52,15 @@ jobs:
       - name: Trigger Google Jules via official API
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
           TASK_ID: ${{ inputs.task_id || '' }}
           FOCUS: ${{ inputs.focus || 'proxy' }}
           RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
         run: |
           set -euo pipefail
 
-          if [ -z "${JULES_API_KEY:-}" ]; then
-            echo "::error::Missing repository secret JULES_API_KEY."
+          if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
+            echo "::error::Missing repository secret JULES_API_KEY or JULES_API_KEY_BACKUP."
             exit 1
           fi
 
@@ -134,23 +135,63 @@ jobs:
           EOF
           )
 
-          response="$(curl -fsS 'https://jules.googleapis.com/v1alpha/sessions' \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
-            -d "$(jq -n \
-              --arg prompt "$PROMPT" \
-              --arg source "sources/github/${{ github.repository }}" \
-              '{
-                "prompt": $prompt,
-                "sourceContext": {
-                  "source": $source,
-                  "githubRepoContext": {"startingBranch": "master"}
-                },
-                "automationMode": "AUTO_CREATE_PR",
-                "title": "notion-manager proxy improvement"
-              }')")"
+          request_body="$(jq -n \
+            --arg prompt "$PROMPT" \
+            --arg source "sources/github/${{ github.repository }}" \
+            '{
+              "prompt": $prompt,
+              "sourceContext": {
+                "source": $source,
+                "githubRepoContext": {"startingBranch": "master"}
+              },
+              "automationMode": "AUTO_CREATE_PR",
+              "title": "notion-manager proxy improvement"
+            }')"
 
-          echo "$response" > /tmp/jules-response.json
+          key_labels=()
+          key_values=()
+          if [ -n "${JULES_API_KEY:-}" ]; then
+            key_labels+=("primary")
+            key_values+=("${JULES_API_KEY}")
+          fi
+          if [ -n "${JULES_API_KEY_BACKUP:-}" ]; then
+            key_labels+=("backup")
+            key_values+=("${JULES_API_KEY_BACKUP}")
+          fi
+
+          success=false
+          for i in "${!key_labels[@]}"; do
+            label="${key_labels[$i]}"
+            key="${key_values[$i]}"
+            out="/tmp/jules-response-${label}.json"
+            status="$(curl -sS 'https://jules.googleapis.com/v1alpha/sessions' \
+              -X POST \
+              -H "Content-Type: application/json" \
+              -H "X-Goog-Api-Key: ${key}" \
+              -o "$out" \
+              -w "%{http_code}" \
+              -d "$request_body" || echo "000")"
+
+            if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+              cp "$out" /tmp/jules-response.json
+              echo "Jules API key used: ${label}"
+              success=true
+              break
+            fi
+
+            echo "::warning::Jules API request with ${label} key failed with HTTP ${status}."
+            if jq -e '.error' "$out" >/dev/null 2>&1; then
+              jq '{error: {code: .error.code, status: .error.status, message: .error.message}}' "$out" || true
+            else
+              head -c 1000 "$out" || true
+              echo
+            fi
+          done
+
+          if [ "$success" != "true" ]; then
+            echo "::error::All configured Jules API keys failed."
+            exit 1
+          fi
+
           echo "Jules API response summary:"
           jq '{name, id, title, state, createTime, updateTime, webUrl, url}' /tmp/jules-response.json
