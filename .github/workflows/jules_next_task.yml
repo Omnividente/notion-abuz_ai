@@ -42,11 +42,12 @@ jobs:
   next-task:
     runs-on: ubuntu-latest
     if: >
-      github.event_name == 'workflow_dispatch' ||
+      vars.JULES_LOOP_ENABLED != 'false' &&
+      (github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true &&
        !contains(github.event.pull_request.labels.*.name, 'stop-loop') &&
        (github.event.pull_request.user.login == 'google-jules[bot]' ||
-        contains(github.event.pull_request.labels.*.name, 'jules')))
+        contains(github.event.pull_request.labels.*.name, 'jules'))))
 
     steps:
       - name: Trigger Google Jules via official API

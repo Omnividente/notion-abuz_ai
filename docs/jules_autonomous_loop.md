@@ -31,6 +31,10 @@ scheduled `Jules Unattended Monitor` workflow handles that state by sending a
 standard autonomous continuation message. It also approves unexpected plan
 approval waits and can dispatch a new task when the loop is idle.
 
+Set repository variable `JULES_LOOP_ENABLED=false` to stop both new Jules task
+dispatches and unattended monitor continuations. If the variable is absent or
+set to any other value, the loop is enabled.
+
 ## Main Rule
 
 Do not ask the user what to do next when a safe `todo` task exists.

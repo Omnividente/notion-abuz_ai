@@ -54,6 +54,8 @@ tests first and then implement the smallest passing fix.
 In unattended mode, do not stop for ordinary implementation, scope, test, docs,
 or CI-fix questions. If a possible change belongs to a separate task, exclude it
 from the current PR, keep or add a follow-up task, and finish the selected task.
+Repository variable `JULES_LOOP_ENABLED=false` disables new task dispatches and
+unattended monitor continuations.
 
 Local helper scripts:
 
