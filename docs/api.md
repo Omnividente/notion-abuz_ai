@@ -196,3 +196,11 @@ Common cases:
 - `400 invalid_request_error` – malformed JSON, empty `messages`, or unsupported attachment type
 - `429 rate_limit_error` – every account in the pool is currently exhausted; the response message describes which quota tripped
 - `502 bad_gateway` – upstream Notion error after retries
+
+## Error Normalization
+
+The proxy provides stable error responses:
+- Malformed OpenAI-compatible requests return `invalid_request_error`.
+- Malformed Anthropic-compatible requests return `invalid_request_error`.
+- Upstream failures return `api_error` or `overloaded_error` depending on retry status.
+- Unsupported options (like unimplemented tool types or unrecognized message roles) return standard error formats but may be intentionally ignored or mapped depending on context.
