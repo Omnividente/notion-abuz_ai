@@ -73,6 +73,19 @@ jobs:
           Optional exact task id: ${TASK_ID}
           Maximum autonomous implementation risk: ${RISK_CEILING}
 
+          UNATTENDED MODE:
+          This session is expected to run without human supervision.
+          Do not stop for implementation-choice questions, scope-boundary questions,
+          test-placement questions, docs-update questions, or CI-fix questions.
+          If you would normally ask the user for a choice, make the decision yourself
+          using the policy below and continue.
+          If a proposed change is outside the selected task, exclude it from the PR,
+          add or keep a follow-up todo task, and finish the current task.
+          If you are uncertain whether to implement a step, prefer the smaller
+          reversible change that satisfies the selected task's acceptance criteria.
+          Only wait for user input when the task is blocked by missing permissions,
+          missing secrets, high/critical risk, or an unavoidable destructive action.
+
           PRIMARY OBJECTIVE:
           Improve Claude and Claude Code compatibility through the RDSH/notion-abuz_ai proxy.
           The proxy must behave like a coding assistant API, not like the Notion product UI.
@@ -118,6 +131,10 @@ jobs:
           STRICT RULES:
           - Never ask the user what to do if safe todo work exists.
           - Do not ask the user to choose between implementation approaches for low/medium-risk tasks.
+          - Do not ask whether to include work that belongs to a separate task; exclude it and continue.
+          - Do not ask whether to add tests when acceptance criteria require tests; add focused offline tests.
+          - Do not ask whether to fix CI failures caused by your changes; fix them inside the selected task scope.
+          - Do not stop in AWAITING_USER_FEEDBACK for ordinary engineering judgment.
           - If multiple safe approaches exist, choose the smallest reversible change that satisfies the selected task's acceptance criteria.
           - If unsure, write focused tests first, then implement the smallest passing fix.
           - Ask for user input only when blocked by missing permissions, missing secrets, high/critical risk, or an unavoidable destructive action.
@@ -145,6 +162,7 @@ jobs:
                 "githubRepoContext": {"startingBranch": "master"}
               },
               "automationMode": "AUTO_CREATE_PR",
+              "requirePlanApproval": false,
               "title": "notion-manager proxy improvement"
             }')"
 

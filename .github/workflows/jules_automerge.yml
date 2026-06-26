@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
 
 concurrency:
@@ -14,15 +15,98 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  classify-pr:
+    runs-on: ubuntu-latest
+    outputs:
+      autonomous: ${{ steps.classify.outputs.autonomous }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Classify autonomous PR
+        id: classify
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+          PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+
+          autonomous="$(python3 - <<'PY'
+          import json
+          import os
+
+          with open("agent_tasks.json", "r", encoding="utf-8") as f:
+              task_ids = [task["id"] for task in json.load(f).get("tasks", [])]
+
+          labels = set(json.loads(os.environ.get("PR_LABELS_JSON", "[]")))
+          head_ref = os.environ.get("PR_HEAD_REF", "")
+          head_repo = os.environ.get("PR_HEAD_REPO", "")
+          user = os.environ.get("PR_USER", "")
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          title = os.environ.get("PR_TITLE", "")
+          body = os.environ.get("PR_BODY", "")
+
+          is_autonomous = (
+              user == "google-jules[bot]"
+              or "jules" in labels
+              or (
+                  head_repo == repo
+                  and any(
+                      head_ref == task_id
+                      or head_ref.startswith(f"{task_id}-")
+                      or task_id in title
+                      or task_id in body
+                      for task_id in task_ids
+                  )
+              )
+          )
+
+          print("true" if is_autonomous else "false")
+          PY
+          )"
+
+          echo "autonomous=${autonomous}" >> "$GITHUB_OUTPUT"
+          echo "Autonomous PR: ${autonomous}"
+
+      - name: Ensure jules label
+        if: steps.classify.outputs.autonomous == 'true'
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          curl -fsS \
+            -X POST \
+            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/labels" \
+            -d '{"name":"jules","color":"7057ff","description":"Autonomous Jules PR"}' \
+            >/dev/null || true
+
+          curl -fsS \
+            -X POST \
+            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" \
+            -d '{"labels":["jules"]}' \
+            >/dev/null
+
   test-and-merge:
+    needs: classify-pr
     runs-on: ubuntu-latest
     environment: live-rdsh
     if: >
       github.event.pull_request.draft == false &&
       !contains(github.event.pull_request.labels.*.name, 'no-automerge') &&
       !contains(github.event.pull_request.labels.*.name, 'human-review') &&
-      (github.event.pull_request.user.login == 'google-jules[bot]' ||
-       contains(github.event.pull_request.labels.*.name, 'jules'))
+      needs.classify-pr.outputs.autonomous == 'true'
     env:
       LIVE_NOTION_ACCOUNTS_B64: ${{ secrets.LIVE_NOTION_ACCOUNTS_B64 }}
       SMOKE_MODEL: ${{ vars.LIVE_SMOKE_MODEL || 'opus-4.8' }}

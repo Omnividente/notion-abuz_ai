@@ -10,6 +10,7 @@ deployment state, or broad unrelated code.
 ```text
 manual dispatch or pull_request.closed
   -> trigger Jules API session
+  -> scheduled unattended monitor continues waiting sessions when needed
   -> Jules reads project rules
   -> Jules selects one safe task
   -> Jules implements a bounded change
@@ -24,6 +25,12 @@ This is an event-driven loop. The GitHub workflow does not run forever; it
 starts a Jules session and exits. The loop continues when Jules opens a PR and
 the PR is merged.
 
+`AUTO_CREATE_PR` only tells Jules to create a PR when a patch is ready. It does
+not guarantee that Jules will never enter `AWAITING_USER_FEEDBACK`. The
+scheduled `Jules Unattended Monitor` workflow handles that state by sending a
+standard autonomous continuation message. It also approves unexpected plan
+approval waits and can dispatch a new task when the loop is idle.
+
 ## Main Rule
 
 Do not ask the user what to do next when a safe `todo` task exists.
@@ -34,6 +41,10 @@ For low/medium-risk tasks, do not ask the user to choose between implementation
 approaches. If multiple safe approaches exist, choose the smallest reversible
 change that satisfies the selected task's acceptance criteria. If unsure, add
 focused tests first and then implement the smallest passing fix.
+
+In unattended mode, ordinary engineering uncertainty must be resolved by the
+agent. If a possible step belongs to a separate task, leave it out of the
+current PR, keep or add a follow-up task, and finish the selected task.
 
 ## Product Goal
 
@@ -164,3 +175,7 @@ Claude Code style requests against `127.0.0.1`.
 Use this workflow for integration validation only. Do not add live Notion calls
 to Go unit tests, and do not commit account files or generated runtime configs.
 See `docs/live_smoke_secrets.md` for setup and operating details.
+
+For a fully unattended overnight loop, the `live-rdsh` environment must not have
+required reviewers. Required reviewers are useful for manual protection, but
+they intentionally pause jobs before environment secrets are released.

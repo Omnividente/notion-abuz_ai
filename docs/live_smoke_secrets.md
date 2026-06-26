@@ -29,8 +29,11 @@ GitHub -> Settings -> Environments -> New environment -> live-rdsh
 
 Recommended environment settings:
 
-- Add required reviewers.
-- Allow only trusted maintainers to approve deployments to this environment.
+- For manual protected operation, add required reviewers and allow only trusted
+  maintainers to approve deployments to this environment.
+- For fully unattended Jules operation, do not add required reviewers. A required
+  reviewer intentionally pauses the workflow before environment secrets are
+  released.
 - Store live account material as environment secrets, not repository files.
 
 Required environment secret:
@@ -78,8 +81,9 @@ PR run:
 - PR must target `master`.
 - PR must be from this repository, not a fork.
 - PR must have label `jules` or `live-smoke`.
-- The `live-rdsh` environment approval must be granted before secrets are
-  released to the job.
+- If the `live-rdsh` environment has required reviewers, approval must be
+  granted before secrets are released to the job. Leave required reviewers empty
+  for unattended overnight runs.
 
 ## Visibility Model
 

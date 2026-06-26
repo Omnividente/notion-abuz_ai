@@ -51,6 +51,10 @@ tasks. If multiple safe approaches exist, choose the smallest reversible change
 that satisfies the selected task's acceptance criteria. If unsure, write focused
 tests first and then implement the smallest passing fix.
 
+In unattended mode, do not stop for ordinary implementation, scope, test, docs,
+or CI-fix questions. If a possible change belongs to a separate task, exclude it
+from the current PR, keep or add a follow-up task, and finish the selected task.
+
 Local helper scripts:
 
 ```bash
