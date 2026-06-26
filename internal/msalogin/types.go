@@ -72,7 +72,7 @@ type msaLoginPage struct {
 
 // msaKmsiPage represents the "Stay signed in?" page returned after a
 // successful password POST. It carries a NEW PPFT and NEW urlPost (with a
-// fresh ``route=`` query) that must be used for the type=28 KMSI submit.
+// fresh route query) that must be used for the type=28 KMSI submit.
 type msaKmsiPage struct {
 	ppft    string
 	urlPost string
