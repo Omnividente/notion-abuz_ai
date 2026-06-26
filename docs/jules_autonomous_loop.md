@@ -54,6 +54,22 @@ Priority:
 7. TODO/FIXME comments
 8. Repeated runtime or test failures visible in the repository
 
+## Local Helper Scripts
+
+Two helper scripts are available for local agent work:
+
+```bash
+python3 scripts/rool_cognitive_loop.py --validation manifest
+python3 scripts/dedupe_agent_tasks.py agent_tasks.json
+```
+
+`rool_cognitive_loop.py` implements a small Observe-Orient-Decide-Act cycle for
+selecting the first safe todo task, printing its allowed paths, and optionally
+running validation. It does not call Jules or any external API.
+
+`dedupe_agent_tasks.py` detects duplicate todo tasks. It is dry-run by default.
+Use `--write` only when the selected task allows manifest cleanup.
+
 ## Replenishment Policy
 
 Keep at least `replenishment_policy.minimum_todo_tasks` tasks with status

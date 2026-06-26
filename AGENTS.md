@@ -46,6 +46,17 @@ Default selection rule:
 
 If the todo queue is below `replenishment_policy.minimum_todo_tasks`, add a small batch of low/medium-risk tasks with concrete `allowed_paths` and `acceptance` criteria.
 
+Local helper scripts:
+
+```bash
+python3 scripts/rool_cognitive_loop.py --validation manifest
+python3 scripts/dedupe_agent_tasks.py agent_tasks.json
+```
+
+`rool_cognitive_loop.py` is an Observe-Orient-Decide-Act helper for selecting
+and validating one local task. `dedupe_agent_tasks.py` is dry-run by default;
+use `--write` only in a task that explicitly permits manifest cleanup.
+
 ## Safety Rules
 
 Do not modify or commit:
