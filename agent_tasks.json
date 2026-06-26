@@ -120,7 +120,7 @@
     },
     {
       "id": "openai-compatible-streaming-regression-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add regression tests for OpenAI-compatible streaming translation",
@@ -216,6 +216,57 @@
       "acceptance": [
         "Tests cover publicModelID behavior.",
         "Tests verify normalizeModelName interactions."
+      ]
+    },
+    {
+      "id": "proxy-timeout-handling-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for proxy timeout scenarios",
+      "description": "Add focused tests verifying that the proxy behaves correctly when upstream requests timeout or fail with network errors.",
+      "allowed_paths": [
+        "internal/proxy/proxy_test.go",
+        "internal/proxy/proxy.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover timeout handling.",
+        "Tests simulate network failures."
+      ]
+    },
+    {
+      "id": "model-map-validation-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add validation tests for model map configuration",
+      "description": "Add tests to ensure that the model map correctly normalizes alias names and handles missing or empty keys.",
+      "allowed_paths": [
+        "internal/proxy/notion_test.go",
+        "internal/proxy/notion.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover alias normalization.",
+        "Tests handle edge cases for model map."
+      ]
+    },
+    {
+      "id": "proxy-request-logging-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add coverage for request logging middleware",
+      "description": "Add tests verifying that HTTP request logging captures essential fields without leaking sensitive data.",
+      "allowed_paths": [
+        "internal/proxy/proxy_test.go",
+        "internal/proxy/proxy.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover request logging.",
+        "Tests verify sensitive data is omitted."
       ]
     }
   ]

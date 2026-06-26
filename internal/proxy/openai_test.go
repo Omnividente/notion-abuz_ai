@@ -365,3 +365,33 @@ func TestOpenAIResponsesStreamTranscoder_ThinkingBlocks(t *testing.T) {
 		t.Fatalf("missing text content in body:\n%s", body)
 	}
 }
+
+func TestOpenAIChatStreamTranscoder_EmitsTextDelta(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
+	frames := []anthropicSSEFrame{
+		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":11}}}`)},
+		{Event: "content_block_start", Data: json.RawMessage(`{"index":0,"content_block":{"type":"text","text":""}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"text_delta","text":"Hello World!"}}`)},
+		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":7}}`)},
+		{Event: "message_stop", Data: json.RawMessage(`{"type":"message_stop"}`)},
+	}
+	for _, frame := range frames {
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("HandleFrame(%s) error = %v", frame.Event, err)
+		}
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "chat.completion.chunk") {
+		t.Fatalf("body missing chat.completion.chunk: %s", body)
+	}
+	if !strings.Contains(body, `"content":"Hello World!"`) {
+		t.Fatalf("body missing text delta data: %s", body)
+	}
+	if !strings.Contains(body, `"usage":{`) || !strings.Contains(body, `"prompt_tokens":11`) || !strings.Contains(body, `"completion_tokens":7`) || !strings.Contains(body, `"total_tokens":18`) {
+		t.Fatalf("body missing usage chunk: %s", body)
+	}
+	if !strings.Contains(body, "data: [DONE]") {
+		t.Fatalf("body missing DONE: %s", body)
+	}
+}
