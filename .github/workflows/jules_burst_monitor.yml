@@ -9,12 +9,12 @@ on:
       cycles:
         description: "How many monitor passes to run"
         required: false
-        default: "20"
+        default: "90"
         type: string
       interval_seconds:
         description: "Delay between monitor passes"
         required: false
-        default: "90"
+        default: "120"
         type: string
 
 permissions:
@@ -29,7 +29,7 @@ concurrency:
 jobs:
   burst-monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 190
     if: >
       vars.JULES_LOOP_ENABLED != 'false' &&
       (github.event_name == 'workflow_dispatch' ||
@@ -45,8 +45,8 @@ jobs:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
           LOOKBACK_HOURS: "24"
           MIN_USER_REPLY_INTERVAL_MINUTES: "0"
-          CYCLES: ${{ inputs.cycles || '20' }}
-          INTERVAL_SECONDS: ${{ inputs.interval_seconds || '90' }}
+          CYCLES: ${{ inputs.cycles || '90' }}
+          INTERVAL_SECONDS: ${{ inputs.interval_seconds || '120' }}
         run: |
           set -euo pipefail
 
