@@ -30,12 +30,12 @@
       "low",
       "medium"
     ],
-    "instruction": "When the todo queue is low, add small Claude Code bridge investigation, proxy, test, or documentation tasks. Research and compatibility tasks may also add follow-up tasks for concrete findings from code inspection, tests, CI logs, docs gaps, or captured live smoke results even when the queue is not low. Prefer three-layer bridge stabilization, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode, session recovery, and golden transcript coverage over broad feature work. Treat dashboard, registration, generic config, OpenCode, OpenAI-compatible, and workflow tasks as secondary unless they directly support a reproduced Claude Code bridge failure. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "instruction": "When the todo queue is low, add small Claude Code bridge investigation, proxy, test, or documentation tasks. Research and compatibility tasks may also add follow-up tasks for concrete findings from code inspection, tests, CI logs, docs gaps, or captured live smoke results even when the queue is not low. Prefer three-layer bridge stabilization, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode, session recovery, final-answer mode, instruction preservation, and golden transcript coverage over broad feature work. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, or workflow tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
     "max_todo_tasks": 40
   },
   "autonomous_loop_policy": {
     "operating_model": "docs/jules_autonomous_loop.md",
-    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium. Todo order should keep Claude Code bridge investigation and regression tasks ahead of dashboard, registration, generic config, OpenCode, OpenAI-compatible, and workflow tasks unless a concrete bridge failure requires those areas.",
+    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium and whose scope directly improves Claude Code bridge reliability. Do not autonomously select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, or workflow tasks unless a concrete Claude Code bridge failure requires that area or the task_id is explicitly requested.",
     "anti_stall_rule": "Never ask the user what to do next while safe low or medium risk tasks can be selected or generated.",
     "stabilization_first": true,
     "max_pr_scope": "one task id per PR",
@@ -553,6 +553,135 @@
       ]
     },
     {
+      "id": "claude-code-live-smoke-transcript-analysis",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Analyze live Claude Code smoke transcripts for bridge regressions",
+      "description": "Use existing CI logs, local fake transcripts, and documented live smoke outcomes to identify remaining Claude Code bridge failure classes. Convert concrete findings into offline regression tests or follow-up bridge tasks without adding live network calls to Go tests.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/session_multiturn_test.go",
+        "internal/proxy/session_recovery_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Docs summarize at least three concrete transcript-level signals to watch in Claude Code bridge runs.",
+        "Offline tests or fixtures cover at least one remaining failure signal discovered from logs, docs gaps, or existing smoke behavior.",
+        "Any findings that do not fit this PR are added as Claude Code bridge follow-up tasks with allowed_paths and acceptance criteria.",
+        "No unit test calls live Notion, RDSH, Anthropic, OpenAI, GitHub, Google, or Microsoft APIs."
+      ]
+    },
+    {
+      "id": "claude-code-session-fingerprint-retry-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Harden Claude Code session fingerprint and retry coverage",
+      "description": "Add regression coverage for retries, repeated message counts, and follow-up turns so Claude Code tool loops reuse the correct Notion thread without losing coding intent or duplicating tool calls.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_multiturn_test.go",
+        "internal/proxy/session_recovery_test.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover retry behavior where the raw message count does not increase.",
+        "Tests cover continuation behavior where tool_result increases the raw message count.",
+        "Tests verify session reuse does not lose coding intent or re-enter Notion persona behavior.",
+        "Existing session recovery behavior remains backward compatible."
+      ]
+    },
+    {
+      "id": "claude-code-final-answer-mode-regression",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add final-answer mode regression tests for Claude Code bridge",
+      "description": "Strengthen coverage for __done__ and final-answer extraction so the bridge can finish a coding task cleanly without returning a fake tool call or drifting into Notion workspace language.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover final __done__ extraction after a multi-turn tool_result chain.",
+        "Tests reject Notion persona or workspace/page/document refusal text in final-answer mode.",
+        "Tests cover streaming and non-streaming final-answer behavior where practical.",
+        "Docs clarify why the bridge should not leave JSON/final-answer mode too early."
+      ]
+    },
+    {
+      "id": "claude-code-tool-schema-filtering-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Expand Claude Code tool schema filtering coverage",
+      "description": "Verify that the bridge keeps the compact core tool set needed by Claude Code while preserving enough descriptions and parameter schema information for reliable Read/Edit/Write/Bash/Grep/Glob tool use.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify non-core tools are filtered without deleting core Claude Code tools.",
+        "Tests verify parameter schemas for Bash, Read, Edit, Write, Glob, and Grep preserve required fields.",
+        "Tests cover an oversized Claude Code tool list and confirm compact bridge output stays within the intended tool set.",
+        "Docs explain the tradeoff between compact tool lists and bridge reliability."
+      ]
+    },
+    {
+      "id": "claude-code-refusal-recovery-regression",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add refusal recovery regression coverage for Claude Code bridge",
+      "description": "Add tests for bridge responses that contain Notion-style refusal or identity drift and ensure the proxy can detect, reject, or recover without passing unusable Notion prose back as a successful tool response.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover at least three Notion-style refusal or identity drift phrases.",
+        "Tests verify refusal-like bridge output is not parsed as a valid tool call.",
+        "The proxy behavior for detected bridge refusal is documented or covered by a follow-up task if implementation is out of scope.",
+        "No live network calls are added to unit tests."
+      ]
+    },
+    {
+      "id": "claude-code-sanitizer-edge-case-regression",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add sanitizer edge-case regression tests for Claude Code prompts",
+      "description": "Expand sanitizer coverage for nested XML-like tags, multiline system reminders, MCP payloads, hook reminders, and slash-command text so dangerous control text is stripped while actionable coding intent remains available to the bridge.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover nested or attributed XML-like tags without deleting meaningful inner coding instructions.",
+        "Tests cover multiline reminders and hook-style messages.",
+        "Tests cover MCP-style context payloads that should preserve actionable coding intent.",
+        "Docs list sanitizer categories that are stripped, preserved, or summarized."
+      ]
+    },
+    {
       "id": "proxy-tools-nested-object-handling-tests",
       "status": "done",
       "area": "proxy",
@@ -604,7 +733,7 @@
     },
     {
       "id": "proxy-streaming-large-chunk-handling",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for large streaming chunks",
@@ -620,7 +749,7 @@
     },
     {
       "id": "dashboard-logout-redirection",
-      "status": "todo",
+      "status": "blocked",
       "area": "dashboard",
       "risk": "low",
       "title": "Verify dashboard logout routing",
@@ -652,7 +781,7 @@
     },
     {
       "id": "proxy-system-message-fallback-handling",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for system message omission",
@@ -668,7 +797,7 @@
     },
     {
       "id": "proxy-model-alias-case-sensitivity",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for model alias case sensitivity",
@@ -684,7 +813,7 @@
     },
     {
       "id": "proxy-notion-no-workspace-error-tests",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for missing Notion workspace redirection error",
@@ -701,7 +830,7 @@
     },
     {
       "id": "proxy-best-account-selection-tests",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for optimal account selection algorithm",
