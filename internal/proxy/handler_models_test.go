@@ -162,3 +162,119 @@ func TestHandlePublicModels_MethodNotAllowed(t *testing.T) {
 		t.Fatalf("expected Allow=GET, got %q", allow)
 	}
 }
+
+func TestPublicModelID(t *testing.T) {
+	tests := []struct {
+		name       string
+		modelName  string
+		internalID string
+		mapSetup   map[string]string
+		want       string
+	}{
+		{
+			name:       "normalizes display name",
+			modelName:  "GPT 5.4",
+			internalID: "oval-kumquat-medium",
+			want:       "gpt-5.4",
+		},
+		{
+			name:       "falls back to internal ID lookup if name is empty",
+			modelName:  "",
+			internalID: "oval-kumquat-medium",
+			mapSetup: map[string]string{
+				"gpt-5.4-fallback": "oval-kumquat-medium",
+			},
+			want: "gpt-5.4-fallback",
+		},
+		{
+			name:       "returns empty string if name is empty and ID not in map",
+			modelName:  "",
+			internalID: "unknown-id",
+			mapSetup:   map[string]string{},
+			want:       "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.mapSetup != nil {
+				original := SnapshotModelMap()
+				ReplaceModelMap(tc.mapSetup)
+				t.Cleanup(func() {
+					ReplaceModelMap(original)
+				})
+			}
+
+			model := ModelEntry{Name: tc.modelName, ID: tc.internalID}
+			got := publicModelID(model)
+			if got != tc.want {
+				t.Errorf("publicModelID() = %q; want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestNormalizeModelName(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"", ""},
+		{"GPT 5.4", "gpt-5.4"},
+		{"  Opus 4.6  ", "opus-4.6"},
+		{"Claude 3 Test", "claude-3-test"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.in, func(t *testing.T) {
+			got := normalizeModelName(tc.in)
+			if got != tc.want {
+				t.Errorf("normalizeModelName(%q) = %q; want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestHandlePublicModels_UsesNormalizedNames(t *testing.T) {
+	original := SnapshotModelMap()
+	ReplaceModelMap(map[string]string{
+		"opus-4.6": "avocado-froyo-medium", // keep this for fallback checks if needed
+	})
+	t.Cleanup(func() {
+		ReplaceModelMap(original)
+	})
+
+	pool := NewAccountPool()
+	pool.accounts = []*Account{
+		{
+			Models: []ModelEntry{
+				{Name: "  GPT 5.4  ", ID: "oval-kumquat-medium"},
+				{Name: "Claude 3 Opus", ID: "avocado-froyo-medium"},
+				{Name: "Weird_Model_Name!", ID: "weird-id"},
+			},
+		},
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	HandlePublicModels(pool).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+
+	var resp publicModelResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	gotIDs := make([]string, 0, len(resp.Data))
+	for _, item := range resp.Data {
+		gotIDs = append(gotIDs, item.ID)
+	}
+
+	// Should contain "gpt-5.4", "claude-3-opus", "weird_model_name!", and "opus-4.6" (from configured aliases fallback)
+	wantIDs := []string{"claude-3-opus", "gpt-5.4", "opus-4.6", "weird_model_name!"}
+	if !reflect.DeepEqual(gotIDs, wantIDs) {
+		t.Fatalf("unexpected model ids: got %v want %v", gotIDs, wantIDs)
+	}
+}
