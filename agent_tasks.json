@@ -161,7 +161,7 @@
     },
     {
       "id": "model-map-docs-for-client-aliases",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Document model_map aliases for OpenCode and OpenAI-compatible clients",
@@ -267,6 +267,22 @@
       "acceptance": [
         "Tests cover request logging.",
         "Tests verify sensitive data is omitted."
+      ]
+    },
+    {
+      "id": "dashboard-model-alias-visibility-tests",
+      "status": "todo",
+      "area": "dashboard",
+      "risk": "low",
+      "title": "Add tests for dashboard model alias visibility payload shape",
+      "description": "Add tests verifying that the admin payload distinguishes configured aliases from discovered models correctly.",
+      "allowed_paths": [
+        "internal/proxy/handler_models_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify the admin models payload shape.",
+        "Tests ensure configured aliases are correctly marked in the response."
       ]
     }
   ]

@@ -1,5 +1,6 @@
 # notion-manager configuration
 # Values here override defaults; environment variables override config.yaml.
+# WARNING: Do not commit your real config.yaml or real account data (.json files) to version control.
 
 server:
     # Listen port (env: PORT)
@@ -99,6 +100,8 @@ browser:
     sec_ch_ua_platform: '"Windows"'
 # Model alias mapping: friendly name → Notion internal model ID
 # These are overwritten at runtime when models are fetched from Notion API.
+# Clients can select these friendly aliases directly as model IDs (e.g., model="opus-4.8-high"),
+# or use the base name and let the proxy route them (e.g., model="opus-4.8" with reasoning_effort="high").
 model_map:
     opus-4.6: "avocado-froyo-medium"
     opus-4.8-high: "notion-internal-high-id" # Example of reasoning_effort alias

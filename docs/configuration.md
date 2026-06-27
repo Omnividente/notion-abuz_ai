@@ -78,14 +78,19 @@ export REFRESH_CONCURRENCY=10
 ### Model Map & Reasoning Effort Routing
 
 You can define friendly aliases for models by putting them in `model_map`.
-This is particularly useful for routing OpenAI-compatible `reasoning_effort` queries.
-If you set up `opus-4.8-high: notion-internal-high-id` in your `config.yaml`, a client requesting `model="opus-4.8"` with `reasoning_effort="high"` will automatically be routed to that internal Notion ID.
+This is particularly useful for exposing friendly names to API clients and for routing OpenAI-compatible `reasoning_effort` queries.
+
+Clients can select these aliases in two ways:
+1. **Directly**: By requesting the exact alias name (e.g., `model="opus-4.8-high"`).
+2. **Via Variants**: By requesting the base model with a reasoning effort modifier (e.g., `model="opus-4.8"` with `reasoning_effort="high"`). The proxy will automatically route to the `opus-4.8-high` alias if it exists.
 
 ```yaml
 model_map:
   opus-4.8-high: notion-internal-high-id
   sonnet-4.6-low: notion-internal-low-id
 ```
+
+> **Security Warning**: Do not commit your real `config.yaml` or account `.json` files to version control. They contain sensitive access tokens and session data.
 
 An invalid `NOTION_PROXY` is logged once at startup and dropped — runtime falls back to direct dial rather than leaking the misconfigured URL into every Notion request.
 
