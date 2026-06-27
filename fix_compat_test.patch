@@ -1,0 +1,7 @@
+--- internal/proxy/anthropic_compatibility_test.go
++++ internal/proxy/anthropic_compatibility_test.go
+@@ -37,6 +37,13 @@
+	req, _ := http.NewRequest("POST", "/v1/messages", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+
++	// Wait, we can test injectToolsIntoMessages instead.

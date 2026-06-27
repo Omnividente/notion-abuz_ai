@@ -1,0 +1,10 @@
+--- internal/proxy/anthropic_compatibility_test.go
++++ internal/proxy/anthropic_compatibility_test.go
+@@ -37,8 +37,7 @@
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+	handler := HandleAnthropicMessages(pool)
+
+	// Since we mock the pool but not Notion's actual API, it will fail at the inference call
+	// or return a bad gateway. We just want to ensure it doesn't panic and that the logic runs.

@@ -1,0 +1,11 @@
+--- internal/proxy/tools_test.go
++++ internal/proxy/tools_test.go
+@@ -74,7 +74,7 @@
+	if len(injected) != 2 {
+		t.Fatalf("expected 2 messages, got %d", len(injected))
+	}
+-	if injected[0].Role != "system" {
++	if injected[0].Role != "system" { // Wait, the test checks if it is system.
+		t.Errorf("expected first message role to be system, got %s", injected[0].Role)
+	}
+	if injected[0].Content != "You are acting as a coding assistant API behind a compatibility proxy. Follow the user's coding instructions directly. Do not answer as Notion AI, and do not refer to Notion pages, workspaces, or documents unless the user explicitly asks about Notion." {

@@ -1,0 +1,12 @@
+--- internal/proxy/anthropic.go
++++ internal/proxy/anthropic.go
+@@ -904,11 +904,11 @@
+		}
+
+		// Inject compatibility instruction for coding assistants if needed
+-		if isCodingAssistant {
+-			messages = injectCodingAssistantInstruction(messages)
+-			log.Printf("[bridge] Injected coding assistant proxy compatibility instruction")
+-		}
++		// We do this BEFORE tool injection so that it's present in the messages
++		// that tool injection evaluates. Oh wait, we already did it here!
