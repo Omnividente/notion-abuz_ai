@@ -501,9 +501,9 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			wantNil: true,
 		},
 		{
-			name:    "malformed json - invalid type for arguments (number instead of string/object)",
-			jsonStr: `{"name": "test", "arguments": 123}`,
-			wantNil: false,
+			name:     "malformed json - invalid type for arguments (number instead of string/object)",
+			jsonStr:  `{"name": "test", "arguments": 123}`,
+			wantNil:  false,
 			wantName: "test",
 			wantArgs: "{}", // Will fallback because 123 is not valid map[string]interface{}
 		},
