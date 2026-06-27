@@ -388,7 +388,7 @@
     },
     {
       "id": "proxy-health-endpoint-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for proxy health endpoint",
