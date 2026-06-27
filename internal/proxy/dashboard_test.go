@@ -137,7 +137,7 @@ func TestDashboard_RoutingFallback(t *testing.T) {
 		}
 
 		if cache := w.Header().Get("Cache-Control"); cache == "" {
-		    t.Errorf("Expected Cache-Control header for static asset")
+			t.Errorf("Expected Cache-Control header for static asset")
 		}
 	})
 }
