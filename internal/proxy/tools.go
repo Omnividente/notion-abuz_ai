@@ -1095,87 +1095,112 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 		return toolCalls, strings.TrimSpace(remaining), true
 	}
 
-	// Method 2: direct JSON or {"tool_call": {...}} format
-	remaining = content
-	stripped := strings.TrimSpace(content)
+	// Method 2: Robust bracket-counting JSON extractor (handles preambles and multi-line formats)
+	remainingBuilder := strings.Builder{}
+	str := content
+	i := 0
+	foundCalls := 0
 
-	// Try direct {"name": "...", "arguments": {...}} format
-	var direct struct {
-		Name      string          `json:"name"`
-		Arguments json.RawMessage `json:"arguments"`
-	}
-	if err := json.Unmarshal([]byte(stripped), &direct); err == nil && direct.Name != "" {
-		argsStr := string(direct.Arguments)
-		if !json.Valid(direct.Arguments) {
-			argsStr = "{}"
-		}
-		toolCalls = append(toolCalls, ToolCall{
-			ID:   fmt.Sprintf("call_0_%s", generateUUIDv4()[:8]),
-			Type: "function",
-			Function: ToolCallFunction{
-				Name:      direct.Name,
-				Arguments: argsStr,
-			},
-		})
-		return toolCalls, "", true
-	}
+	for i < len(str) {
+		if str[i] == '{' {
+			depth := 0
+			inString := false
+			escapeNext := false
+			found := false
 
-	// Try {"tool_call": {...}} wrapper format
-	var wrapper struct {
-		ToolCall *struct {
-			Name      string          `json:"name"`
-			Arguments json.RawMessage `json:"arguments"`
-		} `json:"tool_call"`
-	}
-	if err := json.Unmarshal([]byte(stripped), &wrapper); err == nil && wrapper.ToolCall != nil {
-		argsStr := string(wrapper.ToolCall.Arguments)
-		if !json.Valid(wrapper.ToolCall.Arguments) {
-			argsStr = "{}"
-		}
-		toolCalls = append(toolCalls, ToolCall{
-			ID:   fmt.Sprintf("call_0_%s", generateUUIDv4()[:8]),
-			Type: "function",
-			Function: ToolCallFunction{
-				Name:      wrapper.ToolCall.Name,
-				Arguments: argsStr,
-			},
-		})
-		return toolCalls, "", true
-	}
+			for j := i; j < len(str); j++ {
+				c := str[j]
 
-	// Method 3: multi-line JSON — each line is a separate {"name":"...", "arguments":{...}}
-	// This handles parallel tool calls output by the model
-	lines := strings.Split(stripped, "\n")
-	var multiCalls []ToolCall
-	var nonToolLines []string
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		var lineCall struct {
-			Name      string          `json:"name"`
-			Arguments json.RawMessage `json:"arguments"`
-		}
-		if err := json.Unmarshal([]byte(line), &lineCall); err == nil && lineCall.Name != "" {
-			argsStr := string(lineCall.Arguments)
-			if !json.Valid(lineCall.Arguments) {
-				argsStr = "{}"
+				if escapeNext {
+					escapeNext = false
+					continue
+				}
+				if c == '\\' && inString {
+					escapeNext = true
+					continue
+				}
+				if c == '"' {
+					inString = !inString
+				}
+
+				if !inString {
+					if c == '{' {
+						depth++
+					} else if c == '}' {
+						depth--
+						if depth == 0 {
+							// Found a balanced object
+							candidate := str[i : j+1]
+
+							// Check if it's a tool call (direct format)
+							var direct struct {
+								Name      string          `json:"name"`
+								Arguments json.RawMessage `json:"arguments"`
+							}
+
+							isToolCall := false
+							if err := json.Unmarshal([]byte(candidate), &direct); err == nil && direct.Name != "" {
+								argsStr := string(direct.Arguments)
+								if !json.Valid(direct.Arguments) {
+									argsStr = "{}"
+								}
+								toolCalls = append(toolCalls, ToolCall{
+									ID:   fmt.Sprintf("call_%d_%s", foundCalls, generateUUIDv4()[:8]),
+									Type: "function",
+									Function: ToolCallFunction{
+										Name:      direct.Name,
+										Arguments: argsStr,
+									},
+								})
+								isToolCall = true
+								foundCalls++
+							} else {
+								// Check wrapper format
+								var wrapper struct {
+									ToolCall *struct {
+										Name      string          `json:"name"`
+										Arguments json.RawMessage `json:"arguments"`
+									} `json:"tool_call"`
+								}
+								if err := json.Unmarshal([]byte(candidate), &wrapper); err == nil && wrapper.ToolCall != nil && wrapper.ToolCall.Name != "" {
+									argsStr := string(wrapper.ToolCall.Arguments)
+									if !json.Valid(wrapper.ToolCall.Arguments) {
+										argsStr = "{}"
+									}
+									toolCalls = append(toolCalls, ToolCall{
+										ID:   fmt.Sprintf("call_%d_%s", foundCalls, generateUUIDv4()[:8]),
+										Type: "function",
+										Function: ToolCallFunction{
+											Name:      wrapper.ToolCall.Name,
+											Arguments: argsStr,
+										},
+									})
+									isToolCall = true
+									foundCalls++
+								}
+							}
+
+							if isToolCall {
+								found = true
+								i = j + 1
+							}
+							break // whether it was a tool call or not, we reached the end of the balanced object that started at i
+						}
+					}
+				}
 			}
-			multiCalls = append(multiCalls, ToolCall{
-				ID:   fmt.Sprintf("call_%d_%s", len(multiCalls), generateUUIDv4()[:8]),
-				Type: "function",
-				Function: ToolCallFunction{
-					Name:      lineCall.Name,
-					Arguments: argsStr,
-				},
-			})
-		} else {
-			nonToolLines = append(nonToolLines, line)
+
+			if found {
+				continue // skip adding this character to remainingBuilder and proceed from new i
+			}
 		}
+
+		remainingBuilder.WriteByte(str[i])
+		i++
 	}
-	if len(multiCalls) > 0 {
-		return multiCalls, strings.TrimSpace(strings.Join(nonToolLines, "\n")), true
+
+	if len(toolCalls) > 0 {
+		return toolCalls, strings.TrimSpace(remainingBuilder.String()), true
 	}
 
 	return nil, content, false
