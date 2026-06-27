@@ -458,6 +458,16 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			wantNil: true,
 		},
 		{
+			name:    "malformed json - incomplete unicode escape",
+			jsonStr: `{"name": "test_unicode", "arguments": {"text": "\u12"}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - unescaped tab character",
+			jsonStr: "{\"name\": \"test_tab\", \"arguments\": {\"text\": \"hello\tworld\"}}",
+			wantNil: true,
+		},
+		{
 			name:    "malformed json - wrapper missing quotes on keys",
 			jsonStr: `{tool_call: {"name": "test", "arguments": {}}}`,
 			wantNil: true,
@@ -475,6 +485,11 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 		{
 			name:    "malformed json - wrapper improperly escaped character",
 			jsonStr: `{"tool_call": {"name": "test", "arguments": {"text": "hello \x00 world"}}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - wrapper incomplete unicode escape",
+			jsonStr: `{"tool_call": {"name": "test", "arguments": {"text": "\u12"}}}`,
 			wantNil: true,
 		},
 		{
