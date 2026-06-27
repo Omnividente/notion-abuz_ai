@@ -45,7 +45,7 @@
   "tasks": [
     {
       "id": "claude-code-nested-tool-call-wrapper-format",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add exhaustive coverage for wrapper-based tool calls",
@@ -913,6 +913,39 @@
       ],
       "acceptance": [
         "Tests cover __done__ extraction with edge case formatting."
+      ]
+    },
+    {
+      "id": "proxy-response-streaming-heartbeat-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add streaming heartbeat tests",
+      "description": "Add tests for streaming endpoints to ensure heartbeat or keepalive mechanisms do not corrupt the JSON/SSE chunk streams.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover empty line keepalives.",
+        "Tests verify client parsing of actual data remains uncorrupted."
+      ]
+    },
+    {
+      "id": "proxy-tool-call-missing-function-graceful-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for missing function name in fallback parser",
+      "description": "Add tests to parseToolCallJSON for tools that correctly define a function call but have an empty string for a function name, ensuring robust fallback without panicking.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify an empty function name results in skipped execution or safe default behavior.",
+        "No panics occur during unmarshaling."
       ]
     }
   ]
