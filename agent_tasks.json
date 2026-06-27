@@ -779,7 +779,7 @@
     },
     {
       "id": "claude-code-sanitizer-edge-case-regression",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add sanitizer edge-case regression tests for Claude Code prompts",
