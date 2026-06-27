@@ -587,7 +587,7 @@
     },
     {
       "id": "dashboard-routing-tests",
-      "status": "todo",
+      "status": "done",
       "area": "dashboard",
       "risk": "low",
       "title": "Add tests for dashboard specific routing",
@@ -680,6 +680,40 @@
       "acceptance": [
         "Tests verify case-insensitive alias lookups.",
         "Tests verify original model name is used if mapping fails entirely."
+      ]
+    },
+    {
+      "id": "proxy-notion-no-workspace-error-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for missing Notion workspace redirection error",
+      "description": "Add tests verifying that HandleProxyStart properly returns a 409 Conflict if an account has no valid workspace, instead of creating a broken reverse proxy session.",
+      "allowed_paths": [
+        "internal/proxy/dashboard.go",
+        "internal/proxy/dashboard_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify attempting to proxy to an account without a workspace yields 409.",
+        "Tests verify a valid account creates a session and redirects to /ai."
+      ]
+    },
+    {
+      "id": "proxy-best-account-selection-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for optimal account selection algorithm",
+      "description": "Add tests verifying that GetBestAccount correctly selects accounts based on remaining quota.",
+      "allowed_paths": [
+        "internal/proxy/pool.go",
+        "internal/proxy/pool_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify account pool selection prefers non-exhausted accounts.",
+        "Tests verify account selection properly handles lock contention."
       ]
     }
   ]
