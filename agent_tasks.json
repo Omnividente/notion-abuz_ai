@@ -652,7 +652,7 @@
     },
     {
       "id": "proxy-system-message-fallback-handling",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for system message omission",

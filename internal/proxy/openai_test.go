@@ -648,3 +648,37 @@ func TestHandleOpenAIChatCompletions_UnsupportedToolType(t *testing.T) {
 		t.Errorf("Expected error message to contain 'unsupported tool type', got %s", resp.Error.Message)
 	}
 }
+
+func TestConvertOpenAIChatCompletionRequest_OmitSystem(t *testing.T) {
+	req := &OpenAIChatCompletionRequest{
+		Model: "gpt-4",
+		Messages: []OpenAIChatMessage{
+			{Role: "user", Content: "Hello"},
+		},
+	}
+
+	anthReq, err := convertOpenAIChatCompletionRequest(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if anthReq.System != nil {
+		t.Fatalf("expected System to be nil when no system message is provided, got: %v", anthReq.System)
+	}
+}
+
+func TestConvertOpenAIResponsesRequest_OmitSystem(t *testing.T) {
+	req := &OpenAIResponsesRequest{
+		Model: "gpt-4",
+		Input: "Hello",
+	}
+
+	anthReq, err := convertOpenAIResponsesRequest(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if anthReq.System != nil {
+		t.Fatalf("expected System to be nil when no instructions are provided, got: %v", anthReq.System)
+	}
+}
