@@ -590,6 +590,11 @@ func detectToolBridgeNoToolResponse(text string) bool {
 	mentionsMissingLocalTools := strings.Contains(lower, "read") &&
 		strings.Contains(lower, "edit") &&
 		strings.Contains(lower, "bash")
+	mentionsWorkspaceReframing := strings.Contains(lower, "notion page") ||
+		strings.Contains(lower, "notion workspace") ||
+		strings.Contains(lower, "notion database") ||
+		strings.Contains(normalized, "Notion 页面") ||
+		strings.Contains(normalized, "Notion 工作区")
 
 	switch {
 	case mentionsNotionIdentity && mentionsLocalFS:
@@ -599,6 +604,8 @@ func detectToolBridgeNoToolResponse(text string) bool {
 	case mentionsNotionIdentity && mentionsCodingAssistant:
 		return true
 	case mentionsMissingLocalTools && mentionsCodingAssistant && mentionsManualHandOff:
+		return true
+	case mentionsWorkspaceReframing && (mentionsMissingLocalTools || mentionsNotionIdentity || strings.Contains(lower, "bash") || strings.Contains(lower, "edit")):
 		return true
 	default:
 		return false

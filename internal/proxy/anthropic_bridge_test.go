@@ -180,6 +180,14 @@ func TestDetectToolBridgeNoToolResponse_MatchesFinalAnswerDrift(t *testing.T) {
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_MatchesWorkspaceReframing(t *testing.T) {
+	raw := `I cannot run bash commands to modify files. However, I can help you create a Notion page or search the Notion workspace.`
+
+	if !detectToolBridgeNoToolResponse(raw) {
+		t.Fatalf("expected Workspace Reframing to be detected")
+	}
+}
+
 func TestClaudeCodeAgentLoop_PreservesCodingIntent(t *testing.T) {
 	// A simulated Claude Code transcript with CLAUDE.md instructions,
 	// inline command-name tags, MCP server tags, and system-reminder blocks.
