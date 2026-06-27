@@ -338,7 +338,7 @@
     },
     {
       "id": "proxy-streaming-error-handling-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for streaming error handling",
@@ -401,6 +401,38 @@
       "acceptance": [
         "Tests cover GET /health endpoint.",
         "Tests verify JSON payload structure."
+      ]
+    },
+    {
+      "id": "proxy-streaming-invalid-tool-type-handling",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for invalid tool types",
+      "description": "Add tests to ensure the proxy correctly handles unknown tool types in the chat completions bridge.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify correct error shape for unsupported tool types.",
+        "Tests verify correct status code for unsupported tool types."
+      ]
+    },
+    {
+      "id": "proxy-streaming-empty-content-handling",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for empty content blocks",
+      "description": "Add tests to ensure the proxy correctly handles empty content blocks from the streaming API.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover empty text delta in streaming transcoder.",
+        "Tests cover empty thinking block in streaming transcoder."
       ]
     }
   ]

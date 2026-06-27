@@ -254,7 +254,8 @@ func TestOpenAIChatStreamTranscoder_EmitsToolCallsAndDone(t *testing.T) {
 	frames := []anthropicSSEFrame{
 		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":11}}}`)},
 		{Event: "content_block_start", Data: json.RawMessage(`{"index":0,"content_block":{"type":"tool_use","id":"call_1","name":"Read","input":{}}}`)},
-		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\"README.md\"}"}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"input_json_delta","partial_json":"{\"path\""}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"input_json_delta","partial_json":":\"README.md\"}"}}`)},
 		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":7}}`)},
 		{Event: "message_stop", Data: json.RawMessage(`{"type":"message_stop"}`)},
 	}
@@ -285,7 +286,8 @@ func TestOpenAIResponsesStreamTranscoder_EmitsCompletedResponse(t *testing.T) {
 		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":9}}}`)},
 		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"text_delta","text":"你好"}}`)},
 		{Event: "content_block_start", Data: json.RawMessage(`{"index":1,"content_block":{"type":"tool_use","id":"call_2","name":"Read","input":{}}}`)},
-		{Event: "content_block_delta", Data: json.RawMessage(`{"index":1,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\"a.txt\"}"}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":1,"delta":{"type":"input_json_delta","partial_json":"{\"pat"}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":1,"delta":{"type":"input_json_delta","partial_json":"h\":\"a.txt\"}"}}`)},
 		{Event: "content_block_stop", Data: json.RawMessage(`{"index":1}`)},
 		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":6}}`)},
 	}
@@ -393,6 +395,32 @@ func TestOpenAIChatStreamTranscoder_EmitsTextDelta(t *testing.T) {
 	}
 	if !strings.Contains(body, "data: [DONE]") {
 		t.Fatalf("body missing DONE: %s", body)
+	}
+}
+
+func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
+
+	invalidJSONFrame := anthropicSSEFrame{
+		Event: "message_start",
+		Data:  json.RawMessage(`{"message":{"usage":{"input_tokens":11}}`), // Missing closing brace
+	}
+	if err := transcoder.HandleFrame(invalidJSONFrame); err == nil {
+		t.Fatal("Expected error for invalid JSON frame, got nil")
+	}
+}
+
+func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 456)
+
+	invalidJSONFrame := anthropicSSEFrame{
+		Event: "message_start",
+		Data:  json.RawMessage(`{"message":{"usage":{"input_tokens":11}}`), // Missing closing brace
+	}
+	if err := transcoder.HandleFrame(invalidJSONFrame); err == nil {
+		t.Fatal("Expected error for invalid JSON frame, got nil")
 	}
 }
 
