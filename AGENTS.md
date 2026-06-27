@@ -117,3 +117,5 @@ go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
 - Add follow-up tasks for newly discovered bugs or improvements.
 - Label autonomous PRs with `jules`.
 - Use focused commit/PR descriptions that mention the completed task id and validation run.
+- Do not include temporary scratch files such as `*.orig`, `*.rej`, `*.diff`,
+  `*.patch`, `my_script.go`, `my_test*.go`, or `run_test.go`.
