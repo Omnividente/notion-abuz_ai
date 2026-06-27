@@ -1224,9 +1224,14 @@ func parseToolCallJSON(jsonStr string, index int) *ToolCall {
 			} `json:"tool_call"`
 		}
 		if err := json.Unmarshal([]byte(jsonStr), &wrapper); err == nil && wrapper.ToolCall != nil && wrapper.ToolCall.Name != "" {
-			argsStr := string(wrapper.ToolCall.Arguments)
-			if !json.Valid(wrapper.ToolCall.Arguments) {
-				argsStr = "{}"
+			argsStr := "{}"
+			if json.Valid(wrapper.ToolCall.Arguments) {
+				var parsed interface{}
+				if err := json.Unmarshal(wrapper.ToolCall.Arguments, &parsed); err == nil {
+					if _, isMap := parsed.(map[string]interface{}); isMap {
+						argsStr = string(wrapper.ToolCall.Arguments)
+					}
+				}
 			}
 			return &ToolCall{
 				ID:   fmt.Sprintf("call_%d_%s", index, generateUUIDv4()[:8]),
@@ -1239,9 +1244,14 @@ func parseToolCallJSON(jsonStr string, index int) *ToolCall {
 		}
 	}
 
-	argsStr := string(call.Arguments)
-	if !json.Valid(call.Arguments) {
-		argsStr = "{}"
+	argsStr := "{}"
+	if json.Valid(call.Arguments) {
+		var parsed interface{}
+		if err := json.Unmarshal(call.Arguments, &parsed); err == nil {
+			if _, isMap := parsed.(map[string]interface{}); isMap {
+				argsStr = string(call.Arguments)
+			}
+		}
 	}
 	return &ToolCall{
 		ID:   fmt.Sprintf("call_%d_%s", index, generateUUIDv4()[:8]),

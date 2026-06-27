@@ -301,3 +301,104 @@ func TestParseToolCalls_RobustJSONExtraction(t *testing.T) {
 		})
 	}
 }
+
+// We want to test parseToolCallJSON which is an internal function in package proxy
+func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
+	tests := []struct {
+		name     string
+		jsonStr  string
+		wantNil  bool
+		wantName string
+		wantArgs string
+	}{
+		{
+			name:     "standard flat format",
+			jsonStr:  `{"name": "test_func", "arguments": {"a": 1}}`,
+			wantNil:  false,
+			wantName: "test_func",
+			wantArgs: `{"a": 1}`,
+		},
+		{
+			name:     "wrapper format",
+			jsonStr:  `{"tool_call": {"name": "test_wrapper", "arguments": {"b": 2}}}`,
+			wantNil:  false,
+			wantName: "test_wrapper",
+			wantArgs: `{"b": 2}`,
+		},
+		{
+			name:    "invalid json",
+			jsonStr: `{"name": "test", "arguments":`,
+			wantNil: true,
+		},
+		{
+			name:     "wrapper format with null tool_call",
+			jsonStr:  `{"tool_call": null}`,
+			wantNil:  false,
+			wantName: "",
+			wantArgs: `{}`,
+		},
+		{
+			name:     "wrapper format with array tool_call",
+			jsonStr:  `{"tool_call": [{"name": "test_wrapper", "arguments": {"b": 2}}]}`,
+			wantNil:  false,
+			wantName: "",
+			wantArgs: `{}`,
+		},
+		{
+			name:     "wrapper format string instead of object",
+			jsonStr:  `{"tool_call": "string not object"}`,
+			wantNil:  false,
+			wantName: "",
+			wantArgs: `{}`,
+		},
+		{
+			name:     "deeply nested unknown wrapper",
+			jsonStr:  `{"some_other_key": {"name": "not_extracted", "arguments": {}}}`,
+			wantNil:  false,
+			wantName: "",
+			wantArgs: `{}`,
+		},
+		{
+			name:     "wrapper format with empty arguments",
+			jsonStr:  `{"tool_call": {"name": "test_empty_args", "arguments": {}}}`,
+			wantNil:  false,
+			wantName: "test_empty_args",
+			wantArgs: `{}`,
+		},
+		{
+			name:     "wrapper format with invalid string arguments (should be json.RawMessage)",
+			jsonStr:  `{"tool_call": {"name": "test_invalid_args", "arguments": "invalid string not json"}}`,
+			wantNil:  false,
+			wantName: "test_invalid_args",
+			wantArgs: `{}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := parseToolCallJSON(tt.jsonStr, 0)
+			if tt.wantNil {
+				if res != nil {
+					t.Errorf("expected nil result, got %+v", res)
+				}
+				return
+			}
+			if res == nil {
+				t.Fatalf("expected non-nil result")
+			}
+			if res.Function.Name != tt.wantName {
+				t.Errorf("expected name %q, got %q", tt.wantName, res.Function.Name)
+			}
+
+			// To compare args ignoring space
+			var gotArgs, wantArgs interface{}
+			_ = json.Unmarshal([]byte(res.Function.Arguments), &gotArgs)
+			_ = json.Unmarshal([]byte(tt.wantArgs), &wantArgs)
+
+			gb, _ := json.Marshal(gotArgs)
+			wb, _ := json.Marshal(wantArgs)
+			if string(gb) != string(wb) {
+				t.Errorf("expected args %q, got %q (unmarshalled %s != %s)", tt.wantArgs, res.Function.Arguments, string(gb), string(wb))
+			}
+		})
+	}
+}
