@@ -77,26 +77,26 @@ server:
 }
 
 func TestLoadConfig_ModelMapDefaults(t *testing.T) {
-    // Tests that ModelMap remains set if config.yaml is parsed but has no model_map
-    content := []byte(`
+	// Tests that ModelMap remains set if config.yaml is parsed but has no model_map
+	content := []byte(`
 server:
   port: "9000"
 `)
-    tmpDir := t.TempDir()
-    configPath := filepath.Join(tmpDir, "config.yaml")
-    if err := os.WriteFile(configPath, content, 0644); err != nil {
-        t.Fatal(err)
-    }
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+	if err := os.WriteFile(configPath, content, 0644); err != nil {
+		t.Fatal(err)
+	}
 
-    cfg, err := LoadConfig(configPath)
-    if err != nil {
-        t.Fatalf("LoadConfig failed: %v", err)
-    }
+	cfg, err := LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
 
-    if cfg.ModelMap == nil {
-        t.Fatal("Expected ModelMap to not be nil")
-    }
-    if len(cfg.ModelMap) == 0 {
-        t.Fatal("Expected ModelMap to have default values")
-    }
+	if cfg.ModelMap == nil {
+		t.Fatal("Expected ModelMap to not be nil")
+	}
+	if len(cfg.ModelMap) == 0 {
+		t.Fatal("Expected ModelMap to have default values")
+	}
 }
