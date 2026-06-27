@@ -575,7 +575,7 @@
     },
     {
       "id": "claude-code-workspace-reframing-coverage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate and implement more robust prevention for workspace reframing in Claude Code proxy",

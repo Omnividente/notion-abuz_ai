@@ -593,8 +593,16 @@ func detectToolBridgeNoToolResponse(text string) bool {
 	mentionsWorkspaceReframing := strings.Contains(lower, "notion page") ||
 		strings.Contains(lower, "notion workspace") ||
 		strings.Contains(lower, "notion database") ||
+		strings.Contains(lower, "notion doc") ||
+		strings.Contains(lower, "create a page") ||
+		strings.Contains(lower, "search your workspace") ||
+		strings.Contains(lower, "save to notion") ||
 		strings.Contains(normalized, "Notion 页面") ||
-		strings.Contains(normalized, "Notion 工作区")
+		strings.Contains(normalized, "Notion 工作区") ||
+		strings.Contains(normalized, "Notion 文档") ||
+		strings.Contains(normalized, "创建页面") ||
+		strings.Contains(normalized, "搜索工作区") ||
+		strings.Contains(normalized, "保存到 notion")
 
 	switch {
 	case mentionsNotionIdentity && mentionsLocalFS:
@@ -605,7 +613,7 @@ func detectToolBridgeNoToolResponse(text string) bool {
 		return true
 	case mentionsMissingLocalTools && mentionsCodingAssistant && mentionsManualHandOff:
 		return true
-	case mentionsWorkspaceReframing && (mentionsMissingLocalTools || mentionsNotionIdentity || strings.Contains(lower, "bash") || strings.Contains(lower, "edit")):
+	case mentionsWorkspaceReframing && (mentionsMissingLocalTools || mentionsNotionIdentity || strings.Contains(lower, "bash") || strings.Contains(lower, "edit") || strings.Contains(lower, "terminal") || strings.Contains(lower, "run") || strings.Contains(normalized, "本地命令")):
 		return true
 	default:
 		return false
