@@ -3,6 +3,7 @@ package proxy
 import (
 	"encoding/json"
 	"testing"
+	"strings"
 )
 
 func TestParseToolCalls_NestedObjects(t *testing.T) {
@@ -428,5 +429,37 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 				t.Errorf("expected args %q, got %q (unmarshalled %s != %s)", tt.wantArgs, res.Function.Arguments, string(gb), string(wb))
 			}
 		})
+	}
+}
+
+func TestBuildToolsBlocks_EmptySchemaFallback(t *testing.T) {
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:        "test_tool",
+				Description: "A tool with no schema",
+				Parameters:  nil,
+			},
+		},
+	}
+
+	anthropicBlock := buildAnthropicToolsBlock(tools)
+	openAIBlock := buildOpenAIToolsBlock(tools)
+	geminiBlock := buildGeminiToolsBlock(tools)
+
+	expectedSchemaSnippet := `"type": "object"`
+	expectedPropsSnippet := `"properties": {}`
+
+	if !strings.Contains(anthropicBlock, expectedSchemaSnippet) || !strings.Contains(anthropicBlock, expectedPropsSnippet) {
+		t.Errorf("buildAnthropicToolsBlock missing empty schema fallback:\n%s", anthropicBlock)
+	}
+
+	if !strings.Contains(openAIBlock, expectedSchemaSnippet) || !strings.Contains(openAIBlock, expectedPropsSnippet) {
+		t.Errorf("buildOpenAIToolsBlock missing empty schema fallback:\n%s", openAIBlock)
+	}
+
+	if !strings.Contains(geminiBlock, expectedSchemaSnippet) || !strings.Contains(geminiBlock, expectedPropsSnippet) {
+		t.Errorf("buildGeminiToolsBlock missing empty schema fallback:\n%s", geminiBlock)
 	}
 }

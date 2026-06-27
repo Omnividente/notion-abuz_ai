@@ -884,7 +884,7 @@
     },
     {
       "id": "claude-code-tool-schema-fallback-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for tool schema fallback parsing",
@@ -962,6 +962,24 @@
       "acceptance": [
         "Tests verify an invalid JSON argument string defaults to an empty object '{}'.",
         "No panics occur during parsing."
+      ]
+    },
+    {
+      "id": "claude-code-tool-result-continuation-edge-cases",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add edge case tests for tool result continuation",
+      "description": "Add tests to verify multi-turn session continuation properly handles complex markdown tool results, extremely long tool outputs, or interleaved tool calls with plain text responses, to ensure no continuation loss occurs.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover extremely long tool outputs without crashing or loss.",
+        "Tests verify multi-turn multi-tool call interactions without losing continuation."
       ]
     }
   ]
