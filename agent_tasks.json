@@ -1064,7 +1064,7 @@
     },
     {
       "id": "proxy-tool-call-malformed-json-test-2",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add additional malformed JSON tests for tool calls",
@@ -1075,6 +1075,22 @@
       ],
       "acceptance": [
         "Additional tests are added to verify parseToolCallJSON behavior on edge cases of malformed JSON.",
+        "Tests pass and verify safe fallback."
+      ]
+    },
+    {
+      "id": "proxy-tool-call-malformed-json-test-3",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for malformed JSON missing quotes on keys",
+      "description": "Add more test coverage for malformed JSON strings in tool calls to ensure the proxy handles them gracefully without crashing, specifically focusing on missing quotes on keys.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Additional tests are added to verify parseToolCallJSON behavior on missing quotes on keys in JSON.",
         "Tests pass and verify safe fallback."
       ]
     }
