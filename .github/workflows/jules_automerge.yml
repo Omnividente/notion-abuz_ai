@@ -50,20 +50,23 @@ jobs:
           title = os.environ.get("PR_TITLE", "")
           body = os.environ.get("PR_BODY", "")
 
-          is_autonomous = (
-              user == "google-jules[bot]"
-              or "jules" in labels
-              or (
-                  head_repo == repo
-                  and any(
-                      head_ref == task_id
-                      or head_ref.startswith(f"{task_id}-")
-                      or task_id in title
-                      or task_id in body
-                      for task_id in task_ids
-                  )
-              )
-          )
+            is_autonomous = (
+                user == "google-jules[bot]"
+                or "jules" in labels
+                or (
+                    head_repo == repo
+                    and (
+                        head_ref.startswith(("jules-", "jules/"))
+                        or any(
+                            head_ref == task_id
+                            or head_ref.startswith(f"{task_id}-")
+                            or task_id in title
+                            or task_id in body
+                            for task_id in task_ids
+                        )
+                    )
+                )
+            )
 
           print("true" if is_autonomous else "false")
           PY

@@ -85,10 +85,12 @@ jobs:
               if "jules" in labels:
                   count += 1
                   continue
-              if head_repo == repo and any(
-                  head_ref == task_id or head_ref.startswith(f"{task_id}-")
-                  for task_id in task_ids
-              ):
+              if head_repo != repo:
+                  continue
+              if head_ref.startswith(("jules-", "jules/")):
+                  count += 1
+                  continue
+              if any(head_ref == task_id or head_ref.startswith(f"{task_id}-") for task_id in task_ids):
                   count += 1
 
           print(count)
