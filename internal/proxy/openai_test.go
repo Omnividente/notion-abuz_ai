@@ -322,6 +322,33 @@ func TestOpenAIResponsesStreamTranscoder_EmitsCompletedResponse(t *testing.T) {
 	}
 }
 
+func TestOpenAIResponsesStreamTranscoder_EmptyContent(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_empty", "claude-opus-4.6", 789)
+	frames := []anthropicSSEFrame{
+		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":5}}}`)},
+		{Event: "content_block_start", Data: json.RawMessage(`{"index":0,"content_block":{"type":"thinking","thinking":""}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"thinking_delta","thinking":""}}`)},
+		{Event: "content_block_stop", Data: json.RawMessage(`{"index":0}`)},
+		{Event: "content_block_start", Data: json.RawMessage(`{"index":1,"content_block":{"type":"text","text":""}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":1,"delta":{"type":"text_delta","text":""}}`)},
+		{Event: "content_block_stop", Data: json.RawMessage(`{"index":1}`)},
+		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":20}}`)},
+	}
+	for _, frame := range frames {
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("HandleFrame(%s) error = %v", frame.Event, err)
+		}
+	}
+	body := rr.Body.String()
+	if strings.Contains(body, "response.reasoning_summary_text.delta") {
+		t.Fatalf("body should not contain response.reasoning_summary_text.delta: %s", body)
+	}
+	if strings.Contains(body, "response.output_text.delta") {
+		t.Fatalf("body should not contain response.output_text.delta: %s", body)
+	}
+}
+
 func TestOpenAIResponsesStreamTranscoder_ThinkingBlocks(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_think", "claude-opus-4.6", 789)
@@ -366,6 +393,27 @@ func TestOpenAIResponsesStreamTranscoder_ThinkingBlocks(t *testing.T) {
 	}
 	if !strings.Contains(body, "Hello!") {
 		t.Fatalf("missing text content in body:\n%s", body)
+	}
+}
+
+func TestOpenAIChatStreamTranscoder_EmptyContent(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_empty", "gpt-5.4", 123, true)
+	frames := []anthropicSSEFrame{
+		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":11}}}`)},
+		{Event: "content_block_start", Data: json.RawMessage(`{"index":0,"content_block":{"type":"text","text":""}}`)},
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"text_delta","text":""}}`)},
+		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":7}}`)},
+		{Event: "message_stop", Data: json.RawMessage(`{"type":"message_stop"}`)},
+	}
+	for _, frame := range frames {
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("HandleFrame(%s) error = %v", frame.Event, err)
+		}
+	}
+	body := rr.Body.String()
+	if strings.Contains(body, `"content":""`) || strings.Contains(body, `"content": ""`) {
+		t.Fatalf("body should not contain empty content chunks: %s", body)
 	}
 }
 
