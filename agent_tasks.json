@@ -44,6 +44,22 @@
   },
   "tasks": [
     {
+      "id": "proxy-chat-stream-handleframe-invalid-content-block-start",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling test for content_block_start",
+      "description": "Ensure that if HandleFrame receives invalid JSON in content_block_start in openAIChatStreamTranscoder and openAIResponsesStreamTranscoder, it bubbles up the error correctly.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with invalid content block data for content_block_start.",
+        "Transcoders return error instead of panicking."
+      ]
+    },
+    {
       "id": "claude-code-tool-call-malformed-json-test",
       "status": "done",
       "area": "proxy",
@@ -61,7 +77,7 @@
     },
     {
       "id": "proxy-chat-stream-error-handling-coverage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling tests",
