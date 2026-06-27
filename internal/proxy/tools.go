@@ -521,11 +521,16 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 		var filtered []ChatMessage
 		for _, m := range messages {
 			if m.Role == "system" {
-				if match := cwdRe.FindStringSubmatch(m.Content); len(match) >= 2 {
-					extractedCwd = match[1]
-					log.Printf("[bridge] extracted CWD from system prompt: %s", extractedCwd)
+				// Preserve our own coding assistant instruction
+				if strings.Contains(m.Content, "You are acting as a coding assistant API behind a compatibility proxy.") {
+					filtered = append(filtered, m)
+				} else {
+					if match := cwdRe.FindStringSubmatch(m.Content); len(match) >= 2 {
+						extractedCwd = match[1]
+						log.Printf("[bridge] extracted CWD from system prompt: %s", extractedCwd)
+					}
+					log.Printf("[bridge] dropped system message (%d chars)", len(m.Content))
 				}
-				log.Printf("[bridge] dropped system message (%d chars)", len(m.Content))
 			} else if m.Role == "user" && strings.TrimSpace(m.Content) == "" && m.ToolCallID == "" && len(m.ToolCalls) == 0 {
 				log.Printf("[bridge] dropped empty wrapper-only user message after sanitization")
 			} else {
