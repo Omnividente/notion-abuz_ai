@@ -594,7 +594,7 @@
     },
     {
       "id": "claude-code-session-fingerprint-retry-coverage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Harden Claude Code session fingerprint and retry coverage",
