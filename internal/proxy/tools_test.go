@@ -442,6 +442,34 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			jsonStr: `{"tool_call": {"name": "test", "arguments": {"text": "hello \x00 world"}}}`,
 			wantNil: true,
 		},
+		{
+			name:     "flat format with empty string arguments",
+			jsonStr:  `{"name": "test_empty_str_args", "arguments": ""}`,
+			wantNil:  false,
+			wantName: "test_empty_str_args",
+			wantArgs: `{}`,
+		},
+		{
+			name:     "flat format with invalid json string arguments",
+			jsonStr:  `{"name": "test_invalid_json_args", "arguments": "{bad json}"}`,
+			wantNil:  false,
+			wantName: "test_invalid_json_args",
+			wantArgs: `{}`,
+		},
+		{
+			name:     "wrapper format with empty string arguments",
+			jsonStr:  `{"tool_call": {"name": "test_wrapper_empty_str_args", "arguments": ""}}`,
+			wantNil:  false,
+			wantName: "test_wrapper_empty_str_args",
+			wantArgs: `{}`,
+		},
+		{
+			name:     "wrapper format with invalid json string arguments",
+			jsonStr:  `{"tool_call": {"name": "test_wrapper_invalid_json_args", "arguments": "{bad json}"}}`,
+			wantNil:  false,
+			wantName: "test_wrapper_invalid_json_args",
+			wantArgs: `{}`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
