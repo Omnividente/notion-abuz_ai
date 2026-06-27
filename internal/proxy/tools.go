@@ -352,7 +352,7 @@ func sanitizeForBridge(messages []ChatMessage) []ChatMessage {
 				log.Printf("[bridge] [%d] dropped extra system message (%d chars)", i, len(msg.Content))
 			}
 		case "user":
-			cleaned := stripSystemReminders(msg.Content)
+			cleaned := stripClaudeCodeInstructions(msg.Content)
 			if strings.TrimSpace(cleaned) == "" {
 				cleaned = "Hello"
 			}
@@ -378,17 +378,17 @@ func sanitizeForBridge(messages []ChatMessage) []ChatMessage {
 	return result
 }
 
-// stripSystemReminders removes Claude Code-specific XML wrapper tags from messages.
+// stripClaudeCodeInstructions removes Claude Code-specific XML wrapper tags from messages.
 // These include:
 // - <system-reminder>: identity reinforcement, skill lists, token usage
 // - <local-command-caveat>: contains "DO NOT respond" which kills the response
 // - Inline tags like <command-name>/clear</command-name>
 var (
 	blockTagRegex  = regexp.MustCompile(`(?s)<(?:system-reminder|local-command-caveat|available-deferred-tools)>.*?</(?:system-reminder|local-command-caveat|available-deferred-tools)>`)
-	inlineTagRegex = regexp.MustCompile(`</?[a-z][-a-z]*>`)
+	inlineTagRegex = regexp.MustCompile(`</?[a-z][-a-z0-9]*(?:\s+[^>]*?)?>`)
 )
 
-func stripSystemReminders(content string) string {
+func stripClaudeCodeInstructions(content string) string {
 	content = blockTagRegex.ReplaceAllString(content, "")
 	content = inlineTagRegex.ReplaceAllString(content, "")
 	return strings.TrimSpace(content)
@@ -503,7 +503,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 		for i := range messages {
 			if messages[i].Role == "user" || messages[i].Role == "tool" {
 				orig := messages[i].Content
-				cleaned := stripSystemReminders(orig)
+				cleaned := stripClaudeCodeInstructions(orig)
 				if len(cleaned) != len(orig) {
 					log.Printf("[bridge] [%d] sanitized user message (%d → %d chars)", i, len(orig), len(cleaned))
 				}

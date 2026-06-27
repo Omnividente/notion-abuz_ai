@@ -53,7 +53,9 @@ Claude Code sends its own ~14k char system prompt ("You are Claude Code, Anthrop
 
 ### Layer 2: Strip XML Control Tags
 
-Claude Code wraps user messages with XML tags like `<system-reminder>`, `<local-command-caveat>` (contains "DO NOT respond" which kills responses), and inline tags like `<command-name>`. These are regex-stripped before processing.
+Claude Code wraps user messages with XML control tags. The proxy strips these tags before processing while preserving the underlying coding intent:
+- **Stripped entirely (block tags):** `<system-reminder>`, `<local-command-caveat>` (contains "DO NOT respond" which kills responses), `<available-deferred-tools>`. The proxy removes the tags and their contents.
+- **Preserved content (inline and structural tags):** `<command-name>`, `<file>`, `<mcp-server>`, `<project-instructions>` (e.g. `CLAUDE.md`), `<hook-reminder>`, `<subagent-task>`. The proxy removes only the XML boundary tags (including any attributes) but leaves the inner content intact so the bridge can fulfill the coding request.
 
 ### Layer 3: "Unit Test" Framing
 
