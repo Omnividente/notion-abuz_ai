@@ -220,3 +220,64 @@ func TestStripSystemReminders_PreservesCodingIntent(t *testing.T) {
 		})
 	}
 }
+
+func TestParseToolCalls_RobustJSONExtraction(t *testing.T) {
+	tests := []struct {
+		name      string
+		content   string
+		wantCalls int
+		wantRem   string
+		wantHas   bool
+	}{
+		{
+			name:      "conversational preamble with __done__ tool call",
+			content:   "Here is the requested tool call:\n{\"name\": \"__done__\", \"arguments\": {\"result\": \"Done!\"}}",
+			wantCalls: 1,
+			wantRem:   "Here is the requested tool call:",
+			wantHas:   true,
+		},
+		{
+			name:      "postamble text",
+			content:   "{\"name\": \"Bash\", \"arguments\": {\"command\": \"ls\"}}\nI hope this helps!",
+			wantCalls: 1,
+			wantRem:   "I hope this helps!",
+			wantHas:   true,
+		},
+		{
+			name:      "multiple tool calls",
+			content:   "{\"name\": \"Read\", \"arguments\": {\"path\": \"main.go\"}}\n{\"name\": \"Bash\", \"arguments\": {\"command\": \"cat main.go\"}}",
+			wantCalls: 2,
+			wantRem:   "",
+			wantHas:   true,
+		},
+		{
+			name:      "json wrapper format",
+			content:   "{\"tool_call\": {\"name\": \"Edit\", \"arguments\": {\"path\": \"main.go\"}}}",
+			wantCalls: 1,
+			wantRem:   "",
+			wantHas:   true,
+		},
+		{
+			name:      "no valid tool calls",
+			content:   "Just a regular message with no json tools.",
+			wantCalls: 0,
+			wantRem:   "Just a regular message with no json tools.",
+			wantHas:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls, rem, hasCalls := parseToolCalls(tt.content)
+			if hasCalls != tt.wantHas {
+				t.Fatalf("hasCalls = %v, want %v", hasCalls, tt.wantHas)
+			}
+			if len(calls) != tt.wantCalls {
+				t.Fatalf("len(calls) = %v, want %v", len(calls), tt.wantCalls)
+			}
+			if rem != tt.wantRem {
+				t.Errorf("remaining = %q, want %q", rem, tt.wantRem)
+			}
+		})
+	}
+}

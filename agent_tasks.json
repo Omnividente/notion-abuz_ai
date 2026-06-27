@@ -509,7 +509,7 @@
     },
     {
       "id": "claude-code-json-mode-repair-hardening",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Harden JSON tool-call extraction for Claude Code bridge responses",
