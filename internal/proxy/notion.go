@@ -78,7 +78,16 @@ func SetModelID(name, id string) {
 func ReplaceModelMap(m map[string]string) {
 	modelMapMu.Lock()
 	defer modelMapMu.Unlock()
-	DefaultModelMap = m
+
+	cleanMap := make(map[string]string)
+	for k, v := range m {
+		cleanK := strings.TrimSpace(k)
+		cleanV := strings.TrimSpace(v)
+		if cleanK != "" && cleanV != "" {
+			cleanMap[cleanK] = cleanV
+		}
+	}
+	DefaultModelMap = cleanMap
 }
 
 // ApplyReasoningEffortAlias checks if model+"-"+effort exists in the configured model map.
