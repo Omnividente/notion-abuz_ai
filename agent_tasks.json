@@ -448,7 +448,7 @@
     },
     {
       "id": "proxy-streaming-empty-content-handling",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for empty content blocks",
