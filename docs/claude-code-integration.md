@@ -178,6 +178,7 @@ The following classes of failure have been observed in the Claude Code bridge. T
 3. **JSON tool-call mode loss**: The model stops outputting `{"name": "...", "arguments": {...}}` format and starts speaking conversationally.
 4. **Tool-result continuation loss**: The model ignores the previous tool execution result and either repeats the same tool call or drops the conversation thread entirely.
 5. **Final-answer identity drift**: The model leaves JSON mode before generating a final answer, triggering the Notion system prompt identity regression.
+6. **Workspace Reframing**: The model reframes a coding or file system request as a Notion page creation, workspace search, or database manipulation.
 
 ## Regression Signals
 

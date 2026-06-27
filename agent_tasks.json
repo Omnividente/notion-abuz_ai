@@ -554,7 +554,7 @@
     },
     {
       "id": "claude-code-live-smoke-transcript-analysis",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Analyze live Claude Code smoke transcripts for bridge regressions",
@@ -571,6 +571,25 @@
         "Offline tests or fixtures cover at least one remaining failure signal discovered from logs, docs gaps, or existing smoke behavior.",
         "Any findings that do not fit this PR are added as Claude Code bridge follow-up tasks with allowed_paths and acceptance criteria.",
         "No unit test calls live Notion, RDSH, Anthropic, OpenAI, GitHub, Google, or Microsoft APIs."
+      ]
+    },
+    {
+      "id": "claude-code-workspace-reframing-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate and implement more robust prevention for workspace reframing in Claude Code proxy",
+      "description": "The Claude Code proxy bridge occasionally drops JSON tool-call mode and starts reframing coding requests as Notion workspace searches or page creation. Add more resilient detection and prompt adjustments to prevent this failure class entirely instead of just detecting and retrying.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A follow-up mechanism prevents or gracefully handles cases where Notion reframes the output as a page creation or workspace search.",
+        "Unit tests verify that workspace reframing attempts are detected or blocked.",
+        "No live network calls are added to unit tests."
       ]
     },
     {
