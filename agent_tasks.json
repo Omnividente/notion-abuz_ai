@@ -1096,7 +1096,7 @@
     },
     {
       "id": "proxy-tool-call-malformed-json-test-4",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for malformed JSON improper escapes",
@@ -1187,6 +1187,38 @@
       ],
       "acceptance": [
         "Additional tests are added to verify parseToolCallJSON behavior on missing colons in JSON.",
+        "Tests pass and verify safe fallback."
+      ]
+    },
+    {
+      "id": "proxy-tool-call-malformed-json-test-6",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for malformed JSON trailing comma",
+      "description": "Add more test coverage for malformed JSON strings in tool calls to ensure the proxy handles them gracefully without crashing, specifically focusing on trailing commas.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Additional tests are added to verify parseToolCallJSON behavior on trailing commas in JSON.",
+        "Tests pass and verify safe fallback."
+      ]
+    },
+    {
+      "id": "proxy-tool-call-malformed-json-test-7",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for malformed JSON single quotes",
+      "description": "Add more test coverage for malformed JSON strings in tool calls to ensure the proxy handles them gracefully without crashing, specifically focusing on single quotes.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Additional tests are added to verify parseToolCallJSON behavior on single quotes in JSON.",
         "Tests pass and verify safe fallback."
       ]
     }
