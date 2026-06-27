@@ -204,7 +204,7 @@
     },
     {
       "id": "add-handler-models-coverage-for-normalize-models",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for publicModelID normalization",
