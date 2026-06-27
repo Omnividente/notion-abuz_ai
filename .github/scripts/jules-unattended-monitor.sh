@@ -147,21 +147,27 @@ for i in "${!key_labels[@]}"; do
 
     activities_file="${tmpdir}/activities-${session_name//\//-}.json"
     if ! jules_get "$key" "${session_name}/activities?pageSize=30" "$activities_file"; then
-      echo "::warning::Could not list activities for ${session_name}; sending continue message anyway."
-      last_user_epoch=0
+      echo "::warning::Could not list activities for ${session_name}; skipping auto-continue to avoid duplicate prompts."
+      continue
     else
-      last_user_epoch="$(
-        jq -r '
-          [
-            .activities[]?
-            | select(.originator == "user")
-            | ((.createTime // "1970-01-01T00:00:00Z")
-              | sub("\\.[0-9]+Z$"; "Z")
-              | fromdateiso8601? // 0)
-          ]
-          | max // 0
-        ' "$activities_file"
-      )"
+      activity_summary="$(python3 .github/scripts/summarize-jules-activities.py "$activities_file")"
+    fi
+
+    IFS=$'\t' read -r latest_agent_epoch last_user_epoch latest_token_epoch <<<"$activity_summary"
+
+    if [ "${latest_agent_epoch:-0}" -eq 0 ]; then
+      echo "Skipped ${session_name}; no agent activity found to answer."
+      continue
+    fi
+
+    if [ "${latest_token_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
+      echo "Skipped ${session_name}; autonomous continue already answers the latest wait state."
+      continue
+    fi
+
+    if [ "${last_user_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
+      echo "Skipped ${session_name}; a user message already answers the latest wait state."
+      continue
     fi
 
     if [ "$((now_epoch - last_user_epoch))" -lt "$reply_cooldown_seconds" ]; then
