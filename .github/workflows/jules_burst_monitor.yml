@@ -1,0 +1,95 @@
+name: 3b. Jules Burst Monitor
+
+on:
+  workflow_run:
+    workflows: ["2. Trigger Next Proxy Improvement Task"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      cycles:
+        description: "How many monitor passes to run"
+        required: false
+        default: "20"
+        type: string
+      interval_seconds:
+        description: "Delay between monitor passes"
+        required: false
+        default: "90"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: jules-burst-monitor-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  burst-monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    if: >
+      vars.JULES_LOOP_ENABLED != 'false' &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.workflow_run.conclusion == 'success')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Watch and continue fresh Jules session
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+          LOOKBACK_HOURS: "24"
+          MIN_USER_REPLY_INTERVAL_MINUTES: "2"
+          CYCLES: ${{ inputs.cycles || '20' }}
+          INTERVAL_SECONDS: ${{ inputs.interval_seconds || '90' }}
+        run: |
+          set -euo pipefail
+
+          count_open_autonomous_prs() {
+            curl -fsS \
+              -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
+              -o /tmp/open-prs.json
+
+            python3 .github/scripts/count-autonomous-prs.py /tmp/open-prs.json
+          }
+
+          cycles="${CYCLES}"
+          interval="${INTERVAL_SECONDS}"
+
+          for i in $(seq 1 "$cycles"); do
+            echo "Burst monitor pass ${i}/${cycles}"
+            output_file="${RUNNER_TEMP}/jules-monitor-output-${i}.txt"
+            : > "$output_file"
+
+            GITHUB_OUTPUT="$output_file" bash .github/scripts/jules-unattended-monitor.sh
+
+            session_ids="$(grep '^session_ids=' "$output_file" | tail -n1 | cut -d= -f2- || true)"
+            active_sessions="$(grep '^active_sessions=' "$output_file" | tail -n1 | cut -d= -f2- || echo 0)"
+            JULES_SESSION_IDS="$session_ids" python3 .github/scripts/open-ready-jules-prs.py
+
+            open_prs="$(count_open_autonomous_prs)"
+            echo "Active Jules sessions: ${active_sessions}"
+            echo "Open autonomous PRs: ${open_prs}"
+
+            if [ "${open_prs}" != "0" ]; then
+              echo "Autonomous PR is open; automerge workflow will take over."
+              exit 0
+            fi
+
+            if [ "${active_sessions}" = "0" ]; then
+              echo "No active Jules sessions remain; burst monitor can stop."
+              exit 0
+            fi
+
+            if [ "$i" -lt "$cycles" ]; then
+              sleep "$interval"
+            fi
+          done

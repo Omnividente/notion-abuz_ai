@@ -4,7 +4,7 @@ set -euo pipefail
 API_BASE="${JULES_API_BASE:-https://jules.googleapis.com/v1alpha}"
 SOURCE="${JULES_SOURCE:-sources/github/${GITHUB_REPOSITORY:-Omnividente/notion-abuz_ai}}"
 LOOKBACK_HOURS="${LOOKBACK_HOURS:-24}"
-MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-20}"
+MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
 
 read -r -d '' CONTINUE_PROMPT <<'EOF' || true
 AUTONOMOUS_CONTINUE_TOKEN: notion-abuz_ai-unattended-v1
@@ -118,6 +118,7 @@ for i in "${!key_labels[@]}"; do
     fi
     seen_sessions[$session_name]=1
     session_ids+=("${session_name##*/}")
+    echo "Jules session ${session_name} state: ${session_state}"
 
     case "$session_state" in
       QUEUED|PLANNING|IN_PROGRESS|AWAITING_PLAN_APPROVAL|AWAITING_USER_FEEDBACK)

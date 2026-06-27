@@ -48,7 +48,7 @@ jobs:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
           JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
           LOOKBACK_HOURS: ${{ inputs.lookback_hours || '24' }}
-          MIN_USER_REPLY_INTERVAL_MINUTES: "20"
+          MIN_USER_REPLY_INTERVAL_MINUTES: "2"
         run: bash .github/scripts/jules-unattended-monitor.sh
 
       - name: Open ready Jules PRs
