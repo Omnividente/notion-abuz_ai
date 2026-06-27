@@ -181,10 +181,17 @@ func TestDetectToolBridgeNoToolResponse_MatchesFinalAnswerDrift(t *testing.T) {
 }
 
 func TestDetectToolBridgeNoToolResponse_MatchesWorkspaceReframing(t *testing.T) {
-	raw := `I cannot run bash commands to modify files. However, I can help you create a Notion page or search the Notion workspace.`
+	cases := []string{
+		`I cannot run bash commands to modify files. However, I can help you create a Notion page or search the Notion workspace.`,
+		`I am unable to use the terminal to run commands. Would you like me to create a Notion database instead?`,
+		`作为AI，我无法直接运行本地命令。但我可以帮你将这些内容保存到 Notion 文档中。`,
+		`I am Notion AI. I don't have access to edit local files, but I can save to notion for you.`,
+	}
 
-	if !detectToolBridgeNoToolResponse(raw) {
-		t.Fatalf("expected Workspace Reframing to be detected")
+	for i, raw := range cases {
+		if !detectToolBridgeNoToolResponse(raw) {
+			t.Fatalf("expected Workspace Reframing to be detected for case %d: %s", i, raw)
+		}
 	}
 }
 
