@@ -2,8 +2,8 @@ package proxy
 
 import (
 	"encoding/json"
-	"testing"
 	"strings"
+	"testing"
 )
 
 func TestParseToolCalls_NestedObjects(t *testing.T) {
