@@ -304,7 +304,7 @@
     },
     {
       "id": "config-parsing-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add configuration parsing tests",
