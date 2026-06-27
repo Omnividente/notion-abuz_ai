@@ -280,6 +280,39 @@ func TestOpenAIChatStreamTranscoder_EmitsToolCallsAndDone(t *testing.T) {
 	}
 }
 
+func TestOpenAIResponsesStreamTranscoder_LargeChunks(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_large", "gpt-5.4", 456)
+	largeStr := strings.Repeat("a", 100000)
+	deltaPayload, _ := json.Marshal(map[string]interface{}{
+		"index": 0,
+		"delta": map[string]interface{}{
+			"type": "text_delta",
+			"text": largeStr,
+		},
+	})
+	frames := []anthropicSSEFrame{
+		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":9}}}`)},
+		{Event: "content_block_delta", Data: deltaPayload},
+		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":6}}`)},
+	}
+	for _, frame := range frames {
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("HandleFrame(%s) error = %v", frame.Event, err)
+		}
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "event: response.output_text.delta") {
+		t.Fatalf("missing response.output_text.delta")
+	}
+	if !strings.Contains(body, largeStr) {
+		t.Fatalf("missing large string data")
+	}
+	if !strings.Contains(body, "event: response.completed") {
+		t.Fatalf("missing response.completed")
+	}
+}
+
 func TestOpenAIResponsesStreamTranscoder_EmitsCompletedResponse(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 456)
@@ -414,6 +447,41 @@ func TestOpenAIChatStreamTranscoder_EmptyContent(t *testing.T) {
 	body := rr.Body.String()
 	if strings.Contains(body, `"content":""`) || strings.Contains(body, `"content": ""`) {
 		t.Fatalf("body should not contain empty content chunks: %s", body)
+	}
+}
+
+func TestOpenAIChatStreamTranscoder_LargeChunks(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_large", "gpt-5.4", 123, true)
+	largeStr := strings.Repeat("a", 100000)
+	deltaPayload, _ := json.Marshal(map[string]interface{}{
+		"index": 0,
+		"delta": map[string]interface{}{
+			"type": "text_delta",
+			"text": largeStr,
+		},
+	})
+	frames := []anthropicSSEFrame{
+		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":11}}}`)},
+		{Event: "content_block_start", Data: json.RawMessage(`{"index":0,"content_block":{"type":"text","text":""}}`)},
+		{Event: "content_block_delta", Data: deltaPayload},
+		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":7}}`)},
+		{Event: "message_stop", Data: json.RawMessage(`{"type":"message_stop"}`)},
+	}
+	for _, frame := range frames {
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("HandleFrame(%s) error = %v", frame.Event, err)
+		}
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "chat.completion.chunk") {
+		t.Fatalf("body missing chat.completion.chunk")
+	}
+	if !strings.Contains(body, largeStr) {
+		t.Fatalf("body missing large string data")
+	}
+	if !strings.Contains(body, "data: [DONE]") {
+		t.Fatalf("body missing DONE")
 	}
 }
 
