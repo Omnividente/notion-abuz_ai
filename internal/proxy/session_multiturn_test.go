@@ -44,9 +44,10 @@ func TestBuildSessionChainFollowUp(t *testing.T) {
 	if !strings.Contains(content, "__done__") {
 		t.Errorf("expected __done__ in follow-up, got: %s", content)
 	}
-	// Should NOT contain the original query (context is in the Notion thread)
-	if strings.Contains(content, "list files in the current directory") {
-		t.Errorf("follow-up should not repeat original query (thread has context)")
+	// Note: We now actively include the original query to prevent tool-result continuation loss,
+	// where Notion's system prompt would otherwise override the thread's coding context.
+	if !strings.Contains(content, "list files in the current directory") {
+		t.Errorf("follow-up should include the original query to preserve coding intent")
 	}
 }
 
@@ -367,5 +368,64 @@ func TestClaudeCodeAgentLoop_MultiTurnReadEditTest(t *testing.T) {
 	}
 	if strings.Contains(content, "Notion AI") {
 		t.Errorf("follow-up should not contain Notion persona leakage")
+	}
+}
+
+func TestClaudeCodeAgentLoop_ToolResultContinuationPreservesIntent(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "Find the bug in login and fix it."},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Grep", Arguments: `{"pattern":"login"}`}},
+		}},
+		{Role: "tool", Name: "Grep", ToolCallID: "call_1", Content: "login.go:10: func Login() {}"},
+	}
+
+	followUp := buildSessionChainFollowUp(messages, "Grep", "")
+	if len(followUp) != 1 {
+		t.Fatalf("expected 1 follow up")
+	}
+
+	content := followUp[0].Content
+	// Must contain the original request
+	if !strings.Contains(content, "Find the bug in login and fix it.") {
+		t.Errorf("Continuation prompt did not preserve the original coding intent. Content: %s", content)
+	}
+}
+
+func TestClaudeCodeAgentLoop_FinalAnswerAvoidsNotionPersona(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "Update tests, verify, and tell me when you are done."},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: `{"file_path":"test.go"}`}},
+		}},
+		{Role: "tool", Name: "Read", ToolCallID: "call_1", Content: "func TestA() {}"},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_2", Type: "function", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"go test ."}`}},
+		}},
+		{Role: "tool", Name: "Bash", ToolCallID: "call_2", Content: "PASS"},
+	}
+
+	followUp := buildSessionChainFollowUp(messages, "Read, Bash", "")
+	if len(followUp) != 1 {
+		t.Fatalf("expected 1 follow up")
+	}
+
+	content := followUp[0].Content
+
+	// Must have the `__done__` directive for final answers
+	if !strings.Contains(content, "__done__") {
+		t.Errorf("Continuation prompt did not include __done__ instructions. Content: %s", content)
+	}
+
+	// Must verify that the system is properly rejecting Notion persona
+	// By asserting that our detect function correctly flags a fake bad response
+	badResponse := `I am Notion AI, and I don't have access to your coding assistant. Therefore, I cannot run edit or bash to modify those files.`
+	if !detectToolBridgeNoToolResponse(badResponse) {
+		t.Errorf("detectToolBridgeNoToolResponse failed to catch a Notion persona final answer drift")
+	}
+
+	goodResponse := `{"name": "__done__", "arguments": {"result": "I have updated and verified the tests. They all pass."}}`
+	if detectToolBridgeNoToolResponse(goodResponse) {
+		t.Errorf("detectToolBridgeNoToolResponse incorrectly flagged a valid JSON final answer")
 	}
 }
