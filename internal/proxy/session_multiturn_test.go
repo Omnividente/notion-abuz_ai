@@ -277,6 +277,91 @@ func TestSessionContinuationDetection(t *testing.T) {
 		t.Errorf("expected repeat detection: rawMsgCount=%d, session.RawMessageCount=%d",
 			rawMsgCountRetry, session.RawMessageCount)
 	}
+
+	// Rollback: user removes the last tool result and assistant call, and asks something else
+	turn3Msgs := []ChatMessage{
+		{Role: "system", Content: systemPrompt},
+		{Role: "user", Content: "hello"},
+		{Role: "user", Content: "never mind, let's do something else"},
+	}
+	rawMsgCountRollback := countNonSystemMessages(turn3Msgs)
+	if rawMsgCountRollback >= session.RawMessageCount {
+		t.Errorf("expected rollback detection (rawMsgCount < session.RawMessageCount): got %d, want < %d",
+			rawMsgCountRollback, session.RawMessageCount)
+	}
+}
+
+// TestClaudeCodeAgentLoop_RetryBehavior verifies that identical repeated turns
+// yield the exact same fingerprint and message count.
+func TestClaudeCodeAgentLoop_RetryBehavior(t *testing.T) {
+	systemPrompt := "You are Claude Code..."
+
+	// Turn A
+	turnAMsgs := []ChatMessage{
+		{Role: "system", Content: systemPrompt},
+		{Role: "user", Content: "run test"},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{{ID: "call_1", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"go test ."}`}}}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "timeout"},
+	}
+
+	// Turn B (exact same payload, typical of a client retry on a 502/timeout from the API)
+	turnBMsgs := []ChatMessage{
+		{Role: "system", Content: systemPrompt},
+		{Role: "user", Content: "run test"},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{{ID: "call_1", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"go test ."}`}}}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "timeout"},
+	}
+
+	fpA := computeSessionFingerprint(turnAMsgs)
+	fpB := computeSessionFingerprint(turnBMsgs)
+
+	if fpA != fpB {
+		t.Errorf("fingerprint mismatch on retry: %s != %s", fpA, fpB)
+	}
+
+	countA := countNonSystemMessages(turnAMsgs)
+	countB := countNonSystemMessages(turnBMsgs)
+
+	if countA != countB {
+		t.Errorf("message count mismatch on retry: %d != %d", countA, countB)
+	}
+}
+
+// TestClaudeCodeAgentLoop_MultipleToolCallsContinuation validates rawMsgCount
+// correctly identifies multiple tool calls and responses in a single turn.
+func TestClaudeCodeAgentLoop_MultipleToolCallsContinuation(t *testing.T) {
+	systemPrompt := "You are Claude Code..."
+
+	msgs := []ChatMessage{
+		{Role: "system", Content: systemPrompt},
+		{Role: "user", Content: "read both files"},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_1", Function: ToolCallFunction{Name: "Read", Arguments: `{"file_path":"a.go"}`}},
+			{ID: "call_2", Function: ToolCallFunction{Name: "Read", Arguments: `{"file_path":"b.go"}`}},
+		}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Read", Content: "content A"},
+		{Role: "tool", ToolCallID: "call_2", Name: "Read", Content: "content B"},
+	}
+
+	rawMsgCount := countNonSystemMessages(msgs)
+
+	// Expect 1 user message, 1 assistant message, 2 tool messages = 4
+	if rawMsgCount != 4 {
+		t.Errorf("expected 4 non-system messages, got %d", rawMsgCount)
+	}
+
+	followUp := buildSessionChainFollowUp(msgs, "Read", "")
+	if len(followUp) != 1 {
+		t.Fatalf("expected 1 follow up, got %d", len(followUp))
+	}
+	content := followUp[0].Content
+
+	if !strings.Contains(content, "[Read]: content A") {
+		t.Errorf("expected followUp to contain first tool result")
+	}
+	if !strings.Contains(content, "[Read]: content B") {
+		t.Errorf("expected followUp to contain second tool result")
+	}
 }
 
 // TestInjectToolsSessionVsLegacy verifies that injectToolsIntoMessages takes
