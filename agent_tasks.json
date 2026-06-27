@@ -254,7 +254,7 @@
     },
     {
       "id": "proxy-request-logging-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add coverage for request logging middleware",
@@ -367,6 +367,40 @@
       "acceptance": [
         "Docs explain fallback behavior when an alias is missing.",
         "Example configuration reflects fallback logic."
+      ]
+    },
+    {
+      "id": "proxy-debug-logging-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for debug logging toggles",
+      "description": "Add tests to ensure debug logging can be toggled via settings.",
+      "allowed_paths": [
+        "internal/proxy/logging.go",
+        "internal/proxy/logging_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover enabling/disabling debug logs.",
+        "Tests verify log output."
+      ]
+    },
+    {
+      "id": "proxy-health-endpoint-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for proxy health endpoint",
+      "description": "Add tests to verify the /health endpoint correctly reports system status.",
+      "allowed_paths": [
+        "internal/proxy/handler.go",
+        "internal/proxy/handler_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover GET /health endpoint.",
+        "Tests verify JSON payload structure."
       ]
     }
   ]

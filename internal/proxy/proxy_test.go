@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bytes"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -81,5 +82,130 @@ func TestReverseProxy_BackendFailure(t *testing.T) {
 
 	if w.Code != http.StatusBadGateway && w.Code != http.StatusInternalServerError {
 		t.Errorf("expected error status code for network failure, got %d", w.Code)
+	}
+}
+
+func TestRequestLogging(t *testing.T) {
+	var buf bytes.Buffer
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+	}()
+
+	SetAPILogInputEnabled(true)
+	defer SetAPILogInputEnabled(false)
+
+	reqID := "req_123"
+	label := "test_label"
+
+	t.Run("LogAPIInputText", func(t *testing.T) {
+		buf.Reset()
+		text := "sensitive_data_here"
+		LogAPIInputText(reqID, label, text)
+
+		output := buf.String()
+		if !strings.Contains(output, reqID) {
+			t.Errorf("Expected requestID %s in log output", reqID)
+		}
+		if !strings.Contains(output, label) {
+			t.Errorf("Expected label %s in log output", label)
+		}
+		if !strings.Contains(output, text) {
+			t.Errorf("Expected text %s in log output", text)
+		}
+	})
+
+	t.Run("LogAPIInputJSONBytes", func(t *testing.T) {
+		buf.Reset()
+		jsonBytes := []byte(`{"key": "value", "password": "secret_password"}`)
+		LogAPIInputJSONBytes(reqID, label, jsonBytes)
+
+		output := buf.String()
+		if !strings.Contains(output, `"key": "value"`) {
+			t.Errorf("Expected JSON keys in log output")
+		}
+	})
+
+	t.Run("LogAPIInputJSON", func(t *testing.T) {
+		buf.Reset()
+		data := map[string]string{"foo": "bar"}
+		LogAPIInputJSON(reqID, label, data)
+
+		output := buf.String()
+		if !strings.Contains(output, `"foo": "bar"`) {
+			t.Errorf("Expected JSON payload in log output")
+		}
+	})
+
+	t.Run("DisabledLogging", func(t *testing.T) {
+		buf.Reset()
+		SetAPILogInputEnabled(false)
+		defer SetAPILogInputEnabled(true)
+		LogAPIInputText(reqID, label, "should not be logged")
+		if buf.Len() > 0 {
+			t.Errorf("Expected empty buffer when logging is disabled, got: %s", buf.String())
+		}
+	})
+}
+
+func TestRequestLoggingMiddleware(t *testing.T) {
+	var buf bytes.Buffer
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+	}()
+
+	SetAPILogInputEnabled(true)
+	defer SetAPILogInputEnabled(false)
+
+	req := httptest.NewRequest("GET", "/test-path", nil)
+	req.Header.Set("Authorization", "Bearer sensitive_token")
+	req.Header.Set("Cookie", "session=sensitive_cookie")
+	req.Header.Set("X-API-Key", "sensitive_key")
+	req.Header.Set("User-Agent", "test-agent")
+
+	handler := RequestLoggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", rec.Code)
+	}
+
+	output := buf.String()
+
+	// Check essential fields
+	if !strings.Contains(output, "GET /test-path") {
+		t.Errorf("Expected essential request info in log: %s", output)
+	}
+	if !strings.Contains(output, "User-Agent: test-agent") {
+		t.Errorf("Expected User-Agent in log: %s", output)
+	}
+
+	// Check redacted fields
+	if strings.Contains(output, "sensitive_token") {
+		t.Errorf("Expected Authorization header to be redacted, log: %s", output)
+	}
+	if !strings.Contains(output, "Authorization: [REDACTED]") {
+		t.Errorf("Expected Authorization header to show as [REDACTED], log: %s", output)
+	}
+
+	if strings.Contains(output, "sensitive_cookie") {
+		t.Errorf("Expected Cookie header to be redacted, log: %s", output)
+	}
+	if !strings.Contains(output, "Cookie: [REDACTED]") {
+		t.Errorf("Expected Cookie header to show as [REDACTED], log: %s", output)
+	}
+
+	if strings.Contains(output, "sensitive_key") {
+		t.Errorf("Expected X-API-Key header to be redacted, log: %s", output)
+	}
+	if !strings.Contains(output, "X-Api-Key: [REDACTED]") && !strings.Contains(output, "X-API-Key: [REDACTED]") {
+		t.Errorf("Expected X-API-Key header to show as [REDACTED], log: %s", output)
 	}
 }
