@@ -611,6 +611,10 @@ func detectToolBridgeNoToolResponse(text string) bool {
 		return true
 	case mentionsNotionIdentity && mentionsCodingAssistant:
 		return true
+	case mentionsNotionIdentity && mentionsMissingLocalTools:
+		return true
+	case mentionsNotionIdentity && strings.Contains(lower, "bash"):
+		return true
 	case mentionsMissingLocalTools && mentionsCodingAssistant && mentionsManualHandOff:
 		return true
 	case mentionsWorkspaceReframing && (mentionsMissingLocalTools || mentionsNotionIdentity || strings.Contains(lower, "bash") || strings.Contains(lower, "edit") || strings.Contains(lower, "terminal") || strings.Contains(lower, "run") || strings.Contains(normalized, "本地命令")):

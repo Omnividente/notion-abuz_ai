@@ -616,7 +616,7 @@
     },
     {
       "id": "claude-code-final-answer-mode-regression",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add final-answer mode regression tests for Claude Code bridge",
@@ -862,6 +862,39 @@
       "acceptance": [
         "Tests verify account pool selection prefers non-exhausted accounts.",
         "Tests verify account selection properly handles lock contention."
+      ]
+    },
+    {
+      "id": "claude-code-tool-schema-fallback-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for tool schema fallback parsing",
+      "description": "Ensure the tool bridge can handle empty or missing parameter schemas gracefully when building the native anthropic tool structures.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover empty parameter schemas.",
+        "Proxy supplies a default empty object schema."
+      ]
+    },
+    {
+      "id": "claude-code-final-answer-mode-edge-case",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add final-answer mode edge case test",
+      "description": "Ensure the __done__ extraction works cleanly when trailing whitespaces or unusual newlines are added.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover __done__ extraction with edge case formatting."
       ]
     }
   ]
