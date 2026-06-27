@@ -2,8 +2,8 @@ package proxy
 
 import (
 	"encoding/base64"
-	"net/http"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
