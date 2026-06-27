@@ -5,11 +5,23 @@ Use `agent_tasks.json` as the machine-readable source of truth.
 
 ## Primary Objective
 
-Improve Claude and Claude Code compatibility through the RDSH/notion-abuz_ai
-proxy. The service should behave like a coding assistant API, not like the
-Notion product UI. Treat Notion persona leakage, Notion workspace/page/document
-refusals, and Claude-style coding requests answered as Notion UI requests as
-proxy compatibility bugs.
+Make the original Claude Code promise reliable: Claude Code must work as an
+autonomous coding agent through the RDSH/notion-abuz_ai proxy, using pooled
+Notion AI accounts as the upstream capacity layer.
+
+The account pool, quota routing, dashboard, and Notion transport are assumed to
+work unless a concrete failing test or live smoke result proves otherwise. The
+current focus is the three-layer Claude Code compatibility bridge, because it
+can drift into Notion workspace/page/document behavior, refuse tool use, lose
+JSON tool-call mode, or fail multi-turn continuation.
+
+Treat these as primary proxy compatibility bugs:
+
+- Notion persona leakage in Claude Code requests.
+- Notion workspace/page/document refusals in coding-agent requests.
+- Tool calls replaced by prose refusals when Claude Code tools are available.
+- Tool results interpreted as Notion content instead of coding-tool output.
+- Multi-turn Claude Code loops losing session context or final-answer mode.
 
 ## Source Priority
 
@@ -51,6 +63,11 @@ the queue is not below the replenishment threshold. Only do this for concrete
 findings from code inspection, offline tests, CI logs, docs gaps, or captured
 live smoke results. New tasks must be low/medium risk, non-duplicative,
 bounded to one PR, and below `replenishment_policy.max_todo_tasks`.
+
+When selecting or generating new work, prefer Claude Code bridge investigation
+and regression coverage. Dashboard, registration, generic config, OpenCode,
+OpenAI-compatible, and GitHub workflow tasks are secondary unless they directly
+support a reproduced Claude Code bridge failure.
 
 Do not ask the user to choose between implementation approaches for low/medium
 tasks. If multiple safe approaches exist, choose the smallest reversible change

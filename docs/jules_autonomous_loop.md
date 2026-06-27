@@ -92,14 +92,25 @@ MCP, or subagent-style prompts.
 
 ## Product Goal
 
-The proxy should behave like a stable coding-assistant API for Claude and
-Claude Code clients. Treat these as compatibility bugs:
+Make the original project promise true: Claude Code should operate as a
+reliable autonomous coding agent through notion-abuz_ai, while pooled Notion AI
+accounts provide the upstream model capacity.
+
+The account pool, quota routing, dashboard, and Notion transport are not the
+current investigation target unless a concrete failing test or live smoke result
+points there. The current target is the three-layer Claude Code compatibility
+bridge and its session-based multi-turn handling.
+
+Treat these as compatibility bugs:
 
 - Notion persona leakage.
 - Notion workspace/page/document refusals in coding-assistant requests.
 - Claude-style coding prompts answered as if the user is inside Notion.
-- Model drift caused by lossy OpenAI-compatible or Anthropic-compatible request
-  translation.
+- Tool calls replaced by prose refusals when coding tools are available.
+- Tool results ignored or interpreted as Notion content.
+- Multi-turn Claude Code loops that lose JSON tool-call mode, session context,
+  or final-answer mode.
+- Model drift caused by lossy Anthropic-compatible request translation.
 
 ## Task Sources
 
@@ -137,7 +148,8 @@ Keep at least `replenishment_policy.minimum_todo_tasks` tasks with status
 
 When the queue is low or research discovers new bounded follow-up work:
 
-1. Prefer stabilization, tests, and compatibility work over feature expansion.
+1. Prefer Claude Code bridge stabilization, transcript fixtures, and regression
+   coverage over feature expansion.
 2. Generate low/medium-risk tasks only.
 3. Each new task must include:
    - stable `id`
@@ -155,14 +167,18 @@ When the queue is low or research discovers new bounded follow-up work:
 
 Prefer improvements in this order:
 
-1. Claude Code behavior that avoids Notion persona leakage.
-2. OpenAI-compatible API correctness.
-3. Anthropic Messages API compatibility.
-4. Model mapping and alias behavior.
-5. Streaming and tool-call regression tests.
-6. Error normalization and retry behavior.
-7. Dashboard visibility into runtime state.
-8. Documentation that prevents misconfiguration.
+1. Reproducing and classifying Claude Code bridge failures.
+2. Notion persona leakage prevention in Claude Code requests.
+3. Anthropic Messages tool-call generation, parsing, streaming, and
+   continuation.
+4. Multi-turn session fingerprinting, retry, recovery, and final-answer mode.
+5. Golden transcript fixtures for realistic read/edit/test/finalize loops.
+6. Account pool, quota, and failover behavior only when a Claude Code bridge
+   failure proves it is involved.
+7. OpenAI/OpenCode compatibility only when it supports Claude Code reliability
+   or shares the same bridge defect.
+8. Dashboard, registration, generic config, and workflow automation only when
+   needed for observability or safe operation of the Claude Code bridge work.
 
 For `claude-code-notion-persona-leakage-regression`, prefer a narrow
 coding-assistant detection helper plus a short proxy compatibility instruction.

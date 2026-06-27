@@ -30,17 +30,17 @@
       "low",
       "medium"
     ],
-    "instruction": "When the todo queue is low, add small Claude/Claude Code compatibility, proxy, test, or documentation tasks. Research and compatibility tasks may also add follow-up tasks for concrete findings from code inspection, tests, CI logs, docs gaps, or captured live smoke results even when the queue is not low. Prefer stabilization, Notion persona leakage prevention, and regression coverage over broad feature work. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "instruction": "When the todo queue is low, add small Claude Code bridge investigation, proxy, test, or documentation tasks. Research and compatibility tasks may also add follow-up tasks for concrete findings from code inspection, tests, CI logs, docs gaps, or captured live smoke results even when the queue is not low. Prefer three-layer bridge stabilization, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode, session recovery, and golden transcript coverage over broad feature work. Treat dashboard, registration, generic config, OpenCode, OpenAI-compatible, and workflow tasks as secondary unless they directly support a reproduced Claude Code bridge failure. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
     "max_todo_tasks": 40
   },
   "autonomous_loop_policy": {
     "operating_model": "docs/jules_autonomous_loop.md",
-    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium.",
+    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium. Todo order should keep Claude Code bridge investigation and regression tasks ahead of dashboard, registration, generic config, OpenCode, OpenAI-compatible, and workflow tasks unless a concrete bridge failure requires those areas.",
     "anti_stall_rule": "Never ask the user what to do next while safe low or medium risk tasks can be selected or generated.",
     "stabilization_first": true,
     "max_pr_scope": "one task id per PR",
     "failure_rule": "If CI fails because of the current change, fix it before opening or updating the PR. If CI fails for an unrelated reason, add a follow-up task and explain the limitation in the PR body.",
-    "discovery_rule": "For research, compatibility, and test tasks, add low/medium-risk follow-up todo tasks for concrete gaps discovered during the work even when the todo queue is not below the replenishment threshold. Keep generated tasks non-duplicative, scoped to one PR, below max_todo_tasks, and backed by allowed_paths plus acceptance criteria."
+    "discovery_rule": "For Claude Code bridge research, compatibility, and test tasks, add low/medium-risk follow-up todo tasks for concrete gaps discovered during the work even when the todo queue is not below the replenishment threshold. Prefer findings about Notion persona leakage, tool-call refusal, JSON tool-call mode loss, tool-result continuation, session retry/recovery, final-answer mode, and realistic read/edit/test/finalize transcripts. Keep generated tasks non-duplicative, scoped to one PR, below max_todo_tasks, and backed by allowed_paths plus acceptance criteria."
   },
   "tasks": [
     {
@@ -460,6 +460,96 @@
       "acceptance": [
         "Tests cover empty text delta in streaming transcoder.",
         "Tests cover empty thinking block in streaming transcoder."
+      ]
+    },
+    {
+      "id": "claude-code-bridge-failure-taxonomy-fixtures",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Build Claude Code bridge failure taxonomy fixtures",
+      "description": "Document and test the main failure classes in the three-layer Claude Code bridge: Notion persona leakage, tool-call refusal, JSON tool-call mode loss, tool-result continuation loss, and final-answer identity drift. Use offline fixtures or local fake responses only.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/tools_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Docs define a concise taxonomy of observed Claude Code bridge failure classes.",
+        "Offline tests or fixtures cover at least three distinct failure classes.",
+        "Tests assert that bridge outputs do not contain Notion workspace/page/document refusal language for coding-agent paths.",
+        "No tests call live Notion, RDSH, Anthropic, OpenAI, GitHub, Google, or Microsoft APIs.",
+        "Any additional concrete gaps discovered are added as bounded follow-up tasks."
+      ]
+    },
+    {
+      "id": "claude-code-tool-result-continuation-regression",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add Claude Code tool-result continuation regression coverage",
+      "description": "Add realistic multi-turn Claude Code transcript coverage where a tool_use result is followed by either the next tool call or a final __done__ answer without drifting into Notion persona behavior.",
+      "allowed_paths": [
+        "internal/proxy/session_multiturn_test.go",
+        "internal/proxy/session_recovery_test.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests model at least one read/edit/test or read/command/finalize Claude Code style loop.",
+        "Continuation prompts preserve coding intent after tool_result messages.",
+        "Final answers use __done__ handling or equivalent final-answer mode without returning a fake tool call.",
+        "Regression checks fail on Notion persona or page/workspace/document refusal language in coding-agent paths.",
+        "Existing session fingerprint and recovery behavior remains backward compatible."
+      ]
+    },
+    {
+      "id": "claude-code-json-mode-repair-hardening",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Harden JSON tool-call extraction for Claude Code bridge responses",
+      "description": "Improve and test extraction of JSON tool-call and __done__ payloads from bridge responses that include harmless preambles, code fences, or whitespace while still rejecting unsafe or ambiguous Notion-style prose.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover JSON tool calls wrapped in common preambles or code fences.",
+        "Tests cover __done__ payload extraction for final answers.",
+        "Ambiguous prose or Notion refusal text is not accepted as a valid tool call.",
+        "Streaming and non-streaming paths remain compatible with existing tests.",
+        "Docs describe the accepted bridge response shapes and rejected failure shapes."
+      ]
+    },
+    {
+      "id": "claude-code-instruction-preservation-regression",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Preserve Claude Code coding intent while stripping unsafe control text",
+      "description": "Add regression coverage for CLAUDE.md-like instructions, slash-command prompts, hook-style reminders, and MCP-style tool context so XML/control stripping removes dangerous prompt-killers without deleting the coding intent needed by the bridge.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover at least three Claude Code surface types: project instructions, slash-command style text, hooks, MCP context, or subagent-style prompts.",
+        "Sanitization removes known response-killing control text while preserving the actionable coding request.",
+        "Tests detect loss of coding intent that would cause a Notion workspace-style answer.",
+        "No test requires the full Claude Code system prompt or live Claude Code execution.",
+        "Docs explain which instruction categories are preserved, summarized, or stripped."
       ]
     },
     {

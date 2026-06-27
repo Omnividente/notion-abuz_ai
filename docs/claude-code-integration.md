@@ -14,6 +14,24 @@ When a test or live trace reveals a new Claude Code behavior, add a durable
 regression test or a follow-up task instead of only patching the latest observed
 phrase.
 
+## Current Investigation Scope
+
+The Notion account pool, quota routing, dashboard, and base Notion transport are
+assumed to work unless a concrete failing test or live smoke result proves
+otherwise. The active reliability target is the bridge between Claude Code's
+agent loop and Notion AI's server-side persona.
+
+Investigations should focus on transcript-level failures:
+
+- Notion persona leakage in coding-agent requests.
+- Tool-call refusals when Claude Code tools are available.
+- Loss of JSON tool-call mode or `__done__` final-answer mode.
+- Tool results being ignored or treated as Notion page/workspace content.
+- Session fingerprint, retry, recovery, or continuation failures across
+  read/edit/test/finalize loops.
+- Over-aggressive stripping of Claude Code instructions, slash-command text,
+  hook reminders, MCP context, or subagent-style prompts.
+
 ## The Challenge: Notion's System Prompt
 
 Every request to Notion AI is prepended with a ~27k token system prompt that:
