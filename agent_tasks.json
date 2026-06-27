@@ -44,8 +44,40 @@
   },
   "tasks": [
     {
-      "id": "proxy-chat-stream-handleframe-invalid-content-block-start",
+      "id": "proxy-chat-stream-handleframe-invalid-content-block-stop",
       "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling test for content_block_stop",
+      "description": "Ensure that if HandleFrame receives invalid JSON in content_block_stop in openAIChatStreamTranscoder and openAIResponsesStreamTranscoder, it bubbles up the error correctly.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with invalid content block data for content_block_stop.",
+        "Transcoders return error instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-message-stop",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling test for message_stop",
+      "description": "Ensure that if HandleFrame receives invalid JSON in message_stop in openAIChatStreamTranscoder and openAIResponsesStreamTranscoder, it bubbles up the error correctly.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with invalid content block data for message_stop.",
+        "Transcoders return error instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-content-block-start",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for content_block_start",

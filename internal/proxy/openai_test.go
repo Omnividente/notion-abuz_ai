@@ -534,6 +534,14 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 	if err := transcoder.HandleFrame(invalidContentBlockDeltaFrame); err == nil {
 		t.Fatal("Expected error for invalid JSON frame in content_block_delta, got nil")
 	}
+
+	invalidContentBlockStartFrame := anthropicSSEFrame{
+		Event: "content_block_start",
+		Data:  json.RawMessage(`{"index":0,"content_block":{"type":"text"`), // Missing closing brace
+	}
+	if err := transcoder.HandleFrame(invalidContentBlockStartFrame); err == nil {
+		t.Fatal("Expected error for invalid JSON frame in content_block_start, got nil")
+	}
 }
 
 func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
@@ -554,6 +562,14 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 	}
 	if err := transcoder.HandleFrame(invalidContentBlockDeltaFrame); err == nil {
 		t.Fatal("Expected error for invalid JSON frame in content_block_delta, got nil")
+	}
+
+	invalidContentBlockStartFrame := anthropicSSEFrame{
+		Event: "content_block_start",
+		Data:  json.RawMessage(`{"index":0,"content_block":{"type":"text"`), // Missing closing brace
+	}
+	if err := transcoder.HandleFrame(invalidContentBlockStartFrame); err == nil {
+		t.Fatal("Expected error for invalid JSON frame in content_block_start, got nil")
 	}
 }
 
