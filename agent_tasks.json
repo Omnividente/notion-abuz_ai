@@ -371,7 +371,7 @@
     },
     {
       "id": "proxy-debug-logging-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for debug logging toggles",
@@ -449,6 +449,40 @@
       "acceptance": [
         "Tests cover tool calls with deeply nested JSON objects.",
         "Tests verify the nested structure is preserved accurately."
+      ]
+    },
+    {
+      "id": "proxy-config-validation-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for configuration validation logic",
+      "description": "Add tests verifying that invalid configurations are rejected appropriately.",
+      "allowed_paths": [
+        "internal/proxy/config.go",
+        "internal/proxy/config_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover invalid config loading.",
+        "Tests verify error messages."
+      ]
+    },
+    {
+      "id": "dashboard-routing-tests",
+      "status": "todo",
+      "area": "dashboard",
+      "risk": "low",
+      "title": "Add tests for dashboard specific routing",
+      "description": "Add tests verifying that the dashboard handler correctly routes API vs static file requests.",
+      "allowed_paths": [
+        "internal/proxy/dashboard.go",
+        "internal/proxy/dashboard_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify routing to API paths.",
+        "Tests verify routing to static file paths."
       ]
     }
   ]
