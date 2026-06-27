@@ -1112,7 +1112,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-ping",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for ping",
