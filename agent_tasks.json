@@ -934,7 +934,7 @@
     },
     {
       "id": "proxy-tool-call-missing-function-graceful-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for missing function name in fallback parser",
@@ -946,6 +946,22 @@
       "acceptance": [
         "Tests verify an empty function name results in skipped execution or safe default behavior.",
         "No panics occur during unmarshaling."
+      ]
+    },
+    {
+      "id": "proxy-tool-call-invalid-json-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for invalid JSON string in tool arguments",
+      "description": "Add tests to parseToolCallJSON for tools that pass invalid JSON strings (or empty strings) for arguments, ensuring it defaults to safe empty objects.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify an invalid JSON argument string defaults to an empty object '{}'.",
+        "No panics occur during parsing."
       ]
     }
   ]

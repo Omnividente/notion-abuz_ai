@@ -284,6 +284,20 @@ func TestParseToolCalls_RobustJSONExtraction(t *testing.T) {
 			wantRem:   "Just a regular message with no json tools.",
 			wantHas:   false,
 		},
+		{
+			name:      "tool call with empty function name",
+			content:   `{"name": "", "arguments": {"foo": "bar"}}`,
+			wantCalls: 0,
+			wantRem:   `{"name": "", "arguments": {"foo": "bar"}}`,
+			wantHas:   false,
+		},
+		{
+			name:      "tool call wrapper with empty function name",
+			content:   `{"tool_call": {"name": "", "arguments": {"foo": "bar"}}}`,
+			wantCalls: 0,
+			wantRem:   `{"tool_call": {"name": "", "arguments": {"foo": "bar"}}}`,
+			wantHas:   false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -370,6 +384,20 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			jsonStr:  `{"tool_call": {"name": "test_invalid_args", "arguments": "invalid string not json"}}`,
 			wantNil:  false,
 			wantName: "test_invalid_args",
+			wantArgs: `{}`,
+		},
+		{
+			name:     "missing function name in flat format",
+			jsonStr:  `{"name": "", "arguments": {"foo": "bar"}}`,
+			wantNil:  false,
+			wantName: "",
+			wantArgs: `{"foo": "bar"}`,
+		},
+		{
+			name:     "missing function name in wrapper format",
+			jsonStr:  `{"tool_call": {"name": "", "arguments": {"foo": "bar"}}}`,
+			wantNil:  false,
+			wantName: "",
 			wantArgs: `{}`,
 		},
 	}
