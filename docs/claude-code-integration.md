@@ -167,6 +167,16 @@ risk tasks from its findings even when the todo queue is not below the
 replenishment threshold. Those tasks must have concrete `allowed_paths`,
 acceptance criteria, and one-PR scope.
 
+## Failure Taxonomy
+
+The following classes of failure have been observed in the Claude Code bridge. Tests and logic should guard against these explicitly:
+
+1. **Notion persona leakage**: The model explicitly identifies itself as "Notion AI" or a Notion workspace assistant.
+2. **Tool-call refusal**: The model responds with prose saying it cannot run commands or access local files, rather than using the provided tools.
+3. **JSON tool-call mode loss**: The model stops outputting `{"name": "...", "arguments": {...}}` format and starts speaking conversationally.
+4. **Tool-result continuation loss**: The model ignores the previous tool execution result and either repeats the same tool call or drops the conversation thread entirely.
+5. **Final-answer identity drift**: The model leaves JSON mode before generating a final answer, triggering the Notion system prompt identity regression.
+
 ## Regression Signals
 
 Treat these as compatibility failures unless a task explicitly allows them:
