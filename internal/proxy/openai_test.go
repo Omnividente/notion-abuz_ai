@@ -566,6 +566,14 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 	if err := transcoder.HandleFrame(invalidMessageStopFrame); err == nil {
 		t.Fatal("Expected error for invalid JSON frame in message_stop, got nil")
 	}
+
+	invalidPingFrame := anthropicSSEFrame{
+		Event: "ping",
+		Data:  json.RawMessage(`{"type":"ping"`), // Missing closing brace
+	}
+	if err := transcoder.HandleFrame(invalidPingFrame); err == nil {
+		t.Fatal("Expected error for invalid JSON frame in ping, got nil")
+	}
 }
 
 func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
@@ -618,6 +626,14 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 	}
 	if err := transcoder.HandleFrame(invalidMessageStopFrame); err == nil {
 		t.Fatal("Expected error for invalid JSON frame in message_stop, got nil")
+	}
+
+	invalidPingFrame := anthropicSSEFrame{
+		Event: "ping",
+		Data:  json.RawMessage(`{"type":"ping"`), // Missing closing brace
+	}
+	if err := transcoder.HandleFrame(invalidPingFrame); err == nil {
+		t.Fatal("Expected error for invalid JSON frame in ping, got nil")
 	}
 }
 
