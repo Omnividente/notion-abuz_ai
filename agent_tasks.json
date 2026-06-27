@@ -354,7 +354,7 @@
     },
     {
       "id": "proxy-model-fallback-docs",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Document model map fallback behavior",
@@ -433,6 +433,22 @@
       "acceptance": [
         "Tests cover empty text delta in streaming transcoder.",
         "Tests cover empty thinking block in streaming transcoder."
+      ]
+    },
+    {
+      "id": "proxy-tools-nested-object-handling-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for nested object handling in tool parameters",
+      "description": "Add tests verifying that the proxy correctly parses and passes along deeply nested object structures in tool calls.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover tool calls with deeply nested JSON objects.",
+        "Tests verify the nested structure is preserved accurately."
       ]
     }
   ]

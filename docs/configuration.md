@@ -84,6 +84,8 @@ Clients can select these aliases in two ways:
 1. **Directly**: By requesting the exact alias name (e.g., `model="opus-4.8-high"`).
 2. **Via Variants**: By requesting the base model with a reasoning effort modifier (e.g., `model="opus-4.8"` with `reasoning_effort="high"`). The proxy will automatically route to the `opus-4.8-high` alias if it exists.
 
+If no alias matches, the proxy will fall back to using the originally requested model name.
+
 ```yaml
 model_map:
   opus-4.8-high: notion-internal-high-id
