@@ -3,6 +3,7 @@ package proxy
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -194,5 +195,46 @@ func TestLoadConfig_DefaultsWhenNoEnvOrFile(t *testing.T) {
 	// Test the specific pointer default value too
 	if cfg.Proxy.EnableWebSearch == nil || *cfg.Proxy.EnableWebSearch != true {
 		t.Errorf("Expected default EnableWebSearch true, got %v", cfg.Proxy.EnableWebSearch)
+	}
+}
+
+func TestLoadConfig_InvalidNotionProxy(t *testing.T) {
+	content := []byte(`
+proxy:
+  notion_proxy: "://invalid-url"
+`)
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+	if err := os.WriteFile(configPath, content, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+
+	if cfg.Proxy.NotionProxy != "" {
+		t.Errorf("Expected NotionProxy to be cleared due to invalid URL, got %q", cfg.Proxy.NotionProxy)
+	}
+}
+
+func TestLoadConfig_UnreadableFile(t *testing.T) {
+	// A directory cannot be read as a file, which will cause ReadFile to return an error
+	// that is not os.IsNotExist.
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "directory_as_file")
+	if err := os.Mkdir(configPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := LoadConfig(configPath)
+	if err == nil {
+		t.Fatal("Expected LoadConfig to fail on unreadable file")
+	}
+
+	expectedErrFragment := "read config.yaml"
+	if !strings.Contains(err.Error(), expectedErrFragment) {
+		t.Errorf("Expected error containing %q, got %v", expectedErrFragment, err)
 	}
 }
