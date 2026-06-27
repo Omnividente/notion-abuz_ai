@@ -656,7 +656,7 @@
     },
     {
       "id": "claude-code-tool-schema-filtering-coverage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Expand Claude Code tool schema filtering coverage",

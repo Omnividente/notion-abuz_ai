@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -212,6 +213,7 @@ func extractParamSignature(schema interface{}) string {
 			parts = append(parts, fmt.Sprintf("%s?: %s", name, typeName))
 		}
 	}
+	sort.Strings(parts)
 	return strings.Join(parts, ", ")
 }
 

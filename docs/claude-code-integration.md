@@ -214,7 +214,7 @@ Treat these as compatibility failures unless a task explicitly allows them:
 
 | Limitation | Reason |
 |------------|--------|
-| ~8 core tools only (18 → 8) | Larger tool lists break the "unit test" framing — Notion AI detects and refuses |
+| ~8 core tools only (18 → 8) | Larger tool lists break the "unit test" framing — Notion AI detects and refuses. To preserve bridge reliability and tool execution, the bridge discards non-core MCP and subagent tools, keeping a compact tool list. This is an explicit tradeoff: reliability over a broader feature set. |
 | No native tool_use protocol | Tools are injected via text framing, not Anthropic's native `tool_use` blocks |
 | Higher latency per turn | Each turn passes through Notion's infrastructure + ~27k system prompt |
 | Occasional framing leakage | Model may sometimes include preamble like "Here's the expected output:" before JSON |
