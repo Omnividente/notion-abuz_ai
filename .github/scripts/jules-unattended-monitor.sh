@@ -7,23 +7,23 @@ LOOKBACK_HOURS="${LOOKBACK_HOURS:-24}"
 MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
 
 read -r -d '' CONTINUE_PROMPT <<'EOF' || true
-AUTONOMOUS_CONTINUE_TOKEN: notion-abuz_ai-unattended-v1
-
 Continue without waiting for human input.
 
-Decision policy:
-- If your current message asks whether to proceed, treat this message as explicit approval to proceed.
-- If your current message asks the user to choose between options, choose the smallest reversible low/medium-risk option yourself.
-- If your current message says the work is ready for review or asks whether to wrap up, open/finalize the PR now.
-- Do not ask the user to choose between safe implementation approaches.
-- For low/medium-risk tasks, choose the smallest reversible change that satisfies the selected task acceptance criteria.
-- If a possible change belongs to a separate task, exclude it from the current PR, add or keep a follow-up task, and finish the current task.
-- If tests fail because of the current change, fix them inside the selected task scope.
-- If validation exposes unrelated failures, document them and add a bounded follow-up task instead of stopping.
-- Keep one task id per PR, stay inside allowed_paths, run the required validation, open one PR, and label it jules.
-- If your work is ready for review or ready to finalize, open/finalize the PR now instead of asking for confirmation.
-- Do not ask more questions unless blocked by missing permissions, missing secrets, high/critical risk, or an unavoidable destructive action.
-- Do not repeat the question that caused this wait state.
+If your latest message asks me to choose between safe options, choose the smallest reversible low/medium-risk option yourself and proceed.
+Stay inside the selected task scope and allowed_paths.
+Run the required validation.
+Open one PR and label it jules when the task is ready.
+Do not ask another confirmation question unless blocked by missing permissions, missing secrets, high/critical risk, or an unavoidable destructive action.
+EOF
+
+read -r -d '' FINALIZE_PROMPT <<'EOF' || true
+No further review is needed.
+
+Finalize this task now:
+- Mark the selected task as finished in agent_tasks.json.
+- Open one pull request for the completed code changes.
+- Label the PR jules.
+- Do not ask another confirmation question.
 EOF
 
 if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
@@ -153,7 +153,7 @@ for i in "${!key_labels[@]}"; do
       activity_summary="$(python3 .github/scripts/summarize-jules-activities.py "$activities_file")"
     fi
 
-    IFS=$'\t' read -r latest_agent_epoch last_user_epoch latest_token_epoch <<<"$activity_summary"
+    IFS=$'\t' read -r latest_agent_epoch last_user_epoch latest_token_epoch wait_kind <<<"$activity_summary"
 
     if [ "${latest_agent_epoch:-0}" -eq 0 ]; then
       echo "Skipped ${session_name}; no agent activity found to answer."
@@ -175,10 +175,15 @@ for i in "${!key_labels[@]}"; do
       continue
     fi
 
-    body="$(jq -n --arg prompt "$CONTINUE_PROMPT" '{prompt: $prompt}')"
+    prompt="$CONTINUE_PROMPT"
+    if [ "${wait_kind:-continue}" = "finalize" ]; then
+      prompt="$FINALIZE_PROMPT"
+    fi
+
+    body="$(jq -n --arg prompt "$prompt" '{prompt: $prompt}')"
     out="${tmpdir}/send-${session_name//\//-}.json"
     if jules_post "$key" "${session_name}:sendMessage" "$body" "$out"; then
-      echo "Sent autonomous continue message to ${session_name}."
+      echo "Sent autonomous ${wait_kind:-continue} message to ${session_name}."
       touched_sessions=$((touched_sessions + 1))
     else
       echo "::warning::Could not send autonomous continue message to ${session_name}."
