@@ -470,6 +470,63 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			wantName: "test_wrapper_invalid_json_args",
 			wantArgs: `{}`,
 		},
+		{
+			name:    "malformed json - completely garbage string",
+			jsonStr: `not even close to json`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - missing opening brace",
+			jsonStr: `"name": "test", "arguments": {}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - missing closing brace",
+			jsonStr: `{"name": "test", "arguments": {}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - missing colon",
+			jsonStr: `{"name" "test", "arguments": {}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - trailing comma",
+			jsonStr: `{"name": "test", "arguments": {},}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - invalid type for name (number)",
+			jsonStr: `{"name": 123, "arguments": {}}`,
+			wantNil: true,
+		},
+		{
+			name:     "malformed json - invalid type for arguments (number instead of string/object)",
+			jsonStr:  `{"name": "test", "arguments": 123}`,
+			wantNil:  false,
+			wantName: "test",
+			wantArgs: "{}", // Will fallback because 123 is not valid map[string]interface{}
+		},
+		{
+			name:    "malformed json - wrapper missing closing brace",
+			jsonStr: `{"tool_call": {"name": "test", "arguments": {}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - garbage after valid JSON",
+			jsonStr: `{"name": "test", "arguments": {}} garbage data`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - unescaped literal newline in arguments",
+			jsonStr: "{\"name\": \"test\", \"arguments\": {\"text\": \"line1\nline2\"}}", // literal newline in string
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - single quotes instead of double quotes",
+			jsonStr: `{'name': 'test', 'arguments': {}}`,
+			wantNil: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
