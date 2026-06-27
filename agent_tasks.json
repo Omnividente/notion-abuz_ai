@@ -485,7 +485,7 @@
     },
     {
       "id": "claude-code-tool-result-continuation-regression",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add Claude Code tool-result continuation regression coverage",

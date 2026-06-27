@@ -989,9 +989,38 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 		readGuardLine = "The previous Read call was too large. Do NOT repeat the same full-file Read. Use Grep to narrow scope or call Read with both offset and limit.\n"
 	}
 
+	// Extract the original user query to preserve coding intent
+	var originalQuery string
+	for _, m := range messages {
+		if m.Role == "user" && !strings.Contains(m.Content, "<available-deferred-tools>") {
+			// Extract just the core query text, stopping at things like "Available functions:" if re-entered
+			lines := strings.Split(m.Content, "\n")
+			for _, line := range lines {
+				if strings.HasPrefix(line, "Available functions:") || strings.HasPrefix(line, "I'm writing a unit test") {
+					break
+				}
+				if line != "" {
+					originalQuery += line + "\n"
+				}
+			}
+			originalQuery = strings.TrimSpace(originalQuery)
+
+			// For very long queries, just take the first part
+			if len(originalQuery) > 300 {
+				originalQuery = originalQuery[:297] + "..."
+			}
+			break
+		}
+	}
+
+	queryContext := ""
+	if originalQuery != "" {
+		queryContext = fmt.Sprintf("\nOriginal request: \"%s\"", originalQuery)
+	}
+
 	followUp := fmt.Sprintf(
-		"Results from executed function(s):\n%s\n\n%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}\nIf these results answer the question, use __done__. Otherwise output the next function call.",
-		results.String(), cwdLine, readGuardLine, compactList)
+		"Results from executed function(s):\n%s\n\n%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.",
+		results.String(), cwdLine, readGuardLine, compactList, queryContext)
 
 	log.Printf("[bridge] session chain: follow-up for partial transcript (%d chars, %d tool results)",
 		len(followUp), resultCount)
