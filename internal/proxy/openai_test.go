@@ -3,6 +3,7 @@ package proxy
 import (
 	"encoding/base64"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -502,5 +503,32 @@ func TestOpenAIResponsesStreamTranscoder_ToolCallChunks(t *testing.T) {
 	body := rr.Body.String()
 	if !strings.Contains(body, "{\\\"f") || !strings.Contains(body, "ile\\\":\\\"test.go\\\"}") {
 		t.Fatalf("body missing split JSON chunks: %s", body)
+	}
+}
+
+func TestHandleOpenAIChatCompletions_UnsupportedToolType(t *testing.T) {
+	reqBody := `{"model": "gpt-4", "messages": [{"role": "user", "content": "hi"}], "tools": [{"type": "unsupported_type"}]}`
+	req := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Create a dummy pool since HandleOpenAIChatCompletions needs it, though it might not use it if validation fails first.
+	// Actually we can just pass nil and it will fail before trying to use it.
+	HandleOpenAIChatCompletions(nil).ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", w.Code)
+	}
+
+	var resp OpenAIErrorResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to parse response body: %v", err)
+	}
+
+	if resp.Error.Type != "invalid_request_error" {
+		t.Errorf("Expected invalid_request_error, got %s", resp.Error.Type)
+	}
+	if !strings.Contains(resp.Error.Message, "unsupported tool type") {
+		t.Errorf("Expected error message to contain 'unsupported tool type', got %s", resp.Error.Message)
 	}
 }
