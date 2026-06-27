@@ -23,8 +23,8 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: jules-burst-monitor-${{ github.run_id }}
-  cancel-in-progress: false
+  group: jules-burst-monitor
+  cancel-in-progress: true
 
 jobs:
   burst-monitor:
