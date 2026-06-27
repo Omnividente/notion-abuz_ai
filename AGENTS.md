@@ -86,6 +86,28 @@ follow-up task with fixtures/tests/docs acceptance criteria.
 Repository variable `JULES_LOOP_ENABLED=false` disables new task dispatches and
 unattended monitor continuations.
 
+## Communication Policy
+
+All user-facing Jules communication must be in Russian by default. This includes
+session updates, plan explanations, PR titles/bodies, review/final summaries,
+and messages sent while waiting or finalizing. Keep file paths, task ids,
+commands, API names, code identifiers, and quoted error output in their original
+language.
+
+Every substantive Jules update should clearly state:
+
+- `Этап плана`: current phase, such as исследование, тесты, реализация,
+  валидация, PR, or ожидание.
+- `Что сделано`: concrete completed work.
+- `Что дальше`: next planned step.
+- `Зачем`: why this work matters for Claude Code bridge reliability.
+- `Почему так`: why this approach was chosen.
+- `Проверки/риски`: validation run, remaining risk, or exact blocker.
+
+If a task is blocked, explain the blocker in Russian, include the exact failing
+command or missing permission when relevant, and propose the smallest safe next
+step.
+
 Local helper scripts:
 
 ```bash
@@ -145,6 +167,7 @@ go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
 - Update `agent_tasks.json` to mark the selected task as `done`.
 - Add follow-up tasks for newly discovered bugs or improvements.
 - Label autonomous PRs with `jules`.
-- Use focused commit/PR descriptions that mention the completed task id and validation run.
+- Use Russian commit/PR descriptions when practical. Mention the completed task
+  id, current plan stage, why the change matters, and validation run.
 - Do not include temporary scratch files such as `*.orig`, `*.rej`, `*.diff`,
   `*.patch`, `my_script.go`, `my_test*.go`, or `run_test.go`.

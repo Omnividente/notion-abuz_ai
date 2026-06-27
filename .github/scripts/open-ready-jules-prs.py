@@ -87,15 +87,17 @@ for ref in refs:
         continue
 
     commits = compare.get("commits", [])
-    title = f"Jules autonomous update: {branch}"
+    title = f"Jules: автономное обновление {branch}"
     if commits:
-        message = commits[-1].get("commit", {}).get("message", "").splitlines()[0].strip()
-        if message:
-            title = message[:120]
+        title = f"Jules: готовые изменения из {branch}"[:120]
 
     body = (
-        "Opened automatically by the Jules Unattended Monitor from a ready "
-        f"Jules branch.\n\nBranch: `{branch}`\nCommit: `{sha}`"
+        "Открыто автоматически через Jules Unattended Monitor из готовой "
+        f"ветки Jules.\n\nЭтап плана: PR\nЧто сделано: Jules подготовила изменения в ветке `{branch}`.\n"
+        "Что дальше: CI и automerge workflow должны проверить и смержить PR, если проверки пройдут.\n"
+        "Зачем: сохранить автономный цикл улучшения Claude Code bridge без ручного открытия PR.\n"
+        "Почему так: ветка уже опережает `master`, а открытого PR для нее нет.\n"
+        f"Проверки/риски: требуется CI на PR.\n\nBranch: `{branch}`\nCommit: `{sha}`"
     )
     pr = request(
         "POST",

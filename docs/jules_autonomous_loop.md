@@ -60,6 +60,25 @@ In unattended mode, ordinary engineering uncertainty must be resolved by the
 agent. If a possible step belongs to a separate task, leave it out of the
 current PR, keep or add a follow-up task, and finish the selected task.
 
+## Communication Contract
+
+Jules should explain its work in Russian unless quoting code, command output,
+API names, task ids, file paths, or external error text. This applies to session
+messages, plan summaries, PR titles/bodies, and final summaries.
+
+Every useful progress update should answer:
+
+1. `Этап плана`: where the task is now, for example исследование, тесты,
+   реализация, валидация, PR, or ожидание.
+2. `Что сделано`: what changed or what evidence was gathered.
+3. `Что дальше`: the next concrete action.
+4. `Зачем`: why this helps Claude Code work through the Notion-backed proxy.
+5. `Почему так`: why this approach is the smallest safe step.
+6. `Проверки/риски`: validation status, remaining risk, or exact blocker.
+
+Do not replace engineering work with long status narration. Keep updates short,
+but make the project state understandable to a Russian-speaking maintainer.
+
 ## Research And Discovery
 
 Some tasks are investigative rather than narrowly prescriptive. For those tasks,

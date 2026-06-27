@@ -91,6 +91,22 @@ jobs:
           Only wait for user input when the task is blocked by missing permissions,
           missing secrets, high/critical risk, or an unavoidable destructive action.
 
+          COMMUNICATION LANGUAGE:
+          Write all user-facing session updates, plans, PR titles/bodies, and
+          final summaries in Russian. Keep code identifiers, file paths, command
+          names, task ids, API names, and quoted error output in their original
+          language. Do not use English prose unless you are quoting external
+          output or a source file.
+
+          Every substantive update must include this compact structure:
+          - Этап плана: current phase (исследование, тесты, реализация,
+            валидация, PR, ожидание).
+          - Что сделано: concrete completed work.
+          - Что дальше: next concrete step.
+          - Зачем: why this improves Claude Code bridge reliability.
+          - Почему так: why this is the smallest safe approach.
+          - Проверки/риски: validation, remaining risk, or exact blocker.
+
           PRIMARY OBJECTIVE:
           Make the original Claude Code promise reliable: Claude Code must work
           as an autonomous coding agent through the RDSH/notion-abuz_ai proxy,
@@ -124,7 +140,7 @@ jobs:
           7. Stay inside the selected task's allowed_paths. You may edit agent_tasks.json only to update task status or add follow-up tasks.
           8. Update agent_tasks.json: set the completed task status to "done".
           9. Add any discovered bugs or safe improvements as new "todo" tasks with allowed_paths and acceptance criteria.
-          10. Open ONE pull request and label it "jules".
+          10. Open ONE pull request with a Russian title/body and label it "jules".
 
           RESEARCH AND DISCOVERY POLICY:
           Some tasks are investigative. Do not only execute literal user bullet

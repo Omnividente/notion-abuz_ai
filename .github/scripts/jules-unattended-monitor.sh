@@ -7,23 +7,42 @@ LOOKBACK_HOURS="${LOOKBACK_HOURS:-24}"
 MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
 
 read -r -d '' CONTINUE_PROMPT <<'EOF' || true
-Continue without waiting for human input.
+Продолжай без ожидания ответа пользователя.
 
-If your latest message asks me to choose between safe options, choose the smallest reversible low/medium-risk option yourself and proceed.
-Stay inside the selected task scope and allowed_paths.
-Run the required validation.
-Open one PR and label it jules when the task is ready.
-Do not ask another confirmation question unless blocked by missing permissions, missing secrets, high/critical risk, or an unavoidable destructive action.
+Пиши все пользовательские сообщения, объяснения плана, PR title/body и финальные summary на русском. Оставляй file paths, task ids, команды, API names, code identifiers и quoted errors на языке оригинала.
+
+Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг и продолжай.
+Оставайся внутри scope выбранной задачи и allowed_paths.
+Запусти нужную валидацию.
+Когда задача готова, открой один PR с русским title/body и label `jules`.
+Не задавай новый вопрос-подтверждение, если нет блокера из-за missing permissions, missing secrets, high/critical risk или неизбежного destructive action.
+
+В следующем сообщении обязательно кратко укажи:
+- Этап плана
+- Что сделано
+- Что дальше
+- Зачем
+- Почему так
+- Проверки/риски
 EOF
 
 read -r -d '' FINALIZE_PROMPT <<'EOF' || true
-No further review is needed.
+Дополнительное ревью не требуется.
 
-Finalize this task now:
-- Mark the selected task as finished in agent_tasks.json.
-- Open one pull request for the completed code changes.
-- Label the PR jules.
-- Do not ask another confirmation question.
+Финализируй эту задачу сейчас:
+- Отметь выбранную задачу как завершенную в agent_tasks.json.
+- Открой один pull request для готовых изменений.
+- Дай PR русский title/body.
+- Поставь label `jules`.
+- Не задавай новый вопрос-подтверждение.
+
+В финальном сообщении на русском укажи:
+- Этап плана
+- Что сделано
+- Что дальше
+- Зачем
+- Почему так
+- Проверки/риски
 EOF
 
 if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
