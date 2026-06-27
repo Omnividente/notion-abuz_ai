@@ -1214,6 +1214,31 @@ func parseToolCallJSON(jsonStr string, index int) *ToolCall {
 	if err := json.Unmarshal([]byte(jsonStr), &call); err != nil {
 		return nil
 	}
+
+	// Check for nested wrapper format: {"tool_call": {"name": "...", "arguments": {...}}}
+	if call.Name == "" {
+		var wrapper struct {
+			ToolCall *struct {
+				Name      string          `json:"name"`
+				Arguments json.RawMessage `json:"arguments"`
+			} `json:"tool_call"`
+		}
+		if err := json.Unmarshal([]byte(jsonStr), &wrapper); err == nil && wrapper.ToolCall != nil && wrapper.ToolCall.Name != "" {
+			argsStr := string(wrapper.ToolCall.Arguments)
+			if !json.Valid(wrapper.ToolCall.Arguments) {
+				argsStr = "{}"
+			}
+			return &ToolCall{
+				ID:   fmt.Sprintf("call_%d_%s", index, generateUUIDv4()[:8]),
+				Type: "function",
+				Function: ToolCallFunction{
+					Name:      wrapper.ToolCall.Name,
+					Arguments: argsStr,
+				},
+			}
+		}
+	}
+
 	argsStr := string(call.Arguments)
 	if !json.Valid(call.Arguments) {
 		argsStr = "{}"
