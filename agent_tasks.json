@@ -44,6 +44,24 @@
   },
   "tasks": [
     {
+      "id": "claude-code-nested-tool-call-wrapper-format",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add exhaustive coverage for wrapper-based tool calls",
+      "description": "Expand tests for parseToolCallJSON to explicitly cover other wrappers or invalid structures for deeply nested tool calls, ensuring we do not panic or skip poorly-formatted fallback tool calls.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover malformed wrapper tool calls.",
+        "Tests ensure no panic occurs when JSON is deeply nested or uses unknown keys.",
+        "Proxy correctly skips or extracts as intended."
+      ]
+    },
+    {
       "id": "claude-code-notion-persona-leakage-regression",
       "status": "done",
       "area": "proxy",
@@ -883,7 +901,7 @@
     },
     {
       "id": "claude-code-final-answer-mode-edge-case",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add final-answer mode edge case test",
