@@ -153,6 +153,33 @@ func TestDetectToolBridgeNoToolResponse_DoesNotMatchNormalAnswer(t *testing.T) {
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff_English(t *testing.T) {
+	raw := `<lang primary="en-US"/>
+
+I am Notion AI, I cannot access your local file system. I don't have the ability to run Bash or Edit tools.
+Please copy and paste this text manually into your coding assistant like Claude Code.`
+
+	if !detectToolBridgeNoToolResponse(raw) {
+		t.Fatalf("expected English no-tool identity drift text to be detected")
+	}
+}
+
+func TestDetectToolBridgeNoToolResponse_MatchesToolCallRefusal_English(t *testing.T) {
+	raw := `I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant.`
+
+	if !detectToolBridgeNoToolResponse(raw) {
+		t.Fatalf("expected English tool-call refusal to be detected")
+	}
+}
+
+func TestDetectToolBridgeNoToolResponse_MatchesFinalAnswerDrift(t *testing.T) {
+	raw := `I am Notion AI, and I don't have access to your coding assistant. Therefore, I cannot run edit or bash to modify those files.`
+
+	if !detectToolBridgeNoToolResponse(raw) {
+		t.Fatalf("expected English final-answer identity drift to be detected")
+	}
+}
+
 func TestClaudeCodeAgentLoop_PreservesCodingIntent(t *testing.T) {
 	// A simulated Claude Code transcript with CLAUDE.md instructions,
 	// inline command-name tags, and system-reminder blocks.

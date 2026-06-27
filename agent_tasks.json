@@ -464,7 +464,7 @@
     },
     {
       "id": "claude-code-bridge-failure-taxonomy-fixtures",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Build Claude Code bridge failure taxonomy fixtures",
