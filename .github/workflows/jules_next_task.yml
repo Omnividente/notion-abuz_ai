@@ -78,6 +78,8 @@ jobs:
           This session is expected to run without human supervision.
           Do not stop for implementation-choice questions, scope-boundary questions,
           test-placement questions, docs-update questions, or CI-fix questions.
+          Do not ask whether to finalize or whether anything else needs review.
+          If the task is complete, open the PR immediately and label it "jules".
           If you would normally ask the user for a choice, make the decision yourself
           using the policy below and continue.
           If a proposed change is outside the selected task, exclude it from the PR,
@@ -135,6 +137,7 @@ jobs:
           - Do not ask whether to include work that belongs to a separate task; exclude it and continue.
           - Do not ask whether to add tests when acceptance criteria require tests; add focused offline tests.
           - Do not ask whether to fix CI failures caused by your changes; fix them inside the selected task scope.
+          - Do not ask whether to finalize; open the PR when the task is complete.
           - Do not stop in AWAITING_USER_FEEDBACK for ordinary engineering judgment.
           - If multiple safe approaches exist, choose the smallest reversible change that satisfies the selected task's acceptance criteria.
           - If unsure, write focused tests first, then implement the smallest passing fix.

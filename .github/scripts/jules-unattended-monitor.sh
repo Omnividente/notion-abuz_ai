@@ -18,6 +18,7 @@ Decision policy:
 - If tests fail because of the current change, fix them inside the selected task scope.
 - If validation exposes unrelated failures, document them and add a bounded follow-up task instead of stopping.
 - Keep one task id per PR, stay inside allowed_paths, run the required validation, open one PR, and label it jules.
+- If your work is ready for review or ready to finalize, open/finalize the PR now instead of asking for confirmation.
 - Do not ask more questions unless blocked by missing permissions, missing secrets, high/critical risk, or an unavoidable destructive action.
 EOF
 

@@ -27,8 +27,8 @@ on:
 permissions:
   actions: write
   contents: read
-  issues: read
-  pull-requests: read
+  issues: write
+  pull-requests: write
 
 concurrency:
   group: jules-unattended-monitor
@@ -50,6 +50,11 @@ jobs:
           LOOKBACK_HOURS: ${{ inputs.lookback_hours || '24' }}
           MIN_USER_REPLY_INTERVAL_MINUTES: "20"
         run: bash .github/scripts/jules-unattended-monitor.sh
+
+      - name: Open ready Jules PRs
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+        run: python3 .github/scripts/open-ready-jules-prs.py
 
       - name: Detect open autonomous PRs
         id: open-prs

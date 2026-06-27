@@ -36,6 +36,10 @@ The monitor runs every five minutes. In scheduled mode it waits at least
 so a fast terminal failure does not leave the loop idle overnight.
 Open same-repository PR branches named `jules-*` or `jules/*` are treated as
 autonomous work even if Jules failed to add the `jules` label itself.
+If Jules pushes a ready `jules-*` or `jules/*` branch but does not open a PR, the
+monitor opens the PR and labels it `jules`.
+If Jules says the work is ready for review/finalization, the monitor replies
+with an autonomous continuation instruction instead of waiting for a human.
 
 Set repository variable `JULES_LOOP_ENABLED=false` to stop both new Jules task
 dispatches and unattended monitor continuations. If the variable is absent or
