@@ -30,10 +30,11 @@ latest_token_epoch = 0
 
 for activity in activities:
     originator = str(activity.get("originator", "")).lower()
+    is_user = "user" in originator
     epoch = parse_epoch(activity.get("createTime"))
     blob = json.dumps(activity, ensure_ascii=False)
 
-    if originator == "user":
+    if is_user:
         latest_user_epoch = max(latest_user_epoch, epoch)
         if TOKEN in blob:
             latest_token_epoch = max(latest_token_epoch, epoch)
