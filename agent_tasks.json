@@ -532,7 +532,7 @@
     },
     {
       "id": "claude-code-instruction-preservation-regression",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Preserve Claude Code coding intent while stripping unsafe control text",

@@ -188,7 +188,7 @@ func TestInjectCodingAssistantInstruction(t *testing.T) {
 	}
 }
 
-func TestStripSystemReminders_PreservesCodingIntent(t *testing.T) {
+func TestStripClaudeCodeInstructions_PreservesCodingIntent(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
@@ -209,13 +209,33 @@ func TestStripSystemReminders_PreservesCodingIntent(t *testing.T) {
 			input: "Here is a <local-command-caveat>DO NOT respond</local-command-caveat> rule. Use <package>gin</package>.",
 			want:  "Here is a  rule. Use gin.",
 		},
+		{
+			name:  "preserves MCP server tags with attributes",
+			input: "Context from <mcp-server name=\"github\">Provides github tools</mcp-server> for PRs.",
+			want:  "Context from Provides github tools for PRs.",
+		},
+		{
+			name:  "preserves project instructions (CLAUDE.md)",
+			input: "Follow these <project-instructions>Use tabs instead of spaces</project-instructions>.",
+			want:  "Follow these Use tabs instead of spaces.",
+		},
+		{
+			name:  "preserves hook-style reminders",
+			input: "Remember: <hook-reminder>run tests after edits</hook-reminder>.",
+			want:  "Remember: run tests after edits.",
+		},
+		{
+			name:  "preserves subagent-style prompts",
+			input: "Task context: <subagent-task id=\"123\">Fix the auth bug</subagent-task>",
+			want:  "Task context: Fix the auth bug",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := stripSystemReminders(tt.input)
+			got := stripClaudeCodeInstructions(tt.input)
 			if got != tt.want {
-				t.Errorf("stripSystemReminders() = %q, want %q", got, tt.want)
+				t.Errorf("stripClaudeCodeInstructions() = %q, want %q", got, tt.want)
 			}
 		})
 	}

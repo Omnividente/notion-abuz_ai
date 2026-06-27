@@ -685,7 +685,7 @@ func applyStructuredOutputBridge(messages []ChatMessage, outputConfig *Anthropic
 				instructionParts = append(instructionParts, cleaned)
 			}
 		case "user":
-			cleaned := stripSystemReminders(content)
+			cleaned := stripClaudeCodeInstructions(content)
 			if cleaned == "" {
 				cleaned = content
 			}

@@ -150,7 +150,7 @@ func normalizeSessionUserContent(content string) string {
 	if content == "" {
 		return ""
 	}
-	return strings.TrimSpace(stripSystemReminders(content))
+	return strings.TrimSpace(stripClaudeCodeInstructions(content))
 }
 
 func isMeaningfulUserMessage(msg ChatMessage) bool {
