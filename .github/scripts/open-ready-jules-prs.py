@@ -10,6 +10,11 @@ import urllib.request
 api_url = os.environ.get("GITHUB_API_URL", "https://api.github.com")
 repo = os.environ["GITHUB_REPOSITORY"]
 token = os.environ.get("GITHUB_API_TOKEN", "")
+session_ids = {
+    value.strip()
+    for value in os.environ.get("JULES_SESSION_IDS", "").split(",")
+    if value.strip()
+}
 
 if not token:
     print("No GitHub API token available; cannot open ready Jules PRs.")
@@ -45,7 +50,13 @@ def safe_ref(ref):
     return urllib.parse.quote(ref, safe="")
 
 
-refs = request("GET", f"/repos/{repo}/git/matching-refs/heads/jules") or []
+def is_jules_branch(branch):
+    if branch.startswith(("jules-", "jules/")):
+        return True
+    return any(session_id in branch for session_id in session_ids)
+
+
+refs = request("GET", f"/repos/{repo}/git/matching-refs/heads") or []
 pulls = request("GET", f"/repos/{repo}/pulls?state=all&per_page=100") or []
 
 open_heads = {pr["head"]["ref"] for pr in pulls if pr.get("state") == "open"}
@@ -61,7 +72,7 @@ for ref in refs:
     branch = full_ref.removeprefix("refs/heads/")
     sha = (ref.get("object") or {}).get("sha", "")
 
-    if not (branch.startswith("jules-") or branch.startswith("jules/")):
+    if not is_jules_branch(branch):
         continue
     if branch in open_heads:
         print(f"Open PR already exists for {branch}; skipping.")

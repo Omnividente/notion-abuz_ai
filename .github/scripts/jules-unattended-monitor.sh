@@ -28,6 +28,7 @@ if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
     echo "active_sessions=0"
     echo "touched_sessions=0"
     echo "api_available=false"
+    echo "session_ids="
   } >> "${GITHUB_OUTPUT:-/dev/null}"
   exit 0
 fi
@@ -55,6 +56,7 @@ reply_cooldown_seconds="$((MIN_USER_REPLY_INTERVAL_MINUTES * 60))"
 active_sessions=0
 touched_sessions=0
 api_available=false
+session_ids=()
 declare -A seen_sessions=()
 
 jules_get() {
@@ -115,6 +117,7 @@ for i in "${!key_labels[@]}"; do
       continue
     fi
     seen_sessions[$session_name]=1
+    session_ids+=("${session_name##*/}")
 
     case "$session_state" in
       QUEUED|PLANNING|IN_PROGRESS|AWAITING_PLAN_APPROVAL|AWAITING_USER_FEEDBACK)
@@ -174,9 +177,11 @@ done
 
 echo "Active recent Jules sessions for ${SOURCE}: ${active_sessions}"
 echo "Touched Jules sessions: ${touched_sessions}"
+session_ids_csv="$(IFS=,; echo "${session_ids[*]}")"
 
 {
   echo "active_sessions=${active_sessions}"
   echo "touched_sessions=${touched_sessions}"
   echo "api_available=${api_available}"
+  echo "session_ids=${session_ids_csv}"
 } >> "${GITHUB_OUTPUT:-/dev/null}"
