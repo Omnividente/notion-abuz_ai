@@ -405,7 +405,7 @@
     },
     {
       "id": "proxy-streaming-invalid-tool-type-handling",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for invalid tool types",
@@ -483,6 +483,86 @@
       "acceptance": [
         "Tests verify routing to API paths.",
         "Tests verify routing to static file paths."
+      ]
+    },
+    {
+      "id": "proxy-streaming-large-chunk-handling",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for large streaming chunks",
+      "description": "Add tests to ensure the streaming transcoder properly handles very large text deltas without truncating data.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify correct handling of unusually large string payloads.",
+        "Output string should match the exact length of the concatenated chunks."
+      ]
+    },
+    {
+      "id": "dashboard-logout-redirection",
+      "status": "todo",
+      "area": "dashboard",
+      "risk": "low",
+      "title": "Verify dashboard logout routing",
+      "description": "Add tests verifying that logging out correctly invalidates the session and responds appropriately for the frontend.",
+      "allowed_paths": [
+        "internal/proxy/dashboard_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify /auth/logout clears the session.",
+        "Subsequent requests after logout should return 401."
+      ]
+    },
+    {
+      "id": "proxy-config-env-overrides-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Expand test coverage for config environment variable overrides",
+      "description": "Add tests verifying that environment variables can override nested configuration properties, such as the Notion API endpoint.",
+      "allowed_paths": [
+        "internal/proxy/config_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify env vars correctly take precedence over file-based config.",
+        "Tests verify defaults are applied correctly when neither exist."
+      ]
+    },
+    {
+      "id": "proxy-system-message-fallback-handling",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for system message omission",
+      "description": "Add tests to ensure the proxy behaves predictably when requests contain no system messages, ensuring compatibility with strict models.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify request transformation when system message is absent.",
+        "Anthropic request must correctly omit system field if empty."
+      ]
+    },
+    {
+      "id": "proxy-model-alias-case-sensitivity",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for model alias case sensitivity",
+      "description": "Add tests ensuring that incoming model aliases are handled case-insensitively, preventing mapping misses.",
+      "allowed_paths": [
+        "internal/proxy/notion_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify case-insensitive alias lookups.",
+        "Tests verify original model name is used if mapping fails entirely."
       ]
     }
   ]
