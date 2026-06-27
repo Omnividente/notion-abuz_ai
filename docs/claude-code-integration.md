@@ -8,6 +8,12 @@ notion-manager makes Claude Code work through Notion AI — but this is non-triv
 
 The proxy solves this through a **three-layer compatibility bridge** plus **session-based multi-turn management**.
 
+This document is not a checklist of one-off prompt fixes. Treat it as the
+compatibility research map for all Claude Code style clients that use the proxy.
+When a test or live trace reveals a new Claude Code behavior, add a durable
+regression test or a follow-up task instead of only patching the latest observed
+phrase.
+
 ## The Challenge: Notion's System Prompt
 
 Every request to Notion AI is prepended with a ~27k token system prompt that:
@@ -94,6 +100,72 @@ Notion threads preserve full conversation context server-side. The model sees it
 
 When no session exists (expired, cleared after error, etc.), the proxy collapses the entire conversation into a single self-contained message with the original query, all prior tool results, and the continuation prompt.
 
+## Global Compatibility Research Model
+
+Claude Code compatibility must be evaluated at the agent-loop level, not only at
+the individual prompt-string level. A useful investigation should model the
+entire request/response cycle that a coding client expects:
+
+1. Initial coding request with system/developer instructions.
+2. Tool inventory negotiation.
+3. Tool-call generation.
+4. Tool-result continuation.
+5. Session retry or session recovery.
+6. Final answer generation.
+7. Follow-up user request in the same coding session.
+
+The bridge should be assessed against the current Claude Code surface area:
+
+- project and user instructions such as `CLAUDE.md`;
+- slash-command and command-file style prompts;
+- hook-driven requests that run after file edits or shell commands;
+- MCP tool descriptions and MCP result payloads;
+- subagent or delegated-task style prompts;
+- non-interactive automation and GitHub Actions usage;
+- long tool chains that include read/edit/test/finalize loops.
+
+The goal is not to preserve Claude Code's full identity prompt verbatim. The
+goal is to preserve the operational contract: a coding assistant can inspect the
+repository, request file/shell/search tools, consume tool results, and produce a
+final coding response without drifting into Notion workspace behavior.
+
+## Research Output Policy
+
+Research findings must become durable project assets:
+
+- Add offline fixtures or golden transcript tests for reproduced compatibility
+  failures.
+- Add small follow-up tasks to `agent_tasks.json` for safe improvements that do
+  not fit the current PR.
+- Document remaining limitations here when a behavior is known but not yet
+  fixed.
+- Use live RDSH smoke workflows only for integration confidence; do not move
+  live Notion calls into unit tests.
+- Prefer broad behavior categories over fragile matching of a single user
+  phrase.
+
+When Jules investigates Claude Code compatibility, it may create new low/medium
+risk tasks from its findings even when the todo queue is not below the
+replenishment threshold. Those tasks must have concrete `allowed_paths`,
+acceptance criteria, and one-PR scope.
+
+## Regression Signals
+
+Treat these as compatibility failures unless a task explicitly allows them:
+
+- The model says it is Notion AI, a Notion workspace assistant, or cannot access
+  coding tools because it is inside Notion.
+- A coding request is reframed as page editing, workspace search, document
+  creation, or database manipulation.
+- Tool calls are replaced by prose such as "I cannot run commands" when a tool
+  was available.
+- The final answer leaves JSON/tool mode too early and triggers Notion identity
+  recovery.
+- Tool results are ignored, repeated, or interpreted as Notion content instead
+  of executed coding-tool output.
+- Claude Code memory, hooks, slash commands, MCP, or subagent-style prompts are
+  stripped so aggressively that the coding intent is lost.
+
 ## Capabilities
 
 | Feature | Status |
@@ -121,7 +193,11 @@ When no session exists (expired, cleared after error, etc.), the proxy collapses
 
 ## Technical Details
 
-For the full implementation details, including code snippets, debugging steps, and the history of failed approaches, see:
+For implementation details, start with:
 
-- [claude-code-compatibility-bridge.md](claude-code-compatibility-bridge.md) — Full technical deep-dive
 - [notion_system_prompt.md](notion_system_prompt.md) — Notion AI's complete server-side system prompt (~512 lines)
+- `internal/proxy/tools.go` — bridge prompt, tool filtering, tool-call parsing,
+  session follow-up construction, and coding-assistant detection
+- `internal/proxy/anthropic.go` — Anthropic Messages request handling and
+  Claude Code bridge integration
+- `internal/proxy/*_test.go` — offline regression coverage for bridge behavior

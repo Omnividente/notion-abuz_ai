@@ -30,7 +30,7 @@
       "low",
       "medium"
     ],
-    "instruction": "When the todo queue is low, add small Claude/Claude Code compatibility, proxy, test, or documentation tasks. Prefer stabilization, Notion persona leakage prevention, and regression coverage over broad feature work. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "instruction": "When the todo queue is low, add small Claude/Claude Code compatibility, proxy, test, or documentation tasks. Research and compatibility tasks may also add follow-up tasks for concrete findings from code inspection, tests, CI logs, docs gaps, or captured live smoke results even when the queue is not low. Prefer stabilization, Notion persona leakage prevention, and regression coverage over broad feature work. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
     "max_todo_tasks": 40
   },
   "autonomous_loop_policy": {
@@ -39,7 +39,8 @@
     "anti_stall_rule": "Never ask the user what to do next while safe low or medium risk tasks can be selected or generated.",
     "stabilization_first": true,
     "max_pr_scope": "one task id per PR",
-    "failure_rule": "If CI fails because of the current change, fix it before opening or updating the PR. If CI fails for an unrelated reason, add a follow-up task and explain the limitation in the PR body."
+    "failure_rule": "If CI fails because of the current change, fix it before opening or updating the PR. If CI fails for an unrelated reason, add a follow-up task and explain the limitation in the PR body.",
+    "discovery_rule": "For research, compatibility, and test tasks, add low/medium-risk follow-up todo tasks for concrete gaps discovered during the work even when the todo queue is not below the replenishment threshold. Keep generated tasks non-duplicative, scoped to one PR, below max_todo_tasks, and backed by allowed_paths plus acceptance criteria."
   },
   "tasks": [
     {
@@ -250,6 +251,32 @@
       "acceptance": [
         "Tests cover alias normalization.",
         "Tests handle edge cases for model map."
+      ]
+    },
+    {
+      "id": "claude-code-agentic-loop-regression-matrix",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Build a global Claude Code agent-loop regression matrix",
+      "description": "Research Claude Code style agent loops at the behavior level and add durable offline coverage for Notion persona leakage, tool-result continuation, and lost coding intent. The work should model current Claude Code surfaces such as CLAUDE.md instructions, slash commands, hooks, MCP-style tools, subagent/delegated prompts, non-interactive automation, and multi-turn read/edit/test/finalize loops. If the investigation finds additional safe gaps that do not fit this PR, add follow-up todo tasks with concrete allowed_paths and acceptance criteria.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/session_multiturn_test.go",
+        "internal/proxy/session_recovery_test.go",
+        "docs/claude-code-integration.md",
+        "docs/jules_autonomous_loop.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Docs define a behavior-level Claude Code compatibility matrix rather than only one-off phrase fixes.",
+        "Offline tests or fixtures cover at least three realistic Claude Code style transcript categories, including a multi-turn tool-result continuation.",
+        "Regression coverage detects or prevents Notion persona leakage/refusal language in coding-assistant paths where local fakes make that practical.",
+        "The work preserves existing Notion upstream transport behavior and does not add live network calls to unit tests.",
+        "Any discovered compatibility gaps outside this PR are added as low/medium-risk follow-up tasks with allowed_paths and acceptance criteria."
       ]
     },
     {

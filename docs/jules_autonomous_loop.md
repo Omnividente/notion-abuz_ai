@@ -60,6 +60,36 @@ In unattended mode, ordinary engineering uncertainty must be resolved by the
 agent. If a possible step belongs to a separate task, leave it out of the
 current PR, keep or add a follow-up task, and finish the selected task.
 
+## Research And Discovery
+
+Some tasks are investigative rather than narrowly prescriptive. For those tasks,
+Jules should not limit itself to literal user-provided bullet points. It should
+inspect the relevant code, tests, docs, and recent failures, then convert new
+findings into durable work items.
+
+Research and test tasks may add new `todo` tasks even when the queue is not
+below `replenishment_policy.minimum_todo_tasks`, provided that:
+
+1. The finding is grounded in code, docs, tests, CI logs, or a captured live
+   smoke result.
+2. The new task is low/medium risk and fits in one PR.
+3. The task has concrete `allowed_paths` and acceptance criteria.
+4. The task does not require secrets, production data, deployment changes, or
+   workflow permission changes.
+5. The task is not a duplicate of an existing `todo` or `done` task.
+6. The manifest stays below `replenishment_policy.max_todo_tasks`.
+
+If a discovered fix is required to complete the selected task and stays inside
+the selected task's `allowed_paths`, Jules may implement it in the current PR.
+If it is useful but outside the selected scope, Jules must create a follow-up
+task and finish the selected task.
+
+For Claude Code compatibility research, prefer behavior-level findings over
+single phrase matching. Useful findings include missing transcript fixtures,
+new Notion persona leakage signals, broken tool-result continuations, session
+recovery gaps, or loss of coding intent from `CLAUDE.md`, hooks, slash commands,
+MCP, or subagent-style prompts.
+
 ## Product Goal
 
 The proxy should behave like a stable coding-assistant API for Claude and
@@ -105,7 +135,7 @@ Use `--write` only when the selected task allows manifest cleanup.
 Keep at least `replenishment_policy.minimum_todo_tasks` tasks with status
 `todo`.
 
-When the queue is low:
+When the queue is low or research discovers new bounded follow-up work:
 
 1. Prefer stabilization, tests, and compatibility work over feature expansion.
 2. Generate low/medium-risk tasks only.
@@ -119,6 +149,7 @@ When the queue is low:
    - `acceptance`
 4. Do not duplicate done or existing todo tasks.
 5. Keep each task small enough for one PR.
+6. Do not add speculative tasks without a concrete finding or a documented gap.
 
 ## Proxy Priorities
 

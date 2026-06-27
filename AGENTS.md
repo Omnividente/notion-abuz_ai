@@ -46,6 +46,12 @@ Default selection rule:
 
 If the todo queue is below `replenishment_policy.minimum_todo_tasks`, add a small batch of low/medium-risk tasks with concrete `allowed_paths` and `acceptance` criteria.
 
+Research and compatibility tasks may add new follow-up `todo` tasks even when
+the queue is not below the replenishment threshold. Only do this for concrete
+findings from code inspection, offline tests, CI logs, docs gaps, or captured
+live smoke results. New tasks must be low/medium risk, non-duplicative,
+bounded to one PR, and below `replenishment_policy.max_todo_tasks`.
+
 Do not ask the user to choose between implementation approaches for low/medium
 tasks. If multiple safe approaches exist, choose the smallest reversible change
 that satisfies the selected task's acceptance criteria. If unsure, write focused
@@ -56,6 +62,10 @@ or CI-fix questions. If a possible change belongs to a separate task, exclude it
 from the current PR, keep or add a follow-up task, and finish the selected task.
 When work is ready for review or finalization, open/finalize the PR instead of
 asking whether anything else should be reviewed.
+For Claude Code compatibility work, prefer behavior-level research and
+regression coverage over matching one observed phrase. If a new class of Notion
+persona leakage, tool-loop breakage, or coding-intent loss is found, add a
+follow-up task with fixtures/tests/docs acceptance criteria.
 Repository variable `JULES_LOOP_ENABLED=false` disables new task dispatches and
 unattended monitor continuations.
 
