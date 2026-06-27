@@ -21,7 +21,11 @@ for pr in pulls:
     head = pr.get("head", {})
     head_ref = head.get("ref", "")
     head_repo = (head.get("repo") or {}).get("full_name", "")
+    body = pr.get("body") or ""
     if "jules" in labels:
+        count += 1
+        continue
+    if "PR created automatically by Jules" in body or "jules.google.com/task" in body:
         count += 1
         continue
     if head_repo != repo:

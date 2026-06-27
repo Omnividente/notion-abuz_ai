@@ -13,10 +13,15 @@ user = os.environ.get("PR_USER", "")
 repo = os.environ.get("GITHUB_REPOSITORY", "")
 title = os.environ.get("PR_TITLE", "")
 body = os.environ.get("PR_BODY", "")
+jules_body_markers = (
+    "PR created automatically by Jules",
+    "jules.google.com/task",
+)
 
 is_autonomous = (
     user == "google-jules[bot]"
     or "jules" in labels
+    or any(marker in body for marker in jules_body_markers)
     or (
         head_repo == repo
         and (
