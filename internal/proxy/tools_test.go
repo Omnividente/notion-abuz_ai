@@ -230,6 +230,26 @@ func TestStripClaudeCodeInstructions_PreservesCodingIntent(t *testing.T) {
 			input: "Task context: <subagent-task id=\"123\">Fix the auth bug</subagent-task>",
 			want:  "Task context: Fix the auth bug",
 		},
+		{
+			name:  "preserves nested and attributed XML tags",
+			input: "Payload: <mcp-server name=\"github\">{\"status\": \"ok\", \"nested\": <inner>content</inner>}</mcp-server>",
+			want:  "Payload: {\"status\": \"ok\", \"nested\": content}",
+		},
+		{
+			name:  "strips multiline system reminders with other tags",
+			input: "Start <system-reminder>\nline 1\nline 2\n<nested>foo</nested>\n</system-reminder>\nkeep this <other>tag</other>",
+			want:  "Start \nkeep this tag",
+		},
+		{
+			name:  "preserves hook-style messages",
+			input: "Hook: <hook name=\"pre-commit\">Please check code</hook>",
+			want:  "Hook: Please check code",
+		},
+		{
+			name:  "preserves slash command intent",
+			input: "Run <command name=\"/test\">/test --all</command>",
+			want:  "Run /test --all",
+		},
 	}
 
 	for _, tt := range tests {
