@@ -602,6 +602,11 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			jsonStr: `{'name': 'test', 'arguments': {}}`,
 			wantNil: true,
 		},
+		{
+			name:    "malformed json - wrapper single quotes instead of double quotes",
+			jsonStr: `{'tool_call': {'name': 'test', 'arguments': {}}}`,
+			wantNil: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
