@@ -1661,7 +1661,7 @@
     },
     {
       "id": "proxy-anthropic-trimcitationcontext-empty-8df2b726",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic trimCitationContext robustness with empty contexts",
@@ -1673,7 +1673,8 @@
       "acceptance": [
         "Tests cover trimCitationContext logic with empty strings.",
         "No panics occur and returns empty string as expected."
-      ]
+      ],
+      "completion_notes": "Added TestAnthropicTrimCitationContext_Empty to verify trimCitationContext correctly returns an empty string without panicking on empty contexts."
     },
     {
       "id": "proxy-anthropic-trimcitationcontext-short-8df2b727",
@@ -1769,6 +1770,22 @@
       ],
       "acceptance": [
         "Tests cover openai responses stream handler logic with empty payloads.",
+        "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-handleframe-robustness-missing-event-properties-8df2b729",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic HandleFrame robustness missing properties in event payloads",
+      "description": "Ensure that if the Anthropic stream transcoder logic receives valid JSON but fields like id or name at the root are incorrectly typed or missing in varied edge cases, it handles them gracefully without panicking.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover anthropic stream handler logic with missing root properties.",
         "Handler handles it safely instead of panicking."
       ]
     }
