@@ -615,6 +615,12 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 	}
 	_ = transcoder.HandleFrame(invalidTypeMessageStartFrame)
 
+	invalidTypeErrorFrameMismatchedType := anthropicSSEFrame{
+		Event: "error",
+		Data:  json.RawMessage(`{"error":123}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypeErrorFrameMismatchedType)
+
 	invalidTypePingFrame := anthropicSSEFrame{
 		Event: "ping",
 		Data:  json.RawMessage(`{"type":123}`),
@@ -733,6 +739,12 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 		Data:  json.RawMessage(`{"message":{"usage":{"input_tokens":"not-an-int"}}}`),
 	}
 	_ = transcoder.HandleFrame(invalidTypeMessageStartFrame)
+
+	invalidTypeErrorFrameMismatchedType := anthropicSSEFrame{
+		Event: "error",
+		Data:  json.RawMessage(`{"error":123}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypeErrorFrameMismatchedType)
 
 	invalidTypePingFrame := anthropicSSEFrame{
 		Event: "ping",
