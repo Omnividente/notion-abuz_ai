@@ -1320,7 +1320,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-ping-types",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for ping type mismatch",
@@ -1396,6 +1396,22 @@
       "acceptance": [
         "Tests cover stream transcoders with general unexpected types.",
         "Transcoders handle it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-type-unknown-json-8df2b719",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling test for generic robustness",
+      "description": "Ensure that if HandleFrame receives unhandled event types with unexpected JSON types, it handles them gracefully.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with new edge cases for generic robustness.",
+        "Transcoders return error correctly or handle safely."
       ]
     }
   ]
