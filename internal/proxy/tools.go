@@ -167,7 +167,6 @@ func buildCompactToolList(tools []Tool) string {
 	return sb.String()
 }
 
-
 // simplifyToolSchema removes bloated metadata (titles, examples) and truncates long
 // descriptions from JSON schemas to prevent token bloat with large tool sets.
 func simplifyToolSchema(schema interface{}) interface{} {
