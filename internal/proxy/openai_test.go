@@ -1270,3 +1270,35 @@ func TestOpenAIResponsesStreamTranscoder_MissingFields(t *testing.T) {
 		_ = transcoder.HandleFrame(frame)
 	}
 }
+
+func TestOpenAIChatStreamTranscoder_InvalidToolType(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
+
+	frames := []anthropicSSEFrame{
+		{
+			Event: "content_block_start",
+			Data:  json.RawMessage(`{"index":0,"content_block":{"type":123,"id":"call_1","name":"Read","input":{}}}`),
+		},
+	}
+
+	for _, frame := range frames {
+		_ = transcoder.HandleFrame(frame)
+	}
+}
+
+func TestOpenAIResponsesStreamTranscoder_InvalidToolType(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 123)
+
+	frames := []anthropicSSEFrame{
+		{
+			Event: "content_block_start",
+			Data:  json.RawMessage(`{"index":0,"content_block":{"type":123,"id":"call_1","name":"Read","input":{}}}`),
+		},
+	}
+
+	for _, frame := range frames {
+		_ = transcoder.HandleFrame(frame)
+	}
+}
