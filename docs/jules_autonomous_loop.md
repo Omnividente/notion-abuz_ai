@@ -17,7 +17,8 @@ manual dispatch or pull_request.closed
   -> Jules updates tests and docs
   -> Jules marks the task done
   -> Jules opens one PR
-  -> CI and automerge validate/merge
+  -> CI, live smoke, and autonomous PR quality gate validate the PR
+  -> automerge merges only result-quality-passing PRs
   -> pull_request.closed starts the next task
 ```
 
@@ -44,6 +45,51 @@ with an autonomous continuation instruction instead of waiting for a human.
 Set repository variable `JULES_LOOP_ENABLED=false` to stop both new Jules task
 dispatches and unattended monitor continuations. If the variable is absent or
 set to any other value, the loop is enabled.
+
+## Result Quality Gate
+
+Autonomous PRs are not merged only because CI is green. The automerge workflow
+runs `.github/scripts/review-autonomous-pr-quality.py` before `gh pr merge`.
+The gate compares the PR diff with `agent_tasks.json` before and after the PR.
+
+The gate blocks merge when a PR marks a task `done` but the changed files and PR
+body do not prove the selected task was actually completed. This is especially
+important for operational tasks involving runtime behavior, bridge decisions,
+logging, observability, local live-smoke diagnostics, artifacts, compatibility,
+Notion persona leakage, tool-call refusal, transcripts, or session handling.
+
+Examples of weak completions that must not automerge:
+
+- A logging or observability task is marked `done`, but the PR only adds
+  detector/parser test cases and changes `agent_tasks.json`.
+- The PR body says the direct proof was difficult and moves the core work into a
+  follow-up task while still marking the current task `done`.
+- The PR adds new follow-up tasks but does not provide direct evidence for the
+  selected task's acceptance criteria.
+- No task moves to `done` or `blocked` in `agent_tasks.json`.
+
+Manifest-only PRs that move a task to `blocked` are allowed when they include a
+concrete `blocked_reason`. This lets recovery automation stop repeated failed
+Jules sessions without pretending the original runtime task was completed.
+
+When the gate fails, automerge adds the `needs-quality-fix` label, comments with
+the blocking reasons, and exits before merge. The fix should update the same PR
+with direct evidence, or block the task with a concrete reason if the evidence
+is genuinely unavailable.
+
+## Meta Loop
+
+There are two loops:
+
+1. The product loop improves notion-abuz_ai runtime behavior and tests.
+2. The meta loop improves the automation itself when the product loop exposes a
+   weak spot, such as micro-PRs, repeated failed sessions, missing artifacts,
+   stale task selection, or formal-only task completion.
+
+Use the meta loop deliberately. Keep `JULES_LOOP_ENABLED=false` while changing
+workflow or automation behavior, merge the automation fix after CI is green, and
+only then re-enable the product loop. Automation improvements should be small,
+observable, and covered by deterministic script tests where practical.
 
 ## Main Rule
 

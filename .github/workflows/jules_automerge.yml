@@ -136,6 +136,66 @@ jobs:
       - name: RDSH local live smoke
         run: bash .github/scripts/rdsh-local-live-smoke.sh
 
+      - name: Fetch PR refs for quality gate
+        id: quality-refs
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          base_ref="refs/remotes/origin/${PR_BASE_REF}"
+          head_ref="refs/remotes/pull/${PR_NUMBER}/head"
+
+          git fetch --no-tags origin "+refs/heads/${PR_BASE_REF}:${base_ref}"
+          git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/head:${head_ref}"
+
+          echo "base_ref=${base_ref}" >> "$GITHUB_OUTPUT"
+          echo "head_ref=${head_ref}" >> "$GITHUB_OUTPUT"
+
+      - name: Review autonomous PR quality
+        id: quality
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        run: |
+          set -euo pipefail
+
+          printf '%s' "${PR_BODY}" > /tmp/pr-body.md
+          python3 .github/scripts/review-autonomous-pr-quality.py \
+            --base "${{ steps.quality-refs.outputs.base_ref }}" \
+            --head "${{ steps.quality-refs.outputs.head_ref }}" \
+            --pr-title "${PR_TITLE}" \
+            --pr-body-file /tmp/pr-body.md \
+            --report /tmp/autonomous-pr-quality.md \
+            --github-output "$GITHUB_OUTPUT" \
+            --json | tee /tmp/autonomous-pr-quality.json
+
+      - name: Stop weak autonomous PR before merge
+        if: steps.quality.outputs.passed != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PAT || github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          gh label create needs-quality-fix \
+            --repo "$GITHUB_REPOSITORY" \
+            --color d93f0b \
+            --description "Autonomous PR needs stronger task completion evidence" \
+            >/dev/null 2>&1 || true
+
+          gh pr edit "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --add-label needs-quality-fix
+
+          gh pr comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body-file /tmp/autonomous-pr-quality.md
+
+          echo "::error::Autonomous PR quality gate failed: ${{ steps.quality.outputs.summary }}"
+          exit 1
+
       - name: Merge PR
         if: success()
         env:

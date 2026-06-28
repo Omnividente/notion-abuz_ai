@@ -45,6 +45,11 @@ jobs:
           python3 .github/scripts/summarize-jules-failures-test.py
           python3 -m py_compile .github/scripts/summarize-jules-failures.py .github/scripts/block-failed-agent-task.py
 
+      - name: Validate autonomous PR quality gate
+        run: |
+          python3 .github/scripts/review-autonomous-pr-quality-test.py
+          python3 -m py_compile .github/scripts/review-autonomous-pr-quality.py
+
       - name: Check Go formatting
         run: test -z "$(gofmt -l .)"
 
