@@ -567,10 +567,10 @@ func normalizeToolBridgeResidualText(text string) string {
 	return trimmed
 }
 
-func detectToolBridgeNoToolResponse(text string) bool {
+func detectToolBridgeNoToolResponse(text string) (bool, string) {
 	normalized := normalizeToolBridgeResidualText(text)
 	if normalized == "" {
-		return false
+		return false, ""
 	}
 
 	lower := strings.ToLower(normalized)
@@ -606,21 +606,21 @@ func detectToolBridgeNoToolResponse(text string) bool {
 
 	switch {
 	case mentionsNotionIdentity && mentionsLocalFS:
-		return true
+		return true, "Notion persona leakage"
 	case mentionsLocalFS && mentionsCodingAssistant:
-		return true
+		return true, "tool-call refusal"
 	case mentionsNotionIdentity && mentionsCodingAssistant:
-		return true
+		return true, "Notion persona leakage"
 	case mentionsNotionIdentity && mentionsMissingLocalTools:
-		return true
+		return true, "Notion persona leakage"
 	case mentionsNotionIdentity && strings.Contains(lower, "bash"):
-		return true
+		return true, "Notion persona leakage"
 	case mentionsMissingLocalTools && mentionsCodingAssistant && mentionsManualHandOff:
-		return true
+		return true, "tool-call refusal"
 	case mentionsWorkspaceReframing && (mentionsMissingLocalTools || mentionsNotionIdentity || strings.Contains(lower, "bash") || strings.Contains(lower, "edit") || strings.Contains(lower, "terminal") || strings.Contains(lower, "run") || strings.Contains(normalized, "本地命令")):
-		return true
+		return true, "workspace reframing"
 	default:
-		return false
+		return false, ""
 	}
 }
 
@@ -873,18 +873,18 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 				} else if rawMsgCount == session.RawMessageCount {
 					// Same message count — not a new turn (e.g. retry or tool call loop)
 					isRepeatTurn = true
-					log.Printf("[session] repeat turn detected (rawMsgs=%d, turnCount=%d), reusing session",
+					log.Printf("[session] decision: repeat turn (rawMsgs=%d, turnCount=%d), reusing session",
 						rawMsgCount, session.TurnCount)
 				}
 			}
 
 			if session != nil {
 				isFirstTurn = false
-				log.Printf("[session] found existing session: thread=%s turns=%d rawMsgs=%d account=%s",
+				log.Printf("[session] decision: session continuation (thread=%s turns=%d rawMsgs=%d account=%s)",
 					session.ThreadID, session.TurnCount, session.RawMessageCount, session.AccountEmail)
 			} else {
 				isFirstTurn = true
-				log.Printf("[session] no existing session, will create new thread (fingerprint=%s)", fingerprint[:8])
+				log.Printf("[session] decision: new session thread (fingerprint=%s)", fingerprint[:8])
 			}
 		}
 
@@ -1152,7 +1152,7 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 
 			if reqErr != nil && errors.Is(reqErr, ErrToolBridgeNoTool) {
 				if !toolBridgeRetried {
-					log.Printf("[bridge] %s returned no-tool identity-drift text, clearing session and retrying once with sanitized recovery prompt", acc.UserEmail)
+					log.Printf("[bridge] decision: retry triggered by ErrToolBridgeNoTool (%s), clearing session and retrying once with sanitized recovery prompt", acc.UserEmail)
 					toolBridgeRetried = true
 					if fingerprint != "" {
 						globalSessionManager.Delete(fingerprint)
@@ -1780,9 +1780,19 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 	if hasTools {
 		prepared = prepareToolBridgeResponse(contentStr, nativeToolUses)
 		actionDetected := prepared.HasCalls || prepared.WebSearchQuery != "" || prepared.DoneText != ""
-		if !actionDetected && detectToolBridgeNoToolResponse(prepared.Remaining) {
-			log.Printf("[bridge] %s detected no-tool identity-drift text (%d chars), requesting clean retry", requestID, len(prepared.Remaining))
-			return ErrToolBridgeNoTool
+		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
+		if !actionDetected {
+			if isNoTool {
+				log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
+				return ErrToolBridgeNoTool
+			}
+			log.Printf("[bridge] %s decision: missing tool calls (no drift detected, %d chars remaining)", requestID, len(prepared.Remaining))
+		} else if prepared.HasCalls {
+			log.Printf("[bridge] %s decision: tool calls generated (%d calls)", requestID, len(prepared.ToolCalls))
+		} else if prepared.WebSearchQuery != "" {
+			log.Printf("[bridge] %s decision: WebSearch interception", requestID)
+		} else if prepared.DoneText != "" {
+			log.Printf("[bridge] %s decision: final-answer extraction", requestID)
 		}
 	}
 
@@ -2071,9 +2081,19 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 	if hasTools {
 		prepared = prepareToolBridgeResponse(content, nativeToolUses)
 		actionDetected := prepared.HasCalls || prepared.WebSearchQuery != "" || prepared.DoneText != ""
-		if !actionDetected && detectToolBridgeNoToolResponse(prepared.Remaining) {
-			log.Printf("[bridge] %s detected no-tool identity-drift text (%d chars), requesting clean retry", requestID, len(prepared.Remaining))
-			return ErrToolBridgeNoTool
+		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
+		if !actionDetected {
+			if isNoTool {
+				log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
+				return ErrToolBridgeNoTool
+			}
+			log.Printf("[bridge] %s decision: missing tool calls (no drift detected, %d chars remaining)", requestID, len(prepared.Remaining))
+		} else if prepared.HasCalls {
+			log.Printf("[bridge] %s decision: tool calls generated (%d calls)", requestID, len(prepared.ToolCalls))
+		} else if prepared.WebSearchQuery != "" {
+			log.Printf("[bridge] %s decision: WebSearch interception", requestID)
+		} else if prepared.DoneText != "" {
+			log.Printf("[bridge] %s decision: final-answer extraction", requestID)
 		}
 	}
 

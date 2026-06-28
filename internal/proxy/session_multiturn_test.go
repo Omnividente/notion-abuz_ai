@@ -505,12 +505,14 @@ func TestClaudeCodeAgentLoop_FinalAnswerAvoidsNotionPersona(t *testing.T) {
 	// Must verify that the system is properly rejecting Notion persona
 	// By asserting that our detect function correctly flags a fake bad response
 	badResponse := `I am Notion AI, and I don't have access to your coding assistant. Therefore, I cannot run edit or bash to modify those files.`
-	if !detectToolBridgeNoToolResponse(badResponse) {
+	isNoToolBad, _ := detectToolBridgeNoToolResponse(badResponse)
+	if !isNoToolBad {
 		t.Errorf("detectToolBridgeNoToolResponse failed to catch a Notion persona final answer drift")
 	}
 
 	goodResponse := `{"name": "__done__", "arguments": {"result": "I have updated and verified the tests. They all pass."}}`
-	if detectToolBridgeNoToolResponse(goodResponse) {
+	isNoToolGood, _ := detectToolBridgeNoToolResponse(goodResponse)
+	if isNoToolGood {
 		t.Errorf("detectToolBridgeNoToolResponse incorrectly flagged a valid JSON final answer")
 	}
 }

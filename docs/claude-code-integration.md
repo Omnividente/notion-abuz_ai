@@ -187,7 +187,17 @@ crucial for reproducing the failure offline.
 
 To capture actionable evidence without exposing production data:
 
-1. **Failure Classification Markers**: Look for the following signals in the captured transcript snippet:
+1. **Diagnostic Decision Logs**: Live logs explicitly trace retry decisions and fallback behaviors. Look for log lines starting with `[bridge] decision:` or `[session] decision:`:
+   - `[bridge] decision: Notion persona leakage detected...`
+   - `[bridge] decision: workspace reframing detected...`
+   - `[bridge] decision: tool-call refusal detected...`
+   - `[bridge] decision: missing tool calls (no drift detected...`
+   - `[bridge] decision: WebSearch interception`
+   - `[bridge] decision: final-answer extraction`
+   - `[bridge] decision: tool calls generated`
+   - `[session] decision: session continuation` / `repeat turn` / `new session thread`
+
+2. **Failure Classification Markers**: Look for the following signals in the captured transcript snippet:
    - *Notion persona leakage*: Explicit phrases such as "I am Notion AI" or "I cannot access that in Notion".
    - *JSON tool-call loss*: The model leaves the `{"name": "...", "arguments": {...}}` format and starts generating raw conversation prose.
    - *Tool-result continuation loss*: The model ignores the previous tool execution result and either repeats the exact same tool call or drops the conversation thread context.

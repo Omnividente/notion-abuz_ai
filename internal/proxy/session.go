@@ -418,6 +418,10 @@ func buildFreshThreadRecoveryMessages(messages []ChatMessage) []ChatMessage {
 
 func buildToolBridgeRecoveryMessages(messages []ChatMessage) []ChatMessage {
 	return buildRecoveryMessages(messages, func(msg ChatMessage, content string) bool {
-		return msg.Role == "assistant" && detectToolBridgeNoToolResponse(content)
+		if msg.Role != "assistant" {
+			return false
+		}
+		isNoTool, _ := detectToolBridgeNoToolResponse(content)
+		return isNoTool
 	})
 }

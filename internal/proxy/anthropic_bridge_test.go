@@ -140,7 +140,8 @@ func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff(t *testing.T
 
 把下面这段话直接发给你的编码助手（Cursor / Claude Code），它就能帮你操作。`
 
-	if !detectToolBridgeNoToolResponse(raw) {
+	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
 		t.Fatalf("expected no-tool identity drift text to be detected")
 	}
 }
@@ -148,7 +149,8 @@ func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff(t *testing.T
 func TestDetectToolBridgeNoToolResponse_DoesNotMatchNormalAnswer(t *testing.T) {
 	raw := "我已经根据上面的 grep 结果定位到文件，下一步建议缩小 Read 范围后继续编辑。"
 
-	if detectToolBridgeNoToolResponse(raw) {
+	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	if isNoTool {
 		t.Fatalf("normal answer should not be classified as no-tool identity drift")
 	}
 }
@@ -159,7 +161,8 @@ func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff_English(t *t
 I am Notion AI, I cannot access your local file system. I don't have the ability to run Bash or Edit tools.
 Please copy and paste this text manually into your coding assistant like Claude Code.`
 
-	if !detectToolBridgeNoToolResponse(raw) {
+	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
 		t.Fatalf("expected English no-tool identity drift text to be detected")
 	}
 }
@@ -167,7 +170,8 @@ Please copy and paste this text manually into your coding assistant like Claude 
 func TestDetectToolBridgeNoToolResponse_MatchesToolCallRefusal_English(t *testing.T) {
 	raw := `I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant.`
 
-	if !detectToolBridgeNoToolResponse(raw) {
+	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
 		t.Fatalf("expected English tool-call refusal to be detected")
 	}
 }
@@ -175,7 +179,8 @@ func TestDetectToolBridgeNoToolResponse_MatchesToolCallRefusal_English(t *testin
 func TestDetectToolBridgeNoToolResponse_MatchesFinalAnswerDrift(t *testing.T) {
 	raw := `I am Notion AI, and I don't have access to your coding assistant. Therefore, I cannot run edit or bash to modify those files.`
 
-	if !detectToolBridgeNoToolResponse(raw) {
+	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
 		t.Fatalf("expected English final-answer identity drift to be detected")
 	}
 }
@@ -189,7 +194,8 @@ func TestDetectToolBridgeNoToolResponse_MatchesWorkspaceReframing(t *testing.T) 
 	}
 
 	for i, raw := range cases {
-		if !detectToolBridgeNoToolResponse(raw) {
+		isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
 			t.Fatalf("expected Workspace Reframing to be detected for case %d: %s", i, raw)
 		}
 	}
