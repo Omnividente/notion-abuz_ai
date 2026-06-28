@@ -1208,7 +1208,7 @@
     },
     {
       "id": "proxy-tool-call-malformed-json-test-7",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for malformed JSON single quotes",
