@@ -184,3 +184,32 @@ func TestAnthropicHandleFrameRobustness_InvalidEventNameFormat(t *testing.T) {
 		t.Logf("Returned error as expected or handled gracefully: %v", err)
 	}
 }
+
+func TestAnthropicTrimCitationContext_Robustness(t *testing.T) {
+	// Test that trimCitationContext handles various edge-case string lengths gracefully without panicking or out-of-bounds slicing
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("trimCitationContext panicked: %v", r)
+		}
+	}()
+
+	testCases := []string{
+		"",                           // empty string
+		"a",                          // extremely short string
+		strings.Repeat("a", 50),      // shorter than maxRunes (320)
+		strings.Repeat("a", 320),     // exactly maxRunes
+		strings.Repeat("a", 500),     // longer than maxRunes
+		strings.Repeat("こんにちは", 100), // multi-byte characters
+		"word",                       // single word
+		strings.Repeat(" ", 400),     // only spaces
+	}
+
+	for _, tc := range testCases {
+		res := trimCitationContext(tc)
+		runes := []rune(res)
+		if len(runes) > 320 {
+			t.Errorf("trimCitationContext returned string longer than maxRunes (320): len = %d", len(runes))
+		}
+	}
+}
