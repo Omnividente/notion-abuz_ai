@@ -1,0 +1,52 @@
+name: Automation Health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: automation-health
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.health.outputs.status }}
+      pause_loop: ${{ steps.health.outputs.pause_loop }}
+      create_meta_task: ${{ steps.health.outputs.create_meta_task }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Generate automation health report
+        id: health
+        env:
+          GITHUB_API_TOKEN: ${{ github.token }}
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
+        run: |
+          python3 .github/scripts/automation-health-report.py \
+            --live \
+            --repo "$GITHUB_REPOSITORY" \
+            --output-json automation-health.json \
+            --output-md automation-health.md \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Append report summary
+        run: cat automation-health.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload automation health report
+        uses: actions/upload-artifact@v4
+        with:
+          name: automation-health
+          path: |
+            automation-health.json
+            automation-health.md
