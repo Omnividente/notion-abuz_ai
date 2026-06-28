@@ -1499,7 +1499,7 @@
     },
     {
       "id": "proxy-anthropic-handleframe-robustness",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame general unexpected type robustness",
@@ -1591,6 +1591,22 @@
       "acceptance": [
         "Tests cover anthropic stream handler logic with invalid event format.",
         "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-test-trimcitationcontext",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic trimCitationContext robustness",
+      "description": "Ensure that trimCitationContext handles empty, extremely short, or malformed string contexts gracefully without panicking or out-of-bounds slicing.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover trimCitationContext logic with various edge-case string lengths.",
+        "No panics occur."
       ]
     }
   ]

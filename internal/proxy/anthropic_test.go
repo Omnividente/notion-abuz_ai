@@ -40,3 +40,20 @@ func TestAnthropicStreaming_ToolCallChunks(t *testing.T) {
 		t.Fatalf("body missing split JSON chunks: %s", body)
 	}
 }
+
+func TestAnthropicHandleFrameRobustness(t *testing.T) {
+	// Test that sendAnthropicSSE handles unmarshalable payload gracefully
+	rr := httptest.NewRecorder()
+	mf := &mockFlusher{rr}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("sendAnthropicSSE panicked with unexpected payload: %v", r)
+		}
+	}()
+
+	// Channels cannot be marshaled to JSON, so this tests robustness against json.Marshal errors
+	unmarshalable := make(chan int)
+
+	sendAnthropicSSE(mf, mf, "unexpected_type_event", unmarshalable)
+}
