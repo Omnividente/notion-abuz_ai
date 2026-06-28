@@ -1854,7 +1854,7 @@
     },
     {
       "id": "claude-code-local-live-smoke-artifact-triage-loop",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Turn local live-smoke failure artifacts into runtime bridge fixes",
@@ -2257,6 +2257,25 @@
       ],
       "acceptance": [
         "rdsh-local-live-smoke.sh explicitly checks for workspace reframing and tool-call refusal keywords."
+      ]
+    },
+    {
+      "id": "claude-code-local-live-smoke-diagnostics-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Analyze local live-smoke extended diagnostic artifacts",
+      "description": "Now that extended diagnostic logging (bridge/session decision logs) has been added to the local live smoke tests, analyze the newly captured artifacts from CI failures to pinpoint whether Notion persona leakage or token missing is due to missing instruction injection, session multi-turn issues, or system prompt replacement, and implement the runtime bridge fix.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/*_test.go"
+      ],
+      "acceptance": [
+        "PR identifies the root cause of the local live-smoke failure using the extended diagnostics.",
+        "PR implements the smallest safe runtime bridge fix to resolve the Claude Code compatibility issue.",
+        "Focused regression tests are added to verify the fix."
       ]
     }
   ]

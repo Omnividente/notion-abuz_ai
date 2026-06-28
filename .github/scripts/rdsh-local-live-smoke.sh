@@ -154,11 +154,13 @@ echo "OpenAI-compatible smoke content: $openai_content"
 if ! grep -q 'OK_CLAUDE_PROXY_OPENAI' <<<"$openai_content"; then
   echo "::error::OpenAI-compatible local smoke did not contain the expected token."
   echo "Diagnostic (first 256 chars): ${openai_content:0:256}"
+  grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
   exit 1
 fi
 if grep -Eiq 'notion|workspace|page|document' <<<"$openai_content"; then
   echo "::error::OpenAI-compatible local smoke leaked Notion/workspace/page/document persona text."
   echo "Diagnostic (first 256 chars): ${openai_content:0:256}"
+  grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
   exit 1
 fi
 
@@ -189,10 +191,12 @@ echo "Anthropic smoke content: $anthropic_content"
 if ! grep -q 'OK_CLAUDE_PROXY_ANTHROPIC' <<<"$anthropic_content"; then
   echo "::error::Anthropic local smoke did not contain the expected token."
   echo "Diagnostic (first 256 chars): ${anthropic_content:0:256}"
+  grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
   exit 1
 fi
 if grep -Eiq 'notion|workspace|page|document' <<<"$anthropic_content"; then
   echo "::error::Anthropic local smoke leaked Notion/workspace/page/document persona text."
   echo "Diagnostic (first 256 chars): ${anthropic_content:0:256}"
+  grep -E '\[bridge\] decision:|\[session\] decision:' /tmp/notion-manager.stderr.log || true
   exit 1
 fi
