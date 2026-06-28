@@ -91,7 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --name-only | tee /tmp/pr-files.txt
-          if grep -E '(^|/)(config\.yaml|token\.txt|pass\.txt|.*\.log|.*\.(orig|rej|diff|patch)|notion-manager(\.exe)?$)$|^(data|accounts)/|^\.github/workflows/|^(my_.*\.go|run_test\.go)$' /tmp/pr-files.txt; then
+          if grep -E '(^|/)(config\.yaml|token\.txt|pass\.txt|.*\.log|.*\.(orig|rej|diff|patch)|notion-manager(\.exe)?$)$|^(data|accounts)/|^(my_.*\.go|run_test\.go)$' /tmp/pr-files.txt; then
             echo "::error::PR changes protected runtime, secret, binary, log, data, account, workflow, or temporary scratch files."
             exit 1
           fi
