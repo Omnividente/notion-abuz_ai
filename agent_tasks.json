@@ -1708,7 +1708,7 @@
     },
     {
       "id": "proxy-openai-handleframe-robustness-missing-delta-fields-a9b4776a",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for OpenAI HandleFrame robustness missing delta fields",
@@ -1720,7 +1720,8 @@
       "acceptance": [
         "Tests cover openai stream handler logic with missing fields in delta payloads.",
         "Handler handles it safely instead of panicking."
-      ]
+      ],
+      "completion_notes": "Added TestOpenAIChatStreamTranscoder_MissingDeltaFields and TestOpenAIResponsesStreamTranscoder_MissingDeltaFields to verify robustness with missing delta fields."
     }
   ]
 }
