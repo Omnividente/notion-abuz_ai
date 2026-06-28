@@ -53,6 +53,7 @@ func buildAnthropicToolsBlock(tools []Tool) string {
 		if schema == nil {
 			schema = map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}
 		}
+		schema = simplifyToolSchema(schema)
 		defs = append(defs, anthropicTool{
 			Name:        t.Function.Name,
 			Description: t.Function.Description,
@@ -76,6 +77,7 @@ func buildOpenAIToolsBlock(tools []Tool) string {
 		if params == nil {
 			params = map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}
 		}
+		params = simplifyToolSchema(params)
 		funcs = append(funcs, openaiFunc{
 			Name:        t.Function.Name,
 			Description: t.Function.Description,
@@ -99,6 +101,7 @@ func buildGeminiToolsBlock(tools []Tool) string {
 		if params == nil {
 			params = map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}
 		}
+		params = simplifyToolSchema(params)
 		funcs = append(funcs, geminiFunc{
 			Name:        t.Function.Name,
 			Description: t.Function.Description,
@@ -129,7 +132,8 @@ func buildToolList(tools []Tool) string {
 			sb.WriteString(fmt.Sprintf(" - %s", t.Function.Description))
 		}
 		if t.Function.Parameters != nil {
-			params, _ := json.Marshal(t.Function.Parameters)
+			simplified := simplifyToolSchema(t.Function.Parameters)
+			params, _ := json.Marshal(simplified)
 			sb.WriteString(fmt.Sprintf("\nParameters: %s", string(params)))
 		}
 		sb.WriteString("\n")
@@ -161,6 +165,45 @@ func buildCompactToolList(tools []Tool) string {
 		sb.WriteString("\n")
 	}
 	return sb.String()
+}
+
+// simplifyToolSchema removes bloated metadata (titles, examples) and truncates long
+// descriptions from JSON schemas to prevent token bloat with large tool sets.
+func simplifyToolSchema(schema interface{}) interface{} {
+	if schema == nil {
+		return nil
+	}
+	switch v := schema.(type) {
+	case map[string]interface{}:
+		out := make(map[string]interface{})
+		for key, val := range v {
+			switch key {
+			case "title", "examples", "default", "$schema", "$id":
+				continue
+			case "description":
+				if s, ok := val.(string); ok {
+					if len([]rune(s)) > 200 {
+						out[key] = string([]rune(s)[:197]) + "..."
+					} else {
+						out[key] = s
+					}
+				} else {
+					out[key] = simplifyToolSchema(val)
+				}
+			default:
+				out[key] = simplifyToolSchema(val)
+			}
+		}
+		return out
+	case []interface{}:
+		var out []interface{}
+		for _, item := range v {
+			out = append(out, simplifyToolSchema(item))
+		}
+		return out
+	default:
+		return v
+	}
 }
 
 // extractParamSignature extracts a compact parameter signature from a JSON schema.

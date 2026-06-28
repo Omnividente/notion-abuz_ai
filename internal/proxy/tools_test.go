@@ -669,3 +669,104 @@ func TestBuildToolsBlocks_EmptySchemaFallback(t *testing.T) {
 		t.Errorf("buildGeminiToolsBlock missing empty schema fallback:\n%s", geminiBlock)
 	}
 }
+
+func TestSimplifyToolSchema(t *testing.T) {
+	// A bloated schema resembling what Claude Code might generate
+	inputJSON := `{
+		"type": "object",
+		"title": "BloatedSchema",
+		"$schema": "http://json-schema.org/draft-07/schema#",
+		"properties": {
+			"command": {
+				"type": "string",
+				"title": "CommandToRun",
+				"examples": ["ls -la", "echo hello"],
+				"default": "ls",
+				"description": "This is a very long description that goes on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on. And it just keeps going to exceed the two hundred character limit set by the simplification algorithm to ensure truncation works exactly as intended."
+			},
+			"options": {
+				"type": "object",
+				"properties": {
+					"timeout": {
+						"type": "integer",
+						"description": "Timeout in seconds 🚀"
+					}
+				}
+			}
+		},
+		"required": ["command"]
+	}`
+
+	var rawSchema interface{}
+	if err := json.Unmarshal([]byte(inputJSON), &rawSchema); err != nil {
+		t.Fatalf("failed to unmarshal input json: %v", err)
+	}
+
+	simplified := simplifyToolSchema(rawSchema)
+
+	// Convert back to map to verify structure
+	simplifiedMap, ok := simplified.(map[string]interface{})
+	if !ok {
+		t.Fatalf("simplified schema is not a map, got %T", simplified)
+	}
+
+	// Verify bloat is removed
+	if _, exists := simplifiedMap["title"]; exists {
+		t.Errorf("expected 'title' to be stripped")
+	}
+	if _, exists := simplifiedMap["$schema"]; exists {
+		t.Errorf("expected '$schema' to be stripped")
+	}
+
+	// Verify required structures are kept
+	props, ok := simplifiedMap["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'properties' to remain a map")
+	}
+
+	commandProp, ok := props["command"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'command' property to remain a map")
+	}
+
+	// Verify nested bloat is removed
+	if _, exists := commandProp["title"]; exists {
+		t.Errorf("expected nested 'title' to be stripped")
+	}
+	if _, exists := commandProp["examples"]; exists {
+		t.Errorf("expected nested 'examples' to be stripped")
+	}
+	if _, exists := commandProp["default"]; exists {
+		t.Errorf("expected nested 'default' to be stripped")
+	}
+
+	// Verify description truncation
+	desc, ok := commandProp["description"].(string)
+	if !ok {
+		t.Fatalf("expected 'description' to be a string")
+	}
+	if len([]rune(desc)) > 200 {
+		t.Errorf("expected description to be truncated to <= 200 runes, got %d runes", len([]rune(desc)))
+	}
+	if !strings.HasSuffix(desc, "...") {
+		t.Errorf("expected description to have suffix '...'")
+	}
+
+	// Verify shorter descriptions are untouched and emojis survive
+	optionsProp, ok := props["options"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'options' property to remain a map")
+	}
+	optionsProps, ok := optionsProp["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'options.properties' to remain a map")
+	}
+	timeoutProp, ok := optionsProps["timeout"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'timeout' property to remain a map")
+	}
+	timeoutDesc, _ := timeoutProp["description"].(string)
+	if timeoutDesc != "Timeout in seconds 🚀" {
+		t.Errorf("expected short description with emoji to be intact, got: %q", timeoutDesc)
+	}
+}
