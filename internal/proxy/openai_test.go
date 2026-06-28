@@ -590,6 +590,12 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 	if err := transcoder.HandleFrame(invalidUnknownFrame); err == nil {
 		t.Fatal("Expected error for invalid JSON frame in unknown event, got nil")
 	}
+
+	invalidTypeContentBlockDeltaFrame := anthropicSSEFrame{
+		Event: "content_block_delta",
+		Data:  json.RawMessage(`{"index":"not-an-int","delta":{"type":123,"text":456}}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypeContentBlockDeltaFrame)
 }
 
 func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
@@ -667,6 +673,12 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 	if err := transcoder.HandleFrame(invalidUnknownFrame); err == nil {
 		t.Fatal("Expected error for invalid JSON frame in unknown event, got nil")
 	}
+
+	invalidTypeContentBlockDeltaFrame := anthropicSSEFrame{
+		Event: "content_block_delta",
+		Data:  json.RawMessage(`{"index":"not-an-int","delta":{"type":123,"text":456}}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypeContentBlockDeltaFrame)
 }
 
 func TestOpenAIErrorNormalization_UnsupportedToolType(t *testing.T) {
