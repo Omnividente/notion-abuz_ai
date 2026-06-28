@@ -1612,7 +1612,7 @@
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-unknown-primitive-payloads-8df2b724",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame robustness unknown primitive payloads",
@@ -1704,6 +1704,22 @@
       "acceptance": [
         "Tests cover trimCitationContext logic with single long words or whitespace edge cases.",
         "No panics occur and returns expected subset string."
+      ]
+    },
+    {
+      "id": "proxy-openai-handleframe-robustness-missing-delta-fields-a9b4776a",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for OpenAI HandleFrame robustness missing delta fields",
+      "description": "Ensure that if the OpenAI stream transcoder logic receives valid JSON but missing expected fields in delta payloads, it handles them gracefully without panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover openai stream handler logic with missing fields in delta payloads.",
+        "Handler handles it safely instead of panicking."
       ]
     }
   ]

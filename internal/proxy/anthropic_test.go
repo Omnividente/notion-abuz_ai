@@ -213,3 +213,27 @@ func TestAnthropicTrimCitationContext_Robustness(t *testing.T) {
 		}
 	}
 }
+
+func TestAnthropicHandleFrameRobustness_UnknownPrimitivePayloads(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("parseNDJSONStream panicked on unknown primitive payloads: %v", r)
+		}
+	}()
+
+	primitiveStream := bytes.NewBufferString(`null
+false
+true
+""
+" "
+-1
+0.5
+`)
+
+	var cb StreamCallback = func(delta string, done bool, usage *UsageInfo) {}
+
+	err := parseNDJSONStream(primitiveStream, "test-req", cb, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Logf("Returned error as expected or handled gracefully: %v", err)
+	}
+}
