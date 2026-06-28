@@ -1515,7 +1515,7 @@
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-json-8df2b720",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame general unexpected type robustness with malformed JSON types",

@@ -64,3 +64,28 @@ func TestAnthropicHandleFrameRobustness(t *testing.T) {
 		t.Logf("Returned error as expected or handled gracefully: %v", err)
 	}
 }
+
+func TestAnthropicHandleFrameRobustness_UnexpectedTypes(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("parseNDJSONStream panicked on unexpected JSON types: %v", r)
+		}
+	}()
+
+	unexpectedStream := bytes.NewBufferString(`123
+"string payload"
+null
+[]
+[1, 2, 3]
+{"type": "agent-inference", "value": "not_an_array"}
+{"type": "agent-tool-result", "toolCallId": 12345}
+{"type": "error", "message": {"nested": "object_instead_of_string"}}
+`)
+
+	var cb StreamCallback = func(delta string, done bool, usage *UsageInfo) {}
+
+	err := parseNDJSONStream(unexpectedStream, "test-req", cb, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Logf("Returned error as expected or handled gracefully: %v", err)
+	}
+}
