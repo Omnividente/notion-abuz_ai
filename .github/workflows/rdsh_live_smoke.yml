@@ -75,12 +75,10 @@ jobs:
 
           if ! grep -q 'OK_CLAUDE_PROXY' <<<"$content"; then
             echo "::error::RDSH smoke response did not contain the expected Claude proxy token."
-            echo "Diagnostic (first 256 chars): ${content:0:256}"
             exit 1
           fi
 
           if grep -Eiq 'notion|workspace|page|document' <<<"$content"; then
             echo "::error::RDSH smoke response leaked Notion/workspace/page/document persona text."
-            echo "Diagnostic (first 256 chars): ${content:0:256}"
             exit 1
           fi
