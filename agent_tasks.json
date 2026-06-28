@@ -30,17 +30,17 @@
       "low",
       "medium"
     ],
-    "instruction": "When the todo queue is low, add small Claude Code bridge investigation, proxy, test, or documentation tasks. Research and compatibility tasks may also add follow-up tasks for concrete findings from code inspection, tests, CI logs, docs gaps, or captured live smoke results even when the queue is not low. Prefer three-layer bridge stabilization, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode, session recovery, final-answer mode, instruction preservation, and golden transcript coverage over broad feature work. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, or workflow tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "instruction": "When the todo queue is low, add Claude Code bridge investigation tasks that start from live smoke results, captured transcripts, CI failures, or a clearly reproduced runtime behavior. Do not keep generating one-case test-only robustness tasks such as another malformed JSON, HandleFrame, trimCitationContext, missing field, empty payload, or event-type-only test unless it is tied to a reproduced Claude Code bridge failure. Prefer runtime bridge fixes, live-smoke transcript analysis, observability needed for diagnosis, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode retention, session recovery, final-answer mode, instruction preservation, and realistic read/edit/test/finalize transcript coverage. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, workflow, or micro edge-case test tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
     "max_todo_tasks": 40
   },
   "autonomous_loop_policy": {
     "operating_model": "docs/jules_autonomous_loop.md",
-    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium and whose scope directly improves Claude Code bridge reliability. Do not autonomously select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, or workflow tasks unless a concrete Claude Code bridge failure requires that area or the task_id is explicitly requested.",
+    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium and whose scope directly improves Claude Code bridge reliability through live smoke analysis, runtime bridge behavior, or a reproduced transcript-level failure. Do not select narrow test-only robustness tasks when they only add another edge-case test for existing behavior; mark those tasks blocked and choose the next live-smoke or runtime-focused task instead. Do not autonomously select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, or workflow tasks unless a concrete Claude Code bridge failure requires that area or the task_id is explicitly requested.",
     "anti_stall_rule": "Never ask the user what to do next while safe low or medium risk tasks can be selected or generated.",
     "stabilization_first": true,
     "max_pr_scope": "one task id per PR",
     "failure_rule": "If CI fails because of the current change, fix it before opening or updating the PR. If CI fails for an unrelated reason, add a follow-up task and explain the limitation in the PR body.",
-    "discovery_rule": "For Claude Code bridge research, compatibility, and test tasks, add low/medium-risk follow-up todo tasks for concrete gaps discovered during the work even when the todo queue is not below the replenishment threshold. Prefer findings about Notion persona leakage, tool-call refusal, JSON tool-call mode loss, tool-result continuation, session retry/recovery, final-answer mode, and realistic read/edit/test/finalize transcripts. Keep generated tasks non-duplicative, scoped to one PR, below max_todo_tasks, and backed by allowed_paths plus acceptance criteria."
+    "discovery_rule": "For Claude Code bridge research and compatibility tasks, add low/medium-risk follow-up todo tasks only for concrete gaps discovered from live smoke results, captured transcripts, CI failures, or offline reproductions of real Claude Code behavior. Prefer findings about Notion persona leakage, tool-call refusal, JSON tool-call mode loss, tool-result continuation, session retry/recovery, final-answer mode, and realistic read/edit/test/finalize transcripts. Do not create more single-edge-case test-only tasks for already-covered parsing or HandleFrame robustness unless a live/reproduced bridge failure proves the gap matters. Keep generated tasks non-duplicative, scoped to one PR, below max_todo_tasks, and backed by allowed_paths plus acceptance criteria."
   },
   "tasks": [
     {
@@ -1726,8 +1726,114 @@
       "completion_notes": "Added TestOpenAIChatStreamTranscoder_MissingDeltaFields and TestOpenAIResponsesStreamTranscoder_MissingDeltaFields to verify robustness with missing delta fields."
     },
     {
-      "id": "proxy-anthropic-sse-keepalive-robustness-0f83edfa",
+      "id": "claude-code-live-smoke-runtime-gap-triage",
       "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Triage live Claude Code smoke results into runtime bridge fixes",
+      "description": "Inspect recent live smoke workflow results, captured Jules/CI summaries, and existing Claude Code bridge docs to identify the next reproduced runtime gap. Implement one bounded runtime fix only when the behavior can be reproduced offline; otherwise document the concrete missing signal and add a focused live-smoke observability task instead of another narrow parser/HandleFrame edge-case test.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/*_test.go",
+        "docs/claude-code-integration.md",
+        "docs/jules_autonomous_loop.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "PR identifies the specific live-smoke or transcript signal being addressed.",
+        "If a runtime bug is reproducible offline, the PR includes the smallest runtime fix plus regression coverage.",
+        "If no runtime bug is reproducible, the PR documents the missing signal and adds one focused follow-up task for observability or live-smoke capture.",
+        "The PR does not add another single-edge-case parser, HandleFrame, or trimCitationContext test unless tied to the reproduced bridge failure."
+      ]
+    },
+    {
+      "id": "claude-code-live-smoke-transcript-capture-improvement",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Improve Claude Code live smoke transcript capture for actionable failures",
+      "description": "Improve the existing smoke/test documentation or scripts so future Claude Code bridge runs capture enough redacted transcript detail to distinguish Notion persona leakage, JSON tool-call loss, tool-result continuation loss, final-answer drift, and stream corruption. Do not add secrets or production data.",
+      "allowed_paths": [
+        ".github/workflows/rdsh_live_smoke.yml",
+        ".github/scripts/rdsh-local-live-smoke.sh",
+        "docs/claude-code-integration.md",
+        "docs/jules_autonomous_loop.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Smoke output guidance or scripts include redacted transcript markers for at least three Claude Code bridge failure classes.",
+        "No secret, token, cookie, account data, or raw production transcript is printed or persisted.",
+        "The change explains how captured evidence should feed the next runtime fix task."
+      ]
+    },
+    {
+      "id": "claude-code-tool-loop-runtime-observability",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add bounded observability for Claude Code tool-loop retry decisions",
+      "description": "Add concise, non-secret diagnostics around Claude Code bridge retry decisions so live smoke failures show whether the proxy detected Notion persona leakage, workspace reframing, missing tool calls, WebSearch interception, final-answer extraction, or session continuation. Keep logs redacted and low-noise.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/*_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostics identify the bridge decision path without logging user secrets, cookies, tokens, or full prompt bodies.",
+        "Tests cover at least one logged decision path or helper used to classify the decision.",
+        "Docs explain how the diagnostics help triage live Claude Code smoke failures."
+      ]
+    },
+    {
+      "id": "claude-code-realistic-read-edit-test-finalize-smoke-fixture",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add realistic Claude Code read-edit-test-finalize bridge fixture",
+      "description": "Add one behavior-level offline fixture that models a realistic Claude Code loop: inspect files, request an edit or shell command, receive a tool_result, run/interpret tests, and return a final __done__ answer. Use it to expose runtime bridge gaps rather than adding isolated parser edge cases.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/session_multiturn_test.go",
+        "internal/proxy/tools.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fixture covers a multi-turn read/edit/test/finalize Claude Code workflow.",
+        "The fixture verifies JSON tool-call mode and final-answer mode survive the loop.",
+        "Any discovered runtime gap is fixed in the same PR when it stays inside allowed_paths; otherwise it becomes a focused runtime follow-up task."
+      ]
+    },
+    {
+      "id": "claude-code-runtime-fix-from-next-live-smoke-failure",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Implement one runtime fix from the next reproduced Claude Code live-smoke failure",
+      "description": "Use the next available live smoke or captured transcript failure to implement one bounded runtime bridge fix. This task should not be completed by adding only tests for behavior that already works; it must either change runtime behavior or explicitly block itself with the missing evidence needed.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/session.go",
+        "internal/proxy/*_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "PR names the reproduced live-smoke or transcript failure class.",
+        "PR includes a runtime bridge fix plus focused regression coverage, or marks the task blocked with the exact missing evidence.",
+        "PR does not create more generic parser/stream robustness follow-up tasks unless the live failure requires them."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-sse-keepalive-robustness-0f83edfa",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic SSE keep-alive robustness",
@@ -1739,7 +1845,8 @@
       "acceptance": [
         "Tests cover Anthropic stream handler logic with keep-alive heartbeats.",
         "Handler translates them safely to ping events without panicking."
-      ]
+      ],
+      "blocked_reason": "Paused to stop autonomous generation of narrow test-only edge cases. Resume only if a live Claude Code bridge failure proves this exact gap matters."
     },
     {
       "id": "proxy-openai-stream-handleframe-missing-model-5193c730",
@@ -1760,7 +1867,7 @@
     },
     {
       "id": "proxy-openai-responses-stream-handleframe-empty-payload-0c473ca9",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for OpenAI Responses HandleFrame empty payloads",
@@ -1772,11 +1879,12 @@
       "acceptance": [
         "Tests cover openai responses stream handler logic with empty payloads.",
         "Handler handles it safely instead of panicking."
-      ]
+      ],
+      "blocked_reason": "Paused to stop autonomous generation of narrow test-only edge cases. Resume only if a live Claude Code bridge failure proves this exact gap matters."
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-missing-event-properties-8df2b729",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame robustness missing properties in event payloads",
@@ -1788,11 +1896,12 @@
       "acceptance": [
         "Tests cover anthropic stream handler logic with missing root properties.",
         "Handler handles it safely instead of panicking."
-      ]
+      ],
+      "blocked_reason": "Paused to stop autonomous generation of narrow test-only edge cases. Resume only if a live Claude Code bridge failure proves this exact gap matters."
     },
     {
       "id": "proxy-anthropic-trimcitationcontext-multibyte-d3dd0618",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic trimCitationContext robustness with special multi-byte sequences",
@@ -1804,11 +1913,12 @@
       "acceptance": [
         "Tests cover trimCitationContext logic with long sequences of emojis or multi-byte characters.",
         "No panics occur and returns expected valid string subset."
-      ]
+      ],
+      "blocked_reason": "Paused to stop autonomous generation of narrow test-only edge cases. Resume only if a live Claude Code bridge failure proves this exact gap matters."
     },
     {
       "id": "proxy-anthropic-sse-keepalive-robustness-0f83edfa-variant-1",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic SSE keep-alive robustness variant 1",
@@ -1820,11 +1930,12 @@
       "acceptance": [
         "Tests cover Anthropic stream handler logic with empty line keep-alive heartbeats.",
         "Handler translates them safely."
-      ]
+      ],
+      "blocked_reason": "Paused to stop autonomous generation of narrow test-only edge cases. Resume only if a live Claude Code bridge failure proves this exact gap matters."
     },
     {
       "id": "proxy-openai-responses-stream-handleframe-missing-event-0c473ca9",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for OpenAI Responses HandleFrame unknown events",
@@ -1836,11 +1947,12 @@
       "acceptance": [
         "Tests cover openai responses stream handler logic with unknown events.",
         "Handler handles it safely instead of panicking."
-      ]
+      ],
+      "blocked_reason": "Paused to stop autonomous generation of narrow test-only edge cases. Resume only if a live Claude Code bridge failure proves this exact gap matters."
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-missing-event-properties-variant-1",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame robustness missing properties in event payloads variant 1",
@@ -1852,7 +1964,8 @@
       "acceptance": [
         "Tests cover anthropic stream handler logic with missing root properties.",
         "Handler handles it safely instead of panicking."
-      ]
+      ],
+      "blocked_reason": "Paused to stop autonomous generation of narrow test-only edge cases. Resume only if a live Claude Code bridge failure proves this exact gap matters."
     }
   ]
 }
