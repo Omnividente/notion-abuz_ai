@@ -166,6 +166,13 @@ Priority:
 7. TODO/FIXME comments
 8. Repeated runtime or test failures visible in the repository
 
+Before a new Jules session starts, `.github/workflows/jules_next_task.yml`
+uses `scripts/select_agent_task.py` to pick one eligible task. The selector
+prefers runtime, local live-smoke, artifact, and transcript-backed work over
+micro test-only tasks. It rejects low-risk test-only tasks without concrete live
+smoke, transcript, CI, or offline reproduction evidence unless a human provided
+that exact `task_id`.
+
 ## Local Helper Scripts
 
 Two helper scripts are available for local agent work:

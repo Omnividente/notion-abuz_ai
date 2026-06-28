@@ -19,14 +19,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: npm
@@ -34,6 +34,11 @@ jobs:
 
       - name: Validate autonomous task manifest
         run: python3 scripts/validate_agent_tasks.py agent_tasks.json
+
+      - name: Validate autonomous task selector
+        run: |
+          python3 scripts/select_agent_task_test.py
+          python3 scripts/select_agent_task.py --manifest agent_tasks.json --risk-ceiling medium --focus proxy --json
 
       - name: Check Go formatting
         run: test -z "$(gofmt -l .)"

@@ -59,6 +59,22 @@ def is_jules_branch(branch):
 refs = request("GET", f"/repos/{repo}/git/matching-refs/heads") or []
 pulls = request("GET", f"/repos/{repo}/pulls?state=all&per_page=100") or []
 
+
+def is_autonomous_pr(pr):
+    labels = {label["name"] for label in pr.get("labels", [])}
+    head_ref = (pr.get("head") or {}).get("ref", "")
+    return "jules" in labels or is_jules_branch(head_ref)
+
+
+open_autonomous = [
+    pr for pr in pulls
+    if pr.get("state") == "open" and is_autonomous_pr(pr)
+]
+if open_autonomous:
+    numbers = ", ".join(f"#{pr['number']}" for pr in open_autonomous)
+    print(f"Open autonomous PR already exists ({numbers}); not opening another ready PR.")
+    sys.exit(0)
+
 open_heads = {pr["head"]["ref"] for pr in pulls if pr.get("state") == "open"}
 closed_head_shas = {
     (pr["head"]["ref"], pr["head"]["sha"])
@@ -122,5 +138,7 @@ for ref in refs:
         print(f"Labeled PR #{number} as jules.")
     except RuntimeError as exc:
         print(f"Could not label PR #{number}: {exc}")
+
+    break
 
 print(f"Ready Jules PRs opened: {created}")

@@ -36,7 +36,7 @@ jobs:
        github.event.workflow_run.conclusion == 'success')
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Watch and continue fresh Jules session
         env:
