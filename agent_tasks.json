@@ -2252,7 +2252,7 @@
     },
     {
       "id": "proxy-observability-workspace-reframing-quality-followup",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Prove workspace reframing bridge-decision logging after PR #116",
@@ -2266,7 +2266,8 @@
         "A runtime logging path or direct log-capture regression test proves that workspace reframing emits a bridge decision.",
         "Detector-only reason tests are not treated as sufficient proof for this task.",
         "The PR body maps this acceptance evidence to the changed files."
-      ]
+      ],
+      "blocked_reason": "E2E test of the runtime log emission is blocked because the proxy's HTTP client uses uTLS with strict certificate verification (InsecureSkipVerify: false), which prevents intercepting the proxy handler flow using a local httptest.NewTLSServer without rewriting production transport code. Faking the test log emission was rejected by code review. Requires live smoke evidence or refactoring the transport layer to allow injecting a mock test client."
     },
     {
       "id": "claude-code-live-smoke-artifact-collection-ccdad275",
@@ -2335,6 +2336,36 @@
       "acceptance": [
         "Bridge decision logging includes tool-call refusal explicitly.",
         "Tests cover the new or existing observability path for this signal."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-sse-unknown-event-coverage-2e168db4",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic SSE unknown event handling",
+      "description": "Add tests to parseNDJSONStream verifying that the Anthropic handler correctly ignores completely unknown SSE event types instead of panicking, enhancing observability robustness against upstream drift.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify that parseNDJSONStream skips unrecognized event types without error or panic."
+      ]
+    },
+    {
+      "id": "dashboard-login-error-toast-coverage-ab7fd058",
+      "status": "todo",
+      "area": "web",
+      "risk": "low",
+      "title": "Verify dashboard login error toast logic",
+      "description": "Ensure the dashboard login component correctly displays a toast or error state when the API returns a 401 Unauthorized, completing the UX edge-case coverage.",
+      "allowed_paths": [
+        "web/src/pages/Login.tsx",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Code review or tests confirm login error bubbling handles 401 responses cleanly."
       ]
     }
   ]
