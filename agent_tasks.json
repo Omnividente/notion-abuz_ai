@@ -2118,7 +2118,7 @@
     },
     {
       "id": "proxy-claude-code-workspace-reframing-detection-observability",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for Workspace Reframing detection observability",
@@ -2175,6 +2175,21 @@
       ],
       "acceptance": [
         "Tests cover empty response retries logic."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-tool-result-observability-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for observability of Claude Code tool results metrics",
+      "description": "Expand proxy agent loop observability by ensuring tool results content lengths are properly captured and bubble up accurately without exposing sensitive transcripts.",
+      "allowed_paths": [
+        "internal/proxy/session_multiturn_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover tool result processing and correctly observe metrics like content length."
       ]
     }
   ]
