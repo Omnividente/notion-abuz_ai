@@ -1222,6 +1222,10 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 				}
 			}
 
+			if sawEmptyResponse {
+				log.Printf("[retry] successfully recovered from empty response using account %s", acc.UserEmail)
+			}
+
 			return
 		}
 
