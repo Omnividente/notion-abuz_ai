@@ -1384,7 +1384,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-type-robustness",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for general unexpected type robustness in HandleFrame",
@@ -1396,7 +1396,8 @@
       "acceptance": [
         "Tests cover stream transcoders with general unexpected types.",
         "Transcoders handle it safely instead of panicking."
-      ]
+      ],
+      "completion_notes": "Added TestOpenAIChatStreamTranscoder_GeneralUnexpectedTypeRobustness and TestOpenAIResponsesStreamTranscoder_GeneralUnexpectedTypeRobustness to ensure unhandled frame events do not panic the stream transcoders."
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-type-unknown-json-8df2b719",
@@ -1492,6 +1493,22 @@
       "acceptance": [
         "Tests cover invalid model field types in OpenAI completion requests.",
         "Proxy handles it gracefully."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-handleframe-robustness",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic HandleFrame general unexpected type robustness",
+      "description": "Similar to OpenAI stream transcoders, the Anthropic stream transcoder should be tested for gracefully handling unexpected event types or mismatched payloads in its HandleFrame equivalent/logic, ensuring the proxy doesn't panic on malformed Anthropic upstream streams.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover anthropic stream handler logic with general unexpected types or malformed frames.",
+        "Handler handles it safely instead of panicking."
       ]
     }
   ]
