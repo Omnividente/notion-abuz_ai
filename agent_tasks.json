@@ -1548,7 +1548,7 @@
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-missing-event-8df2b721",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame robustness unknown event type",
@@ -1623,6 +1623,22 @@
       ],
       "acceptance": [
         "Tests cover anthropic stream handler logic with primitive payloads at root.",
+        "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-openai-handleframe-robustness-missing-event-346357e1",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for OpenAI HandleFrame robustness unknown event type",
+      "description": "Ensure that if the OpenAI stream transcoder logic receives a completely unknown SSE event type string, it ignores it gracefully without panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover openai stream handler logic with unknown event types.",
         "Handler handles it safely instead of panicking."
       ]
     }
