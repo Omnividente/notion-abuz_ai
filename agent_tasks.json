@@ -1336,7 +1336,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-error-types",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for error type mismatch",
@@ -1412,6 +1412,38 @@
       "acceptance": [
         "Tests cover stream transcoders with new edge cases for generic robustness.",
         "Transcoders return error correctly or handle safely."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-missing-event-fields",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for missing fields in HandleFrame events",
+      "description": "Ensure that if HandleFrame receives valid JSON but missing expected fields (e.g., missing index in content_block_delta), it doesn't crash.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests added for HandleFrame with missing fields in payloads.",
+        "No panics occur."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-event-name",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for unknown event names in HandleFrame",
+      "description": "Ensure that if HandleFrame receives an entirely unknown event name string (not 'unknown', but e.g. 'new_feature_start'), it gracefully ignores it.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test added for unhandled event names in HandleFrame.",
+        "No panics occur and returns nil."
       ]
     }
   ]
