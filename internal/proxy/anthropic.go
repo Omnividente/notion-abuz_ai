@@ -1597,7 +1597,7 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 			writeAnthropicError(w, requestID, http.StatusBadGateway, "notion API error: "+cbErr.Error(), "api_error")
 			return nil
 		}
-		log.Printf("[err] %s: streaming completed with partial data before error: %v", requestID, cbErr)
+		log.Printf("[err] %s: streaming failed mid-stream, partial state: sawContent=%v, flushed=%d chars, toolURLs=%d, error=%v", requestID, sawContent, fullContent.Len(), len(knownCitationURLs), cbErr)
 	}
 
 	if fullContent.Len() == 0 && !sawContent {
@@ -2516,6 +2516,8 @@ func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []Chat
 		log.Printf("[err] %s researcher: %v", requestID, cbErr)
 		if !headersSent {
 			writeAnthropicError(w, requestID, http.StatusBadGateway, "notion researcher error: "+cbErr.Error(), "api_error")
+		} else {
+			log.Printf("[err] %s: streaming failed mid-stream, partial state: thinking_chars=%d, text_chars=%d, textBlockStarted=%v", requestID, thinkingForLog.Len(), textForLog.Len(), textBlockStarted)
 		}
 		return nil
 	}

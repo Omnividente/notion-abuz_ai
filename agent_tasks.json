@@ -2083,7 +2083,7 @@
     },
     {
       "id": "proxy-anthropic-live-smoke-streaming-observability",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add observability for Anthropic streaming response failure shapes",
@@ -2129,6 +2129,21 @@
       ],
       "acceptance": [
         "Tests verify Workspace Reframing detection bubbles up the correct reason class."
+      ]
+    },
+    {
+      "id": "proxy-stream-retry-observability",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add observability for streaming retry attempts",
+      "description": "Log when the proxy encounters ErrEmptyResponse and successfully retries a streaming call on the next account.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Empty response retries are logged cleanly without leaking tokens."
       ]
     }
   ]
