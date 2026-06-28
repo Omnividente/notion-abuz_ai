@@ -1192,7 +1192,7 @@
     },
     {
       "id": "proxy-tool-call-malformed-json-test-6",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for malformed JSON trailing comma",

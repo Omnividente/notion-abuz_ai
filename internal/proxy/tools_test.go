@@ -556,6 +556,21 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			wantNil: true,
 		},
 		{
+			name:    "malformed json - trailing comma in arguments object",
+			jsonStr: `{"name": "test", "arguments": {"a": 1,}}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - trailing comma in wrapper",
+			jsonStr: `{"tool_call": {"name": "test", "arguments": {}},}`,
+			wantNil: true,
+		},
+		{
+			name:    "malformed json - trailing comma in array",
+			jsonStr: `{"name": "test", "arguments": {"a": [1, 2,]}}`,
+			wantNil: true,
+		},
+		{
 			name:    "malformed json - invalid type for name (number)",
 			jsonStr: `{"name": 123, "arguments": {}}`,
 			wantNil: true,
