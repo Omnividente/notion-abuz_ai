@@ -96,46 +96,6 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-          cache-dependency-path: go.sum
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Validate autonomous task manifest
-        run: python3 scripts/validate_agent_tasks.py agent_tasks.json
-
-      - name: Check Go formatting
-        run: test -z "$(gofmt -l .)"
-
-      - name: Build dashboard
-        working-directory: web
-        run: |
-          npm ci
-          npm run build
-
-      - name: Refresh embedded dashboard
-        run: |
-          rm -rf internal/web/dist
-          cp -r web/dist internal/web/dist
-
-      - name: Go vet
-        run: go vet ./...
-
-      - name: Go test
-        run: go test ./...
-
-      - name: Build binary
-        run: go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
-
-      - name: RDSH local live smoke
-        run: bash .github/scripts/rdsh-local-live-smoke.sh
-
       - name: Fetch PR refs for quality gate
         id: quality-refs
         env:
@@ -195,6 +155,46 @@ jobs:
 
           echo "::error::Autonomous PR quality gate failed: ${{ steps.quality.outputs.summary }}"
           exit 1
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Validate autonomous task manifest
+        run: python3 scripts/validate_agent_tasks.py agent_tasks.json
+
+      - name: Check Go formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Build dashboard
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Refresh embedded dashboard
+        run: |
+          rm -rf internal/web/dist
+          cp -r web/dist internal/web/dist
+
+      - name: Go vet
+        run: go vet ./...
+
+      - name: Go test
+        run: go test ./...
+
+      - name: Build binary
+        run: go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
+
+      - name: RDSH local live smoke
+        run: bash .github/scripts/rdsh-local-live-smoke.sh
 
       - name: Merge PR
         if: success()

@@ -131,37 +131,7 @@ jobs:
             "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
             -o /tmp/open-prs.json
 
-          count="$(python3 - <<'PY'
-          import json
-          import os
-
-          with open("agent_tasks.json", "r", encoding="utf-8") as f:
-              task_ids = [task["id"] for task in json.load(f).get("tasks", [])]
-
-          with open("/tmp/open-prs.json", "r", encoding="utf-8") as f:
-              pulls = json.load(f)
-
-          repo = os.environ["GITHUB_REPOSITORY"]
-          count = 0
-          for pr in pulls:
-              labels = {label["name"] for label in pr.get("labels", [])}
-              head = pr.get("head", {})
-              head_ref = head.get("ref", "")
-              head_repo = (head.get("repo") or {}).get("full_name", "")
-              if "jules" in labels:
-                  count += 1
-                  continue
-              if head_repo != repo:
-                  continue
-              if head_ref.startswith(("jules-", "jules/")):
-                  count += 1
-                  continue
-              if any(head_ref == task_id or head_ref.startswith(f"{task_id}-") for task_id in task_ids):
-                  count += 1
-
-          print(count)
-          PY
-          )"
+          count="$(python3 .github/scripts/count-autonomous-prs.py /tmp/open-prs.json)"
 
           echo "count=${count}" >> "$GITHUB_OUTPUT"
           echo "Open autonomous PRs: ${count}"

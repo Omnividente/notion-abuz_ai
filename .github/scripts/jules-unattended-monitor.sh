@@ -7,6 +7,8 @@ LOOKBACK_HOURS="${LOOKBACK_HOURS:-24}"
 MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
 
 read -r -d '' CONTINUE_PROMPT <<'EOF' || true
+AUTONOMOUS_CONTINUE_TOKEN
+
 Продолжай без ожидания ответа пользователя.
 
 Пиши все пользовательские сообщения, объяснения плана, PR title/body и финальные summary на русском. Оставляй file paths, task ids, команды, API names, code identifiers и quoted errors на языке оригинала.
@@ -32,6 +34,8 @@ read -r -d '' CONTINUE_PROMPT <<'EOF' || true
 EOF
 
 read -r -d '' FINALIZE_PROMPT <<'EOF' || true
+AUTONOMOUS_CONTINUE_TOKEN
+
 Дополнительное ревью не требуется.
 
 Финализируй эту задачу сейчас:

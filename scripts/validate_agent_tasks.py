@@ -157,6 +157,11 @@ def validate_manifest(data: dict[str, Any]) -> list[str]:
         status = validate_task(task, index, seen_ids)
         if status == "todo":
             todo_count += 1
+        if status == "blocked" and (
+            not isinstance(task.get("blocked_reason"), str)
+            or not task.get("blocked_reason", "").strip()
+        ):
+            warnings.append(f"blocked task {task.get('id')} is missing blocked_reason")
 
     if todo_count < minimum_todo_tasks:
         warnings.append(
