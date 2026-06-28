@@ -11,6 +11,14 @@ on:
         description: "Message to send to the Jules session"
         required: true
         type: string
+      mode:
+        description: "Session operation"
+        required: false
+        default: "send"
+        type: choice
+        options:
+          - send
+          - delete
 
 permissions:
   contents: read
@@ -25,6 +33,7 @@ jobs:
           JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
           SESSION_ID: ${{ inputs.session_id }}
           PROMPT: ${{ inputs.prompt }}
+          MODE: ${{ inputs.mode || 'send' }}
           API_BASE: https://jules.googleapis.com/v1alpha
         run: |
           set -euo pipefail
@@ -40,6 +49,12 @@ jobs:
             *) session="sessions/${session}" ;;
           esac
 
+          mode="${MODE:-send}"
+          if [ "$mode" != "send" ] && [ "$mode" != "delete" ]; then
+            echo "::error::Unsupported mode: ${mode}"
+            exit 1
+          fi
+
           body="$(jq -n --arg prompt "$PROMPT" '{prompt: $prompt}')"
 
           key_labels=()
@@ -51,6 +66,42 @@ jobs:
           if [ -n "${JULES_API_KEY_BACKUP:-}" ]; then
             key_labels+=("backup")
             key_values+=("${JULES_API_KEY_BACKUP}")
+          fi
+
+          if [ "$mode" = "delete" ]; then
+            success=false
+            for i in "${!key_labels[@]}"; do
+              label="${key_labels[$i]}"
+              key="${key_values[$i]}"
+              out="/tmp/jules-delete-${label}.json"
+              status="$(curl -sS \
+                -X DELETE \
+                -H "X-Goog-Api-Key: ${key}" \
+                -o "$out" \
+                -w "%{http_code}" \
+                "${API_BASE}/${session}" || echo "000")"
+
+              if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+                echo "Deleted Jules session with ${label} key: ${session}."
+                success=true
+                break
+              fi
+
+              echo "::warning::Jules delete with ${label} key failed with HTTP ${status}."
+              if jq -e '.error' "$out" >/dev/null 2>&1; then
+                jq '{error: {code: .error.code, status: .error.status, message: .error.message}}' "$out" || true
+              else
+                head -c 1000 "$out" || true
+                echo
+              fi
+            done
+
+            if [ "$success" != "true" ]; then
+              echo "::error::All configured Jules API keys failed."
+              exit 1
+            fi
+
+            exit 0
           fi
 
           success=false
