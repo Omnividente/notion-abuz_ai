@@ -1434,7 +1434,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-event-name",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for unknown event names in HandleFrame",
@@ -1446,7 +1446,8 @@
       "acceptance": [
         "Test added for unhandled event names in HandleFrame.",
         "No panics occur and returns nil."
-      ]
+      ],
+      "completion_notes": "Added TestOpenAIChatStreamTranscoder_UnknownEventName and TestOpenAIResponsesStreamTranscoder_UnknownEventName."
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-payload-root-type",
@@ -1541,6 +1542,22 @@
       ],
       "acceptance": [
         "Tests cover anthropic stream handler logic with missing fields in payloads.",
+        "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-handleframe-robustness-missing-event-8df2b721",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic HandleFrame robustness unknown event type",
+      "description": "Ensure that if the Anthropic stream transcoder logic receives a completely unknown event type string (e.g. 'new_feature_start'), it ignores it gracefully without panicking.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover anthropic stream handler logic with unknown event types.",
         "Handler handles it safely instead of panicking."
       ]
     }
