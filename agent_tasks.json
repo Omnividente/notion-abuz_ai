@@ -1272,7 +1272,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-content-block-stop-types",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for content_block_stop type mismatch",
@@ -1363,6 +1363,22 @@
       ],
       "acceptance": [
         "Tests cover stream transcoders with unexpected types for unknown fields.",
+        "Transcoders handle it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-content-block-delta-types",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add chat stream error handling test for content_block_delta type mismatch",
+      "description": "Ensure that if HandleFrame receives unexpected types in content_block_delta fields, it bubbles up the error or continues safely without panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with unexpected types for content_block_delta fields.",
         "Transcoders handle it safely instead of panicking."
       ]
     }

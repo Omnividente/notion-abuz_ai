@@ -551,6 +551,12 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 		t.Fatal("Expected error for invalid JSON frame in content_block_stop, got nil")
 	}
 
+	invalidContentBlockStopTypeMismatchFrame := anthropicSSEFrame{
+		Event: "content_block_stop",
+		Data:  json.RawMessage(`{"index":"not_an_int"}`),
+	}
+	_ = transcoder.HandleFrame(invalidContentBlockStopTypeMismatchFrame)
+
 	invalidMessageDeltaFrame := anthropicSSEFrame{
 		Event: "message_delta",
 		Data:  json.RawMessage(`{"delta":{"stop_reason":"end_turn"`), // Missing closing brace
@@ -645,6 +651,12 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 	if err := transcoder.HandleFrame(invalidContentBlockStopFrame); err == nil {
 		t.Fatal("Expected error for invalid JSON frame in content_block_stop, got nil")
 	}
+
+	invalidContentBlockStopTypeMismatchFrame := anthropicSSEFrame{
+		Event: "content_block_stop",
+		Data:  json.RawMessage(`{"index":"not_an_int"}`),
+	}
+	_ = transcoder.HandleFrame(invalidContentBlockStopTypeMismatchFrame)
 
 	invalidMessageDeltaFrame := anthropicSSEFrame{
 		Event: "message_delta",
