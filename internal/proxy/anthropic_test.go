@@ -89,3 +89,31 @@ null
 		t.Logf("Returned error as expected or handled gracefully: %v", err)
 	}
 }
+
+func TestAnthropicHandleFrameRobustness_MissingFields(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("parseNDJSONStream panicked on valid JSON missing fields: %v", r)
+		}
+	}()
+
+	missingFieldsStream := bytes.NewBufferString(`{"type": "agent-inference"}
+{"type": "agent-inference", "value": []}
+{"type": "patch"}
+{"type": "patch", "v": []}
+{"type": "patch", "v": [{"o": "a"}]}
+{"type": "patch", "v": [{"o": "a", "p": "/value/-"}]}
+{"type": "search-status"}
+{"type": "error"}
+{"type": "agent-tool-result"}
+{"type": "call-function"}
+`)
+
+	var cb StreamCallback = func(delta string, done bool, usage *UsageInfo) {}
+
+	err := parseNDJSONStream(missingFieldsStream, "test-req", cb, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		// an error is fine, as long as it doesn't panic and handles it gracefully
+		t.Logf("Returned error as expected or handled gracefully: %v", err)
+	}
+}

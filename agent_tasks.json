@@ -1531,7 +1531,7 @@
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-missing-fields-8df2b720",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame robustness missing fields",
@@ -1543,7 +1543,8 @@
       "acceptance": [
         "Tests cover anthropic stream handler logic with missing fields in payloads.",
         "Handler handles it safely instead of panicking."
-      ]
+      ],
+      "completion_notes": "Added TestAnthropicHandleFrameRobustness_MissingFields to verify parseNDJSONStream handles missing fields in events without panicking."
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-missing-event-8df2b721",
@@ -1607,6 +1608,22 @@
       "acceptance": [
         "Tests cover trimCitationContext logic with various edge-case string lengths.",
         "No panics occur."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-handleframe-robustness-unknown-primitive-payloads-8df2b724",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic HandleFrame robustness unknown primitive payloads",
+      "description": "Ensure that if the Anthropic stream transcoder logic receives payloads consisting only of primitives (like null, false, true, empty strings) directly at the root where it expects objects, it handles them gracefully without panicking.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover anthropic stream handler logic with primitive payloads at root.",
+        "Handler handles it safely instead of panicking."
       ]
     }
   ]
