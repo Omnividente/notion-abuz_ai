@@ -1256,7 +1256,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-message-start",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for message_start type mismatch",
