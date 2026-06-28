@@ -195,7 +195,7 @@ func TestDetectToolBridgeNoToolResponse_MatchesWorkspaceReframing(t *testing.T) 
 
 	for i, raw := range cases {
 		isNoTool, _ := detectToolBridgeNoToolResponse(raw)
-	if !isNoTool {
+		if !isNoTool {
 			t.Fatalf("expected Workspace Reframing to be detected for case %d: %s", i, raw)
 		}
 	}
