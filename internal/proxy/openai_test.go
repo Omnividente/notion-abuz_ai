@@ -650,6 +650,30 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 		Data:  json.RawMessage(`{"type":123}`),
 	}
 	_ = transcoder.HandleFrame(invalidTypeMessageStopFrame)
+
+	invalidRootPayloadArray := anthropicSSEFrame{
+		Event: "content_block_start",
+		Data:  json.RawMessage(`[1, 2, 3]`),
+	}
+	if err := transcoder.HandleFrame(invalidRootPayloadArray); err == nil {
+		t.Fatal("Expected error for array root payload, got nil")
+	}
+
+	invalidRootPayloadString := anthropicSSEFrame{
+		Event: "content_block_start",
+		Data:  json.RawMessage(`"just a string"`),
+	}
+	if err := transcoder.HandleFrame(invalidRootPayloadString); err == nil {
+		t.Fatal("Expected error for string root payload, got nil")
+	}
+
+	invalidRootPayloadNumber := anthropicSSEFrame{
+		Event: "content_block_start",
+		Data:  json.RawMessage(`42`),
+	}
+	if err := transcoder.HandleFrame(invalidRootPayloadNumber); err == nil {
+		t.Fatal("Expected error for number root payload, got nil")
+	}
 }
 
 func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
@@ -787,6 +811,30 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 		Data:  json.RawMessage(`{"type":123}`),
 	}
 	_ = transcoder.HandleFrame(invalidTypeMessageStopFrame)
+
+	invalidRootPayloadArray := anthropicSSEFrame{
+		Event: "content_block_start",
+		Data:  json.RawMessage(`[1, 2, 3]`),
+	}
+	if err := transcoder.HandleFrame(invalidRootPayloadArray); err == nil {
+		t.Fatal("Expected error for array root payload, got nil")
+	}
+
+	invalidRootPayloadString := anthropicSSEFrame{
+		Event: "content_block_start",
+		Data:  json.RawMessage(`"just a string"`),
+	}
+	if err := transcoder.HandleFrame(invalidRootPayloadString); err == nil {
+		t.Fatal("Expected error for string root payload, got nil")
+	}
+
+	invalidRootPayloadNumber := anthropicSSEFrame{
+		Event: "content_block_start",
+		Data:  json.RawMessage(`42`),
+	}
+	if err := transcoder.HandleFrame(invalidRootPayloadNumber); err == nil {
+		t.Fatal("Expected error for number root payload, got nil")
+	}
 }
 
 func TestOpenAIErrorNormalization_UnsupportedToolType(t *testing.T) {
