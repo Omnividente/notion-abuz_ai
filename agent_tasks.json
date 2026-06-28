@@ -2261,11 +2261,12 @@
     },
     {
       "id": "claude-code-local-live-smoke-diagnostics-followup",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Analyze local live-smoke extended diagnostic artifacts",
       "description": "Now that extended diagnostic logging (bridge/session decision logs) has been added to the local live smoke tests, analyze the newly captured artifacts from CI failures to pinpoint whether Notion persona leakage or token missing is due to missing instruction injection, session multi-turn issues, or system prompt replacement, and implement the runtime bridge fix.",
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 18248147430962026014, 7455324271488118791. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence.",
       "allowed_paths": [
         "internal/proxy/anthropic.go",
         "internal/proxy/openai.go",
