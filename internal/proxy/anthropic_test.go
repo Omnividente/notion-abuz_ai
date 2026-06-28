@@ -163,7 +163,6 @@ func TestAnthropicHandleFrameRobustness_UnknownEvent(t *testing.T) {
 	}
 }
 
-
 func TestAnthropicHandleFrameRobustness_InvalidEventNameFormat(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
