@@ -1368,7 +1368,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-content-block-delta-types",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for content_block_delta type mismatch",
@@ -1444,6 +1444,54 @@
       "acceptance": [
         "Test added for unhandled event names in HandleFrame.",
         "No panics occur and returns nil."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-payload-root-type",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for invalid payload root type in HandleFrame",
+      "description": "Ensure that if HandleFrame receives a root payload that is not a JSON object (e.g. an array or a primitive), it does not crash.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover invalid root JSON payload in HandleFrame.",
+        "Transcoders handle it gracefully."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-tool-type",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for invalid tool_use block type",
+      "description": "Ensure that if HandleFrame receives a content_block_start for a tool_use but the block contents are typed incorrectly, it does not crash.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover invalid tool_use block types in content_block_start.",
+        "Transcoders handle it gracefully."
+      ]
+    },
+    {
+      "id": "proxy-openai-request-invalid-model-type",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for invalid model field type in OpenAI requests",
+      "description": "Ensure that if the proxy receives an OpenAI request where the model field is not a string, it handles it properly without panicking.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover invalid model field types in OpenAI completion requests.",
+        "Proxy handles it gracefully."
       ]
     }
   ]

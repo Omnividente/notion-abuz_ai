@@ -603,6 +603,12 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 	}
 	_ = transcoder.HandleFrame(invalidTypeContentBlockDeltaFrame)
 
+	invalidTypeContentBlockDeltaTypeMismatchFrame := anthropicSSEFrame{
+		Event: "content_block_delta",
+		Data:  json.RawMessage(`{"index":0,"delta":["unexpected_array"]}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypeContentBlockDeltaTypeMismatchFrame)
+
 	invalidTypeContentBlockStartFrame := anthropicSSEFrame{
 		Event: "content_block_start",
 		Data:  json.RawMessage(`{"index":"not-an-int","content_block":{"type":123,"text":456}}`),
@@ -733,6 +739,12 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 		Data:  json.RawMessage(`{"index":"not-an-int","delta":{"type":123,"text":456}}`),
 	}
 	_ = transcoder.HandleFrame(invalidTypeContentBlockDeltaFrame)
+
+	invalidTypeContentBlockDeltaTypeMismatchFrame := anthropicSSEFrame{
+		Event: "content_block_delta",
+		Data:  json.RawMessage(`{"index":0,"delta":["unexpected_array"]}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypeContentBlockDeltaTypeMismatchFrame)
 
 	invalidTypeContentBlockStartFrame := anthropicSSEFrame{
 		Event: "content_block_start",
