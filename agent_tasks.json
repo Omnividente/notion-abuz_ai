@@ -1144,7 +1144,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-unknown",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for unknown event",
