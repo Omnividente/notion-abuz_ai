@@ -51,6 +51,8 @@ finalize_markers = (
     "wrap up my work",
     "ready for review",
     "ready to finalize",
+    "ready for submission",
+    "all plan steps completed",
     "open a new pull request",
     "open the pull request",
     "open/finalize the pr",
