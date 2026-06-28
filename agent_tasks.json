@@ -2100,7 +2100,7 @@
     },
     {
       "id": "claude-code-tool-loop-diagnostics-test-coverage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for detailed diagnostic logging of bridge decisions",
@@ -2144,6 +2144,22 @@
       ],
       "acceptance": [
         "Empty response retries are logged cleanly without leaking tokens."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-missing-metadata-robustness",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic HandleFrame message_start metadata fields",
+      "description": "Ensure that the proxy handles message_start events missing expected metadata fields without panicking.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover message_start event processing with completely missing or unexpected metadata.",
+        "Handler gracefully skips instead of panicking."
       ]
     }
   ]

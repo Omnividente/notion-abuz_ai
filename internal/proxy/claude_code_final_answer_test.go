@@ -63,8 +63,11 @@ func TestRefusalTextRejection_InFinalAnswer(t *testing.T) {
 		t.Fatalf("expected refusal prose to not be parsed as a tool call")
 	}
 
-	isNoTool, _ := detectToolBridgeNoToolResponse(content)
+	isNoTool, reason := detectToolBridgeNoToolResponse(content)
 	if !isNoTool {
 		t.Fatalf("expected refusal prose to be detected as workspace reframing/refusal")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
 	}
 }
