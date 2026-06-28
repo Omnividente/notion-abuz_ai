@@ -615,6 +615,12 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 	}
 	_ = transcoder.HandleFrame(invalidTypeMessageStartFrame)
 
+	invalidTypePingFrame := anthropicSSEFrame{
+		Event: "ping",
+		Data:  json.RawMessage(`{"type":123}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypePingFrame)
+
 	invalidTypeMessageDeltaFrame := anthropicSSEFrame{
 		Event: "message_delta",
 		Data:  json.RawMessage(`{"delta":{"stop_reason":123},"usage":{"output_tokens":"not-an-int"}}`),
@@ -727,6 +733,12 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 		Data:  json.RawMessage(`{"message":{"usage":{"input_tokens":"not-an-int"}}}`),
 	}
 	_ = transcoder.HandleFrame(invalidTypeMessageStartFrame)
+
+	invalidTypePingFrame := anthropicSSEFrame{
+		Event: "ping",
+		Data:  json.RawMessage(`{"type":123}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypePingFrame)
 
 	invalidTypeMessageDeltaFrame := anthropicSSEFrame{
 		Event: "message_delta",
