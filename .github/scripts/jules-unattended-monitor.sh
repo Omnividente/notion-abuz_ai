@@ -136,6 +136,35 @@ extract_session_task_id() {
   python3 .github/scripts/summarize-jules-failures.py extract-task-id "$activities_file" || true
 }
 
+resolve_session_task_id_from_recent_map() {
+  local session_name="$1"
+
+  if [ -z "${GITHUB_API_TOKEN:-}" ]; then
+    return 0
+  fi
+  if [ -z "${GITHUB_API_URL:-}" ] || [ -z "${GITHUB_REPOSITORY:-}" ]; then
+    return 0
+  fi
+
+  local out="${tmpdir}/jules-session-task-map.json"
+  local status
+  status="$(curl -sS \
+    -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+    -H "Accept: application/vnd.github+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    -o "$out" \
+    -w "%{http_code}" \
+    "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/variables/JULES_RECENT_SESSION_TASKS" || echo "000")"
+
+  if [[ ! "$status" =~ ^2[0-9][0-9]$ ]]; then
+    return 0
+  fi
+
+  jq -r --arg sid "${session_name##*/}" '
+    (.value // "{}" | fromjson? // {} | .[$sid].task_id // "")
+  ' "$out" || true
+}
+
 session_epoch_filter='
   def ts:
     ((.updateTime // .createTime // "1970-01-01T00:00:00Z")
@@ -185,6 +214,9 @@ for i in "${!key_labels[@]}"; do
 
     if [ "$session_state" = "FAILED" ]; then
       failed_task_id="$(extract_session_task_id "$key" "$session_name" "failed")"
+      if [ -z "$failed_task_id" ]; then
+        failed_task_id="$(resolve_session_task_id_from_recent_map "$session_name")"
+      fi
       if [ -n "$failed_task_id" ]; then
         echo "Detected failed Jules session ${session_name} for task ${failed_task_id}."
       else
