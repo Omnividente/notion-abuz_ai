@@ -1678,7 +1678,7 @@
     },
     {
       "id": "proxy-anthropic-trimcitationcontext-short-8df2b727",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic trimCitationContext robustness with short contexts",
@@ -1787,6 +1787,22 @@
       "acceptance": [
         "Tests cover anthropic stream handler logic with missing root properties.",
         "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-trimcitationcontext-multibyte-d3dd0618",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic trimCitationContext robustness with special multi-byte sequences",
+      "description": "Ensure that trimCitationContext handles contexts with complex multi-byte characters and emojis gracefully without slicing them in the middle of a rune.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover trimCitationContext logic with long sequences of emojis or multi-byte characters.",
+        "No panics occur and returns expected valid string subset."
       ]
     }
   ]

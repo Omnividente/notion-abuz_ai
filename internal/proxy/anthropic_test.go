@@ -270,3 +270,29 @@ func TestAnthropicTrimCitationContext_Empty(t *testing.T) {
 		t.Errorf("Expected empty string, got %q", res)
 	}
 }
+
+func TestAnthropicTrimCitationContext_ShortContexts(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("trimCitationContext panicked on short context: %v", r)
+		}
+	}()
+
+	testCases := []string{
+		"a",
+		"hello",
+		"short string test",
+		strings.Repeat("a", 10),
+		strings.Repeat("a", 20),
+		strings.Repeat("a", 30),
+		strings.Repeat("a", 40),
+		strings.Repeat("a", 49),
+	}
+
+	for _, tc := range testCases {
+		res := trimCitationContext(tc)
+		if res != tc {
+			t.Errorf("Expected string %q to be unchanged, got %q", tc, res)
+		}
+	}
+}
