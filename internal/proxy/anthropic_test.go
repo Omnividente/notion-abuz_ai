@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bytes"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -42,18 +43,24 @@ func TestAnthropicStreaming_ToolCallChunks(t *testing.T) {
 }
 
 func TestAnthropicHandleFrameRobustness(t *testing.T) {
-	// Test that sendAnthropicSSE handles unmarshalable payload gracefully
-	rr := httptest.NewRecorder()
-	mf := &mockFlusher{rr}
+	// Test that parseNDJSONStream handles malformed/unknown NDJSON events gracefully without panicking
 
 	defer func() {
 		if r := recover(); r != nil {
-			t.Errorf("sendAnthropicSSE panicked with unexpected payload: %v", r)
+			t.Errorf("parseNDJSONStream panicked on unknown event type: %v", r)
 		}
 	}()
 
-	// Channels cannot be marshaled to JSON, so this tests robustness against json.Marshal errors
-	unmarshalable := make(chan int)
+	malformedStream := bytes.NewBufferString(`{"type": "some_random_unsupported_type", "data": "garbage"}
+{"type": "agent-inference", "data": {"unexpected": []}}
+{"completely_invalid_json"
+`)
 
-	sendAnthropicSSE(mf, mf, "unexpected_type_event", unmarshalable)
+	var cb StreamCallback = func(delta string, done bool, usage *UsageInfo) {}
+
+	err := parseNDJSONStream(malformedStream, "test-req", cb, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		// an error is fine, as long as it doesn't panic and handles it gracefully
+		t.Logf("Returned error as expected or handled gracefully: %v", err)
+	}
 }
