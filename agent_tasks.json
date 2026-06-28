@@ -1401,7 +1401,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-type-unknown-json-8df2b719",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for generic robustness",
@@ -1508,6 +1508,23 @@
       ],
       "acceptance": [
         "Tests cover anthropic stream handler logic with general unexpected types or malformed frames.",
+        "Handler handles it safely instead of panicking."
+      ]
+    }
+  ,
+    {
+      "id": "proxy-anthropic-handleframe-robustness-json-8df2b720",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic HandleFrame general unexpected type robustness with malformed JSON types",
+      "description": "Ensure that if the Anthropic stream transcoder logic receives unhandled event types with unexpected JSON payloads (arrays, numbers, etc.), it handles them gracefully without panicking.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover anthropic stream handler logic with unexpected JSON payload types.",
         "Handler handles it safely instead of panicking."
       ]
     }
