@@ -751,6 +751,64 @@ func TestOpenAIResponsesStreamTranscoder_GeneralUnexpectedTypeRobustness(t *test
 	}
 }
 
+func TestOpenAIResponsesStreamTranscoder_MissingDeltaFields(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 456)
+
+	frames := []anthropicSSEFrame{
+		{
+			Event: "content_block_delta",
+			Data:  json.RawMessage(`{"delta":{"some_unknown_field":"value"}}`),
+		},
+		{
+			Event: "content_block_delta",
+			Data:  json.RawMessage(`{"delta":{"type":"text_delta"}}`), // missing text
+		},
+		{
+			Event: "content_block_delta",
+			Data:  json.RawMessage(`{"delta":{"type":"thinking_delta"}}`), // missing thinking
+		},
+		{
+			Event: "message_delta",
+			Data:  json.RawMessage(`{"delta":{}}`),
+		},
+	}
+
+	for _, frame := range frames {
+		// This should not panic.
+		_ = transcoder.HandleFrame(frame)
+	}
+}
+
+func TestOpenAIChatStreamTranscoder_MissingDeltaFields(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
+
+	frames := []anthropicSSEFrame{
+		{
+			Event: "content_block_delta",
+			Data:  json.RawMessage(`{"delta":{"some_unknown_field":"value"}}`),
+		},
+		{
+			Event: "content_block_delta",
+			Data:  json.RawMessage(`{"delta":{"type":"text_delta"}}`), // missing text
+		},
+		{
+			Event: "content_block_delta",
+			Data:  json.RawMessage(`{"delta":{"type":"input_json_delta"}}`), // missing partial_json
+		},
+		{
+			Event: "message_delta",
+			Data:  json.RawMessage(`{"delta":{}}`), // missing stop_reason
+		},
+	}
+
+	for _, frame := range frames {
+		// This should not panic.
+		_ = transcoder.HandleFrame(frame)
+	}
+}
+
 func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 456)
