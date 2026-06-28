@@ -97,7 +97,7 @@ func dialChromeTLS(ctx context.Context, network, addr string) (net.Conn, error) 
 }
 
 // getChromeHTTPClient returns an http.Client with Chrome TLS fingerprint
-func getChromeHTTPClient(timeout time.Duration) *http.Client {
+var getChromeHTTPClient = func(timeout time.Duration) *http.Client {
 	return &http.Client{
 		Transport: getChromeRoundTripper(),
 		Timeout:   timeout,

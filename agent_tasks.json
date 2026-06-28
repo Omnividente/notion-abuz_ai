@@ -2306,7 +2306,7 @@
     },
     {
       "id": "proxy-observability-notion-persona-leakage-4964e354",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure Notion persona leakage events are logged as bridge decisions",
