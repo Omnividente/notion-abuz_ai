@@ -153,8 +153,8 @@ func buildCompactToolList(tools []Tool) string {
 		}
 		if t.Function.Description != "" {
 			desc := t.Function.Description
-			if len(desc) > 80 {
-				desc = desc[:80] + "..."
+			if len([]rune(desc)) > 80 {
+				desc = string([]rune(desc)[:80]) + "..."
 			}
 			sb.WriteString(fmt.Sprintf(" — %s", desc))
 		}
@@ -643,8 +643,8 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 					if name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens") {
 						needsReadNarrowing = true
 					}
-					if len(content) > 800 {
-						content = content[:800] + "..."
+					if len([]rune(content)) > 800 {
+						content = string([]rune(content)[:800]) + "..."
 					}
 					if lastRoundResults.Len() > 0 {
 						lastRoundResults.WriteString("\n")
@@ -698,8 +698,8 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				m := messages[i]
 				if m.Role == "assistant" && strings.Contains(m.Content, "---\nSources:") {
 					ctx := m.Content
-					if len(ctx) > 600 {
-						ctx = ctx[:600] + "..."
+					if len([]rune(ctx)) > 600 {
+						ctx = string([]rune(ctx)[:600]) + "..."
 					}
 					prevSearchContext = ctx
 					break // use the most recent search results
@@ -1014,8 +1014,8 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 			if name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens") {
 				needsReadNarrowing = true
 			}
-			if len(content) > 4000 {
-				content = content[:4000] + "\n... (truncated)"
+			if len([]rune(content)) > 4000 {
+				content = string([]rune(content)[:4000]) + "\n... (truncated)"
 			}
 			if results.Len() > 0 {
 				results.WriteString("\n")
@@ -1073,8 +1073,8 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 			originalQuery = strings.TrimSpace(originalQuery)
 
 			// For very long queries, just take the first part
-			if len(originalQuery) > 300 {
-				originalQuery = originalQuery[:297] + "..."
+			if len([]rune(originalQuery)) > 300 {
+				originalQuery = string([]rune(originalQuery)[:297]) + "..."
 			}
 			break
 		}

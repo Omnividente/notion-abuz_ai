@@ -2048,7 +2048,7 @@
     },
     {
       "id": "proxy-enhance-tool-error-recovery",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Investigate robust truncation for large command outputs or further tool execution recovery",
@@ -2061,6 +2061,41 @@
       "acceptance": [
         "Identifies and addresses at least one tool error recovery edge case (e.g., large output truncation) based on loop traces.",
         "Adds test cases for the improved recovery behavior."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-tool-schema-simplification-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add tests for Claude Code tool schema simplification",
+      "description": "Expand regression coverage to ensure that overly complex JSON schema structures from Claude Code or other multi-agent tools are gracefully simplified before being presented to the upstream, preventing token limit bloat.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify tool schemas with excessive nesting or descriptions are simplified.",
+        "Core tool inputs remain intact while extraneous constraints are discarded.",
+        "No live network calls are added to unit tests."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-live-smoke-streaming-observability",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add observability for Anthropic streaming response failure shapes",
+      "description": "Enhance the proxy logging for Anthropic streaming to output exact failure shapes when a live smoke test fails due to unexpected upstream chunks. Ensure no sensitive tokens or PII are logged.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Failed stream chunks produce a safely redacted diagnostic log.",
+        "Diagnostics do not expose user credentials or raw payloads.",
+        "The change makes future parsing edge cases easier to reproduce offline."
       ]
     }
   ]
