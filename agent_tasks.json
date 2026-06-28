@@ -1480,7 +1480,7 @@
     },
     {
       "id": "proxy-openai-request-invalid-model-type",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for invalid model field type in OpenAI requests",
