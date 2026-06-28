@@ -1233,16 +1233,27 @@ func TestHandleOpenAIResponses_InvalidModelType(t *testing.T) {
 	}
 }
 
-func TestOpenAIChatStreamTranscoder_UnknownEventName(t *testing.T) {
+func TestOpenAIChatStreamTranscoder_UnknownEventVariants(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chat_heartbeat", "gpt-5", 123, true)
 
-	unknownFrame := anthropicSSEFrame{
-		Event: "new_feature_start",
-		Data:  json.RawMessage(`{"some": "data"}`),
+	unknownEvents := []string{
+		"new_feature_start", // standard unknown string
+		"",                  // empty string
+		"   ",               // spaces
+		"12345",             // numeric string
+		"\n\t",              // control characters
+		"!@#$",              // special characters
 	}
-	if err := transcoder.HandleFrame(unknownFrame); err != nil {
-		t.Fatalf("unexpected error on unknown event name frame: %v", err)
+
+	for _, eventName := range unknownEvents {
+		frame := anthropicSSEFrame{
+			Event: eventName,
+			Data:  json.RawMessage(`{"some": "data"}`),
+		}
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("unexpected error on event %q: %v", eventName, err)
+		}
 	}
 }
 
@@ -1279,16 +1290,27 @@ func TestOpenAIChatStreamTranscoder_MissingFields(t *testing.T) {
 	}
 }
 
-func TestOpenAIResponsesStreamTranscoder_UnknownEventName(t *testing.T) {
+func TestOpenAIResponsesStreamTranscoder_UnknownEventVariants(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_heartbeat", "gpt-5", 123)
 
-	unknownFrame := anthropicSSEFrame{
-		Event: "new_feature_start",
-		Data:  json.RawMessage(`{"some": "data"}`),
+	unknownEvents := []string{
+		"new_feature_start", // standard unknown string
+		"",                  // empty string
+		"   ",               // spaces
+		"12345",             // numeric string
+		"\n\t",              // control characters
+		"!@#$",              // special characters
 	}
-	if err := transcoder.HandleFrame(unknownFrame); err != nil {
-		t.Fatalf("unexpected error on unknown event name frame: %v", err)
+
+	for _, eventName := range unknownEvents {
+		frame := anthropicSSEFrame{
+			Event: eventName,
+			Data:  json.RawMessage(`{"some": "data"}`),
+		}
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("unexpected error on event %q: %v", eventName, err)
+		}
 	}
 }
 
