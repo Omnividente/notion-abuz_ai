@@ -602,6 +602,12 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 		Data:  json.RawMessage(`{"index":"not-an-int","content_block":{"type":123,"text":456}}`),
 	}
 	_ = transcoder.HandleFrame(invalidTypeContentBlockStartFrame)
+
+	invalidTypeMessageStartFrame := anthropicSSEFrame{
+		Event: "message_start",
+		Data:  json.RawMessage(`{"message":{"usage":{"input_tokens":"not-an-int"}}}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypeMessageStartFrame)
 }
 
 func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
@@ -691,6 +697,12 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 		Data:  json.RawMessage(`{"index":"not-an-int","content_block":{"type":123,"text":456}}`),
 	}
 	_ = transcoder.HandleFrame(invalidTypeContentBlockStartFrame)
+
+	invalidTypeMessageStartFrame := anthropicSSEFrame{
+		Event: "message_start",
+		Data:  json.RawMessage(`{"message":{"usage":{"input_tokens":"not-an-int"}}}`),
+	}
+	_ = transcoder.HandleFrame(invalidTypeMessageStartFrame)
 }
 
 func TestOpenAIErrorNormalization_UnsupportedToolType(t *testing.T) {
