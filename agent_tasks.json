@@ -1417,7 +1417,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-missing-event-fields",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for missing fields in HandleFrame events",
@@ -1429,7 +1429,8 @@
       "acceptance": [
         "Tests added for HandleFrame with missing fields in payloads.",
         "No panics occur."
-      ]
+      ],
+      "completion_notes": "Added TestOpenAIChatStreamTranscoder_MissingFields and TestOpenAIResponsesStreamTranscoder_MissingFields to verify HandleFrame robustness when events omit expected payload fields."
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-event-name",
@@ -1510,8 +1511,7 @@
         "Tests cover anthropic stream handler logic with general unexpected types or malformed frames.",
         "Handler handles it safely instead of panicking."
       ]
-    }
-  ,
+    },
     {
       "id": "proxy-anthropic-handleframe-robustness-json-8df2b720",
       "status": "todo",
@@ -1525,6 +1525,22 @@
       ],
       "acceptance": [
         "Tests cover anthropic stream handler logic with unexpected JSON payload types.",
+        "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-handleframe-robustness-missing-fields-8df2b720",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic HandleFrame robustness missing fields",
+      "description": "Ensure that if the Anthropic stream transcoder logic receives valid JSON but missing expected fields, it handles them gracefully without panicking.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover anthropic stream handler logic with missing fields in payloads.",
         "Handler handles it safely instead of panicking."
       ]
     }

@@ -1174,3 +1174,73 @@ func TestHandleOpenAIResponses_InvalidModelType(t *testing.T) {
 		t.Errorf("expected error type 'invalid_request_error', got '%s'", errType)
 	}
 }
+
+func TestOpenAIChatStreamTranscoder_MissingFields(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
+
+	frames := []anthropicSSEFrame{
+		{
+			Event: "message_start",
+			Data:  json.RawMessage(`{"message":{}}`),
+		},
+		{
+			Event: "content_block_start",
+			Data:  json.RawMessage(`{"content_block":{}}`),
+		},
+		{
+			Event: "content_block_delta",
+			Data:  json.RawMessage(`{"delta":{}}`),
+		},
+		{
+			Event: "message_delta",
+			Data:  json.RawMessage(`{"delta":{}}`),
+		},
+		{
+			Event: "message_stop",
+			Data:  json.RawMessage(`{}`),
+		},
+	}
+
+	for _, frame := range frames {
+		// This should not panic.
+		_ = transcoder.HandleFrame(frame)
+	}
+}
+
+func TestOpenAIResponsesStreamTranscoder_MissingFields(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 456)
+
+	frames := []anthropicSSEFrame{
+		{
+			Event: "message_start",
+			Data:  json.RawMessage(`{"message":{}}`),
+		},
+		{
+			Event: "content_block_start",
+			Data:  json.RawMessage(`{"content_block":{}}`),
+		},
+		{
+			Event: "content_block_delta",
+			Data:  json.RawMessage(`{"delta":{}}`),
+		},
+		{
+			Event: "content_block_stop",
+			Data:  json.RawMessage(`{}`),
+		},
+		{
+			Event: "message_delta",
+			Data:  json.RawMessage(`{"delta":{}}`),
+		},
+		{
+			Event: "message_stop",
+			Data:  json.RawMessage(`{}`),
+		},
+	}
+
+	for _, frame := range frames {
+		// This should not panic.
+		_ = transcoder.HandleFrame(frame)
+	}
+}
