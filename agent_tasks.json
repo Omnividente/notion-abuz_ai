@@ -1448,7 +1448,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-payload-root-type",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for invalid payload root type in HandleFrame",
