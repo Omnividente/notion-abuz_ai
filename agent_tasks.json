@@ -2065,7 +2065,7 @@
     },
     {
       "id": "proxy-claude-code-tool-schema-simplification-coverage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add tests for Claude Code tool schema simplification",
