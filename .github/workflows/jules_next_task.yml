@@ -174,6 +174,16 @@ jobs:
           live-smoke transcript capture, or diagnostics that will expose the
           next real Claude Code failure.
 
+          TASK GRANULARITY POLICY:
+          One PR should complete one operational improvement theme, not one tiny
+          assertion, one isolated edge-case test, or one log/doc line. Group the
+          runtime change, targeted tests, diagnostics, docs, and artifact capture
+          when they validate the same failure mode and stay inside allowed_paths.
+          Do not create a new Jules session, PR, or follow-up task for
+          micro-changes that only prove already-working behavior. Split work only
+          when the next change is a different failure class, a different risk or
+          protected surface, or too broad for a safe review.
+
           VALIDATION COMMANDS:
           - python3 scripts/validate_agent_tasks.py agent_tasks.json
           - test -z "\$(gofmt -l .)"

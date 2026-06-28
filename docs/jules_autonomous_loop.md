@@ -103,6 +103,28 @@ the selected task's `allowed_paths`, Jules may implement it in the current PR.
 If it is useful but outside the selected scope, Jules must create a follow-up
 task and finish the selected task.
 
+## Task Granularity
+
+Prefer useful PRs over tiny PRs. One autonomous PR should complete one
+operational improvement theme, not one small assertion or one isolated
+edge-case test.
+
+A theme can include related runtime behavior, targeted tests, docs, diagnostic
+logs, and artifact capture when they validate the same Claude Code bridge
+failure mode. For example, a live-smoke observability theme can update the
+workflow/script capture and the docs in one PR, while a bridge-decision
+diagnostics theme can update logging, reason classification, and the matching
+regression tests together.
+
+Do not create a new Jules session, PR, or follow-up task just to add another
+single malformed-JSON, missing-field, HandleFrame, trimCitationContext, or
+similar parser robustness case unless a live smoke result, captured transcript,
+CI failure, or offline reproduction proves that exact gap matters.
+
+Split work only when the next change belongs to a different failure class,
+requires a different risk level or protected surface, or would make the PR too
+broad to review safely.
+
 For Claude Code compatibility research, prefer behavior-level findings over
 single phrase matching. Useful findings include missing transcript fixtures,
 new Notion persona leakage signals, broken tool-result continuations, session
@@ -181,6 +203,8 @@ When the queue is low or research discovers new bounded follow-up work:
 4. Do not duplicate done or existing todo tasks.
 5. Keep each task small enough for one PR.
 6. Do not add speculative tasks without a concrete finding or a documented gap.
+7. Do not replenish the queue with micro test-only tasks when the same effort can
+   be grouped into an existing runtime, diagnostics, or live-smoke theme.
 
 ## Proxy Priorities
 

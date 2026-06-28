@@ -13,6 +13,7 @@ read -r -d '' CONTINUE_PROMPT <<'EOF' || true
 
 Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг и продолжай.
 Оставайся внутри scope выбранной задачи и allowed_paths.
+Не дроби работу на отдельные micro-PR: если связанный тест, лог, doc или artifact-capture проверяет тот же failure mode и остается в allowed_paths, заверши это в текущем PR. Не создавай новую Jules-сессию, PR или follow-up задачу ради одного маленького edge-case теста без live smoke, transcript, CI или offline reproduction evidence.
 Перед открытием PR синхронизируйся с последним master/default branch. Если master изменился во время сессии, rebase/merge latest master перед PR. При конфликте в agent_tasks.json сохрани актуальную очередь из master и наложи только статус выбранной задачи и конкретные follow-up задачи этой сессии.
 Не открывай PR, если он заведомо dirty/conflicting с master.
 Запусти нужную валидацию.
@@ -33,6 +34,7 @@ read -r -d '' FINALIZE_PROMPT <<'EOF' || true
 
 Финализируй эту задачу сейчас:
 - Отметь выбранную задачу как завершенную в agent_tasks.json.
+- Не добавляй новую follow-up задачу ради одного маленького теста/лога/doc-строки, если нет конкретного live smoke, transcript, CI или offline reproduction evidence.
 - Синхронизируй ветку с последним master/default branch перед PR.
 - Если master изменился во время сессии, rebase/merge latest master. При конфликте в agent_tasks.json сохрани актуальную очередь из master и наложи только статус выбранной задачи и конкретные follow-up задачи этой сессии.
 - Открой один pull request для готовых изменений.

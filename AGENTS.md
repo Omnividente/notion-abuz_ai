@@ -64,6 +64,21 @@ findings from code inspection, offline tests, CI logs, docs gaps, or captured
 live smoke results. New tasks must be low/medium risk, non-duplicative,
 bounded to one PR, and below `replenishment_policy.max_todo_tasks`.
 
+Task size policy:
+
+- One PR should complete one operational improvement theme, not one tiny
+  assertion, one isolated edge-case test, or one log/doc line.
+- A complete theme may include the runtime change, targeted regression tests,
+  diagnostics, docs, and artifact capture needed to validate the same failure
+  mode.
+- Group tightly related follow-up work into the current PR when it stays inside
+  the selected task's `allowed_paths` and shares the same failure class.
+- Do not create a new Jules session, PR, or follow-up task for a micro-change
+  that only proves already-working behavior.
+- Split work only when the next change is a different failure class, requires
+  different ownership or risk, touches protected workflow/deployment/secrets
+  surfaces, or would make the PR hard to review.
+
 When selecting or generating new work, prefer Claude Code bridge investigation
 and regression coverage. Dashboard, registration, generic config, OpenCode,
 OpenAI-compatible, and GitHub workflow tasks are secondary unless they directly
