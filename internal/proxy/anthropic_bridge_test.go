@@ -140,18 +140,24 @@ func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff(t *testing.T
 
 把下面这段话直接发给你的编码助手（Cursor / Claude Code），它就能帮你操作。`
 
-	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
 	if !isNoTool {
 		t.Fatalf("expected no-tool identity drift text to be detected")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
 	}
 }
 
 func TestDetectToolBridgeNoToolResponse_DoesNotMatchNormalAnswer(t *testing.T) {
 	raw := "我已经根据上面的 grep 结果定位到文件，下一步建议缩小 Read 范围后继续编辑。"
 
-	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
 	if isNoTool {
 		t.Fatalf("normal answer should not be classified as no-tool identity drift")
+	}
+	if reason != "" {
+		t.Fatalf("expected empty reason for normal answer, got %q", reason)
 	}
 }
 
@@ -161,27 +167,36 @@ func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff_English(t *t
 I am Notion AI, I cannot access your local file system. I don't have the ability to run Bash or Edit tools.
 Please copy and paste this text manually into your coding assistant like Claude Code.`
 
-	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
 	if !isNoTool {
 		t.Fatalf("expected English no-tool identity drift text to be detected")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
 	}
 }
 
 func TestDetectToolBridgeNoToolResponse_MatchesToolCallRefusal_English(t *testing.T) {
 	raw := `I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant.`
 
-	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
 	if !isNoTool {
 		t.Fatalf("expected English tool-call refusal to be detected")
+	}
+	if reason != "tool-call refusal" {
+		t.Fatalf("expected reason 'tool-call refusal', got %q", reason)
 	}
 }
 
 func TestDetectToolBridgeNoToolResponse_MatchesFinalAnswerDrift(t *testing.T) {
 	raw := `I am Notion AI, and I don't have access to your coding assistant. Therefore, I cannot run edit or bash to modify those files.`
 
-	isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
 	if !isNoTool {
 		t.Fatalf("expected English final-answer identity drift to be detected")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
 	}
 }
 
@@ -194,9 +209,12 @@ func TestDetectToolBridgeNoToolResponse_MatchesWorkspaceReframing(t *testing.T) 
 	}
 
 	for i, raw := range cases {
-		isNoTool, _ := detectToolBridgeNoToolResponse(raw)
+		isNoTool, reason := detectToolBridgeNoToolResponse(raw)
 		if !isNoTool {
 			t.Fatalf("expected Workspace Reframing to be detected for case %d: %s", i, raw)
+		}
+		if reason != "workspace reframing" {
+			t.Fatalf("expected reason 'workspace reframing', got %q for case %d", reason, i)
 		}
 	}
 }
