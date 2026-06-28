@@ -40,7 +40,7 @@ jobs:
     if: vars.JULES_LOOP_ENABLED != 'false'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Continue waiting Jules sessions
         id: jules-monitor

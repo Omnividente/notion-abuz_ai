@@ -52,9 +52,12 @@ Pick exactly one task per PR.
 Default selection rule:
 
 1. Pick the exact requested `task_id` when provided.
-2. Otherwise pick the first `todo` task in `agent_tasks.json`.
-3. Implement only tasks with risk `low` or `medium` autonomously.
-4. For `high` or `critical` tasks, create or refine a human-review task instead of implementing it.
+2. Otherwise use `scripts/select_agent_task.py` to pick the highest-value
+   `todo` task for the requested focus/risk ceiling.
+3. Do not select micro/test-only tasks without live smoke, transcript, CI, or
+   offline reproduction evidence.
+4. Implement only tasks with risk `low` or `medium` autonomously.
+5. For `high` or `critical` tasks, create or refine a human-review task instead of implementing it.
 
 If the todo queue is below `replenishment_policy.minimum_todo_tasks`, add a small batch of low/medium-risk tasks with concrete `allowed_paths` and `acceptance` criteria.
 

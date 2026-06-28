@@ -2148,11 +2148,12 @@
     },
     {
       "id": "proxy-anthropic-missing-metadata-robustness",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame message_start metadata fields",
       "description": "Ensure that the proxy handles message_start events missing expected metadata fields without panicking.",
+      "blocked_reason": "Paused by task selection policy; resume only with concrete live smoke, transcript, CI, or offline reproduction evidence.",
       "allowed_paths": [
         "internal/proxy/anthropic_test.go",
         "agent_tasks.json"
@@ -2164,11 +2165,12 @@
     },
     {
       "id": "proxy-stream-retry-observability-coverage",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for streaming retry observability",
       "description": "Ensure that empty response retries logic is properly covered in tests for Anthropic HandleFrame message_start metadata fields.",
+      "blocked_reason": "Paused by task selection policy; resume only with concrete live smoke, transcript, CI, or offline reproduction evidence.",
       "allowed_paths": [
         "internal/proxy/anthropic_test.go",
         "agent_tasks.json"
@@ -2179,11 +2181,12 @@
     },
     {
       "id": "proxy-claude-code-tool-result-observability-metrics",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for observability of Claude Code tool results metrics",
       "description": "Expand proxy agent loop observability by ensuring tool results content lengths are properly captured and bubble up accurately without exposing sensitive transcripts.",
+      "blocked_reason": "Paused by task selection policy; resume only with concrete live smoke, transcript, CI, or offline reproduction evidence.",
       "allowed_paths": [
         "internal/proxy/session_multiturn_test.go",
         "agent_tasks.json"

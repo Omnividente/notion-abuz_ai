@@ -30,9 +30,18 @@ on:
         options:
           - low
           - medium
+      allow_parallel:
+        description: "Allow dispatching even when an autonomous PR is open"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: jules-next-task
@@ -50,13 +59,127 @@ jobs:
         contains(github.event.pull_request.labels.*.name, 'jules'))))
 
     steps:
-      - name: Trigger Google Jules via official API
+      - uses: actions/checkout@v5
+
+      - name: Select autonomous task
+        id: select-task
         env:
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-          JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
           TASK_ID: ${{ inputs.task_id || '' }}
           FOCUS: ${{ inputs.focus || 'proxy' }}
           RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
+        run: |
+          set -euo pipefail
+
+          args=(--manifest agent_tasks.json --risk-ceiling "${RISK_CEILING}" --focus "${FOCUS}" --json)
+          if [ -n "${TASK_ID}" ]; then
+            args+=(--task-id "${TASK_ID}")
+          fi
+
+          python3 scripts/select_agent_task.py "${args[@]}" > /tmp/selected-task.json
+          cat /tmp/selected-task.json
+
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          data = json.loads(Path("/tmp/selected-task.json").read_text(encoding="utf-8"))
+          output_path = Path(os.environ["GITHUB_OUTPUT"])
+
+          def write_output(key, value):
+              text = "" if value is None else str(value)
+              with output_path.open("a", encoding="utf-8") as output:
+                  if "\n" in text:
+                      output.write(f"{key}<<EOF\n{text}\nEOF\n")
+                  else:
+                      output.write(f"{key}={text}\n")
+
+          write_output("selected", str(data.get("selected", False)).lower())
+          write_output("task_id", data.get("task_id", ""))
+          write_output("title", data.get("title", ""))
+          write_output("score", data.get("score", 0))
+          write_output("reason", data.get("reason", ""))
+          PY
+
+      - name: Skip when no eligible autonomous task exists
+        if: steps.select-task.outputs.selected != 'true'
+        run: |
+          echo "No eligible autonomous task selected; skipping Jules dispatch."
+          echo "Reason: ${{ steps.select-task.outputs.reason }}"
+
+      - name: Detect open autonomous PRs
+        id: open-prs
+        if: steps.select-task.outputs.selected == 'true'
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+        run: |
+          set -euo pipefail
+
+          curl -fsS \
+            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
+            -o /tmp/open-prs.json
+
+          count="$(python3 - <<'PY'
+          import json
+          import os
+
+          with open("agent_tasks.json", "r", encoding="utf-8") as f:
+              task_ids = [task["id"] for task in json.load(f).get("tasks", [])]
+
+          with open("/tmp/open-prs.json", "r", encoding="utf-8") as f:
+              pulls = json.load(f)
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          count = 0
+          for pr in pulls:
+              labels = {label["name"] for label in pr.get("labels", [])}
+              head = pr.get("head", {})
+              head_ref = head.get("ref", "")
+              head_repo = (head.get("repo") or {}).get("full_name", "")
+              if "jules" in labels:
+                  count += 1
+                  continue
+              if head_repo != repo:
+                  continue
+              if head_ref.startswith(("jules-", "jules/")):
+                  count += 1
+                  continue
+              if any(head_ref == task_id or head_ref.startswith(f"{task_id}-") for task_id in task_ids):
+                  count += 1
+
+          print(count)
+          PY
+          )"
+
+          echo "count=${count}" >> "$GITHUB_OUTPUT"
+          echo "Open autonomous PRs: ${count}"
+
+      - name: Skip when an autonomous PR is already open
+        if: >
+          steps.select-task.outputs.selected == 'true' &&
+          steps.open-prs.outputs.count != '0' &&
+          (inputs.allow_parallel || 'false') != 'true'
+        run: |
+          echo "An autonomous PR is already open; skipping Jules dispatch."
+          echo "Set allow_parallel=true for a manual override."
+
+      - name: Trigger Google Jules via official API
+        if: >
+          steps.select-task.outputs.selected == 'true' &&
+          ((inputs.allow_parallel || 'false') == 'true' ||
+           steps.open-prs.outputs.count == '0')
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
+          TASK_ID: ${{ steps.select-task.outputs.task_id }}
+          FOCUS: ${{ inputs.focus || 'proxy' }}
+          RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
+          SELECTED_TASK_TITLE: ${{ steps.select-task.outputs.title }}
+          SELECTED_TASK_SCORE: ${{ steps.select-task.outputs.score }}
+          SELECTED_TASK_REASON: ${{ steps.select-task.outputs.reason }}
         run: |
           set -euo pipefail
 
@@ -71,7 +194,10 @@ jobs:
           Repository: ${{ github.repository }}
           Default branch: master
           Focus: ${FOCUS}
-          Optional exact task id: ${TASK_ID}
+          Selected task id: ${TASK_ID}
+          Selected task title: ${SELECTED_TASK_TITLE}
+          Selected task score: ${SELECTED_TASK_SCORE}
+          Selected task reason: ${SELECTED_TASK_REASON}
           Maximum autonomous implementation risk: ${RISK_CEILING}
 
           UNATTENDED MODE:
@@ -133,8 +259,8 @@ jobs:
           TASK LOOP:
           1. Read AGENTS.md, docs/jules_autonomous_loop.md, README.md, docs/api.md, docs/configuration.md, and agent_tasks.json.
           2. Validate agent_tasks.json mentally against scripts/validate_agent_tasks.py before editing it.
-          3. If TASK_ID is non-empty, select that task only if it exists, has status "todo", and risk <= ${RISK_CEILING}.
-          4. Otherwise select the first task with status "todo" and risk <= ${RISK_CEILING}.
+          3. TASK_ID was selected before this session by scripts/select_agent_task.py.
+          4. Implement only the selected TASK_ID. Do not switch to the first todo task.
           5. If there are fewer than the manifest minimum todo tasks, add a small batch of new low/medium-risk tasks before finishing.
           6. Implement exactly ONE complete task in one PR.
           7. Stay inside the selected task's allowed_paths. You may edit agent_tasks.json only to update task status or add follow-up tasks.
@@ -194,10 +320,11 @@ jobs:
           - go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
 
           LIVE TESTING:
-          - The repository may define secret RDSH_API_KEY for the separate RDSH Live Smoke workflow.
+          - Use .github/workflows/rdsh_local_live_smoke.yml for PR-code live validation.
+          - Use .github/workflows/rdsh_live_smoke.yml only for deployed endpoint checks.
           - Do not print, persist, or expose secrets.
           - Do not add live network calls to unit tests.
-          - If a task needs live validation, update or rely on .github/workflows/rdsh_live_smoke.yml instead of embedding secrets in code.
+          - Do not treat deployed RDSH smoke as proof that PR code works.
 
           STRICT RULES:
           - Never ask the user what to do if safe todo work exists.
