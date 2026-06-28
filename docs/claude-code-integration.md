@@ -180,6 +180,22 @@ The following classes of failure have been observed in the Claude Code bridge. T
 5. **Final-answer identity drift**: The model leaves JSON mode before generating a final answer, triggering the Notion system prompt identity regression.
 6. **Workspace Reframing**: The model reframes a coding or file system request as a Notion page creation, workspace search, or database manipulation.
 
+## Live Smoke Transcript Capture
+
+When local or remote live smoke tests fail, capturing diagnostic evidence is
+crucial for reproducing the failure offline.
+
+To capture actionable evidence without exposing production data:
+
+1. **Failure Classification Markers**: Look for the following signals in the captured transcript snippet:
+   - *Notion persona leakage*: Explicit phrases such as "I am Notion AI" or "I cannot access that in Notion".
+   - *JSON tool-call loss*: The model leaves the `{"name": "...", "arguments": {...}}` format and starts generating raw conversation prose.
+   - *Tool-result continuation loss*: The model ignores the previous tool execution result and either repeats the exact same tool call or drops the conversation thread context.
+   - *Final-answer drift*: The model loses JSON format before outputting `__done__`, triggering a fallback to the Notion identity prompt.
+2. **Security Rules**: Never print, persist, or commit real account tokens (`token_v2`), cookies, session data, or full unredacted production transcripts.
+3. **Artifact Constraints**: When enhancing test scripts (like `rdsh-local-live-smoke.sh`), limit transcript logging to the first 200–300 characters of the raw content string upon failure. This provides enough context for the marker matching above without leaking excessive data.
+4. **Task Translation**: Any captured evidence (the redacted snippet showing the failure marker) must be used to create specific, concrete runtime fix tasks in `agent_tasks.json`. Do not create tasks based on generic assumptions; link the exact failure class.
+
 ## Regression Signals
 
 Treat these as compatibility failures unless a task explicitly allows them:
