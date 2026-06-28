@@ -1,0 +1,50 @@
+{
+  "now": "2026-06-28T12:00:00Z",
+  "repository": "Omnividente/notion-abuz_ai",
+  "manifest": {
+    "replenishment_policy": {
+      "minimum_todo_tasks": 1
+    },
+    "tasks": [
+      {
+        "id": "runtime-task",
+        "status": "todo"
+      }
+    ]
+  },
+  "pulls": [
+    {
+      "number": 121,
+      "title": "Add test coverage for missing metadata",
+      "body": "PR created automatically by Jules.",
+      "state": "closed",
+      "labels": [
+        {
+          "name": "jules"
+        }
+      ],
+      "updated_at": "2026-06-28T10:00:00Z",
+      "changed_files": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json"
+      ],
+      "head": {
+        "ref": "jules-runtime-task",
+        "repo": {
+          "full_name": "Omnividente/notion-abuz_ai"
+        }
+      }
+    }
+  ],
+  "workflow_runs": [
+    {
+      "id": 1001,
+      "name": "CI",
+      "head_branch": "master",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-06-28T11:30:00Z"
+    }
+  ],
+  "jules_sessions": []
+}
