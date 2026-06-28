@@ -1790,7 +1790,7 @@
     },
     {
       "id": "claude-code-tool-loop-runtime-observability",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add bounded observability for Claude Code tool-loop retry decisions",
@@ -2096,6 +2096,24 @@
         "Failed stream chunks produce a safely redacted diagnostic log.",
         "Diagnostics do not expose user credentials or raw payloads.",
         "The change makes future parsing edge cases easier to reproduce offline."
+      ]
+    },
+    {
+      "id": "claude-code-tool-loop-diagnostics-test-coverage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for detailed diagnostic logging of bridge decisions",
+      "description": "Add explicit test coverage to verify that detectToolBridgeNoToolResponse now returns structured drift reasons (e.g. 'Notion persona leakage', 'workspace reframing') instead of just booleans, ensuring that diagnostic logs accurately trace Claude Code agentic loop decisions without leaking secrets.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/session_multiturn_test.go",
+        "internal/proxy/claude_code_final_answer_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests explicitly capture and assert on the second returned 'reason' value from detectToolBridgeNoToolResponse.",
+        "Verify that 'workspace reframing' and 'tool-call refusal' reasons are correctly assigned in their respective test cases."
       ]
     }
   ]
