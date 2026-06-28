@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -79,6 +80,37 @@ COMPROMISE_PHRASES = (
     "separate task",
 )
 
+EVIDENCE_BLOCK_RE = re.compile(
+    r"<!--\s*AUTONOMOUS_TASK_EVIDENCE\s*(?P<body>.*?)\s*-->",
+    re.IGNORECASE | re.DOTALL,
+)
+
+EVIDENCE_DIRECT_FIELDS = {
+    "task_id",
+    "status",
+    "blocked_reason",
+    "micro_pr_justification",
+}
+EVIDENCE_LIST_SECTIONS = {
+    "acceptance",
+    "evidence",
+    "evidence_files",
+    "checks",
+}
+EVIDENCE_SECTION_ALIASES = {
+    "evidence_files": "evidence",
+    "files": "evidence",
+    "validation": "checks",
+    "validations": "checks",
+    "tests": "checks",
+    "acceptance_criteria": "acceptance",
+    "criteria": "acceptance",
+}
+EVIDENCE_FILE_RE = re.compile(
+    r"(?P<path>(?:agent_tasks\.json|README\.md|AGENTS\.md|docs/|internal/|cmd/|scripts/|\.github/|web/)"
+    r"[A-Za-z0-9_./@+:-]*)"
+)
+
 
 @dataclass
 class ChangedTask:
@@ -86,6 +118,20 @@ class ChangedTask:
     before_status: str
     after_status: str
     task: dict[str, Any]
+
+
+@dataclass
+class EvidenceBlock:
+    present: bool = False
+    raw_count: int = 0
+    task_id: str = ""
+    status: str = ""
+    blocked_reason: str = ""
+    micro_pr_justification: str = ""
+    acceptance: list[str] = field(default_factory=list)
+    evidence: list[str] = field(default_factory=list)
+    checks: list[str] = field(default_factory=list)
+    evidence_files: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -97,6 +143,7 @@ class QualityDecision:
     blocked_task_ids: list[str] = field(default_factory=list)
     changed_files: list[str] = field(default_factory=list)
     new_task_ids: list[str] = field(default_factory=list)
+    evidence: dict[str, Any] = field(default_factory=dict)
     recommendation: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -108,6 +155,7 @@ class QualityDecision:
             "blocked_task_ids": self.blocked_task_ids,
             "changed_files": self.changed_files,
             "new_task_ids": self.new_task_ids,
+            "evidence": self.evidence,
             "recommendation": self.recommendation,
         }
 
@@ -284,6 +332,99 @@ def body_has_compromise(pr_title: str, pr_body: str) -> bool:
     return any(phrase in text for phrase in COMPROMISE_PHRASES)
 
 
+def normalize_evidence_key(key: str) -> str:
+    normalized = key.strip().lower().replace("-", "_").replace(" ", "_")
+    return EVIDENCE_SECTION_ALIASES.get(normalized, normalized)
+
+
+def clean_evidence_value(value: str) -> str:
+    return value.strip().strip("`").strip()
+
+
+def extract_evidence_files(entries: list[str]) -> list[str]:
+    files: list[str] = []
+    for entry in entries:
+        for match in EVIDENCE_FILE_RE.finditer(entry):
+            path = match.group("path").rstrip(".,;:)`")
+            if path and path not in files:
+                files.append(path)
+    return files
+
+
+def parse_evidence_block(pr_body: str) -> EvidenceBlock:
+    matches = list(EVIDENCE_BLOCK_RE.finditer(pr_body or ""))
+    block = EvidenceBlock(present=bool(matches), raw_count=len(matches))
+    if not matches:
+        return block
+
+    section = ""
+    for raw_line in matches[0].group("body").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        if line.startswith("-") and section:
+            value = clean_evidence_value(line[1:])
+            if not value:
+                continue
+            if section == "acceptance":
+                block.acceptance.append(value)
+            elif section == "checks":
+                block.checks.append(value)
+            elif section == "evidence":
+                block.evidence.append(value)
+            continue
+
+        if ":" not in line:
+            continue
+
+        key, value = line.split(":", 1)
+        key = normalize_evidence_key(key)
+        value = clean_evidence_value(value)
+
+        if key in EVIDENCE_DIRECT_FIELDS:
+            setattr(block, key, value)
+            section = ""
+        elif key in EVIDENCE_LIST_SECTIONS:
+            section = EVIDENCE_SECTION_ALIASES.get(key, key)
+            if section == "evidence_files":
+                section = "evidence"
+            if value:
+                if section == "acceptance":
+                    block.acceptance.append(value)
+                elif section == "checks":
+                    block.checks.append(value)
+                elif section == "evidence":
+                    block.evidence.append(value)
+        else:
+            section = ""
+
+    block.evidence_files = extract_evidence_files(block.evidence)
+    return block
+
+
+def evidence_to_dict(block: EvidenceBlock) -> dict[str, Any]:
+    return {
+        "present": block.present,
+        "raw_count": block.raw_count,
+        "task_id": block.task_id,
+        "status": block.status,
+        "acceptance_count": len(block.acceptance),
+        "evidence_count": len(block.evidence),
+        "evidence_files": block.evidence_files,
+        "checks_count": len(block.checks),
+        "has_micro_pr_justification": bool(block.micro_pr_justification),
+        "has_blocked_reason": bool(block.blocked_reason),
+    }
+
+
+def task_acceptance_count(task: dict[str, Any]) -> int:
+    acceptance = task.get("acceptance")
+    if not isinstance(acceptance, list):
+        return 0
+    return len([item for item in acceptance if str(item).strip()])
+
+
 def changed_line_count(numstat: dict[str, tuple[int, int]], changed_files: list[str]) -> int:
     total = 0
     for path in changed_files:
@@ -317,6 +458,7 @@ def evaluate_quality(
     has_direct_observability_assertion = diff_has_direct_observability_assertion(diff_text)
     compromise = body_has_compromise(pr_title, pr_body)
     changed_lines = changed_line_count(numstat, changed_files)
+    evidence = parse_evidence_block(pr_body)
 
     if len(done_changes) > 1:
         reasons.append(
@@ -328,15 +470,72 @@ def evaluate_quality(
             "No task moved to done or blocked in agent_tasks.json; autonomous PR has no durable task state update."
         )
 
+    if done_changes or blocked_changes:
+        if not evidence.present:
+            reasons.append("PR body is missing the AUTONOMOUS_TASK_EVIDENCE block required for autonomous PRs.")
+        elif evidence.raw_count > 1:
+            reasons.append("PR body contains more than one AUTONOMOUS_TASK_EVIDENCE block.")
+        else:
+            completed_ids = done_ids or blocked_ids
+            expected_status = "done" if done_ids else "blocked"
+            expected_task_id = completed_ids[0] if len(completed_ids) == 1 else ""
+            if not evidence.task_id:
+                reasons.append("AUTONOMOUS_TASK_EVIDENCE is missing task_id.")
+            elif expected_task_id and evidence.task_id != expected_task_id:
+                reasons.append(
+                    f"AUTONOMOUS_TASK_EVIDENCE task_id {evidence.task_id} "
+                    f"does not match changed task {expected_task_id}."
+                )
+            if evidence.status not in {"done", "blocked"}:
+                reasons.append("AUTONOMOUS_TASK_EVIDENCE status must be done or blocked.")
+            elif evidence.status != expected_status:
+                reasons.append(
+                    f"AUTONOMOUS_TASK_EVIDENCE status {evidence.status} "
+                    f"does not match manifest status {expected_status}."
+                )
+            if not evidence.checks:
+                reasons.append("AUTONOMOUS_TASK_EVIDENCE must list validation checks that were run.")
+            if not evidence.micro_pr_justification:
+                reasons.append("AUTONOMOUS_TASK_EVIDENCE is missing micro_pr_justification.")
+
+            changed_file_set = {normalize_path(path) for path in changed_files}
+            missing_evidence_files = [
+                path
+                for path in evidence.evidence_files
+                if normalize_path(path) not in changed_file_set
+            ]
+            if missing_evidence_files:
+                reasons.append(
+                    "AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: "
+                    + ", ".join(sorted(missing_evidence_files))
+                )
+            if not evidence.evidence_files:
+                reasons.append(
+                    "AUTONOMOUS_TASK_EVIDENCE must list changed evidence files using repo-relative paths."
+                )
+
     for change in blocked_changes:
         blocked_reason = str(change.task.get("blocked_reason", "")).strip()
         if not blocked_reason:
             reasons.append(f"Task {change.task_id} moved to blocked without blocked_reason.")
+        if evidence.present and evidence.status == "blocked" and not evidence.blocked_reason:
+            reasons.append("Blocked autonomous PR evidence must include blocked_reason.")
 
     for change in done_changes:
         task = change.task
         operational = is_operational_task(task)
         observability = requires_observability_proof(task)
+        expected_acceptance = task_acceptance_count(task)
+
+        if evidence.present and evidence.status == "done" and len(evidence.acceptance) < expected_acceptance:
+            reasons.append(
+                f"AUTONOMOUS_TASK_EVIDENCE maps {len(evidence.acceptance)} acceptance items, "
+                f"but task {change.task_id} has {expected_acceptance} acceptance criteria."
+            )
+        if evidence.present and evidence.status == "done":
+            unmapped_acceptance = [item for item in evidence.acceptance if "->" not in item]
+            if unmapped_acceptance:
+                reasons.append("AUTONOMOUS_TASK_EVIDENCE acceptance items must map criteria to evidence with '->'.")
 
         if operational and only_tests_manifest(changed_files):
             reasons.append(
@@ -345,22 +544,26 @@ def evaluate_quality(
 
         if observability and not has_runtime_or_script and not has_direct_observability_assertion:
             reasons.append(
-                f"Task {change.task_id} requires observability/logging proof, but the diff has no runtime/script change and no direct log-capture assertion."
+                f"Task {change.task_id} requires observability/logging proof, "
+                "but the diff has no runtime/script change and no direct log-capture assertion."
             )
 
         if operational and compromise and only_tests_docs_manifest(changed_files) and not has_runtime_or_script:
             reasons.append(
-                f"Task {change.task_id} was marked done while the PR text describes a compromise or moved core work into a follow-up."
+                f"Task {change.task_id} was marked done while the PR text describes "
+                "a compromise or moved core work into a follow-up."
             )
 
         if operational and added_tasks and only_tests_docs_manifest(changed_files) and not has_runtime_or_script:
             reasons.append(
-                f"Task {change.task_id} was marked done while adding follow-up tasks, but the PR only changed tests/docs/manifest."
+                f"Task {change.task_id} was marked done while adding follow-up tasks, "
+                "but the PR only changed tests/docs/manifest."
             )
 
         if operational and changed_lines <= 6 and not has_runtime_or_script:
             warnings.append(
-                f"Task {change.task_id} has a very small non-manifest diff ({changed_lines} changed lines); verify this is not a formal-only completion."
+                f"Task {change.task_id} has a very small non-manifest diff "
+                f"({changed_lines} changed lines); verify this is not a formal-only completion."
             )
 
     passed = not reasons
@@ -383,6 +586,7 @@ def evaluate_quality(
         blocked_task_ids=blocked_ids,
         changed_files=changed_files,
         new_task_ids=added_tasks,
+        evidence=evidence_to_dict(evidence),
         recommendation=recommendation,
     )
 
@@ -420,6 +624,14 @@ def write_report(path: Path, decision: QualityDecision) -> None:
     if decision.new_task_ids:
         lines.append("New task ids:")
         lines.extend(f"- `{task_id}`" for task_id in decision.new_task_ids)
+        lines.append("")
+    evidence = decision.evidence
+    if evidence:
+        lines.append("Evidence block:")
+        lines.append(f"- present: `{str(evidence.get('present')).lower()}`")
+        lines.append(f"- task_id: `{evidence.get('task_id') or ''}`")
+        lines.append(f"- status: `{evidence.get('status') or ''}`")
+        lines.append(f"- evidence_files: `{', '.join(evidence.get('evidence_files') or [])}`")
         lines.append("")
     lines.append("Recommendation:")
     lines.append(decision.recommendation)

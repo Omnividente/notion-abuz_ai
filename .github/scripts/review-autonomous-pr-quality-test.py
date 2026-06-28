@@ -52,6 +52,48 @@ def manifest(tasks: list[dict]) -> dict:
     return {"tasks": tasks}
 
 
+def evidence_body(
+    task_id: str,
+    *,
+    status: str = "done",
+    acceptance: list[str] | None = None,
+    evidence_files: list[str] | None = None,
+    checks: list[str] | None = None,
+    blocked_reason: str = "",
+    micro_pr_justification: str = "Runtime and test changes are grouped under the same task.",
+) -> str:
+    acceptance = acceptance or [
+        "Bridge decision logging includes workspace reframing explicitly -> internal/proxy/anthropic.go",
+        "Tests cover the observability path -> internal/proxy/anthropic_bridge_test.go",
+    ]
+    evidence_files = evidence_files or [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json",
+    ]
+    checks = checks or [
+        "python3 scripts/validate_agent_tasks.py agent_tasks.json",
+        "go test ./...",
+    ]
+    lines = [
+        "<!-- AUTONOMOUS_TASK_EVIDENCE",
+        f"task_id: {task_id}",
+        f"status: {status}",
+    ]
+    if blocked_reason:
+        lines.append(f"blocked_reason: {blocked_reason}")
+    lines.append("acceptance:")
+    lines.extend(f"- {item}" for item in acceptance)
+    lines.append("evidence_files:")
+    lines.extend(f"- {item}" for item in evidence_files)
+    lines.append("checks:")
+    lines.extend(f"- {item}" for item in checks)
+    if micro_pr_justification:
+        lines.append(f"micro_pr_justification: {micro_pr_justification}")
+    lines.append("-->")
+    return "\n".join(lines)
+
+
 class ReviewAutonomousPRQualityTest(unittest.TestCase):
     def evaluate(
         self,
@@ -107,13 +149,18 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
         decision = self.evaluate(
             before,
             after,
-            changed_files=["internal/proxy/anthropic.go", "internal/proxy/anthropic_bridge_test.go", "agent_tasks.json"],
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
             diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
-            pr_body="Acceptance: runtime bridge decision logging and regression test were updated.",
+            pr_body=evidence_body("runtime-fix"),
         )
 
         self.assertTrue(decision.passed)
         self.assertEqual(decision.recommendation, "Autonomous PR quality gate passed.")
+        self.assertTrue(decision.evidence["present"])
 
     def test_test_only_task_without_operational_claim_passes(self) -> None:
         before = manifest(
@@ -146,6 +193,12 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
             after,
             changed_files=["internal/proxy/tools_test.go", "agent_tasks.json"],
             diff_text="+ t.Run(\"parser edge case\", func(t *testing.T) {})",
+            pr_body=evidence_body(
+                "parser-test",
+                acceptance=["Tests cover the parser edge case -> internal/proxy/tools_test.go"],
+                evidence_files=["internal/proxy/tools_test.go", "agent_tasks.json"],
+                micro_pr_justification="This task is explicitly scoped to focused offline parser tests.",
+            ),
         )
 
         self.assertTrue(decision.passed)
@@ -167,6 +220,15 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
             after,
             changed_files=["agent_tasks.json"],
             diff_text='+ "status": "blocked"',
+            pr_body=evidence_body(
+                "blocked-task",
+                status="blocked",
+                acceptance=[],
+                evidence_files=["agent_tasks.json"],
+                checks=["python3 scripts/validate_agent_tasks.py agent_tasks.json"],
+                blocked_reason="Paused after repeated Jules FAILED sessions.",
+                micro_pr_justification="Manifest-only blocked update documents missing evidence.",
+            ),
         )
 
         self.assertTrue(decision.passed)
@@ -199,6 +261,99 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
 
         self.assertFalse(decision.passed)
         self.assertTrue(any("no durable task state update" in reason.lower() for reason in decision.reasons))
+
+    def test_missing_evidence_block_fails_done_task(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=["internal/proxy/anthropic.go", "agent_tasks.json"],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body="Runtime bridge decision logging was updated.",
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("AUTONOMOUS_TASK_EVIDENCE" in reason for reason in decision.reasons))
+
+    def test_mismatched_evidence_task_id_fails(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body("other-task"),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("does not match changed task" in reason for reason in decision.reasons))
+
+    def test_evidence_file_must_be_changed_by_pr(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=["internal/proxy/anthropic.go", "agent_tasks.json"],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body(
+                "runtime-fix",
+                evidence_files=["internal/proxy/anthropic.go", "docs/missing.md", "agent_tasks.json"],
+            ),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("files not changed" in reason for reason in decision.reasons))
+
+    def test_done_evidence_must_cover_acceptance_count(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body(
+                "runtime-fix",
+                acceptance=["Only one criterion -> internal/proxy/anthropic.go"],
+            ),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("acceptance criteria" in reason for reason in decision.reasons))
+
+    def test_evidence_requires_micro_pr_justification(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body("runtime-fix", micro_pr_justification=""),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("micro_pr_justification" in reason for reason in decision.reasons))
 
 
 if __name__ == "__main__":
