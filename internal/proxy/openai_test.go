@@ -919,8 +919,7 @@ func TestOpenAIResponsesStreamTranscoder_ToolCallChunks(t *testing.T) {
 }
 
 func TestHandleOpenAIChatCompletions_UnsupportedToolType(t *testing.T) {
-	reqBody := `{"model": "gpt-4", "messages": [{"role": "user", "content": "hi"}], "tools": [{"type": "unsupported_type"}]}`
-	req := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(reqBody))
+	req := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(`{"messages": [{"role": "user", "content": "hello"}], "tools": [{"type": "unsupported_tool"}]}`))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -1032,5 +1031,71 @@ func TestOpenAIResponsesStreamTranscoder_Heartbeat(t *testing.T) {
 	body := rr.Body.String()
 	if body != "" {
 		t.Fatalf("expected empty body for ping frame, got: %s", body)
+	}
+}
+
+func TestHandleOpenAIChatCompletions_InvalidModelType(t *testing.T) {
+	pool := &AccountPool{} // Empty pool is sufficient for testing error handling before routing
+	handler := HandleOpenAIChatCompletions(pool)
+
+	reqBody := `{"model": 123, "messages": [{"role": "user", "content": "hello"}]}`
+	req, err := http.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(reqBody))
+	if err != nil {
+		t.Fatalf("failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400 Bad Request, got %d", rr.Code)
+	}
+
+	var errResp map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &errResp); err != nil {
+		t.Fatalf("failed to parse error response: %v", err)
+	}
+
+	errObj, ok := errResp["error"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected error object in response")
+	}
+
+	errType, _ := errObj["type"].(string)
+	if errType != "invalid_request_error" {
+		t.Errorf("expected error type 'invalid_request_error', got '%s'", errType)
+	}
+}
+
+func TestHandleOpenAIResponses_InvalidModelType(t *testing.T) {
+	pool := &AccountPool{} // Empty pool is sufficient for testing error handling before routing
+	handler := HandleOpenAIResponses(pool)
+
+	reqBody := `{"model": 123, "input": [{"role": "user", "content": "hello"}]}`
+	req, err := http.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(reqBody))
+	if err != nil {
+		t.Fatalf("failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400 Bad Request, got %d", rr.Code)
+	}
+
+	var errResp map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &errResp); err != nil {
+		t.Fatalf("failed to parse error response: %v", err)
+	}
+
+	errObj, ok := errResp["error"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected error object in response")
+	}
+
+	errType, _ := errObj["type"].(string)
+	if errType != "invalid_request_error" {
+		t.Errorf("expected error type 'invalid_request_error', got '%s'", errType)
 	}
 }
