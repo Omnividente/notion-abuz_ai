@@ -13,6 +13,8 @@ read -r -d '' CONTINUE_PROMPT <<'EOF' || true
 
 Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг и продолжай.
 Оставайся внутри scope выбранной задачи и allowed_paths.
+Перед открытием PR синхронизируйся с последним master/default branch. Если master изменился во время сессии, rebase/merge latest master перед PR. При конфликте в agent_tasks.json сохрани актуальную очередь из master и наложи только статус выбранной задачи и конкретные follow-up задачи этой сессии.
+Не открывай PR, если он заведомо dirty/conflicting с master.
 Запусти нужную валидацию.
 Когда задача готова, открой один PR с русским title/body и label `jules`.
 Не задавай новый вопрос-подтверждение, если нет блокера из-за missing permissions, missing secrets, high/critical risk или неизбежного destructive action.
@@ -31,6 +33,8 @@ read -r -d '' FINALIZE_PROMPT <<'EOF' || true
 
 Финализируй эту задачу сейчас:
 - Отметь выбранную задачу как завершенную в agent_tasks.json.
+- Синхронизируй ветку с последним master/default branch перед PR.
+- Если master изменился во время сессии, rebase/merge latest master. При конфликте в agent_tasks.json сохрани актуальную очередь из master и наложи только статус выбранной задачи и конкретные follow-up задачи этой сессии.
 - Открой один pull request для готовых изменений.
 - Дай PR русский title/body.
 - Поставь label `jules`.

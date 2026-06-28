@@ -140,7 +140,13 @@ jobs:
           7. Stay inside the selected task's allowed_paths. You may edit agent_tasks.json only to update task status or add follow-up tasks.
           8. Update agent_tasks.json: set the completed task status to "done".
           9. Add any discovered bugs or safe improvements as new "todo" tasks with allowed_paths and acceptance criteria.
-          10. Open ONE pull request with a Russian title/body and label it "jules".
+          10. Before opening the PR, sync with the latest master/default branch.
+          11. If master changed during the session, rebase or merge latest master
+              before PR creation. For agent_tasks.json conflicts, preserve the
+              latest master queue and apply only the selected task status change
+              plus concrete follow-up tasks discovered in this session.
+          12. Do not open a PR that is known to be dirty/conflicting with master.
+          13. Open ONE pull request with a Russian title/body and label it "jules".
 
           RESEARCH AND DISCOVERY POLICY:
           Some tasks are investigative. Do not only execute literal user bullet
