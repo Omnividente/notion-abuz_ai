@@ -58,12 +58,22 @@ if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
     echo "touched_sessions=0"
     echo "api_available=false"
     echo "session_ids="
+    echo "failed_sessions="
+    echo "failed_task_id="
+    echo "failed_session_id="
+    echo "failed_count_for_task=0"
+    echo "failed_recovery_action=none"
+    echo "failed_recovery_reason=no Jules API keys configured"
   } >> "${GITHUB_OUTPUT:-/dev/null}"
   exit 0
 fi
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
+failed_sessions_file="${tmpdir}/failed-sessions.tsv"
+active_task_ids_file="${tmpdir}/active-task-ids.txt"
+: > "$failed_sessions_file"
+: > "$active_task_ids_file"
 
 declare -a key_labels=()
 declare -a key_values=()
@@ -112,6 +122,20 @@ jules_post() {
     -o "$out"
 }
 
+extract_session_task_id() {
+  local key="$1"
+  local session_name="$2"
+  local prefix="$3"
+  local activities_file="${tmpdir}/activities-${prefix}-${session_name//\//-}.json"
+
+  if ! jules_get "$key" "${session_name}/activities?pageSize=50" "$activities_file"; then
+    echo "::warning::Could not list activities for ${session_name}; task id cannot be extracted." >&2
+    return 0
+  fi
+
+  python3 .github/scripts/summarize-jules-failures.py extract-task-id "$activities_file" || true
+}
+
 session_epoch_filter='
   def ts:
     ((.updateTime // .createTime // "1970-01-01T00:00:00Z")
@@ -152,8 +176,23 @@ for i in "${!key_labels[@]}"; do
     case "$session_state" in
       QUEUED|PLANNING|IN_PROGRESS|AWAITING_PLAN_APPROVAL|AWAITING_USER_FEEDBACK)
         active_sessions=$((active_sessions + 1))
+        active_task_id="$(extract_session_task_id "$key" "$session_name" "active")"
+        if [ -n "$active_task_id" ]; then
+          echo "$active_task_id" >> "$active_task_ids_file"
+        fi
         ;;
     esac
+
+    if [ "$session_state" = "FAILED" ]; then
+      failed_task_id="$(extract_session_task_id "$key" "$session_name" "failed")"
+      if [ -n "$failed_task_id" ]; then
+        echo "Detected failed Jules session ${session_name} for task ${failed_task_id}."
+      else
+        echo "::warning::Detected failed Jules session ${session_name}, but no task id was found in activities."
+      fi
+      printf '%s\t%s\n' "${session_name##*/}" "$failed_task_id" >> "$failed_sessions_file"
+      continue
+    fi
 
     if [ "$session_state" = "AWAITING_PLAN_APPROVAL" ]; then
       out="${tmpdir}/approve-${session_name//\//-}.json"
@@ -215,6 +254,14 @@ for i in "${!key_labels[@]}"; do
     fi
   done < <(jq -c --arg source "$SOURCE" --argjson cutoff "$cutoff_epoch" "$session_epoch_filter" "$sessions_file")
 done
+
+echo "Failed Jules recovery decision:"
+python3 .github/scripts/summarize-jules-failures.py decide \
+  --manifest agent_tasks.json \
+  --failed-sessions "$failed_sessions_file" \
+  --active-task-ids "$active_task_ids_file" \
+  --github-output "${GITHUB_OUTPUT:-/dev/null}" \
+  --json
 
 echo "Active recent Jules sessions for ${SOURCE}: ${active_sessions}"
 echo "Touched Jules sessions: ${touched_sessions}"

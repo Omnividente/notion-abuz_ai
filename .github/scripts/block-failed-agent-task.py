@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""Open a manifest-only PR that blocks a repeatedly failing Jules task."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+
+BLOCK_REASON_TEMPLATE = (
+    "Paused after repeated Jules FAILED sessions: {sessions}. "
+    "Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
+)
+
+
+def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(cmd, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+def safe_branch_part(value: str, limit: int = 80) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-")
+    return cleaned[:limit] or "unknown"
+
+
+def load_manifest(path: Path) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as manifest_file:
+        data = json.load(manifest_file)
+    if not isinstance(data, dict):
+        raise ValueError("manifest root must be an object")
+    return data
+
+
+def write_manifest(path: Path, data: dict[str, Any]) -> None:
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def request(method: str, path: str, *, token: str, api_url: str, body: Any = None) -> Any:
+    data = None
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if body is not None:
+        data = json.dumps(body).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+
+    req = urllib.request.Request(f"{api_url}{path}", data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req) as resp:
+            content = resp.read()
+            if not content:
+                return None
+            return json.loads(content.decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"{method} {path} returned HTTP {exc.code}: {detail}") from exc
+
+
+def open_block_pr(
+    *,
+    manifest_path: Path,
+    task_id: str,
+    failed_sessions: list[str],
+    token: str,
+    repo: str,
+    api_url: str,
+) -> int:
+    short_session = safe_branch_part(failed_sessions[0] if failed_sessions else "unknown", 20)
+    branch = f"jules-failed-session-block-{safe_branch_part(task_id, 70)}-{short_session}"
+
+    open_pulls = request("GET", f"/repos/{repo}/pulls?state=open&per_page=100", token=token, api_url=api_url) or []
+    for pr in open_pulls:
+        head_ref = (pr.get("head") or {}).get("ref", "")
+        body = pr.get("body") or ""
+        if head_ref == branch or (task_id in body and "Jules FAILED sessions" in body):
+            print(f"Open failed-session block PR already exists: #{pr['number']}.")
+            return 0
+
+    manifest = load_manifest(manifest_path)
+    tasks = manifest.get("tasks", [])
+    target = None
+    for task in tasks:
+        if isinstance(task, dict) and task.get("id") == task_id:
+            target = task
+            break
+
+    if target is None:
+        print(f"Task {task_id!r} not found; cannot open block PR.")
+        return 0
+    if target.get("status") != "todo":
+        print(f"Task {task_id!r} status is {target.get('status')!r}; block PR not needed.")
+        return 0
+
+    sessions_text = ", ".join(failed_sessions)
+    target["status"] = "blocked"
+    target["blocked_reason"] = BLOCK_REASON_TEMPLATE.format(sessions=sessions_text)
+    write_manifest(manifest_path, manifest)
+
+    run(["git", "config", "user.name", "github-actions[bot]"])
+    run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
+    run(["git", "checkout", "-B", branch])
+    run(["git", "add", str(manifest_path)])
+
+    diff = run(["git", "diff", "--cached", "--quiet"], check=False)
+    if diff.returncode == 0:
+        print("No manifest changes to commit.")
+        return 0
+
+    run(["git", "commit", "-m", f"Block failed Jules task {task_id}"])
+    remote_url = f"https://x-access-token:{token}@github.com/{repo}.git"
+    run(["git", "remote", "set-url", "origin", remote_url])
+    run(["git", "push", "-u", "origin", branch, "--force-with-lease"])
+
+    title = f"Блокировка задачи {task_id} после FAILED-сессий Jules"[:120]
+    body = (
+        "Открыто автоматически после повторного завершения Jules-сессий в состоянии FAILED.\n\n"
+        "- Этап плана: recovery\n"
+        f"- Что сделано: задача `{task_id}` переведена в `blocked`.\n"
+        "- Что дальше: CI и automerge workflow должны проверить manifest-only изменение.\n"
+        "- Зачем: остановить бесконечные retry и сохранить дневной лимит Jules.\n"
+        "- Почему так: для этой задачи уже была одна recovery-попытка, повторный FAILED требует ручного/evidence-based возобновления.\n"
+        "- Проверки/риски: изменение ограничено `agent_tasks.json`.\n\n"
+        f"Jules FAILED sessions: `{sessions_text}`"
+    )
+    pr = request(
+        "POST",
+        f"/repos/{repo}/pulls",
+        token=token,
+        api_url=api_url,
+        body={"title": title, "head": branch, "base": "master", "body": body},
+    )
+    number = pr["number"]
+    print(f"Opened failed-session block PR #{number}.")
+    request(
+        "POST",
+        f"/repos/{repo}/issues/{number}/labels",
+        token=token,
+        api_url=api_url,
+        body={"labels": ["jules"]},
+    )
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", default="agent_tasks.json", type=Path)
+    parser.add_argument("--task-id", required=True)
+    parser.add_argument("--failed-sessions", required=True)
+    args = parser.parse_args(argv)
+
+    token = os.environ.get("GITHUB_API_TOKEN", "")
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    api_url = os.environ.get("GITHUB_API_URL", "https://api.github.com")
+    if not token or not repo:
+        print("GITHUB_API_TOKEN and GITHUB_REPOSITORY are required.", file=sys.stderr)
+        return 2
+
+    sessions = [item.strip() for item in args.failed_sessions.split(",") if item.strip()]
+    if not sessions:
+        print("No failed sessions were provided; block PR not needed.")
+        return 0
+
+    try:
+        return open_block_pr(
+            manifest_path=args.manifest,
+            task_id=args.task_id,
+            failed_sessions=sessions,
+            token=token,
+            repo=repo,
+            api_url=api_url,
+        )
+    except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        if isinstance(exc, subprocess.CalledProcessError):
+            if exc.stdout:
+                print(exc.stdout, file=sys.stderr)
+            if exc.stderr:
+                print(exc.stderr, file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
