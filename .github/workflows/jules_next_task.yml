@@ -228,6 +228,13 @@ jobs:
           follow-up todo task for it instead of waiting for human prioritization.
           If you are uncertain whether to implement a step, prefer the smaller
           reversible change that satisfies the selected task's acceptance criteria.
+          Do not ask whether to run a local server, local tests, offline
+          reproduction, log inspection, or artifact inspection. If it is safe,
+          non-destructive, inside the selected task scope and allowed_paths, run it.
+          If a reproduction requires live secrets, real credentials, production
+          access, or high/critical risk, do not ask the user inside the Jules
+          session. Instead update the selected task to blocked with the exact
+          missing evidence or permission and open one manifest-only PR.
           Only wait for user input when the task is blocked by missing permissions,
           missing secrets, high/critical risk, or an unavoidable destructive action.
 
@@ -242,6 +249,9 @@ jobs:
           a broad or micro test-only workaround. Instead update the selected task to
           blocked with a concrete blocked_reason that names the missing evidence or
           repeated failure, then open one manifest-only PR.
+          If Recovery reason says "auto-answer", treat it as an explicit user
+          answer. Continue with the safe local/offline reproduction path named in
+          that reason. Do not ask the same question again.
 
           COMMUNICATION LANGUAGE:
           Write all user-facing session updates, plans, PR titles/bodies, and
