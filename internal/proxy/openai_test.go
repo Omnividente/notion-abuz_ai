@@ -519,14 +519,38 @@ func TestOpenAIChatStreamTranscoder_GeneralUnexpectedTypeRobustness(t *testing.T
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
 
-	unexpectedFrame := anthropicSSEFrame{
-		Event: "some_unhandled_event_type",
-		Data:  json.RawMessage(`{"some_key": "some_value"}`),
+	frames := []anthropicSSEFrame{
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`{"some_key": "some_value"}`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`[1, 2, 3]`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`"just a string"`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`42`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`true`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`null`),
+		},
 	}
 
-	// This should not panic. It may return an error or nil depending on the current design.
-	// We just ensure it doesn't panic.
-	_ = transcoder.HandleFrame(unexpectedFrame)
+	for _, frame := range frames {
+		// This should not panic. It may return an error or nil depending on the current design.
+		// We just ensure it doesn't panic.
+		_ = transcoder.HandleFrame(frame)
+	}
 }
 
 func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
@@ -694,13 +718,37 @@ func TestOpenAIResponsesStreamTranscoder_GeneralUnexpectedTypeRobustness(t *test
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 456)
 
-	unexpectedFrame := anthropicSSEFrame{
-		Event: "some_unhandled_event_type",
-		Data:  json.RawMessage(`{"some_key": "some_value"}`),
+	frames := []anthropicSSEFrame{
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`{"some_key": "some_value"}`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`[1, 2, 3]`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`"just a string"`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`42`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`true`),
+		},
+		{
+			Event: "some_unhandled_event_type",
+			Data:  json.RawMessage(`null`),
+		},
 	}
 
-	// This should not panic.
-	_ = transcoder.HandleFrame(unexpectedFrame)
+	for _, frame := range frames {
+		// This should not panic.
+		_ = transcoder.HandleFrame(frame)
+	}
 }
 
 func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
