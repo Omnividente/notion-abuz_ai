@@ -158,6 +158,15 @@ jobs:
           MCP, or subagent-style prompts. Treat OpenAI/OpenCode, dashboard,
           registration, generic config, and workflow work as secondary unless it
           directly supports a reproduced Claude Code bridge failure.
+          Do not continue the autonomous loop by generating more narrow
+          test-only robustness tasks for already-working behavior, such as
+          another malformed JSON variant, missing field, empty payload,
+          HandleFrame event type, or trimCitationContext edge case. Such tests
+          are acceptable only when tied to a live smoke result, captured
+          transcript, CI failure, or offline reproduction of an actual Claude
+          Code bridge failure. Otherwise prefer a runtime bridge fix,
+          live-smoke transcript capture, or diagnostics that will expose the
+          next real Claude Code failure.
 
           VALIDATION COMMANDS:
           - python3 scripts/validate_agent_tasks.py agent_tasks.json
@@ -194,6 +203,9 @@ jobs:
           - Do not add new dependencies unless the task requires them and the dependency is justified in the PR body.
           - If a task is high or critical risk, create/refine a human-review task instead of implementing it.
           - Prefer focused tests over broad refactors.
+          - Do not finish a PR by adding only another isolated edge-case test
+            unless the selected task explicitly connects it to a reproduced
+            Claude Code bridge failure.
           - Preserve existing public API compatibility unless the task explicitly changes it.
           - Treat Notion persona leakage in Claude/Claude Code requests as a proxy compatibility bug.
           - For Claude Code compatibility tasks, prefer global behavior-level research and durable regression coverage over one-off matching of the latest observed phrase.
