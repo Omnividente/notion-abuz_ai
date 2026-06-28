@@ -1564,7 +1564,7 @@
     },
     {
       "id": "proxy-anthropic-handleframe-robustness-missing-event-fields-8df2b722",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic HandleFrame robustness missing delta fields",
@@ -1639,6 +1639,22 @@
       ],
       "acceptance": [
         "Tests cover openai stream handler logic with unknown event types.",
+        "Handler handles it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-handleframe-robustness-invalid-event-name-types-8df2b725",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic HandleFrame robustness missing properties in various payload shapes",
+      "description": "Ensure that if the Anthropic stream transcoder logic receives valid JSON but fields like id or name in nested objects are incorrectly typed or missing in varied edge cases, it handles them gracefully without panicking.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover anthropic stream handler logic with unexpected shapes for inner objects.",
         "Handler handles it safely instead of panicking."
       ]
     }
