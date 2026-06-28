@@ -118,6 +118,31 @@ func TestAnthropicHandleFrameRobustness_MissingFields(t *testing.T) {
 	}
 }
 
+func TestAnthropicHandleFrameRobustness_MissingDeltaFields(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("parseNDJSONStream panicked on valid JSON missing delta fields: %v", r)
+		}
+	}()
+
+	missingFieldsStream := bytes.NewBufferString(`{"type": "agent-inference", "value": [{"type": "text"}]}
+{"type": "agent-inference", "value": [{"type": "thinking"}]}
+{"type": "agent-inference", "value": [{"type": "tool_use"}]}
+{"type": "agent-inference", "value": [{"type": "tool_use", "name": "search"}]}
+{"type": "agent-inference", "value": [{"type": "tool_use", "id": "t1"}]}
+{"type": "agent-tool-result", "toolCallId": "t1", "result": {}}
+{"type": "agent-search-extracted-results", "toolCallId": "t1", "results": [{}]}
+{"type": "patch", "v": [{"o": "a", "p": "/value/0/content"}]}
+`)
+
+	var cb StreamCallback = func(delta string, done bool, usage *UsageInfo) {}
+
+	err := parseNDJSONStream(missingFieldsStream, "test-req", cb, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Logf("Returned error as expected or handled gracefully: %v", err)
+	}
+}
+
 func TestAnthropicHandleFrameRobustness_UnknownEvent(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
