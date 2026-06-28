@@ -204,8 +204,8 @@ func computeSessionFingerprintWithSalt(messages []ChatMessage, stableSalt string
 	for _, m := range messages {
 		if m.Role == "system" {
 			content := normalizeSessionSystemContent(m.Content)
-			if len(content) > 200 {
-				content = content[:200]
+			if len([]rune(content)) > 200 {
+				content = string([]rune(content)[:200])
 			}
 			h.Write([]byte(content))
 			break
@@ -215,8 +215,8 @@ func computeSessionFingerprintWithSalt(messages []ChatMessage, stableSalt string
 	for _, m := range messages {
 		if isMeaningfulUserMessage(m) {
 			content := normalizeSessionUserContent(m.Content)
-			if len(content) > 200 {
-				content = content[:200]
+			if len([]rune(content)) > 200 {
+				content = string([]rune(content)[:200])
 			}
 			h.Write([]byte(content))
 			break
@@ -314,10 +314,10 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 	}
 
 	clip := func(s string, limit int) string {
-		if limit <= 0 || len(s) <= limit {
+		if limit <= 0 || len([]rune(s)) <= limit {
 			return s
 		}
-		return s[:limit] + "..."
+		return string([]rune(s)[:limit]) + "..."
 	}
 
 	var systemParts []string
