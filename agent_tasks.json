@@ -1727,7 +1727,7 @@
     },
     {
       "id": "claude-code-live-smoke-runtime-gap-triage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Triage live Claude Code smoke results into runtime bridge fixes",
@@ -1746,6 +1746,23 @@
         "If a runtime bug is reproducible offline, the PR includes the smallest runtime fix plus regression coverage.",
         "If no runtime bug is reproducible, the PR documents the missing signal and adds one focused follow-up task for observability or live-smoke capture.",
         "The PR does not add another single-edge-case parser, HandleFrame, or trimCitationContext test unless tied to the reproduced bridge failure."
+      ],
+      "completion_notes": "No reproducible offline runtime gap was found due to lack of recent live smoke artifacts; adding a follow-up observability task to capture raw Anthropic/OpenAI live responses as artifacts."
+    },
+    {
+      "id": "proxy-claude-code-live-smoke-observability-capture",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add live-smoke transcript observability to capture bridge failures",
+      "description": "Update the rdsh_live_smoke.yml workflow or add a helper script to capture and upload the raw Anthropic and OpenAI responses as artifacts when the live smoke test fails, so we have concrete offline fixtures for the next runtime fix.",
+      "allowed_paths": [
+        ".github/workflows/rdsh_live_smoke.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The live smoke workflow uploads the raw response as an artifact on failure.",
+        "A clear signal is available for offline reproduction."
       ]
     },
     {
