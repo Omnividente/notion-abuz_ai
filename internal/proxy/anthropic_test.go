@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bytes"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -38,5 +39,28 @@ func TestAnthropicStreaming_ToolCallChunks(t *testing.T) {
 	body := mf.Body.String()
 	if !strings.Contains(body, `{"delta":{"partial_json":"{\"f","type":"input_json_delta"}`) || !strings.Contains(body, `{"delta":{"partial_json":"ile\":\"test.go\"}","type":"input_json_delta"}`) {
 		t.Fatalf("body missing split JSON chunks: %s", body)
+	}
+}
+
+func TestAnthropicHandleFrameRobustness(t *testing.T) {
+	// Test that parseNDJSONStream handles malformed/unknown NDJSON events gracefully without panicking
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("parseNDJSONStream panicked on unknown event type: %v", r)
+		}
+	}()
+
+	malformedStream := bytes.NewBufferString(`{"type": "some_random_unsupported_type", "data": "garbage"}
+{"type": "agent-inference", "data": {"unexpected": []}}
+{"completely_invalid_json"
+`)
+
+	var cb StreamCallback = func(delta string, done bool, usage *UsageInfo) {}
+
+	err := parseNDJSONStream(malformedStream, "test-req", cb, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		// an error is fine, as long as it doesn't panic and handles it gracefully
+		t.Logf("Returned error as expected or handled gracefully: %v", err)
 	}
 }
