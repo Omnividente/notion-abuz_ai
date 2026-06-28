@@ -515,6 +515,20 @@ func TestOpenAIChatStreamTranscoder_EmitsTextDelta(t *testing.T) {
 	}
 }
 
+func TestOpenAIChatStreamTranscoder_GeneralUnexpectedTypeRobustness(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
+
+	unexpectedFrame := anthropicSSEFrame{
+		Event: "some_unhandled_event_type",
+		Data:  json.RawMessage(`{"some_key": "some_value"}`),
+	}
+
+	// This should not panic. It may return an error or nil depending on the current design.
+	// We just ensure it doesn't panic.
+	_ = transcoder.HandleFrame(unexpectedFrame)
+}
+
 func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
@@ -674,6 +688,19 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 	if err := transcoder.HandleFrame(invalidRootPayloadNumber); err == nil {
 		t.Fatal("Expected error for number root payload, got nil")
 	}
+}
+
+func TestOpenAIResponsesStreamTranscoder_GeneralUnexpectedTypeRobustness(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 456)
+
+	unexpectedFrame := anthropicSSEFrame{
+		Event: "some_unhandled_event_type",
+		Data:  json.RawMessage(`{"some_key": "some_value"}`),
+	}
+
+	// This should not panic.
+	_ = transcoder.HandleFrame(unexpectedFrame)
 }
 
 func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
