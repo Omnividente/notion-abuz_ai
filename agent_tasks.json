@@ -1628,7 +1628,7 @@
     },
     {
       "id": "proxy-openai-handleframe-robustness-missing-event-346357e1",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for OpenAI HandleFrame robustness unknown event type",
