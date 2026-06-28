@@ -2030,7 +2030,7 @@
     },
     {
       "id": "proxy-add-diagnostics-for-failed-agent-loops",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add detailed multi-turn agent loop observability",
@@ -2044,6 +2044,23 @@
         "Proxy logs contain detailed trace markers for multi-turn Claude Code tool loops.",
         "Fallback from session to legacy collapse is logged with the explicit reason.",
         "Logging does not expose secret or full production transcripts."
+      ]
+    },
+    {
+      "id": "proxy-enhance-tool-error-recovery",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Investigate robust truncation for large command outputs or further tool execution recovery",
+      "description": "Following the observability improvements in agent loops, investigate and implement better strategies to recover from tool errors or safely truncate very large command outputs to prevent token limit exhaustion loops.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Identifies and addresses at least one tool error recovery edge case (e.g., large output truncation) based on loop traces.",
+        "Adds test cases for the improved recovery behavior."
       ]
     }
   ]
