@@ -58,7 +58,8 @@ jobs:
       - name: Validate autonomous PR quality gate
         run: |
           python3 .github/scripts/review-autonomous-pr-quality-test.py
-          python3 -m py_compile .github/scripts/review-autonomous-pr-quality.py
+          python3 .github/scripts/advisory-critic-review-test.py
+          python3 -m py_compile .github/scripts/review-autonomous-pr-quality.py .github/scripts/advisory-critic-review.py
 
       - name: Check Go formatting
         run: test -z "$(gofmt -l .)"
