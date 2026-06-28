@@ -582,6 +582,14 @@ func TestOpenAIChatStreamTranscoder_ErrorHandling(t *testing.T) {
 	if err := transcoder.HandleFrame(invalidErrorFrame); err == nil {
 		t.Fatal("Expected error for invalid JSON frame in error, got nil")
 	}
+
+	invalidUnknownFrame := anthropicSSEFrame{
+		Event: "unknown",
+		Data:  json.RawMessage(`{"type":"unknown"`), // Missing closing brace
+	}
+	if err := transcoder.HandleFrame(invalidUnknownFrame); err == nil {
+		t.Fatal("Expected error for invalid JSON frame in unknown event, got nil")
+	}
 }
 
 func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
@@ -650,6 +658,14 @@ func TestOpenAIResponsesStreamTranscoder_ErrorHandling(t *testing.T) {
 	}
 	if err := transcoder.HandleFrame(invalidErrorFrame); err == nil {
 		t.Fatal("Expected error for invalid JSON frame in error, got nil")
+	}
+
+	invalidUnknownFrame := anthropicSSEFrame{
+		Event: "unknown",
+		Data:  json.RawMessage(`{"type":"unknown"`), // Missing closing brace
+	}
+	if err := transcoder.HandleFrame(invalidUnknownFrame); err == nil {
+		t.Fatal("Expected error for invalid JSON frame in unknown event, got nil")
 	}
 }
 
