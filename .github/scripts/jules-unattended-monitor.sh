@@ -22,6 +22,20 @@ AUTONOMOUS_CONTINUE_TOKEN
 Не открывай PR, если он заведомо dirty/conflicting с master.
 Запусти нужную валидацию.
 Когда задача готова, открой один PR с русским title/body и label `jules`.
+В PR body обязательно добавь ровно один блок:
+<!-- AUTONOMOUS_TASK_EVIDENCE
+task_id: <selected task id>
+status: done|blocked
+acceptance:
+- <acceptance criterion> -> <changed file/test/artifact evidence>
+evidence_files:
+- <repo-relative changed file path>
+checks:
+- <validation command that was run>
+micro_pr_justification: <why this is one complete task theme, not a micro PR>
+-->
+Если status: blocked, добавь строку `blocked_reason: <concrete blocker>`.
+Все `evidence_files` должны быть файлами, измененными этим PR.
 Не задавай новый вопрос-подтверждение, если нет блокера из-за missing permissions, missing secrets, high/critical risk или неизбежного destructive action.
 
 В следующем сообщении обязательно кратко укажи:
@@ -46,6 +60,7 @@ AUTONOMOUS_CONTINUE_TOKEN
 - Открой один pull request для готовых изменений.
 - Дай PR русский title/body.
 - Поставь label `jules`.
+- В PR body добавь ровно один блок `AUTONOMOUS_TASK_EVIDENCE` с `task_id`, `status`, mapping всех acceptance criteria к evidence, измененными `evidence_files`, выполненными `checks` и `micro_pr_justification`. Для blocked добавь `blocked_reason`.
 - Не задавай новый вопрос-подтверждение.
 
 В финальном сообщении на русском укажи:

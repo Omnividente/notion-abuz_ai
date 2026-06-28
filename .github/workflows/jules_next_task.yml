@@ -332,6 +332,30 @@ jobs:
           a task done while moving the core acceptance criterion into a follow-up
           task.
 
+          The PR body must contain exactly one machine-readable evidence block
+          in this exact comment wrapper:
+
+          <!-- AUTONOMOUS_TASK_EVIDENCE
+          task_id: ${TASK_ID}
+          status: done
+          acceptance:
+          - Acceptance criterion text -> changed file/test/artifact evidence
+          evidence_files:
+          - repo/relative/path.go
+          - agent_tasks.json
+          checks:
+          - command that was run
+          micro_pr_justification: why this PR is one complete task theme, not a micro PR
+          -->
+
+          For a blocked task, use status: blocked and include:
+          blocked_reason: concrete missing evidence/permission/repeated failure.
+          Every evidence_files item must be a repo-relative path changed by the
+          PR. Do not list unchanged files as proof. Map every acceptance criterion
+          for a done task. If the task is manifest-only blocked, list
+          agent_tasks.json as the evidence file and the manifest validation
+          command in checks.
+
           VALIDATION COMMANDS:
           - python3 scripts/validate_agent_tasks.py agent_tasks.json
           - test -z "\$(gofmt -l .)"
