@@ -1,0 +1,163 @@
+name: 4. Advisory Critic Review
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+concurrency:
+  group: advisory-critic-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Classify autonomous PR
+        id: classify
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+          PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+          autonomous="$(python3 .github/scripts/classify-autonomous-pr.py)"
+          echo "autonomous=${autonomous}" >> "$GITHUB_OUTPUT"
+          echo "Autonomous PR: ${autonomous}"
+
+      - name: Skip non-autonomous PR
+        if: steps.classify.outputs.autonomous != 'true'
+        run: echo "Advisory critic review skipped because this PR is not classified as autonomous."
+
+      - name: Prepare PR review inputs
+        if: steps.classify.outputs.autonomous == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${PR_BODY}" > /tmp/pr-body.md
+          gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --name-only > /tmp/pr-files.txt || true
+          gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --patch > /tmp/pr-diff.patch || true
+
+      - name: Fetch PR refs for deterministic context
+        if: steps.classify.outputs.autonomous == 'true'
+        id: refs
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          base_ref="refs/remotes/origin/${PR_BASE_REF}"
+          head_ref="refs/remotes/pull/${PR_NUMBER}/head"
+          git fetch --no-tags origin "+refs/heads/${PR_BASE_REF}:${base_ref}" || true
+          git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/head:${head_ref}" || true
+          echo "base_ref=${base_ref}" >> "$GITHUB_OUTPUT"
+          echo "head_ref=${head_ref}" >> "$GITHUB_OUTPUT"
+
+      - name: Build deterministic quality context
+        if: steps.classify.outputs.autonomous == 'true'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/review-autonomous-pr-quality.py \
+            --base "${{ steps.refs.outputs.base_ref }}" \
+            --head "${{ steps.refs.outputs.head_ref }}" \
+            --pr-title "${PR_TITLE}" \
+            --pr-body-file /tmp/pr-body.md \
+            --report /tmp/autonomous-pr-quality.md \
+            --json > /tmp/autonomous-pr-quality.json || true
+
+      - name: Run advisory critic review
+        if: steps.classify.outputs.autonomous == 'true'
+        id: critic
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CRITIC_LLM_PROVIDER: ${{ vars.CRITIC_LLM_PROVIDER || 'auto' }}
+          CRITIC_API_TIMEOUT_SECONDS: ${{ vars.CRITIC_API_TIMEOUT_SECONDS || '45' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_CRITIC_MODEL: ${{ vars.GEMINI_CRITIC_MODEL }}
+          GEMINI_API_BASE: ${{ vars.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com' }}
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
+          JULES_API_BASE: ${{ vars.JULES_API_BASE || 'https://jules.googleapis.com/v1alpha' }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/advisory-critic-review.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --pr-title "${PR_TITLE}" \
+            --pr-body-file /tmp/pr-body.md \
+            --changed-files-file /tmp/pr-files.txt \
+            --diff-file /tmp/pr-diff.patch \
+            --quality-report-json /tmp/autonomous-pr-quality.json \
+            --output-json /tmp/advisory-critic-review.json \
+            --output-md /tmp/advisory-critic-review.md \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Append advisory critic summary
+        if: steps.classify.outputs.autonomous == 'true'
+        run: cat /tmp/advisory-critic-review.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload advisory critic artifacts
+        if: steps.classify.outputs.autonomous == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: advisory-critic-review-${{ github.event.pull_request.number }}
+          path: |
+            /tmp/advisory-critic-review.json
+            /tmp/advisory-critic-review.md
+            /tmp/autonomous-pr-quality.json
+            /tmp/autonomous-pr-quality.md
+
+      - name: Upsert advisory critic comment
+        if: steps.classify.outputs.autonomous == 'true' && vars.ADVISORY_CRITIC_COMMENT != 'false'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMENT_MARKER: "<!-- AUTONOMOUS_CRITIC_REVIEW -->"
+        run: |
+          set -euo pipefail
+          comments_file="/tmp/pr-comments.json"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate > "$comments_file"
+          comment_id="$(jq -s -r --arg marker "$COMMENT_MARKER" '
+            flatten
+            | .[]
+            | select((.body // "") | contains($marker))
+            | .id
+          ' "$comments_file" | head -n1)"
+
+          if [ -z "$comment_id" ]; then
+            comment_id="$(jq -r --arg marker "$COMMENT_MARKER" '
+            .[]
+            | select((.body // "") | contains($marker))
+            | .id
+            ' "$comments_file" | head -n1)"
+          fi
+
+          if [ -n "$comment_id" ]; then
+            jq -n --rawfile body /tmp/advisory-critic-review.md '{body: $body}' \
+              | gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" --input -
+          else
+            gh pr comment "$PR_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --body-file /tmp/advisory-critic-review.md
+          fi
