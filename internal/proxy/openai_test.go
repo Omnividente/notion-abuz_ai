@@ -1175,6 +1175,19 @@ func TestHandleOpenAIResponses_InvalidModelType(t *testing.T) {
 	}
 }
 
+func TestOpenAIChatStreamTranscoder_UnknownEventName(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chat_heartbeat", "gpt-5", 123, true)
+
+	unknownFrame := anthropicSSEFrame{
+		Event: "new_feature_start",
+		Data:  json.RawMessage(`{"some": "data"}`),
+	}
+	if err := transcoder.HandleFrame(unknownFrame); err != nil {
+		t.Fatalf("unexpected error on unknown event name frame: %v", err)
+	}
+}
+
 func TestOpenAIChatStreamTranscoder_MissingFields(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
@@ -1205,6 +1218,19 @@ func TestOpenAIChatStreamTranscoder_MissingFields(t *testing.T) {
 	for _, frame := range frames {
 		// This should not panic.
 		_ = transcoder.HandleFrame(frame)
+	}
+}
+
+func TestOpenAIResponsesStreamTranscoder_UnknownEventName(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_heartbeat", "gpt-5", 123)
+
+	unknownFrame := anthropicSSEFrame{
+		Event: "new_feature_start",
+		Data:  json.RawMessage(`{"some": "data"}`),
+	}
+	if err := transcoder.HandleFrame(unknownFrame); err != nil {
+		t.Fatalf("unexpected error on unknown event name frame: %v", err)
 	}
 }
 
