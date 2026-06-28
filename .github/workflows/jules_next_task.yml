@@ -48,6 +48,7 @@ on:
         type: string
 
 permissions:
+  actions: write
   contents: read
   pull-requests: read
 
@@ -182,6 +183,7 @@ jobs:
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
           JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
           TASK_ID: ${{ steps.select-task.outputs.task_id }}
           FOCUS: ${{ inputs.focus || 'proxy' }}
           RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
@@ -476,3 +478,67 @@ jobs:
 
           echo "Jules API response summary:"
           jq '{name, id, title, state, createTime, updateTime, webUrl, url}' /tmp/jules-response.json
+
+          session_id="$(jq -r '.id // (.name // "" | split("/")[-1])' /tmp/jules-response.json)"
+          if [ -n "${session_id}" ] && [ "${session_id}" != "null" ]; then
+            current_var="/tmp/jules-session-task-var.json"
+            current_map="/tmp/jules-session-task-map.json"
+            write_response="/tmp/jules-session-task-var-write.json"
+            status="$(curl -sS \
+              -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -o "$current_var" \
+              -w "%{http_code}" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/variables/JULES_RECENT_SESSION_TASKS" || echo "000")"
+
+            if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+              jq -r '.value // "{}"' "$current_var" > "$current_map"
+            else
+              echo '{}' > "$current_map"
+            fi
+
+            updated_map="$(jq -c \
+              --arg session_id "$session_id" \
+              --arg task_id "$TASK_ID" \
+              --arg update_time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              '. + {($session_id): {task_id: $task_id, updateTime: $update_time}}
+               | to_entries
+               | sort_by(.value.updateTime)
+               | reverse
+               | .[:30]
+               | from_entries' "$current_map")"
+
+            body="$(jq -n --arg name "JULES_RECENT_SESSION_TASKS" --arg value "$updated_map" '{name: $name, value: $value}')"
+            if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+              write_status="$(curl -sS \
+                -X PATCH \
+                -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                -H "Content-Type: application/json" \
+                -o "$write_response" \
+                -w "%{http_code}" \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/variables/JULES_RECENT_SESSION_TASKS" \
+                -d "$body" || echo "000")"
+            else
+              write_status="$(curl -sS \
+                -X POST \
+                -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                -H "Content-Type: application/json" \
+                -o "$write_response" \
+                -w "%{http_code}" \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/variables" \
+                -d "$body" || echo "000")"
+            fi
+
+            if [[ "$write_status" =~ ^2[0-9][0-9]$ ]]; then
+              echo "Recorded Jules session task mapping for ${session_id}."
+            else
+              echo "::warning::Could not record Jules session task mapping for ${session_id}; HTTP ${write_status}."
+              head -c 1000 "$write_response" || true
+              echo
+            fi
+          fi
