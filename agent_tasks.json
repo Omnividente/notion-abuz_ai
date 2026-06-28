@@ -1596,7 +1596,7 @@
     },
     {
       "id": "proxy-anthropic-test-trimcitationcontext",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for Anthropic trimCitationContext robustness",
