@@ -12,6 +12,8 @@ read -r -d '' CONTINUE_PROMPT <<'EOF' || true
 Пиши все пользовательские сообщения, объяснения плана, PR title/body и финальные summary на русском. Оставляй file paths, task ids, команды, API names, code identifiers и quoted errors на языке оригинала.
 
 Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг и продолжай.
+Если последнее сообщение спрашивает, нужно ли запустить локальный сервер, локальные тесты, offline reproduction или изучить логи/artifacts, ответ: да, сделай это сам, если действие безопасно, недеструктивно, остается внутри scope/allowed_paths и не требует секретов.
+Если для воспроизведения нужны live secrets, реальные credentials или production-доступ, не спрашивай пользователя в этой сессии. Вместо этого зафиксируй точный blocker в agent_tasks.json и открой manifest-only PR.
 Оставайся внутри scope выбранной задачи и allowed_paths.
 Не дроби работу на отдельные micro-PR: если связанный тест, лог, doc или artifact-capture проверяет тот же failure mode и остается в allowed_paths, заверши это в текущем PR. Не создавай новую Jules-сессию, PR или follow-up задачу ради одного маленького edge-case теста без live smoke, transcript, CI или offline reproduction evidence.
 Перед открытием PR синхронизируйся с последним master/default branch. Если master изменился во время сессии, rebase/merge latest master перед PR. При конфликте в agent_tasks.json сохрани актуальную очередь из master и наложи только статус выбранной задачи и конкретные follow-up задачи этой сессии.
@@ -136,6 +138,20 @@ extract_session_task_id() {
   python3 .github/scripts/summarize-jules-failures.py extract-task-id "$activities_file" || true
 }
 
+extract_failed_session_context() {
+  local key="$1"
+  local session_name="$2"
+  local activities_file="${tmpdir}/activities-failed-${session_name//\//-}.json"
+
+  if ! jules_get "$key" "${session_name}/activities?pageSize=50" "$activities_file"; then
+    echo "::warning::Could not list activities for ${session_name}; failed context cannot be extracted." >&2
+    printf '\t\n'
+    return 0
+  fi
+
+  python3 .github/scripts/summarize-jules-failures.py failed-context "$activities_file" || printf '\t\n'
+}
+
 resolve_session_task_id_from_recent_map() {
   local session_name="$1"
 
@@ -213,16 +229,26 @@ for i in "${!key_labels[@]}"; do
     esac
 
     if [ "$session_state" = "FAILED" ]; then
-      failed_task_id="$(extract_session_task_id "$key" "$session_name" "failed")"
+      failed_context="$(extract_failed_session_context "$key" "$session_name")"
+      if [[ "$failed_context" == *$'\t'* ]]; then
+        failed_task_id="${failed_context%%$'\t'*}"
+        failed_kind="${failed_context#*$'\t'}"
+      else
+        failed_task_id="$failed_context"
+        failed_kind=""
+      fi
       if [ -z "$failed_task_id" ]; then
         failed_task_id="$(resolve_session_task_id_from_recent_map "$session_name")"
       fi
       if [ -n "$failed_task_id" ]; then
         echo "Detected failed Jules session ${session_name} for task ${failed_task_id}."
+        if [ -n "$failed_kind" ]; then
+          echo "Failed Jules session ${session_name} classified as ${failed_kind}."
+        fi
       else
         echo "::warning::Detected failed Jules session ${session_name}, but no task id was found in activities."
       fi
-      printf '%s\t%s\n' "${session_name##*/}" "$failed_task_id" >> "$failed_sessions_file"
+      printf '%s\t%s\t%s\n' "${session_name##*/}" "$failed_task_id" "$failed_kind" >> "$failed_sessions_file"
       continue
     fi
 

@@ -47,6 +47,19 @@ class JulesFailureRecoveryTest(unittest.TestCase):
 
         self.assertEqual(module.extract_task_id_from_activities(data), "task-one")
 
+    def test_classifies_routine_question_failed_activity(self) -> None:
+        data = {
+            "activities": [
+                {
+                    "originator": "AGENT",
+                    "createTime": "2026-06-28T17:39:00Z",
+                    "message": "Пожалуйста, подскажите, нужно ли мне запустить локальный сервер и воспроизвести утечку?",
+                }
+            ]
+        }
+
+        self.assertEqual(module.classify_failed_activities(data), "routine_question")
+
     def test_one_failed_session_retries(self) -> None:
         decision = module.decide_recovery(
             manifest(),
@@ -55,6 +68,21 @@ class JulesFailureRecoveryTest(unittest.TestCase):
 
         self.assertEqual(decision.action, "retry")
         self.assertEqual(decision.count_for_task, 1)
+
+    def test_routine_question_failed_session_retries_with_auto_answer_reason(self) -> None:
+        decision = module.decide_recovery(
+            manifest(),
+            [
+                module.FailedSession(
+                    session_id="s1",
+                    task_id="task-one",
+                    failure_kind="routine_question",
+                )
+            ],
+        )
+
+        self.assertEqual(decision.action, "retry")
+        self.assertIn("auto-answer", decision.reason)
 
     def test_two_failed_sessions_block(self) -> None:
         decision = module.decide_recovery(

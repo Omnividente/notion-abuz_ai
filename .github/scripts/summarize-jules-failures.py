@@ -32,6 +32,7 @@ TASK_ID_RE = re.compile(
 class FailedSession:
     session_id: str
     task_id: str
+    failure_kind: str = ""
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,51 @@ def extract_task_id_from_activities(data: dict[str, Any]) -> str:
     return ""
 
 
+def latest_agent_text_from_activities(data: dict[str, Any]) -> str:
+    latest_epoch = ""
+    latest_blob = ""
+    for activity in data.get("activities", []):
+        if not isinstance(activity, dict):
+            continue
+        originator = str(activity.get("originator", "")).lower()
+        if "user" in originator:
+            continue
+        epoch = str(activity.get("createTime", ""))
+        blob = json.dumps(activity, ensure_ascii=False)
+        if not latest_blob or epoch >= latest_epoch:
+            latest_epoch = epoch
+            latest_blob = blob
+    return latest_blob
+
+
+def classify_failed_activities(data: dict[str, Any]) -> str:
+    latest = latest_agent_text_from_activities(data).lower()
+    if not latest:
+        return ""
+
+    routine_question_markers = (
+        "пожалуйста, подскажите",
+        "подскажите",
+        "нужно ли",
+        "нужен ли",
+        "стоит ли",
+        "запустить локальный сервер",
+        "запустить сервер",
+        "запустить модульные тесты",
+        "воспроизвести",
+        "should i",
+        "do you want me",
+        "would you like me",
+        "need me to",
+        "run the local server",
+        "run local",
+        "reproduce",
+    )
+    if "?" in latest and any(marker in latest for marker in routine_question_markers):
+        return "routine_question"
+    return ""
+
+
 def read_failed_sessions(path: Path) -> list[FailedSession]:
     sessions: list[FailedSession] = []
     if not path.exists():
@@ -91,8 +137,15 @@ def read_failed_sessions(path: Path) -> list[FailedSession]:
             parts = line.split("\t")
             session_id = parts[0].strip()
             task_id = parts[1].strip() if len(parts) > 1 else ""
+            failure_kind = parts[2].strip() if len(parts) > 2 else ""
             if session_id:
-                sessions.append(FailedSession(session_id=session_id, task_id=task_id))
+                sessions.append(
+                    FailedSession(
+                        session_id=session_id,
+                        task_id=task_id,
+                        failure_kind=failure_kind,
+                    )
+                )
     return sessions
 
 
@@ -139,13 +192,21 @@ def decide_recovery(
         )
         count_for_task = counts[session.task_id]
         if count_for_task <= 1:
+            reason = "first failed session for this task"
+            if session.failure_kind == "routine_question":
+                reason = (
+                    "failed after asking a routine implementation question; "
+                    "auto-answer: do not ask, run safe local/offline reproduction "
+                    "inside the selected task scope; if live secrets or credentials "
+                    "are required, block the task with a concrete blocked_reason"
+                )
             return RecoveryDecision(
                 action="retry",
                 task_id=session.task_id,
                 session_id=session.session_id,
                 sessions=sessions_for_task,
                 count_for_task=count_for_task,
-                reason="first failed session for this task",
+                reason=reason,
             )
         return RecoveryDecision(
             action="block",
@@ -175,6 +236,13 @@ def command_extract_task_id(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_failed_context(args: argparse.Namespace) -> int:
+    with Path(args.activities).open("r", encoding="utf-8") as activities_file:
+        data = json.load(activities_file)
+    print(f"{extract_task_id_from_activities(data)}\t{classify_failed_activities(data)}")
+    return 0
+
+
 def command_decide(args: argparse.Namespace) -> int:
     manifest = load_manifest(Path(args.manifest))
     failed_sessions = read_failed_sessions(Path(args.failed_sessions))
@@ -197,6 +265,10 @@ def build_parser() -> argparse.ArgumentParser:
     extract = subparsers.add_parser("extract-task-id")
     extract.add_argument("activities")
     extract.set_defaults(func=command_extract_task_id)
+
+    failed_context = subparsers.add_parser("failed-context")
+    failed_context.add_argument("activities")
+    failed_context.set_defaults(func=command_failed_context)
 
     decide = subparsers.add_parser("decide")
     decide.add_argument("--manifest", default="agent_tasks.json")
