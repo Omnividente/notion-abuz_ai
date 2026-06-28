@@ -38,6 +38,14 @@ on:
         options:
           - "false"
           - "true"
+      recovery_session_id:
+        description: "Optional failed Jules session id that caused this retry"
+        required: false
+        type: string
+      recovery_reason:
+        description: "Optional reason for retrying after a failed Jules session"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -180,6 +188,8 @@ jobs:
           SELECTED_TASK_TITLE: ${{ steps.select-task.outputs.title }}
           SELECTED_TASK_SCORE: ${{ steps.select-task.outputs.score }}
           SELECTED_TASK_REASON: ${{ steps.select-task.outputs.reason }}
+          RECOVERY_SESSION_ID: ${{ inputs.recovery_session_id || '' }}
+          RECOVERY_REASON: ${{ inputs.recovery_reason || '' }}
         run: |
           set -euo pipefail
 
@@ -198,6 +208,8 @@ jobs:
           Selected task title: ${SELECTED_TASK_TITLE}
           Selected task score: ${SELECTED_TASK_SCORE}
           Selected task reason: ${SELECTED_TASK_REASON}
+          Recovery session id: ${RECOVERY_SESSION_ID}
+          Recovery reason: ${RECOVERY_REASON}
           Maximum autonomous implementation risk: ${RISK_CEILING}
 
           UNATTENDED MODE:
@@ -216,6 +228,18 @@ jobs:
           reversible change that satisfies the selected task's acceptance criteria.
           Only wait for user input when the task is blocked by missing permissions,
           missing secrets, high/critical risk, or an unavoidable destructive action.
+
+          FAILED SESSION RECOVERY MODE:
+          If Recovery session id is non-empty, this session is the single allowed
+          retry after a Jules session ended in FAILED for the same selected TASK_ID.
+          Use the failed session only as context; do not switch tasks.
+          First inspect repository state, current agent_tasks.json, local live-smoke
+          artifacts/check logs available in the repository, and the selected task's
+          acceptance criteria. Implement the smallest safe recovery step inside
+          allowed_paths. If the same blocker still prevents progress, do not create
+          a broad or micro test-only workaround. Instead update the selected task to
+          blocked with a concrete blocked_reason that names the missing evidence or
+          repeated failure, then open one manifest-only PR.
 
           COMMUNICATION LANGUAGE:
           Write all user-facing session updates, plans, PR titles/bodies, and

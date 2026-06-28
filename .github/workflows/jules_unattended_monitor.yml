@@ -26,7 +26,7 @@ on:
 
 permissions:
   actions: write
-  contents: read
+  contents: write
   issues: write
   pull-requests: write
 
@@ -106,11 +106,25 @@ jobs:
           echo "count=${count}" >> "$GITHUB_OUTPUT"
           echo "Open autonomous PRs: ${count}"
 
+      - name: Block task after repeated failed Jules sessions
+        if: >
+          steps.jules-monitor.outputs.failed_recovery_action == 'block' &&
+          steps.open-prs.outputs.count == '0'
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+        run: |
+          set -euo pipefail
+
+          python3 .github/scripts/block-failed-agent-task.py \
+            --manifest agent_tasks.json \
+            --task-id "${{ steps.jules-monitor.outputs.failed_task_id }}" \
+            --failed-sessions "${{ steps.jules-monitor.outputs.failed_sessions }}"
+
       - name: Check Jules trigger cooldown
         id: cooldown
         env:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-          IDLE_DISPATCH_MINUTES: ${{ inputs.idle_dispatch_minutes || '90' }}
+          IDLE_DISPATCH_MINUTES: ${{ inputs.idle_dispatch_minutes || '15' }}
         run: |
           set -euo pipefail
 
@@ -145,9 +159,47 @@ jobs:
           echo "should_dispatch=${should_dispatch}" >> "$GITHUB_OUTPUT"
           echo "Cooldown allows idle dispatch: ${should_dispatch}"
 
+      - name: Dispatch retry for failed Jules task
+        if: >
+          steps.jules-monitor.outputs.failed_recovery_action == 'retry' &&
+          steps.jules-monitor.outputs.active_sessions == '0' &&
+          steps.open-prs.outputs.count == '0' &&
+          steps.cooldown.outputs.should_dispatch == 'true'
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+        run: |
+          set -euo pipefail
+
+          body="$(jq -n \
+            --arg task_id "${{ steps.jules-monitor.outputs.failed_task_id }}" \
+            --arg recovery_session_id "${{ steps.jules-monitor.outputs.failed_session_id }}" \
+            --arg recovery_reason "${{ steps.jules-monitor.outputs.failed_recovery_reason }}" \
+            '{
+              ref: "master",
+              inputs: {
+                task_id: $task_id,
+                focus: "proxy",
+                risk_ceiling: "medium",
+                allow_parallel: "false",
+                recovery_session_id: $recovery_session_id,
+                recovery_reason: $recovery_reason
+              }
+            }')"
+
+          curl -fsS \
+            -X POST \
+            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/jules_next_task.yml/dispatches" \
+            -d "$body"
+
+          echo "Dispatched retry for failed Jules task ${{ steps.jules-monitor.outputs.failed_task_id }}."
+
       - name: Dispatch next Jules task when idle
         if: >
           (inputs.dispatch_if_idle || 'true') == 'true' &&
+          steps.jules-monitor.outputs.failed_recovery_action == 'none' &&
           steps.jules-monitor.outputs.active_sessions == '0' &&
           steps.open-prs.outputs.count == '0' &&
           steps.cooldown.outputs.should_dispatch == 'true'
