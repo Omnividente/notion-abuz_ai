@@ -117,3 +117,23 @@ func TestAnthropicHandleFrameRobustness_MissingFields(t *testing.T) {
 		t.Logf("Returned error as expected or handled gracefully: %v", err)
 	}
 }
+
+func TestAnthropicHandleFrameRobustness_UnknownEvent(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("parseNDJSONStream panicked on unknown event type string: %v", r)
+		}
+	}()
+
+	// Testing specifically an unknown future event type like "new_feature_start"
+	unknownEventStream := bytes.NewBufferString(`{"type": "new_feature_start", "data": {"something": "here"}}
+{"type": "agent-inference"}
+`)
+
+	var cb StreamCallback = func(delta string, done bool, usage *UsageInfo) {}
+
+	err := parseNDJSONStream(unknownEventStream, "test-req", cb, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Logf("Returned error as expected or handled gracefully: %v", err)
+	}
+}
