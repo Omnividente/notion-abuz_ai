@@ -580,6 +580,12 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				return buildSessionChainFollowUp(messages, compactList, extractedCwd)
 			}
 
+			reason := "session is nil"
+			if session != nil {
+				reason = "TurnCount is 0"
+			}
+			log.Printf("[bridge] chain: falling back from session to legacy collapse (reason: %s)", reason)
+
 			// ── Legacy collapse (no session): flatten multi-turn to single message ──
 			// Notion AI's 27k system prompt causes refusal on follow-up turns when
 			// conversation history reveals the "unit test" framing. By collapsing
@@ -963,23 +969,82 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 	var results strings.Builder
 	resultCount := 0
 	needsReadNarrowing := false
+
+	// Tracing for agent loop
+	var traceParts []string
+	var currentRoundCalls []string
+	var currentRoundErrors []string
+	hasErrorInLatestTurn := false
+	_ = currentRoundCalls
+
 	for i, m := range messages {
-		if m.Role != "tool" || i <= lastAssistantIdx {
-			continue
+		if m.Role == "assistant" && len(m.ToolCalls) > 0 {
+			var calls []string
+			for _, tc := range m.ToolCalls {
+				calls = append(calls, tc.Function.Name)
+			}
+			traceParts = append(traceParts, fmt.Sprintf("call[%s]", strings.Join(calls, ",")))
+			if i == lastAssistantIdx {
+				currentRoundCalls = calls
+			}
+		} else if m.Role == "tool" {
+			name := resolveName(m)
+			content := m.Content
+
+			// Simple heuristics for errors
+			lowerContent := strings.ToLower(content)
+			isError := strings.Contains(lowerContent, "exit status") ||
+				strings.Contains(lowerContent, "no such file") ||
+				strings.Contains(lowerContent, "command not found") ||
+				strings.HasPrefix(lowerContent, "error:") ||
+				(name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens"))
+
+			if isError {
+				traceParts = append(traceParts, fmt.Sprintf("err[%s]", name))
+				if i > lastAssistantIdx {
+					currentRoundErrors = append(currentRoundErrors, name)
+					hasErrorInLatestTurn = true
+				}
+			}
+
+			if i <= lastAssistantIdx {
+				continue
+			}
+
+			if name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens") {
+				needsReadNarrowing = true
+			}
+			if len(content) > 4000 {
+				content = content[:4000] + "\n... (truncated)"
+			}
+			if results.Len() > 0 {
+				results.WriteString("\n")
+			}
+			results.WriteString(fmt.Sprintf("[%s]: %s", name, content))
+			resultCount++
 		}
-		name := resolveName(m)
-		content := m.Content
-		if name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens") {
-			needsReadNarrowing = true
+	}
+
+	if len(traceParts) > 0 {
+		log.Printf("[bridge] session chain: agent loop trace: %s", strings.Join(traceParts, " -> "))
+	}
+
+	// Detect potential retry loops (same tools called repeatedly after errors)
+	// For simplicity, we just check if the last turn had an error and this turn is calling the same tool.
+	// But actually, we don't know the next calls yet. We can just check if we have a pattern of call->err->call->err
+
+	// A better heuristic for retry loop warning based on trace history:
+	if len(traceParts) >= 4 {
+		// e.g. call[Bash] -> err[Bash] -> call[Bash] -> err[Bash]
+		p1, p2, p3, p4 := traceParts[len(traceParts)-4], traceParts[len(traceParts)-3], traceParts[len(traceParts)-2], traceParts[len(traceParts)-1]
+		if strings.HasPrefix(p1, "call[") && strings.HasPrefix(p2, "err[") &&
+			p1 == p3 && p2 == p4 {
+			log.Printf("[bridge] session chain: warning, detected potential retry loop (same tools called repeatedly after errors)")
 		}
-		if len(content) > 4000 {
-			content = content[:4000] + "\n... (truncated)"
-		}
-		if results.Len() > 0 {
-			results.WriteString("\n")
-		}
-		results.WriteString(fmt.Sprintf("[%s]: %s", name, content))
-		resultCount++
+	}
+
+	if hasErrorInLatestTurn {
+		log.Printf("[bridge] session chain: reframing previous tool error for next turn (tools with errors: %s)", strings.Join(currentRoundErrors, ","))
 	}
 
 	cwdLine := ""
