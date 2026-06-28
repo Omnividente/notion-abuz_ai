@@ -1304,7 +1304,7 @@
     },
     {
       "id": "proxy-chat-stream-handleframe-invalid-message-stop-types",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add chat stream error handling test for message_stop type mismatch",
@@ -1379,6 +1379,22 @@
       ],
       "acceptance": [
         "Tests cover stream transcoders with unexpected types for content_block_delta fields.",
+        "Transcoders handle it safely instead of panicking."
+      ]
+    },
+    {
+      "id": "proxy-chat-stream-handleframe-invalid-type-robustness",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for general unexpected type robustness in HandleFrame",
+      "description": "Add tests to verify that invalid/unexpected types for other frames in HandleFrame don't panic the transcoders.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover stream transcoders with general unexpected types.",
         "Transcoders handle it safely instead of panicking."
       ]
     }
