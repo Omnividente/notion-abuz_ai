@@ -257,3 +257,16 @@ true
 		t.Logf("Returned error as expected or handled gracefully: %v", err)
 	}
 }
+
+func TestAnthropicTrimCitationContext_Empty(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("trimCitationContext panicked on empty string: %v", r)
+		}
+	}()
+
+	res := trimCitationContext("")
+	if res != "" {
+		t.Errorf("Expected empty string, got %q", res)
+	}
+}
