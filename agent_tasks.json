@@ -2245,6 +2245,24 @@
       ]
     },
     {
+      "id": "proxy-observability-workspace-reframing-quality-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Prove workspace reframing bridge-decision logging after PR #116",
+      "description": "PR #116 only expanded detector coverage while marking the workspace reframing logging task done. Add direct evidence that the runtime observability path emits a bridge decision for workspace reframing, or block the task with a concrete reason if that proof requires unavailable live smoke or transcript evidence.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A runtime logging path or direct log-capture regression test proves that workspace reframing emits a bridge decision.",
+        "Detector-only reason tests are not treated as sufficient proof for this task.",
+        "The PR body maps this acceptance evidence to the changed files."
+      ]
+    },
+    {
       "id": "claude-code-live-smoke-artifact-collection-ccdad275",
       "status": "todo",
       "area": "proxy",

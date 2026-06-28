@@ -300,7 +300,9 @@ jobs:
           5. If there are fewer than the manifest minimum todo tasks, add a small batch of new low/medium-risk tasks before finishing.
           6. Implement exactly ONE complete task in one PR.
           7. Stay inside the selected task's allowed_paths. You may edit agent_tasks.json only to update task status or add follow-up tasks.
-          8. Update agent_tasks.json: set the completed task status to "done".
+          8. Update agent_tasks.json: set the completed task status to "done"
+             only after every acceptance criterion is satisfied by direct code,
+             test, doc, artifact, or diagnostic evidence in this PR.
           9. Add any discovered bugs or safe improvements as new "todo" tasks with allowed_paths and acceptance criteria.
           10. Before opening the PR, sync with the latest master/default branch.
           11. If master changed during the session, rebase or merge latest master
@@ -345,6 +347,20 @@ jobs:
           micro-changes that only prove already-working behavior. Split work only
           when the next change is a different failure class, a different risk or
           protected surface, or too broad for a safe review.
+
+          ACCEPTANCE PROOF CONTRACT:
+          The automerge workflow runs an autonomous PR quality gate before merge.
+          A green test suite is not enough if the PR does not prove the selected
+          task was completed. Before opening the PR, verify that the PR body maps
+          each acceptance criterion to specific changed files, tests, logs,
+          artifacts, or documented evidence. If a task asks for logging,
+          observability, bridge decisions, live-smoke diagnostics, or runtime
+          compatibility, detector-only or parser-only tests are insufficient
+          unless the task explicitly says detector-only. Either prove the real
+          observability/runtime path in the PR, or leave the task todo/blocked
+          with a concrete blocked_reason instead of marking it done. Do not mark
+          a task done while moving the core acceptance criterion into a follow-up
+          task.
 
           VALIDATION COMMANDS:
           - python3 scripts/validate_agent_tasks.py agent_tasks.json
