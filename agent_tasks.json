@@ -1751,7 +1751,7 @@
     },
     {
       "id": "proxy-claude-code-live-smoke-observability-capture",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add local live-smoke transcript observability to capture bridge failures",
@@ -1986,6 +1986,22 @@
         "Handler handles it safely instead of panicking."
       ],
       "blocked_reason": "Paused to stop autonomous generation of narrow test-only edge cases. Resume only if a live Claude Code bridge failure proves this exact gap matters."
+    },
+    {
+      "id": "proxy-anthropic-sse-keepalive-robustness-empty-lines-2c3f8",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for Anthropic SSE keep-alive robustness variant 2",
+      "description": "Ensure that Anthropic stream handlers properly parse and safely ignore empty lines in different contexts.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover Anthropic stream handler logic with empty line keep-alive heartbeats.",
+        "Handler translates them safely."
+      ]
     }
   ]
 }

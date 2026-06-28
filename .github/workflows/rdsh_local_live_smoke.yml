@@ -194,6 +194,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$request_body")"
 
+          echo "$response_json" > /tmp/openai_smoke_response.json
           content="$(echo "$response_json" | jq -r '.choices[0].message.content // ""')"
           echo "OpenAI-compatible smoke content: $content"
 
@@ -231,6 +232,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$request_body")"
 
+          echo "$response_json" > /tmp/anthropic_smoke_response.json
           content="$(echo "$response_json" | jq -r '[.content[]? | select(.type == "text") | .text] | join("\n")')"
           echo "Anthropic smoke content: $content"
 
@@ -250,3 +252,14 @@ jobs:
           if [ -f /tmp/notion-manager.pid ]; then
             kill "$(cat /tmp/notion-manager.pid)" 2>/dev/null || true
           fi
+
+      - name: Upload diagnostic artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-live-smoke-artifacts
+          path: |
+            /tmp/notion-manager.stdout.log
+            /tmp/notion-manager.stderr.log
+            /tmp/openai_smoke_response.json
+            /tmp/anthropic_smoke_response.json
