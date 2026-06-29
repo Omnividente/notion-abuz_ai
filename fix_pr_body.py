@@ -1,5 +1,7 @@
-import os
+import urllib.request
 import json
-import subprocess
+import os
 
-# We need to explicitly check if PR body was being overwritten by my `submit` tool
+token = os.environ.get('GH_TOKEN') or os.environ.get('GITHUB_TOKEN')
+repo = os.environ.get('GITHUB_REPOSITORY') or 'Omnividente/notion-abuz_ai'
+# find PR number
