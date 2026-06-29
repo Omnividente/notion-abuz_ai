@@ -2816,7 +2816,7 @@
     },
     {
       "id": "proxy-observability-bridge-decisions-tool-results-c0b2f7",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Enhance observability for tool result continuation loss",
@@ -2829,7 +2829,8 @@
       "acceptance": [
         "Explicit logging statements added to track tool result continuation failures.",
         "Tests added to verify the new bridge decision logs for lost original_query state."
-      ]
+      ],
+      "blocked_reason": "internal/proxy/session_multiturn.go does not exist. The logic buildSessionChainFollowUp is in internal/proxy/tools.go, which is outside allowed_paths."
     },
     {
       "id": "proxy-regression-notion-persona-leakage-b4eec3",
@@ -2893,6 +2894,23 @@
       ],
       "acceptance": [
         "Session recovery logic tested for scenarios involving tool-call refusal and JSON mode loss."
+      ]
+    },
+    {
+      "id": "proxy-observability-bridge-decisions-tools-go-e9c8b7",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Enhance observability for tool result continuation loss in tools.go",
+      "description": "Add explicit bridge decision logging in tools.go to track when multi-turn tool results fail to connect back to the original user intent due to lost original_query state.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session_multiturn_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Explicit logging statements added to track tool result continuation failures in tools.go.",
+        "Tests added to verify the new bridge decision logs for lost original_query state."
       ]
     }
   ]
