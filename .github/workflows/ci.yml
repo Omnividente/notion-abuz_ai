@@ -47,7 +47,8 @@ jobs:
           python3 .github/scripts/count-autonomous-prs-test.py
           python3 .github/scripts/summarize-jules-activities-test.py
           python3 .github/scripts/summarize-jules-failures-test.py
-          python3 -m py_compile .github/scripts/count-autonomous-prs.py .github/scripts/summarize-jules-activities.py .github/scripts/summarize-jules-failures.py .github/scripts/block-failed-agent-task.py
+          python3 .github/scripts/jules-recovery-router-test.py
+          python3 -m py_compile .github/scripts/count-autonomous-prs.py .github/scripts/summarize-jules-activities.py .github/scripts/summarize-jules-failures.py .github/scripts/block-failed-agent-task.py .github/scripts/jules-recovery-router.py
 
       - name: Validate automation health report
         run: |
