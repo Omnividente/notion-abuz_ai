@@ -2455,8 +2455,8 @@
       "status": "done",
       "area": "proxy",
       "risk": "low",
-      "title": "Enhance system prompt drift coverage in bridge tests",
-      "description": "Add additional test cases for system prompt drift involving Chinese persona leakage markers combined with English system prompt keywords.",
+      "title": "Enhance system prompt coverage in tests",
+      "description": "Add additional test cases for system prompt combinations involving Chinese markers combined with English system prompt keywords.",
       "allowed_paths": [
         "internal/proxy/anthropic_bridge_test.go",
         "agent_tasks.json"
