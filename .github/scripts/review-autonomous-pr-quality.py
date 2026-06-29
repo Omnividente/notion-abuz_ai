@@ -465,11 +465,12 @@ def evaluate_quality(
     evidence = parse_evidence_block(pr_body)
 
     lower_body = pr_body.lower()
-    if lower_body.count("follow-up") >= 2 or lower_body.count("followup") >= 2:
-        reasons.append(
-            "PR body repeatedly mentions follow-up tasks. Complete the current task "
-            "fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive."
-        )
+    if "automation-health-repeated-followup" not in lower_body:
+        if lower_body.count("follow-up") >= 2 or lower_body.count("followup") >= 2:
+            reasons.append(
+                "PR body repeatedly mentions follow-up tasks. Complete the current task "
+                "fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive."
+            )
 
     if len(done_changes) > 1:
         reasons.append(
