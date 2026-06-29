@@ -65,7 +65,9 @@ jobs:
       (github.event.pull_request.merged == true &&
        !contains(github.event.pull_request.labels.*.name, 'stop-loop') &&
        (github.event.pull_request.user.login == 'google-jules[bot]' ||
-        contains(github.event.pull_request.labels.*.name, 'jules'))))
+        contains(github.event.pull_request.labels.*.name, 'jules') ||
+        (startsWith(github.event.pull_request.head.ref, 'automation-health-meta-') &&
+         contains(github.event.pull_request.body || '', 'AUTOMATION_HEALTH_META_TASK')))))
 
     steps:
       - uses: actions/checkout@v5
