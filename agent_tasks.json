@@ -2419,7 +2419,7 @@
     },
     {
       "id": "proxy-detect-bridge-project-instructions-refusal-2a3b4c5d",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add regression coverage for project instructions refusal",
@@ -2431,6 +2431,21 @@
       ],
       "acceptance": [
         "Test added that verifies bridge correctly matches project instructions refusal."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-bridge-test-system-prompt-drift-coverage-a1b2c3d4",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Enhance system prompt drift coverage in bridge tests",
+      "description": "Add additional test cases for system prompt drift involving Chinese persona leakage markers combined with English system prompt keywords.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify Chinese Notion identity mixed with English system prompt keywords triggers 'Notion persona leakage'."
       ]
     }
   ]

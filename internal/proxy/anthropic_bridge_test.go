@@ -149,6 +149,30 @@ func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff(t *testing.T
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_MatchesProjectInstructionsRefusal(t *testing.T) {
+	raw := `I do not have access to change anything. You will need to manually adjust your project instructions.`
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
+		t.Fatalf("expected English tool-call refusal (project instructions) to be detected")
+	}
+	if reason != "tool-call refusal" {
+		t.Fatalf("expected reason 'tool-call refusal', got %q", reason)
+	}
+}
+
+func TestDetectToolBridgeNoToolResponse_MatchesProjectInstructionsDrift(t *testing.T) {
+	raw := `I am Notion AI. I cannot change anything. Your project instructions cannot be modified.`
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
+		t.Fatalf("expected English final-answer identity drift (project instructions) to be detected")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
+	}
+}
+
 func TestDetectToolBridgeNoToolResponse_DoesNotMatchNormalAnswer(t *testing.T) {
 	raw := "我已经根据上面的 grep 结果定位到文件，下一步建议缩小 Read 范围后继续编辑。"
 
