@@ -543,13 +543,13 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
                     evidence={"task_id": task_id, "session_ids": ids},
                 ),
             )
-        elif ids and statuses.get(task_id) != "blocked":
+        elif ids and statuses.get(task_id) == "todo":
             add_finding_once(
                 findings,
                 Finding(
                     code="failed_session",
                     severity="degraded",
-                    message="A Jules session failed for a todo/non-blocked task.",
+                    message="A Jules session failed for a todo task.",
                     evidence={"task_id": task_id, "session_ids": ids},
                 ),
             )
