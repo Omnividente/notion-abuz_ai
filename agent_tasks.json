@@ -2750,7 +2750,7 @@
     },
     {
       "id": "proxy-claude-code-tool-argument-type-coercion-investigation-7b9c1d",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate type coercion failures in Claude Code tool arguments",
@@ -2762,6 +2762,23 @@
       ],
       "acceptance": [
         "Fix implemented to coerce/sanitize tool argument types, or task blocked if not reproducible."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-tool-schema-simplification-arrays",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Investigate simplifying tool schema for array elements in proxy",
+      "description": "The simplifyToolSchema function currently preserves $ref, anyOf, or deeply nested structures inside arrays which can bloat the tool list sent to upstream APIs. Investigate truncating or simplifying nested array items to prevent token bloat during Claude Code sessions.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "simplifyToolSchema appropriately simplifies nested objects in arrays.",
+        "A unit test validates the simplified array schema structure."
       ]
     }
   ]

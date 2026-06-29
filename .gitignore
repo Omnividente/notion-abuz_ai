@@ -1,6 +1,7 @@
 # Binary
 *.exe
 *.exe~
+/notion-manager.exe
 /notion-manager
 /notion-proxy
 /notion-manager-register
@@ -33,6 +34,10 @@ proxy_stderr.log
 server.log
 server.stderr.log
 test_*.json
+/plan*.md
+/scratch*.md
+/tmp*.md
+/jules-notes*.md
 api_probes/
 claude_code_system_dump.*
 claude_code_tools_dump.*

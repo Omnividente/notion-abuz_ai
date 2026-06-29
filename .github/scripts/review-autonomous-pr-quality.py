@@ -114,6 +114,10 @@ EVIDENCE_FILE_RE = re.compile(
     r"(?P<path>(?:agent_tasks\.json|README\.md|AGENTS\.md|docs/|internal/|cmd/|scripts/|\.github/|web/)"
     r"[A-Za-z0-9_./@+:-]*)"
 )
+SCRATCH_FILE_RE = re.compile(
+    r"^(?:plan[a-z0-9_-]*|scratch[a-z0-9_-]*|tmp[a-z0-9_-]*|jules-notes[a-z0-9_-]*)\.md$",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -233,6 +237,10 @@ def is_test_path(path: str) -> bool:
 def is_doc_path(path: str) -> bool:
     normalized = normalize_path(path)
     return normalized.startswith("docs/") or normalized in {"readme.md", "agents.md"} or normalized.endswith(".md")
+
+
+def is_scratch_file(path: str) -> bool:
+    return bool(SCRATCH_FILE_RE.match(normalize_path(path)))
 
 
 def is_runtime_or_script_path(path: str) -> bool:
@@ -463,6 +471,13 @@ def evaluate_quality(
     compromise = body_has_compromise(pr_title, pr_body)
     changed_lines = changed_line_count(numstat, changed_files)
     evidence = parse_evidence_block(pr_body)
+    scratch_files = [path for path in changed_files if is_scratch_file(path)]
+
+    if scratch_files:
+        reasons.append(
+            "Autonomous PR contains temporary scratch/planning files: "
+            + ", ".join(sorted(scratch_files))
+        )
 
     lower_body = pr_body.lower()
     if "automation-health-repeated-followup" not in lower_body:
