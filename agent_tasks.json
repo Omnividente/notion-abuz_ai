@@ -2559,7 +2559,7 @@
     },
     {
       "id": "automation-health-repeated-followup-generation-10b7ac2e",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: repeated_followup_generation",

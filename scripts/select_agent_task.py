@@ -23,6 +23,8 @@ MICRO_KEYWORDS = (
     "empty payload",
     "trimcitationcontext",
     "malformed json",
+    "follow-up",
+    "followup",
 )
 EVIDENCE_TOKENS = (
     "live smoke",
