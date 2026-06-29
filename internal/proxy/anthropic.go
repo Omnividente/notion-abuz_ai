@@ -592,13 +592,17 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		strings.Contains(lower, "as an ai assistant for notion") ||
 		strings.Contains(lower, "notion's ai assistant") ||
 		strings.Contains(lower, "notion ai assistant") ||
-		strings.Contains(lower, "an ai assistant created by notion")
+		strings.Contains(lower, "an ai assistant created by notion") ||
+		strings.Contains(lower, "ich bin notion ai") ||
+		strings.Contains(lower, "soy notion ai")
 	mentionsLocalFS := strings.Contains(normalized, "本地文件系统") ||
 		strings.Contains(lower, "local file system") ||
 		strings.Contains(lower, "system prompt") ||
 		strings.Contains(normalized, "系统提示") ||
 		strings.Contains(lower, "project instructions") ||
-		strings.Contains(normalized, "项目说明")
+		strings.Contains(normalized, "项目说明") ||
+		strings.Contains(lower, "lokales dateisystem") ||
+		strings.Contains(lower, "sistema de archivos local")
 	mentionsCodingAssistant := strings.Contains(normalized, "编码助手") ||
 		strings.Contains(normalized, "Claude Code") ||
 		strings.Contains(normalized, "Cursor") ||
@@ -638,7 +642,7 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		return true, "tool-call refusal"
 	case mentionsNotionIdentity && mentionsCodingAssistant:
 		return true, "Notion persona leakage"
-	case mentionsWorkspaceReframing && (mentionsMissingLocalTools || mentionsNotionIdentity || strings.Contains(lower, "bash") || strings.Contains(lower, "edit") || strings.Contains(lower, "terminal") || strings.Contains(lower, "run") || strings.Contains(normalized, "本地命令")):
+	case mentionsWorkspaceReframing && (mentionsMissingLocalTools || mentionsNotionIdentity || strings.Contains(lower, "bash") || strings.Contains(lower, "edit") || strings.Contains(lower, "terminal") || strings.Contains(lower, "run") || strings.Contains(normalized, "本地命令") || strings.Contains(lower, "code generation") || strings.Contains(lower, "write code") || strings.Contains(lower, "code snippet") || strings.Contains(lower, "project directly")):
 		return true, "workspace reframing"
 	case mentionsNotionIdentity && mentionsMissingLocalTools:
 		return true, "Notion persona leakage"
