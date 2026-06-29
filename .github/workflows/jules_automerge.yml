@@ -136,13 +136,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-
-          already_flagged="$(gh pr view "$PR_NUMBER" \
-            --repo "$GITHUB_REPOSITORY" \
-            --json labels \
-            --jq 'any(.labels[].name; . == "needs-quality-fix")')"
 
           gh label create needs-quality-fix \
             --repo "$GITHUB_REPOSITORY" \
@@ -154,12 +150,38 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --add-label needs-quality-fix
 
-          if [ "$already_flagged" != "true" ]; then
+          quality_fix_marker="<!-- AUTONOMOUS_QUALITY_FIX_REQUEST sha=${PR_HEAD_SHA} -->"
+          comments_file="/tmp/pr-comments.json"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate > "$comments_file"
+          already_requested="$(jq -s -r --arg marker "$quality_fix_marker" '
+            [.[]
+              | if type == "array" then .[] else . end
+              | select((.body // "") | contains($marker))
+            ] | length > 0
+          ' "$comments_file")"
+
+          if [ "$already_requested" != "true" ]; then
+            {
+              echo "$quality_fix_marker"
+              echo
+              echo "Jules, исправь этот же PR #${PR_NUMBER}; не открывай новый PR и не создавай follow-up задачу."
+              echo
+              echo "Что нужно сделать:"
+              echo "- исправь deterministic autonomous quality gate failure ниже;"
+              echo "- синхронизируй AUTONOMOUS_TASK_EVIDENCE с фактическим статусом задачи в agent_tasks.json;"
+              echo "- если задача в manifest имеет status blocked, evidence тоже должен иметь status: blocked и concrete blocked_reason;"
+              echo "- если задача реально выполнена, manifest должен быть status done и evidence status done с changed evidence files;"
+              echo "- убери временные scratch-файлы из PR, если они не являются частью acceptance/evidence;"
+              echo "- push исправление в эту же PR ветку и дождись повторных checks."
+              echo
+              cat /tmp/autonomous-pr-quality.md
+            } > /tmp/autonomous-quality-fix-request.md
+
             gh pr comment "$PR_NUMBER" \
               --repo "$GITHUB_REPOSITORY" \
-              --body-file /tmp/autonomous-pr-quality.md
+              --body-file /tmp/autonomous-quality-fix-request.md
           else
-            echo "PR already has needs-quality-fix; not posting another quality-gate comment."
+            echo "Quality-fix request already exists for ${PR_HEAD_SHA}; not posting another comment."
           fi
 
           echo "::error::Autonomous PR quality gate failed: ${{ steps.quality.outputs.summary }}"
