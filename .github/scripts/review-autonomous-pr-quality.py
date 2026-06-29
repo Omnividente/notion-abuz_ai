@@ -69,6 +69,10 @@ COMPROMISE_PHRASES = (
     "вместо этого",
     "не удалось",
     "не получилось",
+    "отдельная задача",
+    "последующая задача",
+    "отдельной задачей",
+    "оставлено как",
     "requires complex mocking",
     "complex mocking",
     "instead",
@@ -459,6 +463,14 @@ def evaluate_quality(
     compromise = body_has_compromise(pr_title, pr_body)
     changed_lines = changed_line_count(numstat, changed_files)
     evidence = parse_evidence_block(pr_body)
+
+    lower_body = pr_body.lower()
+    if "automation-health-repeated-followup" not in lower_body:
+        if lower_body.count("follow-up") >= 2 or lower_body.count("followup") >= 2:
+            reasons.append(
+                "PR body repeatedly mentions follow-up tasks. Complete the current task "
+                "fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive."
+            )
 
     if len(done_changes) > 1:
         reasons.append(
