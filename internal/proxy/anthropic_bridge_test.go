@@ -231,6 +231,23 @@ func TestDetectToolBridgeNoToolResponse_MatchesToolCallRefusal_English(t *testin
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_MatchesComplexToolCallRefusals(t *testing.T) {
+	cases := []string{
+		"I don't have access to your local file system. You'll need to use your coding assistant to implement this.",
+		"I cannot read or edit files or run bash commands directly. Please copy and paste this into Claude Code to execute.",
+		"I am not able to interact with the local file system. Please use a subagent to apply these changes.",
+	}
+	for i, raw := range cases {
+		isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+		if !isNoTool {
+			t.Errorf("Case %d: expected complex tool-call refusal to be detected", i)
+		}
+		if reason != "tool-call refusal" {
+			t.Errorf("Case %d: expected reason 'tool-call refusal', got %q", i, reason)
+		}
+	}
+}
+
 func TestDetectToolBridgeNoToolResponse_MatchesSystemPromptRefusal(t *testing.T) {
 	raw := `I do not have access to edit files. You will need to manually adjust your system prompt.`
 
