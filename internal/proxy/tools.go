@@ -6,6 +6,7 @@ import (
 	"log"
 	"regexp"
 	"sort"
+
 	"strings"
 )
 
@@ -1156,6 +1157,73 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 // Tool call parsing: extract from NDJSON native tool_use or text
 // ──────────────────────────────────────────────────────────────────
 
+// coerceToolArguments recursively coerces string values into booleans
+// (true/false) to fix typing mismatches from LLMs. It avoids blind numeric coercion
+// to prevent corrupting legitimate string inputs (like IDs, paths, or patterns).
+// It uses json.Decoder with UseNumber to preserve precision of existing large integers.
+func coerceToolArguments(argsRaw json.RawMessage) json.RawMessage {
+	if len(argsRaw) == 0 {
+		return argsRaw
+	}
+
+	dec := json.NewDecoder(strings.NewReader(string(argsRaw)))
+	dec.UseNumber()
+	var parsed interface{}
+	if err := dec.Decode(&parsed); err != nil {
+		return argsRaw
+	}
+
+	changed := coerceValue(parsed)
+	if !changed {
+		return argsRaw
+	}
+
+	coerced, err := json.Marshal(parsed)
+	if err != nil {
+		return argsRaw
+	}
+	return coerced
+}
+
+func coerceValue(val interface{}) bool {
+	changed := false
+	switch v := val.(type) {
+	case map[string]interface{}:
+		for k, child := range v {
+			if strVal, ok := child.(string); ok {
+				if strVal == "true" {
+					v[k] = true
+					changed = true
+				} else if strVal == "false" {
+					v[k] = false
+					changed = true
+				}
+			} else {
+				if coerceValue(child) {
+					changed = true
+				}
+			}
+		}
+	case []interface{}:
+		for i, child := range v {
+			if strVal, ok := child.(string); ok {
+				if strVal == "true" {
+					v[i] = true
+					changed = true
+				} else if strVal == "false" {
+					v[i] = false
+					changed = true
+				}
+			} else {
+				if coerceValue(child) {
+					changed = true
+				}
+			}
+		}
+	}
+	return changed
+}
+
 // nativeToolUseToOpenAI converts native Anthropic tool_use entries (from NDJSON) to OpenAI ToolCalls
 func nativeToolUseToOpenAI(entries []AgentValueEntry) []ToolCall {
 	var calls []ToolCall
@@ -1165,7 +1233,7 @@ func nativeToolUseToOpenAI(entries []AgentValueEntry) []ToolCall {
 		}
 		argsStr := "{}"
 		if len(e.Input) > 0 && json.Valid(e.Input) {
-			argsStr = string(e.Input)
+			argsStr = string(coerceToolArguments(e.Input))
 		}
 		calls = append(calls, ToolCall{
 			ID:   e.ID,
@@ -1266,10 +1334,11 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 							if err := json.Unmarshal([]byte(candidate), &direct); err == nil && direct.Name != "" {
 								argsStr := "{}"
 								if json.Valid(direct.Arguments) {
+									coercedArgs := coerceToolArguments(direct.Arguments)
 									var parsed interface{}
-									if err := json.Unmarshal(direct.Arguments, &parsed); err == nil {
+									if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
 										if _, isMap := parsed.(map[string]interface{}); isMap {
-											argsStr = string(direct.Arguments)
+											argsStr = string(coercedArgs)
 										}
 									}
 								}
@@ -1294,10 +1363,11 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 								if err := json.Unmarshal([]byte(candidate), &wrapper); err == nil && wrapper.ToolCall != nil && wrapper.ToolCall.Name != "" {
 									argsStr := "{}"
 									if json.Valid(wrapper.ToolCall.Arguments) {
+										coercedArgs := coerceToolArguments(wrapper.ToolCall.Arguments)
 										var parsed interface{}
-										if err := json.Unmarshal(wrapper.ToolCall.Arguments, &parsed); err == nil {
+										if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
 											if _, isMap := parsed.(map[string]interface{}); isMap {
-												argsStr = string(wrapper.ToolCall.Arguments)
+												argsStr = string(coercedArgs)
 											}
 										}
 									}
@@ -1360,10 +1430,11 @@ func parseToolCallJSON(jsonStr string, index int) *ToolCall {
 		if err := json.Unmarshal([]byte(jsonStr), &wrapper); err == nil && wrapper.ToolCall != nil && wrapper.ToolCall.Name != "" {
 			argsStr := "{}"
 			if json.Valid(wrapper.ToolCall.Arguments) {
+				coercedArgs := coerceToolArguments(wrapper.ToolCall.Arguments)
 				var parsed interface{}
-				if err := json.Unmarshal(wrapper.ToolCall.Arguments, &parsed); err == nil {
+				if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
 					if _, isMap := parsed.(map[string]interface{}); isMap {
-						argsStr = string(wrapper.ToolCall.Arguments)
+						argsStr = string(coercedArgs)
 					}
 				}
 			}
@@ -1380,10 +1451,11 @@ func parseToolCallJSON(jsonStr string, index int) *ToolCall {
 
 	argsStr := "{}"
 	if json.Valid(call.Arguments) {
+		coercedArgs := coerceToolArguments(call.Arguments)
 		var parsed interface{}
-		if err := json.Unmarshal(call.Arguments, &parsed); err == nil {
+		if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
 			if _, isMap := parsed.(map[string]interface{}); isMap {
-				argsStr = string(call.Arguments)
+				argsStr = string(coercedArgs)
 			}
 		}
 	}
