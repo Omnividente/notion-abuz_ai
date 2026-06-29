@@ -1,9 +1,12 @@
 package proxy
 
 import (
+	"bytes"
+	"log"
 	"strings"
 	"testing"
 	"time"
+	"os"
 )
 
 // TestBuildSessionChainFollowUp verifies that the session-based chain follow-up
@@ -110,6 +113,27 @@ func TestBuildSessionChainFollowUp_ReadOversizeGuard(t *testing.T) {
 	content := result[0].Content
 	if !strings.Contains(content, "Do NOT repeat the same full-file Read") {
 		t.Fatalf("expected oversize read guard in follow-up, got: %s", content)
+	}
+}
+
+func TestBuildSessionChainFollowUp_LostOriginalQueryLog(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	// Missing Original request means originalQuery will be empty
+	messages := []ChatMessage{
+		{Role: "assistant", Content: "Doing stuff.", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: `{"file_path":"src/content.js"}`}},
+		}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Read", Content: "data"},
+	}
+
+	_ = buildSessionChainFollowUp(messages, "- Read(file_path: str)\n", "")
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[bridge] decision: original_query state lost during multi-turn tool result continuation") {
+		t.Errorf("expected missing originalQuery log, got: %s", logOutput)
 	}
 }
 

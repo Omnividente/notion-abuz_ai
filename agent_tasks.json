@@ -2898,7 +2898,7 @@
     },
     {
       "id": "proxy-observability-bridge-decisions-tools-go-e9c8b7",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Enhance observability for tool result continuation loss in tools.go",
