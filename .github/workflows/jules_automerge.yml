@@ -160,6 +160,11 @@ jobs:
             ] | length > 0
           ' "$comments_file")"
 
+          total_requests="$(jq -s -r '[.[] | if type == "array" then .[] else . end | select((.body // "") | contains("AUTONOMOUS_QUALITY_FIX_REQUEST sha="))] | length' "$comments_file")"
+          if [ "$total_requests" -ge 3 ]; then
+            already_requested="true"
+          fi
+
           if [ "$already_requested" != "true" ]; then
             {
               echo "$quality_fix_marker"

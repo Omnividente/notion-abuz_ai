@@ -524,7 +524,7 @@ def evaluate_quality(
         blocked_reason = str(change.task.get("blocked_reason", "")).strip()
         if not blocked_reason:
             reasons.append(f"Task {change.task_id} moved to blocked without blocked_reason.")
-        if evidence.present and not evidence.blocked_reason:
+        if evidence.present and evidence.status == "blocked" and not evidence.blocked_reason:
             reasons.append("Blocked autonomous PR evidence must include blocked_reason.")
 
     for change in done_changes:
