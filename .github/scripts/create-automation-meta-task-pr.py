@@ -78,6 +78,12 @@ CODE_ALLOWED_PATHS = {
         "scripts/select_agent_task.py",
         "agent_tasks.json",
     ],
+    "no_eligible_autonomous_task": [
+        "scripts/select_agent_task.py",
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/create-automation-meta-task-pr.py",
+        "agent_tasks.json",
+    ],
     "suspicious_micro_test_pr": [
         "scripts/select_agent_task.py",
         ".github/scripts/review-autonomous-pr-quality.py",
