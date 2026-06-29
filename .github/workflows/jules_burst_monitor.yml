@@ -25,7 +25,7 @@ permissions:
 
 concurrency:
   group: jules-burst-monitor
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   burst-monitor:
@@ -34,7 +34,7 @@ jobs:
     if: >
       vars.JULES_LOOP_ENABLED != 'false' &&
       (github.event_name == 'workflow_dispatch' ||
-       github.event.workflow_run.conclusion == 'success')
+       github.event_name == 'workflow_run')
 
     steps:
       - uses: actions/checkout@v5
@@ -103,6 +103,9 @@ jobs:
 
           for i in $(seq 1 "$cycles"); do
             echo "Burst monitor pass ${i}/${cycles}"
+            git fetch --prune origin master
+            git reset --hard origin/master
+
             output_file="${RUNNER_TEMP}/jules-monitor-output-${i}.txt"
             : > "$output_file"
 

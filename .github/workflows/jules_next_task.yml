@@ -84,7 +84,8 @@ jobs:
             args+=(--task-id "${TASK_ID}")
           fi
 
-          python3 scripts/select_agent_task.py "${args[@]}" > /tmp/selected-task.json
+          selector_status=0
+          python3 scripts/select_agent_task.py "${args[@]}" > /tmp/selected-task.json || selector_status=$?
           cat /tmp/selected-task.json
 
           python3 - <<'PY'
@@ -107,8 +108,12 @@ jobs:
           write_output("task_id", data.get("task_id", ""))
           write_output("title", data.get("title", ""))
           write_output("score", data.get("score", 0))
-          write_output("reason", data.get("reason", ""))
+          write_output("reason", data.get("reason", "") or data.get("error", ""))
           PY
+
+          if [ "${selector_status}" -ne 0 ]; then
+            echo "::warning::Task selector returned ${selector_status}; skipping Jules dispatch."
+          fi
 
       - name: Skip when no eligible autonomous task exists
         if: steps.select-task.outputs.selected != 'true'
