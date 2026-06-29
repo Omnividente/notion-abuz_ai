@@ -2323,7 +2323,7 @@
     },
     {
       "id": "proxy-observability-tool-call-refusal-logging-4964e355",
-      "status": "blocked",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure tool-call refusal events are logged as bridge decisions",
@@ -2336,8 +2336,7 @@
       "acceptance": [
         "Bridge decision logging includes tool-call refusal explicitly.",
         "Tests cover the new or existing observability path for this signal."
-      ],
-      "blocked_reason": "Task requires operational changes but the current PR changed only tests and manifest because 'tool-call refusal' logging is already functionally implemented in detectToolBridgeNoToolResponse which propagates it to the logging path."
+      ]
     },
     {
       "id": "proxy-anthropic-sse-unknown-event-coverage-2e168db4",
