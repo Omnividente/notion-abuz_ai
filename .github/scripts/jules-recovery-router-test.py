@@ -115,6 +115,20 @@ class RecoveryRouterTest(unittest.TestCase):
 
         self.assertEqual(actions, [])
 
+    def test_quality_fix_waits_for_pending_checks_on_new_head(self) -> None:
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules", "needs-quality-fix"],
+                        check_runs=[{"name": "validate", "status": "in_progress"}],
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(actions, [])
+
     def test_missing_jules_label_is_repaired(self) -> None:
         actions = plan(
             state(
