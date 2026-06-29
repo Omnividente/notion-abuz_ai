@@ -340,6 +340,20 @@ func TestParseToolCalls_RobustJSONExtraction(t *testing.T) {
 			wantRem:   "抱歉，我理解你希望我直接帮你修改文件，但**我是 Notion AI，无法访问你的本地文件系统**。我没有 Read、Edit、Bash 这些工具的能力。\n\n把下面这段话直接发给你的编码助手（Cursor / Claude Code），它就能帮你操作。",
 			wantHas:   false,
 		},
+		{
+			name:      "JSON array mode multi-call",
+			content:   "Here are the tools:\n[{\"name\": \"Bash\", \"arguments\": {\"command\": \"ls\"}}, {\"name\": \"Bash\", \"arguments\": {\"command\": \"echo\"}}]",
+			wantCalls: 2,
+			wantRem:   "Here are the tools:",
+			wantHas:   true,
+		},
+		{
+			name:      "Markdown fence array mode",
+			content:   "```json\n[\n  {\"name\": \"bash\", \"arguments\": {}}\n]\n```\nSome text.",
+			wantCalls: 1,
+			wantRem:   "Some text.",
+			wantHas:   true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -610,29 +624,29 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := parseToolCallJSON(tt.jsonStr, 0)
+			res := parseToolCallJSONList(tt.jsonStr, 0)
 			if tt.wantNil {
 				if res != nil {
 					t.Errorf("expected nil result, got %+v", res)
 				}
 				return
 			}
-			if res == nil {
+			if len(res) == 0 {
 				t.Fatalf("expected non-nil result")
 			}
-			if res.Function.Name != tt.wantName {
-				t.Errorf("expected name %q, got %q", tt.wantName, res.Function.Name)
+			if res[0].Function.Name != tt.wantName {
+				t.Errorf("expected name %q, got %q", tt.wantName, res[0].Function.Name)
 			}
 
 			// To compare args ignoring space
 			var gotArgs, wantArgs interface{}
-			_ = json.Unmarshal([]byte(res.Function.Arguments), &gotArgs)
+			_ = json.Unmarshal([]byte(res[0].Function.Arguments), &gotArgs)
 			_ = json.Unmarshal([]byte(tt.wantArgs), &wantArgs)
 
 			gb, _ := json.Marshal(gotArgs)
 			wb, _ := json.Marshal(wantArgs)
 			if string(gb) != string(wb) {
-				t.Errorf("expected args %q, got %q (unmarshalled %s != %s)", tt.wantArgs, res.Function.Arguments, string(gb), string(wb))
+				t.Errorf("expected args %q, got %q (unmarshalled %s != %s)", tt.wantArgs, res[0].Function.Arguments, string(gb), string(wb))
 			}
 		})
 	}
