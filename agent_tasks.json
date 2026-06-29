@@ -2512,6 +2512,72 @@
       "acceptance": [
         "Test added verifying proper handling of proxy streams."
       ]
+    },
+    {
+      "id": "automation-health-failed-session-86122315",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: failed_session",
+      "description": "Automation Health reported degraded finding `failed_session` in window `current`. Message: A Jules session failed for a todo/non-blocked task. Evidence: {\"session_ids\": [\"15591422388065141292\"], \"task_id\": \"claude-code-json-tool-call-loss-coverage-9d781f19\"}",
+      "allowed_paths": [
+        ".github/scripts/summarize-jules-failures.py",
+        ".github/workflows/jules_unattended_monitor.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `failed_session` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `failed_session`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "861223154a2e",
+      "health_finding_code": "failed_session",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-06-29T11:36:44Z"
+    },
+    {
+      "id": "automation-health-quality-failure-77299df0",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: quality_failure",
+      "description": "Automation Health reported degraded finding `quality_failure` in window `24h`. Message: At least one autonomous PR was marked needs-quality-fix. Evidence: {\"pr_numbers\": [129]}",
+      "allowed_paths": [
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/workflows/jules_automerge.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `quality_failure` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `quality_failure`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "77299df047c7",
+      "health_finding_code": "quality_failure",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-06-29T11:36:44Z"
+    },
+    {
+      "id": "automation-health-repeated-followup-generation-10b7ac2e",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: repeated_followup_generation",
+      "description": "Automation Health reported degraded finding `repeated_followup_generation` in window `current`. Message: Autonomous PRs repeatedly mention follow-up task generation. Evidence: {\"pr_numbers\": [126]}",
+      "allowed_paths": [
+        "scripts/select_agent_task.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `repeated_followup_generation` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `repeated_followup_generation`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "10b7ac2e8f25",
+      "health_finding_code": "repeated_followup_generation",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-06-29T11:36:44Z"
     }
   ]
 }
