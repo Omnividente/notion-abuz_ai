@@ -2653,7 +2653,7 @@
     },
     {
       "id": "claude-code-persona-leakage-audit-1a2b3c4d",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Audit and prevent Notion persona leakage in proxy responses",
@@ -2697,6 +2697,55 @@
       ],
       "acceptance": [
         "Fix implemented to enforce JSON mode or task blocked if not reproducible."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-tool-call-refusal-prose-coverage-701fc235",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add offline coverage for tool-call refusal prose edge cases",
+      "description": "Expand internal/proxy/anthropic_bridge_test.go to add test coverage for complex \"tool-call refusal\" behaviors where Claude Code declines tool execution and instead outputs conversational prose explaining how to manually execute commands, ensuring these are safely detected.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover at least 3 distinct variations of complex conversational tool-call refusal.",
+        "The refusal prose is safely detected."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-json-fallback-mode-coverage-cd02d38c",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add test coverage for JSON mode loss during complex tool chains",
+      "description": "Add parsing or handler tests confirming the proxy gracefully handles when Claude Code loses JSON format structure entirely during multi-step coding operations.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify proxy behavior when completely unstructured text replaces expected JSON tool calls during an extended multi-step operation."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-multi-turn-tool-loss-investigation-c1a5fa4c",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate multi-turn tool result loss in long sessions",
+      "description": "Investigate cases where Claude Code drops tool results over extended sessions by analyzing captured traces and reproducing offline.",
+      "allowed_paths": [
+        "internal/proxy/session_multiturn_test.go",
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fix implemented to persist tool results or task is blocked if not reproducible offline."
       ]
     }
   ]

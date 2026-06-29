@@ -575,7 +575,12 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 
 	lower := strings.ToLower(normalized)
 	mentionsNotionIdentity := strings.Contains(normalized, "我是 Notion AI") ||
-		strings.Contains(lower, "i am notion ai")
+		strings.Contains(lower, "i am notion ai") ||
+		strings.Contains(lower, "as an ai assistant in notion") ||
+		strings.Contains(lower, "as an ai assistant for notion") ||
+		strings.Contains(lower, "notion's ai assistant") ||
+		strings.Contains(lower, "notion ai assistant") ||
+		strings.Contains(lower, "an ai assistant created by notion")
 	mentionsLocalFS := strings.Contains(normalized, "本地文件系统") ||
 		strings.Contains(lower, "local file system") ||
 		strings.Contains(lower, "system prompt") ||
@@ -621,14 +626,14 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		return true, "tool-call refusal"
 	case mentionsNotionIdentity && mentionsCodingAssistant:
 		return true, "Notion persona leakage"
+	case mentionsWorkspaceReframing && (mentionsMissingLocalTools || mentionsNotionIdentity || strings.Contains(lower, "bash") || strings.Contains(lower, "edit") || strings.Contains(lower, "terminal") || strings.Contains(lower, "run") || strings.Contains(normalized, "本地命令")):
+		return true, "workspace reframing"
 	case mentionsNotionIdentity && mentionsMissingLocalTools:
 		return true, "Notion persona leakage"
-	case mentionsNotionIdentity && strings.Contains(lower, "bash"):
+	case mentionsNotionIdentity && (strings.Contains(lower, "bash") || strings.Contains(lower, "modify") || strings.Contains(lower, "access") || strings.Contains(lower, "edit")):
 		return true, "Notion persona leakage"
 	case mentionsMissingLocalTools && mentionsCodingAssistant && mentionsManualHandOff:
 		return true, "tool-call refusal"
-	case mentionsWorkspaceReframing && (mentionsMissingLocalTools || mentionsNotionIdentity || strings.Contains(lower, "bash") || strings.Contains(lower, "edit") || strings.Contains(lower, "terminal") || strings.Contains(lower, "run") || strings.Contains(normalized, "本地命令")):
-		return true, "workspace reframing"
 	default:
 		return false, ""
 	}
