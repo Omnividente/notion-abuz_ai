@@ -158,6 +158,18 @@ def pr_time(pr: dict[str, Any]) -> datetime | None:
     )
 
 
+def is_merged_pr(pr: dict[str, Any]) -> bool:
+    return bool(pr.get("merged_at") or pr.get("merged") is True)
+
+
+def has_unresolved_blocking_label(pr: dict[str, Any]) -> bool:
+    return bool(labels_of(pr).intersection(BLOCKING_LABELS)) and not is_merged_pr(pr)
+
+
+def has_unresolved_quality_label(pr: dict[str, Any]) -> bool:
+    return "needs-quality-fix" in labels_of(pr) and not is_merged_pr(pr)
+
+
 def in_window(item_time: datetime | None, now: datetime, hours: int) -> bool:
     if item_time is None:
         return True
@@ -327,15 +339,21 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         )
 
     label_counts = {label: 0 for label in TRACKED_LABELS}
+    unresolved_label_counts = {label: 0 for label in TRACKED_LABELS}
     windows: dict[str, Any] = {}
     for label in TRACKED_LABELS:
         label_counts[label] = sum(1 for pr in autonomous_pulls if label in labels_of(pr))
+        unresolved_label_counts[label] = sum(
+            1
+            for pr in autonomous_pulls
+            if label in labels_of(pr) and not is_merged_pr(pr)
+        )
 
     for hours in (24, 168):
         window_name = "24h" if hours == 24 else "7d"
         recent = [pr for pr in autonomous_pulls if in_window(pr_time(pr), now, hours)]
-        needs_quality = [pr for pr in recent if "needs-quality-fix" in labels_of(pr)]
-        blocked = [pr for pr in recent if labels_of(pr).intersection(BLOCKING_LABELS)]
+        needs_quality = [pr for pr in recent if has_unresolved_quality_label(pr)]
+        blocked = [pr for pr in recent if has_unresolved_blocking_label(pr)]
         suspicious = [pr for pr in recent if is_suspicious_micro_pr(pr)]
         auto_continue_count = sum(int(pr.get("auto_continue_count") or 0) for pr in recent)
 
@@ -368,7 +386,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             reverse=True,
         )
         first_two = recent_sorted[:2]
-        if len(first_two) == 2 and all(labels_of(pr).intersection(BLOCKING_LABELS) for pr in first_two):
+        if len(first_two) == 2 and all(has_unresolved_blocking_label(pr) for pr in first_two):
             add_finding_once(
                 findings,
                 Finding(
@@ -553,6 +571,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             "open": len(open_autonomous),
             "merged": sum(1 for pr in autonomous_pulls if pr.get("merged_at") or pr.get("merged") is True),
             "labels": label_counts,
+            "unresolved_labels": unresolved_label_counts,
         },
         "tasks": {
             "todo_count": todo_count,
@@ -627,6 +646,7 @@ def write_markdown(report: dict[str, Any]) -> str:
     pr_metrics = metrics.get("autonomous_prs") or {}
     task_metrics = metrics.get("tasks") or {}
     session_metrics = metrics.get("jules_sessions") or {}
+    unresolved_labels = pr_metrics.get("unresolved_labels") or {}
     lines.extend(
         [
             "",
@@ -636,6 +656,7 @@ def write_markdown(report: dict[str, Any]) -> str:
                 f"- Autonomous PRs: total `{pr_metrics.get('total', 0)}`, "
                 f"open `{pr_metrics.get('open', 0)}`, merged `{pr_metrics.get('merged', 0)}`"
             ),
+            f"- Unresolved needs-quality-fix PRs: `{unresolved_labels.get('needs-quality-fix', 0)}`",
             (
                 f"- Todo tasks: `{task_metrics.get('todo_count', 0)}` / "
                 f"minimum `{task_metrics.get('minimum_todo_tasks')}`"
@@ -655,7 +676,7 @@ def write_markdown(report: dict[str, Any]) -> str:
 
     next_action = "No action required."
     if report["status"] == "critical":
-        next_action = "Review critical findings before running more autonomous product work."
+        next_action = "Review critical findings and create or triage an automation meta-task; the loop remains non-stopping."
     elif report["status"] == "degraded":
         next_action = "Review degraded findings and consider a future automation meta-task."
     lines.extend(["", "## Recommended Next Action", "", next_action, ""])

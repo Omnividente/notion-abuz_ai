@@ -72,6 +72,15 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertTrue(report["create_meta_task"])
         self.assert_has_finding(report, "quality_failure")
 
+    def test_merged_quality_fix_label_is_historical_not_current_failure(self) -> None:
+        report = run_fixture("merged-quality-fix-label-ignored")
+
+        self.assertEqual(report["status"], "healthy")
+        self.assertFalse(report["create_meta_task"])
+        self.assertEqual(report["metrics"]["autonomous_prs"]["labels"]["needs-quality-fix"], 1)
+        self.assertEqual(report["metrics"]["autonomous_prs"]["unresolved_labels"]["needs-quality-fix"], 0)
+        self.assertNotIn("quality_failure", finding_codes(report))
+
     def test_critical_duplicate_active_sessions(self) -> None:
         report = run_fixture("critical-duplicate-active-sessions")
 
