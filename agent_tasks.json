@@ -2387,7 +2387,7 @@
     },
     {
       "id": "proxy-claude-code-mcp-persona-leakage-coverage-12a1d",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add coverage for MCP server phrasing triggering Notion persona leakage",
