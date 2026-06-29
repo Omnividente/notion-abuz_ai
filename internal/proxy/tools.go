@@ -1101,8 +1101,20 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 
 	// Extract the original user query to preserve coding intent
 	var originalQuery string
-	for _, m := range messages {
+	for i := len(messages) - 1; i >= 0; i-- {
+		m := messages[i]
 		if m.Role == "user" && !strings.Contains(m.Content, "<available-deferred-tools>") {
+			// If this is an existing follow-up, it might already contain the embedded Original request
+			if strings.Contains(m.Content, "Original request: \"") {
+				parts := strings.Split(m.Content, "Original request: \"")
+				if len(parts) > 1 {
+					extracted := strings.Split(parts[1], "\"")[0]
+					if extracted != "" {
+						originalQuery = extracted
+						break
+					}
+				}
+			}
 			// Extract just the core query text, stopping at things like "Available functions:" if re-entered
 			lines := strings.Split(m.Content, "\n")
 			for _, line := range lines {

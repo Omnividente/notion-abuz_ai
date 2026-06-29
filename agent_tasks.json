@@ -2669,7 +2669,7 @@
     },
     {
       "id": "claude-code-tool-result-continuation-5e6f7g8h",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Improve tool-result continuation handling in multi-turn sessions",
