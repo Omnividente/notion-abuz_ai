@@ -51,6 +51,10 @@ class Selection:
     title: str = ""
     score: int = 0
     reason: str = ""
+    reason_code: str = ""
+    todo_count: int = 0
+    eligible_count: int = 0
+    rejected_count: int = 0
     rejected: list[dict[str, str]] | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -60,6 +64,10 @@ class Selection:
             "title": self.title,
             "score": self.score,
             "reason": self.reason,
+            "reason_code": self.reason_code,
+            "todo_count": self.todo_count,
+            "eligible_count": self.eligible_count,
+            "rejected_count": self.rejected_count,
             "rejected": self.rejected or [],
         }
 
@@ -188,6 +196,8 @@ def select_task(
 ) -> Selection:
     risks = allowed_risks(risk_ceiling)
     tasks = [task for task in data.get("tasks", []) if isinstance(task, dict)]
+    todo_tasks = [task for task in tasks if task.get("status") == "todo"]
+    todo_count = len(todo_tasks)
     rejected: list[dict[str, str]] = []
 
     if task_id:
@@ -204,11 +214,16 @@ def select_task(
                 title=str(task.get("title", "")),
                 score=1000,
                 reason="exact task id requested",
+                reason_code="exact_task_id_requested",
+                todo_count=todo_count,
+                eligible_count=1,
+                rejected_count=0,
                 rejected=rejected,
             )
         raise ValueError(f"task {task_id!r} was not found")
 
     best: tuple[int, int, dict[str, Any], str] | None = None
+    eligible_count = 0
     for index, task in enumerate(tasks):
         if task.get("status") != "todo" or task.get("risk") not in risks:
             continue
@@ -217,14 +232,28 @@ def select_task(
             continue
 
         score, reason = score_task(task, focus)
+        eligible_count += 1
         candidate = (score, -index, task, reason)
         if best is None or candidate > best:
             best = candidate
 
     if best is None:
+        if todo_count == 0:
+            reason = "no todo tasks are available"
+            reason_code = "no_todo_tasks"
+        elif eligible_count == 0:
+            reason = "no eligible todo task matched the risk ceiling and micro-task policy"
+            reason_code = "no_eligible_autonomous_task"
+        else:
+            reason = "no eligible todo task selected"
+            reason_code = "no_eligible_autonomous_task"
         return Selection(
             selected=False,
-            reason="no eligible todo task matched the risk ceiling and micro-task policy",
+            reason=reason,
+            reason_code=reason_code,
+            todo_count=todo_count,
+            eligible_count=eligible_count,
+            rejected_count=len(rejected),
             rejected=rejected,
         )
 
@@ -235,6 +264,10 @@ def select_task(
         title=str(task.get("title", "")),
         score=score,
         reason=reason,
+        reason_code="selected",
+        todo_count=todo_count,
+        eligible_count=eligible_count,
+        rejected_count=len(rejected),
         rejected=rejected,
     )
 
