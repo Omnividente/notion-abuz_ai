@@ -2368,21 +2368,6 @@
       "acceptance": [
         "Code review or tests confirm login error bubbling handles 401 responses cleanly."
       ]
-    },
-    {
-      "id": "proxy-observability-unknown-tool-behavior-a1b2c3d4",
-      "status": "todo",
-      "area": "proxy",
-      "risk": "low",
-      "title": "Add offline coverage for unknown tool execution failure mode",
-      "description": "Expand internal/proxy/anthropic_bridge_test.go to add test coverage for behaviors where Claude Code hallucinated unknown tool execution.",
-      "allowed_paths": [
-        "internal/proxy/anthropic_bridge_test.go",
-        "agent_tasks.json"
-      ],
-      "acceptance": [
-        "Tests verify proxy behavior when unknown tool is executed."
-      ]
     }
   ]
 }
