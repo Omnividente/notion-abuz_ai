@@ -3,10 +3,10 @@ package proxy
 import (
 	"bytes"
 	"log"
+	"os"
 	"strings"
 	"testing"
 	"time"
-	"os"
 )
 
 // TestBuildSessionChainFollowUp verifies that the session-based chain follow-up
