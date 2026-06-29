@@ -2850,7 +2850,7 @@
     },
     {
       "id": "proxy-json-mode-loss-tool-results-recovery-92643a",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate JSON mode loss during tool result processing",

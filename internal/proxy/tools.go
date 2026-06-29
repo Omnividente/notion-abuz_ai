@@ -1274,10 +1274,10 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 	// Method 1: <tool_call>{...}</tool_call> XML format (preferred)
 	xmlMatches := toolCallXMLRegex.FindAllStringSubmatch(content, -1)
 	for i, match := range xmlMatches {
-		remaining = strings.Replace(remaining, match[0], "", 1)
-		tc := parseToolCallJSON(match[1], i)
-		if tc != nil {
-			toolCalls = append(toolCalls, *tc)
+		tcs := parseToolCallJSONList(match[1], i)
+		if len(tcs) > 0 {
+			remaining = strings.Replace(remaining, match[0], "", 1)
+			toolCalls = append(toolCalls, tcs...)
 		}
 	}
 	if len(toolCalls) > 0 {
@@ -1289,9 +1289,9 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 	mdMatches := mdFenceRegex.FindAllStringSubmatch(content, -1)
 	for i, match := range mdMatches {
 		fenced := strings.TrimSpace(match[1])
-		tc := parseToolCallJSON(fenced, i)
-		if tc != nil {
-			toolCalls = append(toolCalls, *tc)
+		tcs := parseToolCallJSONList(fenced, i)
+		if len(tcs) > 0 {
+			toolCalls = append(toolCalls, tcs...)
 			remaining = strings.Replace(remaining, match[0], "", 1)
 		}
 	}
@@ -1306,8 +1306,10 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 	foundCalls := 0
 
 	for i < len(str) {
-		if str[i] == '{' {
-			depth := 0
+		if str[i] == '{' || str[i] == '[' {
+			isObject := str[i] == '{'
+			objDepth := 0
+			arrDepth := 0
 			inString := false
 			escapeNext := false
 			found := false
@@ -1329,14 +1331,56 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 
 				if !inString {
 					if c == '{' {
-						depth++
+						objDepth++
 					} else if c == '}' {
-						depth--
-						if depth == 0 {
-							// Found a balanced object
-							candidate := str[i : j+1]
+						objDepth--
+					} else if c == '[' {
+						arrDepth++
+					} else if c == ']' {
+						arrDepth--
+					}
 
-							// Check if it's a tool call (direct format)
+					if (isObject && c == '}' && objDepth == 0 && arrDepth == 0) || (!isObject && c == ']' && arrDepth == 0 && objDepth == 0) {
+						// Found a balanced object or array
+						candidate := str[i : j+1]
+
+						if !isObject {
+							var arrayCall []struct {
+								Name      string          `json:"name"`
+								Arguments json.RawMessage `json:"arguments"`
+							}
+							if err := json.Unmarshal([]byte(candidate), &arrayCall); err == nil && len(arrayCall) > 0 {
+								isToolCall := false
+								for _, ac := range arrayCall {
+									if ac.Name != "" {
+										argsStr := "{}"
+										if json.Valid(ac.Arguments) {
+											coercedArgs := coerceToolArguments(ac.Arguments)
+											var parsed interface{}
+											if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
+												if _, isMap := parsed.(map[string]interface{}); isMap {
+													argsStr = string(coercedArgs)
+												}
+											}
+										}
+										toolCalls = append(toolCalls, ToolCall{
+											ID:   fmt.Sprintf("call_%d_%s", foundCalls, generateUUIDv4()[:8]),
+											Type: "function",
+											Function: ToolCallFunction{
+												Name:      ac.Name,
+												Arguments: argsStr,
+											},
+										})
+										isToolCall = true
+										foundCalls++
+									}
+								}
+								if isToolCall {
+									found = true
+									i = j + 1
+								}
+							}
+						} else {
 							var direct struct {
 								Name      string          `json:"name"`
 								Arguments json.RawMessage `json:"arguments"`
@@ -1365,7 +1409,6 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 								isToolCall = true
 								foundCalls++
 							} else {
-								// Check wrapper format
 								var wrapper struct {
 									ToolCall *struct {
 										Name      string          `json:"name"`
@@ -1395,11 +1438,12 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 									foundCalls++
 								}
 							}
-
 							if isToolCall {
 								found = true
 								i = j + 1
 							}
+						}
+						if found {
 							break // whether it was a tool call or not, we reached the end of the balanced object that started at i
 						}
 					}
@@ -1422,7 +1466,40 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 	return nil, content, false
 }
 
-func parseToolCallJSON(jsonStr string, index int) *ToolCall {
+func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
+	var arrayCall []struct {
+		Name      string          `json:"name"`
+		Arguments json.RawMessage `json:"arguments"`
+	}
+	if err := json.Unmarshal([]byte(jsonStr), &arrayCall); err == nil && len(arrayCall) > 0 {
+		var calls []ToolCall
+		for j, call := range arrayCall {
+			if call.Name != "" {
+				argsStr := "{}"
+				if json.Valid(call.Arguments) {
+					coercedArgs := coerceToolArguments(call.Arguments)
+					var parsed interface{}
+					if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
+						if _, isMap := parsed.(map[string]interface{}); isMap {
+							argsStr = string(coercedArgs)
+						}
+					}
+				}
+				calls = append(calls, ToolCall{
+					ID:   fmt.Sprintf("call_%d_%d_%s", index, j, generateUUIDv4()[:8]),
+					Type: "function",
+					Function: ToolCallFunction{
+						Name:      call.Name,
+						Arguments: argsStr,
+					},
+				})
+			}
+		}
+		if len(calls) > 0 {
+			return calls
+		}
+	}
+
 	var call struct {
 		Name      string          `json:"name"`
 		Arguments json.RawMessage `json:"arguments"`
@@ -1431,7 +1508,6 @@ func parseToolCallJSON(jsonStr string, index int) *ToolCall {
 		return nil
 	}
 
-	// Check for nested wrapper format: {"tool_call": {"name": "...", "arguments": {...}}}
 	if call.Name == "" {
 		var wrapper struct {
 			ToolCall *struct {
@@ -1450,14 +1526,14 @@ func parseToolCallJSON(jsonStr string, index int) *ToolCall {
 					}
 				}
 			}
-			return &ToolCall{
+			return []ToolCall{{
 				ID:   fmt.Sprintf("call_%d_%s", index, generateUUIDv4()[:8]),
 				Type: "function",
 				Function: ToolCallFunction{
 					Name:      wrapper.ToolCall.Name,
 					Arguments: argsStr,
 				},
-			}
+			}}
 		}
 	}
 
@@ -1471,14 +1547,14 @@ func parseToolCallJSON(jsonStr string, index int) *ToolCall {
 			}
 		}
 	}
-	return &ToolCall{
+	return []ToolCall{{
 		ID:   fmt.Sprintf("call_%d_%s", index, generateUUIDv4()[:8]),
 		Type: "function",
 		Function: ToolCallFunction{
 			Name:      call.Name,
 			Arguments: argsStr,
 		},
-	}
+	}}
 }
 
 // isCodingAssistantRequest checks if a given system/developer message appears

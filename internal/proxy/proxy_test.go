@@ -232,6 +232,6 @@ func TestProxy_StreamTranscoder_MalformedPayloads(t *testing.T) {
 	for _, p := range payloads {
 		// Ensure this doesn't panic
 		parseToolCalls(p)
-		parseToolCallJSON(p, 0)
+		parseToolCallJSONList(p, 0)
 	}
 }
