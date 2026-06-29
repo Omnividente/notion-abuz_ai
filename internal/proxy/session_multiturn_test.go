@@ -475,6 +475,23 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationPreservesIntent(t *testing.T)
 	if !strings.Contains(content, "Find the bug in login and fix it.") {
 		t.Errorf("Continuation prompt did not preserve the original coding intent. Content: %s", content)
 	}
+
+	// Test multi-turn preservation
+	multiTurnMessages := append(messages,
+		ChatMessage{Role: "user", Content: content}, // Previous continuation
+		ChatMessage{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_2", Type: "function", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"ls"}`}},
+		}},
+		ChatMessage{Role: "tool", Name: "Bash", ToolCallID: "call_2", Content: "login.go"},
+	)
+
+	followUp2 := buildSessionChainFollowUp(multiTurnMessages, "Grep, Bash", "")
+	if len(followUp2) != 1 {
+		t.Fatalf("expected 1 follow up")
+	}
+	if !strings.Contains(followUp2[0].Content, "Find the bug in login and fix it.") {
+		t.Errorf("Continuation prompt did not preserve the original coding intent across multiple turns. Content: %s", followUp2[0].Content)
+	}
 }
 
 func TestClaudeCodeAgentLoop_FinalAnswerAvoidsNotionPersona(t *testing.T) {
