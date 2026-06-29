@@ -770,3 +770,74 @@ func TestSimplifyToolSchema(t *testing.T) {
 		t.Errorf("expected short description with emoji to be intact, got: %q", timeoutDesc)
 	}
 }
+
+func TestSimplifyToolSchemaArrayNested(t *testing.T) {
+	// A bloated array schema resembling what Claude Code might generate
+	inputJSON := `{
+		"type": "object",
+		"properties": {
+			"commands": {
+				"type": "array",
+				"items": {
+					"anyOf": [
+						{"type": "string", "title": "A String Command"},
+						{
+							"$ref": "#/definitions/ComplexCommand",
+							"description": "Some deeply nested legacy ref"
+						}
+					],
+					"allOf": [
+						{"type": "object"}
+					]
+				}
+			},
+			"normal_field": {
+				"anyOf": [
+					{"type": "string"}
+				]
+			}
+		}
+	}`
+
+	var rawSchema interface{}
+	if err := json.Unmarshal([]byte(inputJSON), &rawSchema); err != nil {
+		t.Fatalf("failed to unmarshal input json: %v", err)
+	}
+
+	simplified := simplifyToolSchema(rawSchema)
+
+	simplifiedMap, ok := simplified.(map[string]interface{})
+	if !ok {
+		t.Fatalf("simplified schema is not a map")
+	}
+
+	props, ok := simplifiedMap["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'properties' to remain a map")
+	}
+
+	commands, ok := props["commands"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'commands' to remain a map")
+	}
+
+	items, ok := commands["items"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'items' to remain a map")
+	}
+
+	if _, exists := items["anyOf"]; exists {
+		t.Errorf("expected 'anyOf' to be stripped from array items")
+	}
+	if _, exists := items["allOf"]; exists {
+		t.Errorf("expected 'allOf' to be stripped from array items")
+	}
+
+	normalField, ok := props["normal_field"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'normal_field' to remain a map")
+	}
+	if _, exists := normalField["anyOf"]; !exists {
+		t.Errorf("expected 'anyOf' to be preserved outside of array items")
+	}
+}

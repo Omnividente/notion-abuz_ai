@@ -171,6 +171,10 @@ func buildCompactToolList(tools []Tool) string {
 // simplifyToolSchema removes bloated metadata (titles, examples) and truncates long
 // descriptions from JSON schemas to prevent token bloat with large tool sets.
 func simplifyToolSchema(schema interface{}) interface{} {
+	return simplifySchemaNode(schema, false)
+}
+
+func simplifySchemaNode(schema interface{}, inArrayItems bool) interface{} {
 	if schema == nil {
 		return nil
 	}
@@ -189,17 +193,25 @@ func simplifyToolSchema(schema interface{}) interface{} {
 						out[key] = s
 					}
 				} else {
-					out[key] = simplifyToolSchema(val)
+					out[key] = simplifySchemaNode(val, inArrayItems)
 				}
+			case "items":
+				out[key] = simplifySchemaNode(val, true)
+			case "$ref", "anyOf", "allOf", "oneOf":
+				if inArrayItems {
+					// Drop complex nested structures inside array items to prevent token bloat
+					continue
+				}
+				out[key] = simplifySchemaNode(val, inArrayItems)
 			default:
-				out[key] = simplifyToolSchema(val)
+				out[key] = simplifySchemaNode(val, inArrayItems)
 			}
 		}
 		return out
 	case []interface{}:
 		var out []interface{}
 		for _, item := range v {
-			out = append(out, simplifyToolSchema(item))
+			out = append(out, simplifySchemaNode(item, inArrayItems))
 		}
 		return out
 	default:
