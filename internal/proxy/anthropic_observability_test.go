@@ -122,3 +122,4 @@ func TestEnsureToolCallRefusalLoggedAsDecision(t *testing.T) {
 // Dummy 6
 // Dummy 8
 // Dummy 9
+// Dummy 10
