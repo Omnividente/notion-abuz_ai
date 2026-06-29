@@ -54,6 +54,8 @@ def state(
     *,
     open_pulls: list[dict] | None = None,
     selector: dict | None = None,
+    jules_sessions: list[dict] | None = None,
+    task_statuses: dict[str, str] | None = None,
     recent_unattended: bool = True,
     recent_next: bool = False,
     burst_in_progress: bool = False,
@@ -86,16 +88,46 @@ def state(
         "open_pulls": open_pulls or [],
         "workflow_runs": workflow_runs,
         "selector": selector if selector is not None else {"selected": False, "reason": "none"},
+        "jules": {"api_available": True, "sessions": jules_sessions or []},
+        "task_statuses": task_statuses or {},
     }
 
 
-def plan(input_state: dict, ledger: dict | None = None) -> list:
+def session(
+    *,
+    session_id: str = "1234567890123456789",
+    state: str = "IN_PROGRESS",
+    task_id: str = "automation-health-failed-session-86122315",
+    latest_agent_epoch: int = 100,
+    latest_user_epoch: int = 0,
+    latest_token_epoch: int = 0,
+    wait_kind: str = "continue",
+) -> dict:
+    return {
+        "name": f"sessions/{session_id}",
+        "session_id": session_id,
+        "state": state,
+        "task_id": task_id,
+        "createTime": "2026-06-29T11:00:00Z",
+        "updateTime": "2026-06-29T11:10:00Z",
+        "activity_summary": {
+            "latest_agent_epoch": latest_agent_epoch,
+            "latest_user_epoch": latest_user_epoch,
+            "latest_token_epoch": latest_token_epoch,
+            "wait_kind": wait_kind,
+            "task_id": task_id,
+        },
+    }
+
+
+def plan(input_state: dict, ledger: dict | None = None, health_mode: str = "enforce") -> list:
     return router.plan_recovery_actions(
         input_state,
         ledger or {"version": 1, "actions": {}},
         repo=REPO,
         task_ids=TASK_IDS,
         now=NOW,
+        health_mode=health_mode,
     )
 
 
@@ -103,17 +135,39 @@ class RecoveryRouterTest(unittest.TestCase):
     def test_quality_fix_posts_comment_and_sends_session_message(self) -> None:
         actions = plan(state(open_pulls=[pr(labels=["jules", "needs-quality-fix"])]))
 
-        self.assertEqual([action.type for action in actions], ["comment_pr", "dispatch_workflow"])
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_recovery")
         self.assertEqual(actions[0].payload["pr_number"], 10)
+        self.assertTrue(actions[0].payload["comment_needed"])
         self.assertIn("исправь этот же PR #10", actions[0].payload["body"])
-        self.assertEqual(actions[1].payload["workflow"], "jules_send_message.yml")
-        self.assertEqual(actions[1].payload["inputs"]["session_id"], "1234567890123456789")
+        self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
 
     def test_quality_fix_comment_marker_prevents_duplicate(self) -> None:
         marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"
-        actions = plan(state(open_pulls=[pr(labels=["jules", "needs-quality-fix"], comments=[marker])]))
+        ledger = {
+            "version": 1,
+            "actions": {
+                "quality-fix:10:abc123": {
+                    "time": (NOW - timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
+                    "type": "quality_fix_recovery",
+                }
+            },
+        }
+        actions = plan(
+            state(open_pulls=[pr(labels=["jules", "needs-quality-fix"], comments=[marker])]),
+            ledger=ledger,
+        )
 
         self.assertEqual(actions, [])
+
+    def test_quality_fix_marker_without_ledger_still_sends_session_message(self) -> None:
+        marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"
+        actions = plan(state(open_pulls=[pr(labels=["jules", "needs-quality-fix"], comments=[marker])]))
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_recovery")
+        self.assertFalse(actions[0].payload["comment_needed"])
+        self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
 
     def test_quality_fix_waits_for_pending_checks_on_new_head(self) -> None:
         actions = plan(
@@ -212,6 +266,87 @@ class RecoveryRouterTest(unittest.TestCase):
 
         self.assertEqual(actions, [])
 
+    def test_active_jules_session_prevents_next_task_noise(self) -> None:
+        actions = plan(
+            state(
+                jules_sessions=[session(state="IN_PROGRESS")],
+                selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+            )
+        )
+
+        self.assertEqual(actions, [])
+
+    def test_awaiting_plan_approval_is_approved_directly(self) -> None:
+        actions = plan(state(jules_sessions=[session(state="AWAITING_PLAN_APPROVAL")]))
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "jules_approve_plan")
+        self.assertEqual(actions[0].payload["session"], "sessions/1234567890123456789")
+
+    def test_awaiting_user_feedback_sends_continue_directly(self) -> None:
+        actions = plan(state(jules_sessions=[session(state="AWAITING_USER_FEEDBACK")]))
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "jules_send_message")
+        self.assertIn("AUTONOMOUS_CONTINUE_TOKEN", actions[0].payload["prompt"])
+
+    def test_awaiting_user_feedback_token_prevents_duplicate_continue(self) -> None:
+        actions = plan(
+            state(
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        latest_agent_epoch=100,
+                        latest_token_epoch=100,
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(actions, [])
+
+    def test_failed_session_retries_same_task_once(self) -> None:
+        actions = plan(
+            state(
+                jules_sessions=[session(state="FAILED", session_id="1111111111111")],
+                task_statuses={"automation-health-failed-session-86122315": "todo"},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "dispatch_workflow")
+        self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
+        self.assertEqual(
+            actions[0].payload["inputs"]["task_id"],
+            "automation-health-failed-session-86122315",
+        )
+
+    def test_failed_session_for_unknown_task_is_ignored(self) -> None:
+        actions = plan(
+            state(
+                jules_sessions=[session(state="FAILED", session_id="1111111111111")],
+                task_statuses={},
+            ),
+            health_mode="disabled",
+        )
+
+        self.assertEqual(actions, [])
+
+    def test_repeated_failed_sessions_block_task(self) -> None:
+        actions = plan(
+            state(
+                jules_sessions=[
+                    session(state="FAILED", session_id="1111111111111"),
+                    session(state="FAILED", session_id="2222222222222"),
+                ],
+                task_statuses={"automation-health-failed-session-86122315": "todo"},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "block_failed_task")
+        self.assertEqual(actions[0].payload["task_id"], "automation-health-failed-session-86122315")
+
     def test_no_eligible_task_dispatches_health_enforce(self) -> None:
         actions = plan(
             state(
@@ -225,6 +360,24 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].payload["workflow"], "automation_health.yml")
         self.assertEqual(actions[0].payload["inputs"]["mode"], "enforce")
+
+    def test_no_eligible_task_can_dispatch_health_shadow(self) -> None:
+        actions = plan(
+            state(selector={"selected": False, "reason": "no eligible task"}),
+            health_mode="shadow",
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].payload["workflow"], "automation_health.yml")
+        self.assertEqual(actions[0].payload["inputs"]["mode"], "shadow")
+
+    def test_no_eligible_task_can_disable_health_dispatch(self) -> None:
+        actions = plan(
+            state(selector={"selected": False, "reason": "no eligible task"}),
+            health_mode="disabled",
+        )
+
+        self.assertEqual(actions, [])
 
     def test_recent_health_dispatch_prevents_duplicate(self) -> None:
         actions = plan(
