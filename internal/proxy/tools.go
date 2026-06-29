@@ -1115,17 +1115,19 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 					}
 				}
 			}
-			// Extract just the core query text, stopping at things like "Available functions:" if re-entered
-			lines := strings.Split(m.Content, "\n")
-			for _, line := range lines {
-				if strings.HasPrefix(line, "Available functions:") || strings.HasPrefix(line, "I'm writing a unit test") {
-					break
+			if originalQuery == "" {
+				// Extract just the core query text, stopping at things like "Available functions:" if re-entered
+				lines := strings.Split(m.Content, "\n")
+				for _, line := range lines {
+					if strings.HasPrefix(line, "Available functions:") || strings.HasPrefix(line, "I'm writing a unit test") {
+						break
+					}
+					if line != "" {
+						originalQuery += line + "\n"
+					}
 				}
-				if line != "" {
-					originalQuery += line + "\n"
-				}
+				originalQuery = strings.TrimSpace(originalQuery)
 			}
-			originalQuery = strings.TrimSpace(originalQuery)
 
 			// For very long queries, just take the first part
 			if len([]rune(originalQuery)) > 300 {
