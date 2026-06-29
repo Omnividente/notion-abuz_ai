@@ -2400,6 +2400,22 @@
       "acceptance": [
         "Tests verify that MCP server references are correctly handled in the tool bridge no-tool response detector."
       ]
+    },
+    {
+      "id": "proxy-detect-bridge-system-prompt-refusal-82d7068f",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add regression coverage for system prompt refusal",
+      "description": "Ensure that Claude Code prompts mentioning system prompts do not trigger tool-call refusals that fail to match the fallback logic.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test added that verifies bridge correctly matches subagent system prompt refusal."
+      ]
     }
   ]
 }

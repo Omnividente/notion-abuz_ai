@@ -287,3 +287,27 @@ func TestDetectToolBridgeNoToolResponse_MatchesSubagentDrift(t *testing.T) {
 		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
 	}
 }
+
+func TestDetectToolBridgeNoToolResponse_MatchesMCPServerDrift(t *testing.T) {
+	raw := `I am Notion AI, and I am not a subagent. I cannot run edit or bash to modify those files. Your mcp server configuration cannot be modified.`
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
+		t.Fatalf("expected English final-answer identity drift (mcp server) to be detected")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
+	}
+}
+
+func TestDetectToolBridgeNoToolResponse_MatchesMCPToolCallRefusal(t *testing.T) {
+	raw := `I do not have access to the local file system. You will need to manually adjust your mcp server configuration.`
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
+		t.Fatalf("expected English tool-call refusal (mcp server) to be detected")
+	}
+	if reason != "tool-call refusal" {
+		t.Fatalf("expected reason 'tool-call refusal', got %q", reason)
+	}
+}
