@@ -1,8 +1,13 @@
 package proxy
 
 import (
+	"bytes"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestExtractAnthropicSessionSalt(t *testing.T) {
@@ -165,6 +170,46 @@ func TestDetectToolBridgeNoToolResponse_MatchesExtendedPersonaLeakage(t *testing
 		if reason != "Notion persona leakage" {
 			t.Fatalf("expected reason 'Notion persona leakage', got %q for case %d", reason, i)
 		}
+	}
+}
+
+func TestEnsureComplexToolCallRefusalLoggedAsDecision(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.WriteHeader(http.StatusOK)
+
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I cannot read or edit files or run bash commands directly. Please copy and paste this into Claude Code to execute."}]}` + "\n"))
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [], "finishedAt":"2023-01-01T00:00:00Z"}` + "\n"))
+	}))
+	defer ts.Close()
+
+	origBase := NotionAPIBase
+	NotionAPIBase = ts.URL
+	defer func() { NotionAPIBase = origBase }()
+
+	origClient := getChromeHTTPClient
+	getChromeHTTPClient = func(timeout time.Duration) *http.Client {
+		return ts.Client()
+	}
+	defer func() { getChromeHTTPClient = origClient }()
+
+	var buf bytes.Buffer
+	originalOutput := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(originalOutput)
+
+	acc := &Account{UserEmail: "test_complex@test.com"}
+	messages := []ChatMessage{{Role: "user", Content: "test_complex"}}
+
+	_ = handleAnthropicNonStream(
+		httptest.NewRecorder(), acc, messages, "claude-3-opus", "req_test_complex",
+		true, false, false, nil, false, nil, nil, nil,
+	)
+
+	output := buf.String()
+	expectedLogFragment := "[bridge] req_test_complex decision: tool-call refusal explicitly detected"
+	if !strings.Contains(output, expectedLogFragment) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
 	}
 }
 
