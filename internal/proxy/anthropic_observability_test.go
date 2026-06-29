@@ -111,3 +111,53 @@ func TestEnsureToolCallRefusalLoggedAsDecision(t *testing.T) {
 		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
 	}
 }
+
+// Tests that a JSON mode loss (tool-call refusal) triggers the session recovery retry loop natively and logs it.
+func TestEnsureSessionRecoveryLoggedForToolCallLoss(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.WriteHeader(http.StatusOK)
+
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant."}]}` + "\n"))
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [], "finishedAt":"2023-01-01T00:00:00Z"}` + "\n"))
+	}))
+	defer ts.Close()
+
+	origBase := NotionAPIBase
+	NotionAPIBase = ts.URL
+	defer func() { NotionAPIBase = origBase }()
+
+	origClient := getChromeHTTPClient
+	getChromeHTTPClient = func(timeout time.Duration) *http.Client {
+		return ts.Client()
+	}
+	defer func() { getChromeHTTPClient = origClient }()
+
+	var buf bytes.Buffer
+	originalOutput := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(originalOutput)
+
+	pool := NewAccountPool()
+	pool.AddAccount(&Account{UserEmail: "test-recovery@test.com", FullCookie: "mock_cookie"})
+
+	handler := HandleAnthropicMessages(pool)
+
+	reqBody := `{"model":"claude-3-5-sonnet-20241022","messages":[{"role":"user","content":"test recovery"}],"tools":[{"name":"bash","description":"run bash","input_schema":{"type":"object","properties":{"command":{"type":"string"}}}}]}`
+	req := httptest.NewRequest("POST", "/v1/messages", strings.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	output := buf.String()
+	expectedLogFragment1 := "[bridge] decision: retry triggered by ErrToolBridgeNoTool (test-recovery@test.com), clearing session and retrying once with sanitized recovery prompt"
+	expectedLogFragment2 := "requesting clean retry"
+
+	if !strings.Contains(output, expectedLogFragment1) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment1, output)
+	}
+	if !strings.Contains(output, expectedLogFragment2) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment2, output)
+	}
+}
