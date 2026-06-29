@@ -1150,6 +1150,10 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 		}
 	}
 
+	if originalQuery == "" {
+		log.Printf("[bridge] decision: original_query state lost during multi-turn tool result continuation")
+	}
+
 	queryContext := ""
 	if originalQuery != "" {
 		queryContext = fmt.Sprintf("\nOriginal request: \"%s\"", originalQuery)
