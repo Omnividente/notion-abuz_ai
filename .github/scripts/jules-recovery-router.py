@@ -222,6 +222,13 @@ def latest_failed_automerge_run(pr: dict[str, Any]) -> str:
     return ""
 
 
+def has_pending_checks(pr: dict[str, Any]) -> bool:
+    return any(
+        str(check_run.get("status") or "") != "completed"
+        for check_run in pr.get("check_runs", [])
+    )
+
+
 def quality_fix_prompt(pr: dict[str, Any]) -> str:
     number = pr.get("number")
     sha = (pr.get("head") or {}).get("sha") or ""
@@ -263,6 +270,8 @@ def plan_recovery_actions(
             continue
 
         if "needs-quality-fix" in labels:
+            if has_pending_checks(pr):
+                return actions
             dedupe_key = f"quality-fix:{number}:{sha}"
             marker = f"{ROUTER_MARKER} action=quality-fix sha={sha}"
             if not action_recently_done(ledger, dedupe_key, now=now, ttl_minutes=7 * 24 * 60) and not comments_contain(pr, marker):
