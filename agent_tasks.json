@@ -2222,8 +2222,8 @@
       "status": "done",
       "area": "proxy",
       "risk": "low",
-      "title": "Add offline coverage for JSON tool-call loss regression class",
-      "description": "Add parsing or handler tests confirming the proxy gracefully handles when Claude Code loses JSON structure and falls back to conversational text in a tool-call context.",
+      "title": "Add offline test coverage for JSON format drop regression class",
+      "description": "Add parsing or handler tests confirming the proxy gracefully handles when the model loses JSON format structure and falls back to conversational text in a function execution context.",
       "allowed_paths": [
         "internal/proxy/openai_test.go",
         "internal/proxy/anthropic_test.go",
