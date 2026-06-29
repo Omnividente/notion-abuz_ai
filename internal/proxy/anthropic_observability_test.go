@@ -121,3 +121,4 @@ func TestEnsureToolCallRefusalLoggedAsDecision(t *testing.T) {
 // Dummy comment to trigger true diff
 // Dummy 6
 // Dummy 8
+// Dummy 9
