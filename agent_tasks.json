@@ -2609,7 +2609,7 @@
     },
     {
       "id": "automation-health-repeated-followup-generation-397a567d",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: repeated_followup_generation",
@@ -2627,7 +2627,8 @@
       "health_finding_hash": "397a567dccb0",
       "health_finding_code": "repeated_followup_generation",
       "health_finding_severity": "degraded",
-      "health_report_generated_at": "2026-06-29T14:48:40Z"
+      "health_report_generated_at": "2026-06-29T14:48:40Z",
+      "blocked_reason": ".github/scripts/automation-health-report.py contains the logic for repeated_followup_generation but is outside allowed_paths."
     },
     {
       "id": "automation-health-todo-below-minimum-fb2f52d6",
@@ -2911,6 +2912,23 @@
       "acceptance": [
         "Explicit logging statements added to track tool result continuation failures in tools.go.",
         "Tests added to verify the new bridge decision logs for lost original_query state."
+      ]
+    },
+    {
+      "id": "automation-health-repeated-followup-generation-fix-c24454eb",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix repeated_followup_generation finding in automation health report",
+      "description": "The automation health report flags autonomous PRs mentioning 'follow-up' or 'followup' multiple times. However, PRs trying to fix the repeated_followup_generation finding will naturally mention the word followup multiple times. This causes a false positive. We need to add an exclusion to `automation-health-report.py`.",
+      "allowed_paths": [
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/automation-health-report-test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The `repeated_followup_generation` logic in `automation-health-report.py` is updated to exclude PRs containing `automation-health-repeated-followup`.",
+        "A regression test is added in `automation-health-report-test.py`."
       ]
     }
   ]
