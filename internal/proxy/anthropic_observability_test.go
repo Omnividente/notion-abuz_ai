@@ -66,7 +66,7 @@ func TestEnsureNotionPersonaLeakageLoggedAsDecision(t *testing.T) {
 
 	output := buf.String()
 	expectedLogFragment := "[bridge] req_test decision: Notion persona leakage detected"
-	if !strings.Contains(output, expectedLogFragment) {
+	if !strings.Contains(output, expectedLogFragment) { // assert bridge decision log
 		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
 	}
 }
@@ -77,6 +77,5 @@ func TestEnsureNotionPersonaLeakageLoggedAsDecision(t *testing.T) {
 // Dummy 15
 // dummy force push on proper branch
 // Dummy 16
-// Dummy 18
-// Dummy 20
-// Dummy 21
+// Dummy 23
+// Dummy 24

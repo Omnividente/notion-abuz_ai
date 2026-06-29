@@ -2323,7 +2323,7 @@
     },
     {
       "id": "proxy-observability-tool-call-refusal-logging-4964e355",
-      "status": "blocked",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure tool-call refusal events are logged as bridge decisions",
