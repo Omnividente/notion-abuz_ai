@@ -2464,7 +2464,7 @@
       "acceptance": [
         "Tests verify Chinese Notion identity mixed with English system prompt keywords triggers 'Notion persona leakage'."
       ],
-      "blocked_reason": "Task requires runtime/live-smoke/transcript/log-capture evidence, but the current scope allows only test/manifest changes. Needs concrete evidence or an updated scope to proceed."
+      "blocked_reason": "Task requires concrete runtime/live-smoke/transcript/log-capture evidence or updated scope before test-only coverage can be accepted."
     },
     {
       "id": "proxy-stream-transcoder-edge-cases-d10c8445",
