@@ -1139,7 +1139,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--health-mode",
         choices=("disabled", "shadow", "enforce"),
-        default=os.environ.get("RECOVERY_ROUTER_HEALTH_MODE", "enforce"),
+        default=os.environ.get("RECOVERY_ROUTER_HEALTH_MODE", "shadow"),
     )
     parser.add_argument("--jules-api-base", default=os.environ.get("JULES_API_BASE", "https://jules.googleapis.com/v1alpha"))
     parser.add_argument("--jules-source", default="")

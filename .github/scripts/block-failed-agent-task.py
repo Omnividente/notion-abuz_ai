@@ -20,6 +20,18 @@ BLOCK_REASON_TEMPLATE = (
     "Paused after repeated Jules FAILED sessions: {sessions}. "
     "Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
 )
+RECOVERY_MARKER = "AUTOMATION_RECOVERY_FAILED_SESSION_BLOCK"
+RECOVERY_BRANCH_PREFIX = "automation-recovery-failed-session-block"
+RECOVERY_LABELS = {
+    "automation-recovery": {
+        "color": "5319e7",
+        "description": "Control-plane autonomous recovery PR",
+    },
+    "self-improvement": {
+        "color": "0e8a16",
+        "description": "Automation self-improvement or recovery",
+    },
+}
 
 
 def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -66,6 +78,20 @@ def request(method: str, path: str, *, token: str, api_url: str, body: Any = Non
         raise RuntimeError(f"{method} {path} returned HTTP {exc.code}: {detail}") from exc
 
 
+def ensure_label(*, name: str, color: str, description: str, token: str, repo: str, api_url: str) -> None:
+    try:
+        request(
+            "POST",
+            f"/repos/{repo}/labels",
+            token=token,
+            api_url=api_url,
+            body={"name": name, "color": color, "description": description},
+        )
+    except RuntimeError as exc:
+        if "HTTP 422" not in str(exc):
+            raise
+
+
 def open_block_pr(
     *,
     manifest_path: Path,
@@ -76,13 +102,13 @@ def open_block_pr(
     api_url: str,
 ) -> int:
     short_session = safe_branch_part(failed_sessions[0] if failed_sessions else "unknown", 20)
-    branch = f"jules-failed-session-block-{safe_branch_part(task_id, 70)}-{short_session}"
+    branch = f"{RECOVERY_BRANCH_PREFIX}-{safe_branch_part(task_id, 70)}-{short_session}"
 
     open_pulls = request("GET", f"/repos/{repo}/pulls?state=open&per_page=100", token=token, api_url=api_url) or []
     for pr in open_pulls:
         head_ref = (pr.get("head") or {}).get("ref", "")
         body = pr.get("body") or ""
-        if head_ref == branch or (task_id in body and "Jules FAILED sessions" in body):
+        if head_ref == branch or (task_id in body and RECOVERY_MARKER in body):
             print(f"Open failed-session block PR already exists: #{pr['number']}.")
             return 0
 
@@ -123,6 +149,7 @@ def open_block_pr(
 
     title = f"Блокировка задачи {task_id} после FAILED-сессий Jules"[:120]
     body = (
+        f"<!-- {RECOVERY_MARKER} -->\n\n"
         "Открыто автоматически после повторного завершения Jules-сессий в состоянии FAILED.\n\n"
         "- Этап плана: recovery\n"
         f"- Что сделано: задача `{task_id}` переведена в `blocked`.\n"
@@ -141,12 +168,21 @@ def open_block_pr(
     )
     number = pr["number"]
     print(f"Opened failed-session block PR #{number}.")
+    for label, meta in RECOVERY_LABELS.items():
+        ensure_label(
+            name=label,
+            color=meta["color"],
+            description=meta["description"],
+            token=token,
+            repo=repo,
+            api_url=api_url,
+        )
     request(
         "POST",
         f"/repos/{repo}/issues/{number}/labels",
         token=token,
         api_url=api_url,
-        body={"labels": ["jules"]},
+        body={"labels": sorted(RECOVERY_LABELS)},
     )
     return 0
 
