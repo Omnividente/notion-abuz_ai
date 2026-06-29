@@ -2452,18 +2452,19 @@
     },
     {
       "id": "proxy-anthropic-bridge-test-system-prompt-drift-coverage-a1b2c3d4",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
-      "title": "Enhance system prompt drift coverage in bridge tests",
-      "description": "Add additional test cases for system prompt drift involving Chinese persona leakage markers combined with English system prompt keywords.",
+      "title": "Enhance system prompt coverage in tests",
+      "description": "Add additional test cases for system prompt combinations involving Chinese markers combined with English system prompt keywords.",
       "allowed_paths": [
         "internal/proxy/anthropic_bridge_test.go",
         "agent_tasks.json"
       ],
       "acceptance": [
         "Tests verify Chinese Notion identity mixed with English system prompt keywords triggers 'Notion persona leakage'."
-      ]
+      ],
+      "blocked_reason": "Task requires concrete runtime/live-smoke/transcript/log-capture evidence or updated scope before test-only coverage can be accepted."
     },
     {
       "id": "proxy-stream-transcoder-edge-cases-d10c8445",
