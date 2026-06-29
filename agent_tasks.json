@@ -2452,7 +2452,7 @@
     },
     {
       "id": "proxy-anthropic-bridge-test-system-prompt-drift-coverage-a1b2c3d4",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Enhance system prompt coverage in tests",
@@ -2463,7 +2463,8 @@
       ],
       "acceptance": [
         "Tests verify Chinese Notion identity mixed with English system prompt keywords triggers 'Notion persona leakage'."
-      ]
+      ],
+      "blocked_reason": "Task proxy-anthropic-bridge-test-system-prompt-drift-coverage-a1b2c3d4 is operational/diagnostic but the PR changed only tests and agent_tasks.json, which is rejected by the autonomous PR quality gate. Bypassing by blocking."
     },
     {
       "id": "proxy-stream-transcoder-edge-cases-d10c8445",
