@@ -275,3 +275,15 @@ func TestClaudeCodeAgentLoop_PreservesCodingIntent(t *testing.T) {
 		t.Fatalf("expected MCP and project instructions intent to be preserved, got: %s", userMsg)
 	}
 }
+
+func TestDetectToolBridgeNoToolResponse_MatchesSubagentDrift(t *testing.T) {
+	raw := `I am Notion AI, and I am not a subagent. I cannot run edit or bash to modify those files.`
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
+		t.Fatalf("expected English subagent identity drift to be detected")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
+	}
+}
