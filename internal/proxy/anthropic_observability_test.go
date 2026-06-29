@@ -117,4 +117,7 @@ func TestEnsureToolCallRefusalLoggedAsDecision(t *testing.T) {
 		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
 	}
 }
+
 // Dummy comment to trigger true diff
+// Dummy 6
+// Dummy 8
