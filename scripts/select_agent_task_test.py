@@ -74,6 +74,10 @@ class SelectAgentTaskTest(unittest.TestCase):
 
         self.assertTrue(selected.selected)
         self.assertEqual(selected.task_id, "runtime")
+        self.assertEqual(selected.reason_code, "selected")
+        self.assertEqual(selected.todo_count, 2)
+        self.assertEqual(selected.eligible_count, 2)
+        self.assertEqual(selected.rejected_count, 0)
 
     def test_test_only_without_evidence_is_rejected(self) -> None:
         data = {
@@ -92,6 +96,10 @@ class SelectAgentTaskTest(unittest.TestCase):
 
         self.assertFalse(selected.selected)
         self.assertEqual(selected.rejected[0]["task_id"], "micro")
+        self.assertEqual(selected.reason_code, "no_eligible_autonomous_task")
+        self.assertEqual(selected.todo_count, 1)
+        self.assertEqual(selected.eligible_count, 0)
+        self.assertEqual(selected.rejected_count, 1)
 
     def test_test_only_with_evidence_is_allowed(self) -> None:
         data = {
@@ -128,6 +136,34 @@ class SelectAgentTaskTest(unittest.TestCase):
 
         self.assertFalse(selected.selected)
         self.assertEqual(selected.reason, "no eligible todo task matched the risk ceiling and micro-task policy")
+        self.assertEqual(selected.reason_code, "no_eligible_autonomous_task")
+        self.assertEqual(selected.todo_count, 1)
+        self.assertEqual(selected.eligible_count, 0)
+        self.assertEqual(selected.rejected_count, 0)
+
+    def test_no_todo_tasks_has_distinct_reason_code(self) -> None:
+        data = {
+            "tasks": [
+                {
+                    **task(
+                        "done-task",
+                        title="Runtime task",
+                        description="Runtime failure.",
+                        risk="medium",
+                        allowed_paths=["internal/proxy/anthropic.go", "agent_tasks.json"],
+                    ),
+                    "status": "done",
+                }
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+
+        self.assertFalse(selected.selected)
+        self.assertEqual(selected.reason_code, "no_todo_tasks")
+        self.assertEqual(selected.todo_count, 0)
+        self.assertEqual(selected.eligible_count, 0)
+        self.assertEqual(selected.rejected_count, 0)
 
 
 if __name__ == "__main__":

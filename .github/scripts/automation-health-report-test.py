@@ -100,6 +100,17 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["status"], "degraded")
         self.assert_has_finding(report, "todo_below_minimum")
 
+    def test_no_eligible_autonomous_task(self) -> None:
+        report = run_fixture("no-eligible-autonomous-task")
+
+        self.assertEqual(report["status"], "degraded")
+        self.assert_has_finding(report, "no_eligible_autonomous_task")
+        self.assertEqual(report["metrics"]["tasks"]["todo_count"], 2)
+        self.assertEqual(report["metrics"]["tasks"]["eligible_count"], 0)
+        self.assertEqual(report["metrics"]["tasks"]["rejected_count"], 2)
+        self.assertEqual(report["metrics"]["tasks"]["selector_reason_code"], "no_eligible_autonomous_task")
+        self.assertIn("Eligible autonomous tasks", report["_markdown"])
+
     def test_missing_jules_api_key_is_not_a_failure(self) -> None:
         report = run_fixture("missing-jules-api-key")
 

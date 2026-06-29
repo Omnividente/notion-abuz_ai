@@ -8,7 +8,13 @@
     "tasks": [
       {
         "id": "runtime-task",
-        "status": "todo"
+        "status": "todo",
+        "area": "proxy",
+        "risk": "medium",
+        "title": "Fix runtime proxy behavior from live smoke evidence",
+        "description": "Use local live smoke artifact to fix reproduced runtime failure.",
+        "allowed_paths": ["internal/proxy/anthropic.go", "agent_tasks.json"],
+        "acceptance": ["Runtime proxy behavior is fixed."]
       }
     ]
   },

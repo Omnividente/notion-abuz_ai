@@ -1,0 +1,43 @@
+{
+  "now": "2026-06-28T12:00:00Z",
+  "repository": "Omnividente/notion-abuz_ai",
+  "manifest": {
+    "replenishment_policy": {
+      "minimum_todo_tasks": 1
+    },
+    "tasks": [
+      {
+        "id": "micro-test-one",
+        "status": "todo",
+        "area": "proxy",
+        "risk": "low",
+        "title": "Add tests for Anthropic HandleFrame missing metadata",
+        "description": "Ensure parser handles one missing metadata edge case.",
+        "allowed_paths": ["internal/proxy/anthropic_test.go", "agent_tasks.json"],
+        "acceptance": ["Tests cover missing metadata."]
+      },
+      {
+        "id": "micro-test-two",
+        "status": "todo",
+        "area": "proxy",
+        "risk": "low",
+        "title": "Add test coverage for malformed JSON edge case",
+        "description": "Add narrow parser test coverage.",
+        "allowed_paths": ["internal/proxy/tools_test.go", "agent_tasks.json"],
+        "acceptance": ["Tests cover malformed JSON."]
+      }
+    ]
+  },
+  "pulls": [],
+  "workflow_runs": [
+    {
+      "id": 1001,
+      "name": "CI",
+      "head_branch": "master",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-06-28T11:30:00Z"
+    }
+  ],
+  "jules_sessions": []
+}

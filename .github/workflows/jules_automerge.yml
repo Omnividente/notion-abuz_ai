@@ -137,6 +137,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          QUALITY_SUMMARY: ${{ steps.quality.outputs.summary }}
         run: |
           set -euo pipefail
 
@@ -150,43 +151,35 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --add-label needs-quality-fix
 
-          quality_fix_marker="<!-- AUTONOMOUS_QUALITY_FIX_REQUEST sha=${PR_HEAD_SHA} -->"
           comments_file="/tmp/pr-comments.json"
-          gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate > "$comments_file"
-          already_requested="$(jq -s -r --arg marker "$quality_fix_marker" '
-            [.[]
-              | if type == "array" then .[] else . end
-              | select((.body // "") | contains($marker))
-            ] | length > 0
-          ' "$comments_file")"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" > "$comments_file"
 
-          total_requests="$(jq -s -r '[.[] | if type == "array" then .[] else . end | select((.body // "") | contains("AUTONOMOUS_QUALITY_FIX_REQUEST sha="))] | length' "$comments_file")"
-          if [ "$total_requests" -ge 3 ]; then
-            already_requested="true"
-          fi
+          python3 .github/scripts/update-quality-fix-comment.py \
+            --comments "$comments_file" \
+            --report /tmp/autonomous-pr-quality.md \
+            --pr-number "$PR_NUMBER" \
+            --head-sha "$PR_HEAD_SHA" \
+            --summary "$QUALITY_SUMMARY" \
+            --output-body /tmp/autonomous-quality-fix-request.md \
+            --github-output "$GITHUB_OUTPUT"
 
-          if [ "$already_requested" != "true" ]; then
-            {
-              echo "$quality_fix_marker"
-              echo
-              echo "Jules, исправь этот же PR #${PR_NUMBER}; не открывай новый PR и не создавай follow-up задачу."
-              echo
-              echo "Что нужно сделать:"
-              echo "- исправь deterministic autonomous quality gate failure ниже;"
-              echo "- синхронизируй AUTONOMOUS_TASK_EVIDENCE с фактическим статусом задачи в agent_tasks.json;"
-              echo "- если задача в manifest имеет status blocked, evidence тоже должен иметь status: blocked и concrete blocked_reason;"
-              echo "- если задача реально выполнена, manifest должен быть status done и evidence status done с changed evidence files;"
-              echo "- убери временные scratch-файлы из PR, если они не являются частью acceptance/evidence;"
-              echo "- push исправление в эту же PR ветку и дождись повторных checks."
-              echo
-              cat /tmp/autonomous-pr-quality.md
-            } > /tmp/autonomous-quality-fix-request.md
+          comment_id="$(grep '^comment_id=' "$GITHUB_OUTPUT" | tail -1 | cut -d= -f2-)"
+          jq -Rs '{body: .}' /tmp/autonomous-quality-fix-request.md > /tmp/autonomous-quality-fix-request.json
 
-            gh pr comment "$PR_NUMBER" \
-              --repo "$GITHUB_REPOSITORY" \
-              --body-file /tmp/autonomous-quality-fix-request.md
+          if [ -n "${comment_id:-}" ]; then
+            gh api \
+              -X PATCH \
+              "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" \
+              --input /tmp/autonomous-quality-fix-request.json \
+              >/dev/null
+            echo "Updated existing autonomous quality-fix request comment ${comment_id}."
           else
-            echo "Quality-fix request already exists for ${PR_HEAD_SHA}; not posting another comment."
+            gh api \
+              -X POST \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --input /tmp/autonomous-quality-fix-request.json \
+              >/dev/null
+            echo "Created autonomous quality-fix request comment."
           fi
 
           echo "::error::Autonomous PR quality gate failed: ${{ steps.quality.outputs.summary }}"

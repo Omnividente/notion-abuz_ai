@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import re
@@ -248,6 +249,26 @@ def add_finding_once(findings: list[Finding], finding: Finding) -> None:
         findings.append(finding)
 
 
+def selector_diagnostics(manifest: dict[str, Any]) -> dict[str, Any]:
+    selector_path = Path(__file__).parents[2] / "scripts" / "select_agent_task.py"
+    if not selector_path.exists():
+        return {"available": False, "error": "scripts/select_agent_task.py not found"}
+
+    try:
+        spec = importlib.util.spec_from_file_location("automation_health_select_agent_task", selector_path)
+        if spec is None or spec.loader is None:
+            return {"available": False, "error": "could not load selector module"}
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        selection = module.select_task(manifest, risk_ceiling="medium", focus="proxy")
+        data = selection.to_dict()
+        data["available"] = True
+        return data
+    except Exception as exc:  # pragma: no cover - defensive live-report path
+        return {"available": False, "error": str(exc)[:300]}
+
+
 def analyze(data: dict[str, Any]) -> dict[str, Any]:
     now = parse_time(str(data.get("now") or "")) or datetime.now(timezone.utc)
     repo = str(data.get("repository") or os.environ.get("GITHUB_REPOSITORY") or "")
@@ -317,6 +338,42 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
                 severity="degraded",
                 message="Todo task count is below replenishment minimum.",
                 evidence={"todo_count": todo_count, "minimum": minimum},
+            ),
+        )
+
+    selector = selector_diagnostics(manifest)
+    if selector.get("available") is False:
+        add_finding_once(
+            findings,
+            Finding(
+                code="selector_diagnostics_unavailable",
+                severity="degraded",
+                message="Task selector diagnostics could not be collected.",
+                evidence={"error": str(selector.get("error") or "")[:300]},
+            ),
+        )
+    elif (
+        selector.get("selected") is False
+        and selector.get("reason_code") == "no_eligible_autonomous_task"
+        and int(selector.get("todo_count") or 0) > 0
+    ):
+        add_finding_once(
+            findings,
+            Finding(
+                code="no_eligible_autonomous_task",
+                severity="degraded",
+                message="Todo tasks exist, but none are eligible under risk ceiling and micro-task policy.",
+                evidence={
+                    "todo_count": selector.get("todo_count"),
+                    "eligible_count": selector.get("eligible_count"),
+                    "rejected_count": selector.get("rejected_count"),
+                    "reason": selector.get("reason"),
+                    "rejected_task_ids": [
+                        item.get("task_id")
+                        for item in selector.get("rejected", [])
+                        if isinstance(item, dict)
+                    ],
+                },
             ),
         )
 
@@ -576,6 +633,11 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         "tasks": {
             "todo_count": todo_count,
             "minimum_todo_tasks": minimum,
+            "eligible_count": selector.get("eligible_count"),
+            "rejected_count": selector.get("rejected_count"),
+            "selector_selected": selector.get("selected"),
+            "selector_reason": selector.get("reason"),
+            "selector_reason_code": selector.get("reason_code"),
             "blocked_without_reason_count": len(blocked_without_reason),
         },
         "jules_sessions": {
@@ -661,6 +723,11 @@ def write_markdown(report: dict[str, Any]) -> str:
                 f"- Todo tasks: `{task_metrics.get('todo_count', 0)}` / "
                 f"minimum `{task_metrics.get('minimum_todo_tasks')}`"
             ),
+            (
+                f"- Eligible autonomous tasks: `{task_metrics.get('eligible_count')}`; "
+                f"rejected by selector: `{task_metrics.get('rejected_count')}`"
+            ),
+            f"- Selector reason: `{task_metrics.get('selector_reason_code') or ''}`",
             f"- Blocked tasks without reason: `{task_metrics.get('blocked_without_reason_count', 0)}`",
             f"- Active product Jules sessions: `{session_metrics.get('active_product_count', 0)}`",
             "",
