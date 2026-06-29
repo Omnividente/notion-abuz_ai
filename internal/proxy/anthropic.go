@@ -582,7 +582,8 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		strings.Contains(normalized, "Claude Code") ||
 		strings.Contains(normalized, "Cursor") ||
 		strings.Contains(lower, "coding assistant") ||
-		strings.Contains(lower, "subagent")
+		strings.Contains(lower, "subagent") ||
+		strings.Contains(lower, "mcp server")
 	mentionsManualHandOff := strings.Contains(normalized, "复制粘贴") ||
 		strings.Contains(normalized, "手动添加") ||
 		strings.Contains(normalized, "你可以这样做") ||
