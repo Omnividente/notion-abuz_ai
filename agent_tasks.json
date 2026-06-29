@@ -2219,11 +2219,11 @@
     },
     {
       "id": "claude-code-json-tool-call-loss-coverage-9d781f19",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
-      "title": "Add offline coverage for JSON tool-call loss regression class",
-      "description": "Add parsing or handler tests confirming the proxy gracefully handles or logs when Claude Code loses JSON structure and falls back to conversational text in a tool-call context.",
+      "title": "Add offline test coverage for JSON format drop regression class",
+      "description": "Add parsing or handler tests confirming the proxy gracefully handles when the model loses JSON format structure and falls back to conversational text in a function execution context.",
       "allowed_paths": [
         "internal/proxy/openai_test.go",
         "internal/proxy/anthropic_test.go",
@@ -2446,6 +2446,21 @@
       ],
       "acceptance": [
         "Tests verify Chinese Notion identity mixed with English system prompt keywords triggers 'Notion persona leakage'."
+      ]
+    },
+    {
+      "id": "proxy-stream-transcoder-edge-cases-d10c8445",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add offline coverage for Stream Transcoder edge cases",
+      "description": "Add testing for edge cases where the `openAIResponsesStreamTranscoder` handles poorly formatted `event:` or `data:` payloads in `parseAnthropicSSEFrame` when `keep-alive` strings are injected.",
+      "allowed_paths": [
+        "internal/proxy/openai_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify proxy behavior when `parseAnthropicSSEFrame` receives partial or malformed `keep-alive` data."
       ]
     }
   ]
