@@ -165,6 +165,28 @@ jobs:
           echo "::error::Autonomous PR quality gate failed: ${{ steps.quality.outputs.summary }}"
           exit 1
 
+      - name: Clear resolved quality-fix label
+        if: steps.quality.outputs.passed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          has_quality_label="$(gh pr view "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json labels \
+            --jq 'any(.labels[].name; . == "needs-quality-fix")')"
+
+          if [ "$has_quality_label" = "true" ]; then
+            gh pr edit "$PR_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --remove-label needs-quality-fix \
+              || echo "::warning::Could not remove resolved needs-quality-fix label."
+          else
+            echo "PR does not have needs-quality-fix; nothing to clear."
+          fi
+
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
