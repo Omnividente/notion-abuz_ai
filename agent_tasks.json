@@ -2734,7 +2734,7 @@
     },
     {
       "id": "proxy-claude-code-multi-turn-tool-loss-investigation-c1a5fa4c",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate multi-turn tool result loss in long sessions",
@@ -2746,6 +2746,22 @@
       ],
       "acceptance": [
         "Fix implemented to persist tool results or task is blocked if not reproducible offline."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-tool-argument-type-coercion-investigation-7b9c1d",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate type coercion failures in Claude Code tool arguments",
+      "description": "Investigate cases where Claude Code provides incorrect data types for tool arguments (e.g., passing a string instead of an integer) and verify the proxy sanitizes or handles these gracefully without causing upstream API failures.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fix implemented to coerce/sanitize tool argument types, or task blocked if not reproducible."
       ]
     }
   ]
