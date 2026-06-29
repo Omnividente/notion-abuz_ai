@@ -203,6 +203,34 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
 
         self.assertTrue(decision.passed)
 
+    def test_temporary_scratch_markdown_file_fails(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+                "plan.md",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body(
+                "runtime-fix",
+                evidence_files=[
+                    "internal/proxy/anthropic.go",
+                    "internal/proxy/anthropic_bridge_test.go",
+                    "agent_tasks.json",
+                    "plan.md",
+                ],
+            ),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("scratch/planning files" in reason for reason in decision.reasons))
+
     def test_manifest_only_block_with_reason_passes(self) -> None:
         before = manifest([task("blocked-task", status="todo")])
         after = manifest(
