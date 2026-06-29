@@ -1,0 +1,59 @@
+name: Jules Recovery Router
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "plan only or execute one recovery action"
+        required: false
+        default: "act"
+        type: choice
+        options:
+          - plan
+          - act
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: jules-recovery-router
+  cancel-in-progress: true
+
+jobs:
+  route:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Route autonomous recovery
+        id: router
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/jules-recovery-router.py \
+            --mode "${{ inputs.mode || 'act' }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --github-output "$GITHUB_OUTPUT" \
+            --json | tee recovery-router.json
+
+      - name: Upload recovery router report
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-router
+          path: recovery-router.json
+
+      - name: Append summary
+        run: |
+          {
+            echo "## Jules Recovery Router"
+            echo
+            echo "- Planned actions: \`${{ steps.router.outputs.actions_planned }}\`"
+            echo "- Executed actions: \`${{ steps.router.outputs.actions_executed }}\`"
+            echo "- First action: \`${{ steps.router.outputs.first_action }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

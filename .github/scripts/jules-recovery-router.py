@@ -1,0 +1,721 @@
+#!/usr/bin/env python3
+"""Route stuck autonomous-loop states to one deterministic recovery action."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
+
+
+LEDGER_VARIABLE = "JULES_RECOVERY_ROUTER_LEDGER"
+ROUTER_MARKER = "AUTONOMOUS_RECOVERY_ROUTER"
+QUALITY_FIX_MARKER = "AUTONOMOUS_QUALITY_FIX_REQUEST"
+ACTIVE_NEXT_TASK_COOLDOWN_MINUTES = 10
+HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
+RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
+MONITOR_COOLDOWN_MINUTES = 7
+SESSION_ID_RE = re.compile(r"(?<!\d)(\d{12,})(?!\d)")
+
+
+@dataclass(frozen=True)
+class RecoveryAction:
+    type: str
+    dedupe_key: str
+    reason: str
+    ttl_minutes: int
+    payload: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "type": self.type,
+            "dedupe_key": self.dedupe_key,
+            "reason": self.reason,
+            "ttl_minutes": self.ttl_minutes,
+            "payload": self.payload,
+        }
+
+
+class GitHubClient:
+    def __init__(self, *, api_url: str, repo: str, token: str):
+        self.api_url = api_url.rstrip("/")
+        self.repo = repo
+        self.token = token
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        body: dict[str, Any] | None = None,
+        ok: tuple[int, ...] = (200, 201, 204),
+    ) -> Any:
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        data = None
+        if body is not None:
+            data = json.dumps(body).encode("utf-8")
+            headers["Content-Type"] = "application/json"
+
+        req = urllib.request.Request(
+            f"{self.api_url}{path}",
+            data=data,
+            headers=headers,
+            method=method,
+        )
+        try:
+            with urllib.request.urlopen(req) as resp:
+                if resp.status not in ok:
+                    raise RuntimeError(f"{method} {path} returned HTTP {resp.status}")
+                raw = resp.read()
+                if not raw:
+                    return None
+                return json.loads(raw.decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"{method} {path} returned HTTP {exc.code}: {detail}") from exc
+
+
+def parse_time(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def labels_of(pr: dict[str, Any]) -> set[str]:
+    return {
+        str(label.get("name", ""))
+        for label in pr.get("labels", [])
+        if isinstance(label, dict) and label.get("name")
+    }
+
+
+def load_task_ids(manifest_path: Path) -> list[str]:
+    with manifest_path.open("r", encoding="utf-8") as manifest_file:
+        manifest = json.load(manifest_file)
+    return [
+        str(task.get("id", ""))
+        for task in manifest.get("tasks", [])
+        if isinstance(task, dict) and task.get("id")
+    ]
+
+
+def is_autonomous_pr(pr: dict[str, Any], *, repo: str, task_ids: list[str]) -> bool:
+    labels = labels_of(pr)
+    head = pr.get("head") or {}
+    head_ref = str(head.get("ref") or "")
+    head_repo = str((head.get("repo") or {}).get("full_name") or "")
+    user = str((pr.get("user") or {}).get("login") or "")
+    title = str(pr.get("title") or "")
+    body = str(pr.get("body") or "")
+
+    if user == "google-jules[bot]" or "jules" in labels:
+        return True
+    if "PR created automatically by Jules" in body or "jules.google.com/task" in body:
+        return True
+    if head_repo != repo:
+        return False
+    if head_ref.startswith(("jules-", "jules/")):
+        return True
+    return any(
+        head_ref == task_id
+        or head_ref.startswith(f"{task_id}-")
+        or task_id in title
+        or task_id in body
+        for task_id in task_ids
+    )
+
+
+def extract_session_id_from_pr(pr: dict[str, Any]) -> str:
+    fields = [
+        str((pr.get("head") or {}).get("ref") or ""),
+        str(pr.get("title") or ""),
+        str(pr.get("body") or ""),
+    ]
+    for field in fields:
+        match = SESSION_ID_RE.search(field)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def comments_contain(pr: dict[str, Any], marker: str) -> bool:
+    for comment in pr.get("comments", []):
+        if marker in str(comment.get("body") or ""):
+            return True
+    return False
+
+
+def action_recently_done(
+    ledger: dict[str, Any],
+    dedupe_key: str,
+    *,
+    now: datetime,
+    ttl_minutes: int,
+) -> bool:
+    entries = ledger.get("actions") or {}
+    entry = entries.get(dedupe_key) if isinstance(entries, dict) else None
+    if not isinstance(entry, dict):
+        return False
+    timestamp = parse_time(str(entry.get("time") or ""))
+    if timestamp is None:
+        return False
+    return now - timestamp < timedelta(minutes=ttl_minutes)
+
+
+def workflow_recently_created(
+    state: dict[str, Any],
+    workflow: str,
+    *,
+    now: datetime,
+    minutes: int,
+    event: str | None = None,
+) -> bool:
+    for run in (state.get("workflow_runs") or {}).get(workflow, []):
+        if event and run.get("event") != event:
+            continue
+        created = parse_time(str(run.get("created_at") or ""))
+        if created and now - created < timedelta(minutes=minutes):
+            return True
+    return False
+
+
+def workflow_in_progress(state: dict[str, Any], workflow: str) -> bool:
+    return any(
+        run.get("status") in {"queued", "pending", "in_progress", "waiting"}
+        for run in (state.get("workflow_runs") or {}).get(workflow, [])
+    )
+
+
+def check_run_run_id(check_run: dict[str, Any]) -> str:
+    if check_run.get("run_id"):
+        return str(check_run["run_id"])
+    details_url = str(check_run.get("details_url") or check_run.get("html_url") or "")
+    match = re.search(r"/actions/runs/(\d+)", details_url)
+    return match.group(1) if match else ""
+
+
+def latest_failed_automerge_run(pr: dict[str, Any]) -> str:
+    for check_run in pr.get("check_runs", []):
+        name = str(check_run.get("name") or "")
+        conclusion = str(check_run.get("conclusion") or "")
+        if name in {"test-and-merge", "validate-and-merge"} and conclusion == "failure":
+            return check_run_run_id(check_run)
+    return ""
+
+
+def quality_fix_prompt(pr: dict[str, Any]) -> str:
+    number = pr.get("number")
+    sha = (pr.get("head") or {}).get("sha") or ""
+    marker = f"<!-- {ROUTER_MARKER} action=quality-fix sha={sha} -->"
+    return (
+        f"{marker}\n\n"
+        f"Jules, исправь этот же PR #{number}; не открывай новый PR и не создавай follow-up задачу.\n\n"
+        "Что нужно сделать:\n"
+        "- исправь deterministic autonomous quality gate failure;\n"
+        "- синхронизируй AUTONOMOUS_TASK_EVIDENCE с фактическим статусом задачи в agent_tasks.json;\n"
+        "- если задача в manifest имеет status blocked, evidence тоже должен иметь status: blocked и concrete blocked_reason;\n"
+        "- если задача реально выполнена, manifest должен быть status done и evidence status done с changed evidence files;\n"
+        "- убери временные scratch-файлы из PR, если они не являются частью acceptance/evidence;\n"
+        "- push исправление в эту же PR ветку и дождись повторных checks.\n\n"
+        "Не жди ответа пользователя, если действие безопасное и находится внутри scope текущей задачи."
+    )
+
+
+def plan_recovery_actions(
+    state: dict[str, Any],
+    ledger: dict[str, Any],
+    *,
+    repo: str,
+    task_ids: list[str],
+    now: datetime,
+) -> list[RecoveryAction]:
+    actions: list[RecoveryAction] = []
+    open_prs = [
+        pr for pr in state.get("open_pulls", [])
+        if is_autonomous_pr(pr, repo=repo, task_ids=task_ids)
+    ]
+    open_prs.sort(key=lambda item: int(item.get("number") or 0))
+
+    for pr in open_prs:
+        labels = labels_of(pr)
+        number = pr.get("number")
+        sha = str((pr.get("head") or {}).get("sha") or "")
+        if "stop-loop" in labels or "human-review" in labels or "no-automerge" in labels:
+            continue
+
+        if "needs-quality-fix" in labels:
+            dedupe_key = f"quality-fix:{number}:{sha}"
+            marker = f"{ROUTER_MARKER} action=quality-fix sha={sha}"
+            if not action_recently_done(ledger, dedupe_key, now=now, ttl_minutes=7 * 24 * 60) and not comments_contain(pr, marker):
+                prompt = quality_fix_prompt(pr)
+                actions.append(
+                    RecoveryAction(
+                        type="comment_pr",
+                        dedupe_key=dedupe_key,
+                        reason=f"PR #{number} has unresolved needs-quality-fix",
+                        ttl_minutes=7 * 24 * 60,
+                        payload={"pr_number": number, "body": prompt},
+                    )
+                )
+                session_id = extract_session_id_from_pr(pr)
+                if session_id:
+                    actions.append(
+                        RecoveryAction(
+                            type="dispatch_workflow",
+                            dedupe_key=f"quality-fix-send:{number}:{sha}:{session_id}",
+                            reason=f"Send quality-fix prompt to Jules session for PR #{number}",
+                            ttl_minutes=7 * 24 * 60,
+                            payload={
+                                "workflow": "jules_send_message.yml",
+                                "ref": "master",
+                                "inputs": {
+                                    "session_id": session_id,
+                                    "prompt": prompt,
+                                    "mode": "send",
+                                },
+                            },
+                        )
+                    )
+            return actions
+
+        if "jules" not in labels:
+            dedupe_key = f"ensure-jules-label:{number}:{sha}"
+            if not action_recently_done(ledger, dedupe_key, now=now, ttl_minutes=7 * 24 * 60):
+                actions.append(
+                    RecoveryAction(
+                        type="add_label",
+                        dedupe_key=dedupe_key,
+                        reason=f"Autonomous PR #{number} is missing jules label",
+                        ttl_minutes=7 * 24 * 60,
+                        payload={"pr_number": number, "labels": ["jules"]},
+                    )
+                )
+                return actions
+
+        failed_run_id = latest_failed_automerge_run(pr)
+        if failed_run_id:
+            dedupe_key = f"rerun-automerge:{number}:{sha}:{failed_run_id}"
+            if not action_recently_done(
+                ledger,
+                dedupe_key,
+                now=now,
+                ttl_minutes=RERUN_AUTOMERGE_COOLDOWN_MINUTES,
+            ):
+                actions.append(
+                    RecoveryAction(
+                        type="rerun_workflow",
+                        dedupe_key=dedupe_key,
+                        reason=f"Automerge workflow failed for PR #{number} without a blocking label",
+                        ttl_minutes=RERUN_AUTOMERGE_COOLDOWN_MINUTES,
+                        payload={"run_id": failed_run_id},
+                    )
+                )
+                return actions
+
+    if open_prs:
+        return actions
+
+    if (
+        workflow_in_progress(state, "jules_burst_monitor.yml")
+        or workflow_in_progress(state, "jules_unattended_monitor.yml")
+        or workflow_in_progress(state, "jules_next_task.yml")
+    ):
+        return actions
+
+    if not workflow_in_progress(state, "jules_burst_monitor.yml") and not workflow_recently_created(
+        state,
+        "jules_unattended_monitor.yml",
+        now=now,
+        minutes=MONITOR_COOLDOWN_MINUTES,
+    ):
+        dedupe_key = "dispatch-unattended-monitor"
+        if not action_recently_done(ledger, dedupe_key, now=now, ttl_minutes=MONITOR_COOLDOWN_MINUTES):
+            actions.append(
+                RecoveryAction(
+                    type="dispatch_workflow",
+                    dedupe_key=dedupe_key,
+                    reason="No autonomous PR is open and unattended monitor is stale",
+                    ttl_minutes=MONITOR_COOLDOWN_MINUTES,
+                    payload={
+                        "workflow": "jules_unattended_monitor.yml",
+                        "ref": "master",
+                        "inputs": {
+                            "lookback_hours": "24",
+                            "dispatch_if_idle": "true",
+                            "idle_dispatch_minutes": "10",
+                        },
+                    },
+                )
+            )
+            return actions
+
+    selector = state.get("selector") or {}
+    selector_selected = bool(selector.get("selected"))
+    selector_task_id = str(selector.get("task_id") or "")
+
+    if selector_selected:
+        if workflow_recently_created(
+            state,
+            "jules_next_task.yml",
+            now=now,
+            minutes=ACTIVE_NEXT_TASK_COOLDOWN_MINUTES,
+        ):
+            return actions
+        dedupe_key = f"dispatch-next-task:{selector_task_id}"
+        if not action_recently_done(
+            ledger,
+            dedupe_key,
+            now=now,
+            ttl_minutes=ACTIVE_NEXT_TASK_COOLDOWN_MINUTES,
+        ):
+            actions.append(
+                RecoveryAction(
+                    type="dispatch_workflow",
+                    dedupe_key=dedupe_key,
+                    reason=f"No autonomous PR is open and selector picked {selector_task_id}",
+                    ttl_minutes=ACTIVE_NEXT_TASK_COOLDOWN_MINUTES,
+                    payload={
+                        "workflow": "jules_next_task.yml",
+                        "ref": "master",
+                        "inputs": {
+                            "focus": "proxy",
+                            "risk_ceiling": "medium",
+                            "allow_parallel": "false",
+                        },
+                    },
+                )
+            )
+        return actions
+
+    if not workflow_recently_created(
+        state,
+        "automation_health.yml",
+        now=now,
+        minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
+    ):
+        reason = str(selector.get("reason") or selector.get("error") or "selector found no eligible task")
+        dedupe_key = f"automation-health-enforce:{slug(reason)[:48]}"
+        if not action_recently_done(
+            ledger,
+            dedupe_key,
+            now=now,
+            ttl_minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
+        ):
+            actions.append(
+                RecoveryAction(
+                    type="dispatch_workflow",
+                    dedupe_key=dedupe_key,
+                    reason=f"No eligible autonomous task: {reason}",
+                    ttl_minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
+                    payload={
+                        "workflow": "automation_health.yml",
+                        "ref": "master",
+                        "inputs": {"mode": "enforce"},
+                    },
+                )
+            )
+
+    return actions
+
+
+def slug(value: str) -> str:
+    cleaned = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return cleaned or "value"
+
+
+def load_ledger(client: GitHubClient) -> dict[str, Any]:
+    try:
+        data = client.request(
+            "GET",
+            f"/repos/{client.repo}/actions/variables/{LEDGER_VARIABLE}",
+            ok=(200,),
+        )
+    except RuntimeError as exc:
+        if "HTTP 404" in str(exc):
+            return {"version": 1, "actions": {}}
+        raise
+    raw = str((data or {}).get("value") or "{}")
+    try:
+        ledger = json.loads(raw)
+    except json.JSONDecodeError:
+        return {"version": 1, "actions": {}}
+    if not isinstance(ledger, dict):
+        return {"version": 1, "actions": {}}
+    ledger.setdefault("version", 1)
+    ledger.setdefault("actions", {})
+    return ledger
+
+
+def prune_ledger(ledger: dict[str, Any], *, now: datetime, keep_days: int = 14) -> dict[str, Any]:
+    entries = ledger.get("actions") or {}
+    if not isinstance(entries, dict):
+        entries = {}
+    cutoff = now - timedelta(days=keep_days)
+    kept: dict[str, Any] = {}
+    for key, value in entries.items():
+        if not isinstance(value, dict):
+            continue
+        timestamp = parse_time(str(value.get("time") or ""))
+        if timestamp and timestamp >= cutoff:
+            kept[str(key)] = value
+    return {"version": 1, "actions": kept}
+
+
+def record_action(ledger: dict[str, Any], action: RecoveryAction, *, now: datetime) -> dict[str, Any]:
+    ledger = prune_ledger(ledger, now=now)
+    entries = ledger.setdefault("actions", {})
+    entries[action.dedupe_key] = {
+        "time": now.isoformat().replace("+00:00", "Z"),
+        "type": action.type,
+        "reason": action.reason[:300],
+    }
+    return ledger
+
+
+def save_ledger(client: GitHubClient, ledger: dict[str, Any]) -> None:
+    value = json.dumps(ledger, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    body = {"name": LEDGER_VARIABLE, "value": value}
+    try:
+        client.request(
+            "PATCH",
+            f"/repos/{client.repo}/actions/variables/{LEDGER_VARIABLE}",
+            body,
+            ok=(204,),
+        )
+    except RuntimeError as exc:
+        if "HTTP 404" not in str(exc):
+            raise
+        client.request("POST", f"/repos/{client.repo}/actions/variables", body, ok=(201, 204))
+
+
+def execute_action(client: GitHubClient, action: RecoveryAction) -> None:
+    payload = action.payload
+    if action.type == "comment_pr":
+        client.request(
+            "POST",
+            f"/repos/{client.repo}/issues/{payload['pr_number']}/comments",
+            {"body": payload["body"]},
+            ok=(201,),
+        )
+        return
+    if action.type == "add_label":
+        client.request(
+            "POST",
+            f"/repos/{client.repo}/issues/{payload['pr_number']}/labels",
+            {"labels": payload["labels"]},
+            ok=(200, 201),
+        )
+        return
+    if action.type == "dispatch_workflow":
+        body = {"ref": payload.get("ref", "master"), "inputs": payload.get("inputs", {})}
+        client.request(
+            "POST",
+            f"/repos/{client.repo}/actions/workflows/{payload['workflow']}/dispatches",
+            body,
+            ok=(204,),
+        )
+        return
+    if action.type == "rerun_workflow":
+        client.request(
+            "POST",
+            f"/repos/{client.repo}/actions/runs/{payload['run_id']}/rerun-failed-jobs",
+            ok=(201,),
+        )
+        return
+    raise ValueError(f"unsupported action type: {action.type}")
+
+
+def run_selector(manifest: Path, *, focus: str, risk_ceiling: str) -> dict[str, Any]:
+    cmd = [
+        sys.executable,
+        "scripts/select_agent_task.py",
+        "--manifest",
+        str(manifest),
+        "--risk-ceiling",
+        risk_ceiling,
+        "--focus",
+        focus,
+        "--json",
+    ]
+    try:
+        result = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    except OSError as exc:
+        return {"selected": False, "error": str(exc)}
+
+    try:
+        data = json.loads(result.stdout or "{}")
+    except json.JSONDecodeError:
+        data = {"selected": False, "error": "selector did not return JSON"}
+    if result.returncode != 0:
+        data.setdefault("selected", False)
+        data["error"] = data.get("error") or result.stderr.strip() or f"selector exited {result.returncode}"
+    return data
+
+
+def collect_live_state(
+    client: GitHubClient,
+    *,
+    manifest: Path,
+    focus: str,
+    risk_ceiling: str,
+) -> dict[str, Any]:
+    open_pulls = client.request("GET", f"/repos/{client.repo}/pulls?state=open&per_page=100") or []
+    for pr in open_pulls:
+        number = pr.get("number")
+        sha = (pr.get("head") or {}).get("sha")
+        if number:
+            pr["comments"] = client.request(
+                "GET",
+                f"/repos/{client.repo}/issues/{number}/comments?per_page=100",
+            ) or []
+        if sha:
+            checks = client.request(
+                "GET",
+                f"/repos/{client.repo}/commits/{sha}/check-runs?per_page=100",
+            ) or {}
+            pr["check_runs"] = checks.get("check_runs", [])
+
+    workflow_runs: dict[str, Any] = {}
+    for workflow in (
+        "jules_next_task.yml",
+        "jules_unattended_monitor.yml",
+        "jules_burst_monitor.yml",
+        "automation_health.yml",
+        "jules_automerge.yml",
+    ):
+        data = client.request(
+            "GET",
+            f"/repos/{client.repo}/actions/workflows/{workflow}/runs?per_page=10",
+        ) or {}
+        workflow_runs[workflow] = data.get("workflow_runs", [])
+
+    return {
+        "open_pulls": open_pulls,
+        "workflow_runs": workflow_runs,
+        "selector": run_selector(manifest, focus=focus, risk_ceiling=risk_ceiling),
+    }
+
+
+def load_fixture_state(path: Path) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as fixture_file:
+        data = json.load(fixture_file)
+    if not isinstance(data, dict):
+        raise ValueError("fixture must contain a JSON object")
+    return data
+
+
+def write_outputs(path: str, *, actions: list[RecoveryAction], executed: int) -> None:
+    if not path:
+        return
+    with Path(path).open("a", encoding="utf-8") as output:
+        output.write(f"actions_planned={len(actions)}\n")
+        output.write(f"actions_executed={executed}\n")
+        first = actions[0].type if actions else "none"
+        output.write(f"first_action={first}\n")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""))
+    parser.add_argument("--api-url", default=os.environ.get("GITHUB_API_URL", "https://api.github.com"))
+    parser.add_argument("--manifest", type=Path, default=Path("agent_tasks.json"))
+    parser.add_argument("--fixture", type=Path, default=None)
+    parser.add_argument("--ledger-file", type=Path, default=None)
+    parser.add_argument("--mode", choices=("plan", "act"), default="plan")
+    parser.add_argument("--focus", default="proxy")
+    parser.add_argument("--risk-ceiling", default="medium")
+    parser.add_argument("--github-output", default=os.environ.get("GITHUB_OUTPUT", ""))
+    parser.add_argument("--json", action="store_true")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    repo = args.repo
+    if not repo:
+        print("ERROR: --repo or GITHUB_REPOSITORY is required", file=sys.stderr)
+        return 2
+
+    current_time = now_utc()
+    task_ids = load_task_ids(args.manifest)
+
+    client: GitHubClient | None = None
+    if args.fixture:
+        state = load_fixture_state(args.fixture)
+        if args.ledger_file and args.ledger_file.exists():
+            ledger = json.loads(args.ledger_file.read_text(encoding="utf-8"))
+        else:
+            ledger = {"version": 1, "actions": {}}
+    else:
+        token = os.environ.get("GITHUB_API_TOKEN") or os.environ.get("GH_TOKEN")
+        if not token:
+            print("ERROR: GITHUB_API_TOKEN or GH_TOKEN is required for live mode", file=sys.stderr)
+            return 2
+        client = GitHubClient(api_url=args.api_url, repo=repo, token=token)
+        state = collect_live_state(
+            client,
+            manifest=args.manifest,
+            focus=args.focus,
+            risk_ceiling=args.risk_ceiling,
+        )
+        ledger = load_ledger(client)
+
+    actions = plan_recovery_actions(
+        state,
+        ledger,
+        repo=repo,
+        task_ids=task_ids,
+        now=current_time,
+    )
+
+    executed = 0
+    if args.mode == "act":
+        if client is None:
+            print("ERROR: --mode act is only supported in live mode", file=sys.stderr)
+            return 2
+        for action in actions:
+            if action_recently_done(
+                ledger,
+                action.dedupe_key,
+                now=current_time,
+                ttl_minutes=action.ttl_minutes,
+            ):
+                continue
+            execute_action(client, action)
+            ledger = record_action(ledger, action, now=current_time)
+            executed += 1
+        save_ledger(client, prune_ledger(ledger, now=current_time))
+
+    write_outputs(args.github_output, actions=actions, executed=executed)
+    result = {
+        "mode": args.mode,
+        "actions_planned": len(actions),
+        "actions_executed": executed,
+        "actions": [action.to_dict() for action in actions],
+        "selector": state.get("selector") or {},
+    }
+    print(json.dumps(result, ensure_ascii=False, indent=2 if args.json else None))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
