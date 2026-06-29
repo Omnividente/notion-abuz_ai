@@ -134,10 +134,15 @@ jobs:
       - name: Stop weak autonomous PR before merge
         if: steps.quality.outputs.passed != 'true'
         env:
-          GH_TOKEN: ${{ secrets.PAT || github.token }}
+          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
+
+          already_flagged="$(gh pr view "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json labels \
+            --jq 'any(.labels[].name; . == "needs-quality-fix")')"
 
           gh label create needs-quality-fix \
             --repo "$GITHUB_REPOSITORY" \
@@ -149,9 +154,13 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --add-label needs-quality-fix
 
-          gh pr comment "$PR_NUMBER" \
-            --repo "$GITHUB_REPOSITORY" \
-            --body-file /tmp/autonomous-pr-quality.md
+          if [ "$already_flagged" != "true" ]; then
+            gh pr comment "$PR_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --body-file /tmp/autonomous-pr-quality.md
+          else
+            echo "PR already has needs-quality-fix; not posting another quality-gate comment."
+          fi
 
           echo "::error::Autonomous PR quality gate failed: ${{ steps.quality.outputs.summary }}"
           exit 1
