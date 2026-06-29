@@ -98,6 +98,12 @@ for ref in refs:
         continue
 
     compare = request("GET", f"/repos/{repo}/compare/master...{safe_ref(branch)}")
+    if int(compare.get("behind_by", 0)) > 0:
+        print(
+            f"{branch} is behind master by {compare.get('behind_by')} commit(s); "
+            "skipping stale ready branch."
+        )
+        continue
     if int(compare.get("ahead_by", 0)) <= 0:
         print(f"{branch} is not ahead of master; skipping.")
         continue
