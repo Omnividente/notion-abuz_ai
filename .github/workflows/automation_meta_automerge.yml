@@ -18,13 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     if: >
       github.event.pull_request.draft == false &&
-      startsWith(github.event.pull_request.head.ref, 'automation-health-meta-') &&
-      contains(github.event.pull_request.body || '', 'AUTOMATION_HEALTH_META_TASK')
+      ((startsWith(github.event.pull_request.head.ref, 'automation-health-meta-') &&
+        contains(github.event.pull_request.body || '', 'AUTOMATION_HEALTH_META_TASK')) ||
+       (startsWith(github.event.pull_request.head.ref, 'automation-recovery-failed-session-block-') &&
+        contains(github.event.pull_request.body || '', 'AUTOMATION_RECOVERY_FAILED_SESSION_BLOCK')))
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Verify manifest-only automation meta PR
+      - name: Verify manifest-only automation control-plane PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}

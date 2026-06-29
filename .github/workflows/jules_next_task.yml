@@ -67,7 +67,9 @@ jobs:
        (github.event.pull_request.user.login == 'google-jules[bot]' ||
         contains(github.event.pull_request.labels.*.name, 'jules') ||
         (startsWith(github.event.pull_request.head.ref, 'automation-health-meta-') &&
-         contains(github.event.pull_request.body || '', 'AUTOMATION_HEALTH_META_TASK')))))
+         contains(github.event.pull_request.body || '', 'AUTOMATION_HEALTH_META_TASK')) ||
+        (startsWith(github.event.pull_request.head.ref, 'automation-recovery-failed-session-block-') &&
+         contains(github.event.pull_request.body || '', 'AUTOMATION_RECOVERY_FAILED_SESSION_BLOCK')))))
 
     steps:
       - uses: actions/checkout@v5
