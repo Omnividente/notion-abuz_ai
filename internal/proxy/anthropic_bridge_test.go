@@ -188,6 +188,30 @@ func TestDetectToolBridgeNoToolResponse_MatchesToolCallRefusal_English(t *testin
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_MatchesSystemPromptRefusal(t *testing.T) {
+	raw := `I do not have access to edit files. You will need to manually adjust your system prompt.`
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
+		t.Fatalf("expected English tool-call refusal (system prompt) to be detected")
+	}
+	if reason != "tool-call refusal" {
+		t.Fatalf("expected reason 'tool-call refusal', got %q", reason)
+	}
+}
+
+func TestDetectToolBridgeNoToolResponse_MatchesSystemPromptDrift(t *testing.T) {
+	raw := `I am Notion AI. I cannot run edit or bash to modify those files. Your system prompt cannot be modified.`
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
+		t.Fatalf("expected English final-answer identity drift (system prompt) to be detected")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
+	}
+}
+
 func TestDetectToolBridgeNoToolResponse_MatchesFinalAnswerDrift(t *testing.T) {
 	raw := `I am Notion AI, and I don't have access to your coding assistant. Therefore, I cannot run edit or bash to modify those files.`
 

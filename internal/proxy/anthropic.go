@@ -577,13 +577,17 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 	mentionsNotionIdentity := strings.Contains(normalized, "我是 Notion AI") ||
 		strings.Contains(lower, "i am notion ai")
 	mentionsLocalFS := strings.Contains(normalized, "本地文件系统") ||
-		strings.Contains(lower, "local file system")
+		strings.Contains(lower, "local file system") ||
+		strings.Contains(lower, "system prompt") ||
+		strings.Contains(normalized, "系统提示")
 	mentionsCodingAssistant := strings.Contains(normalized, "编码助手") ||
 		strings.Contains(normalized, "Claude Code") ||
 		strings.Contains(normalized, "Cursor") ||
 		strings.Contains(lower, "coding assistant") ||
 		strings.Contains(lower, "subagent") ||
-		strings.Contains(lower, "mcp server")
+		strings.Contains(lower, "mcp server") ||
+		strings.Contains(lower, "system prompt") ||
+		strings.Contains(normalized, "系统提示")
 	mentionsManualHandOff := strings.Contains(normalized, "复制粘贴") ||
 		strings.Contains(normalized, "手动添加") ||
 		strings.Contains(normalized, "你可以这样做") ||
