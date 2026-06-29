@@ -75,6 +75,19 @@ class AutomationMetaTaskTest(unittest.TestCase):
         self.assertEqual(plan.tasks[0]["risk"], "medium")
         self.assertIn(".github/scripts/jules-unattended-monitor.sh", plan.tasks[0]["allowed_paths"])
 
+    def test_no_eligible_autonomous_task_uses_selector_scope(self) -> None:
+        plan = meta.plan_meta_tasks(
+            health_report(finding("no_eligible_autonomous_task")),
+            manifest(),
+            max_tasks=3,
+        )
+
+        self.assertEqual(len(plan.tasks), 1)
+        self.assertTrue(plan.tasks[0]["id"].startswith("automation-health-no-eligible-autonomous-task-"))
+        self.assertIn("scripts/select_agent_task.py", plan.tasks[0]["allowed_paths"])
+        self.assertIn(".github/scripts/automation-health-report.py", plan.tasks[0]["allowed_paths"])
+        self.assertIn("agent_tasks.json", plan.tasks[0]["allowed_paths"])
+
     def test_existing_hash_is_deduped(self) -> None:
         item = finding("quality_failure")
         existing = {
