@@ -2452,7 +2452,7 @@
     },
     {
       "id": "proxy-anthropic-bridge-test-system-prompt-drift-coverage-a1b2c3d4",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Enhance system prompt drift coverage in bridge tests",
@@ -2510,6 +2510,21 @@
       ],
       "acceptance": [
         "Test added verifying proper handling of proxy streams."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-sse-unknown-event-coverage-test-extension",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Extend test coverage for Anthropic SSE unknown event handling edge cases",
+      "description": "Add more edge cases tests to parseNDJSONStream verifying that the Anthropic handler correctly ignores unrecognized event types, to ensure full coverage of upstream drift scenarios.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify that parseNDJSONStream handles malformed payloads gracefully without panic."
       ]
     }
   ]

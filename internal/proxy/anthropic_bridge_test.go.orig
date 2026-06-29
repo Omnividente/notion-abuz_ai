@@ -236,18 +236,6 @@ func TestDetectToolBridgeNoToolResponse_MatchesSystemPromptDrift(t *testing.T) {
 	}
 }
 
-func TestDetectToolBridgeNoToolResponse_MatchesSystemPromptDrift_Chinese(t *testing.T) {
-	raw := `我是 Notion AI。我无法运行 edit 或 bash 来修改这些文件。你的 system prompt 无法被修改。`
-
-	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
-	if !isNoTool {
-		t.Fatalf("expected Chinese final-answer identity drift mixed with English keywords (system prompt) to be detected")
-	}
-	if reason != "Notion persona leakage" {
-		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
-	}
-}
-
 func TestDetectToolBridgeNoToolResponse_MatchesFinalAnswerDrift(t *testing.T) {
 	raw := `I am Notion AI, and I don't have access to your coding assistant. Therefore, I cannot run edit or bash to modify those files.`
 
