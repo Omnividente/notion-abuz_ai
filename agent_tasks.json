@@ -2766,7 +2766,7 @@
     },
     {
       "id": "proxy-claude-code-tool-schema-simplification-arrays",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Investigate simplifying tool schema for array elements in proxy",
@@ -2779,6 +2779,39 @@
       "acceptance": [
         "simplifyToolSchema appropriately simplifies nested objects in arrays.",
         "A unit test validates the simplified array schema structure."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-tool-argument-array-coercion-d9a8c1",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate type coercion for tool argument array elements",
+      "description": "Investigate cases where Claude Code provides incorrect data types for tool argument array elements (e.g., passing strings in an array of integers) and verify the proxy sanitizes or handles these gracefully without causing upstream API failures.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fix implemented to coerce/sanitize array tool argument types, or task blocked if not reproducible.",
+        "Unit test coverage for array element coercion."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-json-mode-loss-tool-refusal-b8c7d6",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate JSON tool-call mode loss during tool refusal",
+      "description": "Investigate cases where Claude Code loses JSON format structure when refusing to call a tool, causing upstream parser errors.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fix implemented to handle JSON mode loss during tool refusal or task blocked if not reproducible."
       ]
     }
   ]
