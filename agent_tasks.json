@@ -2515,7 +2515,7 @@
     },
     {
       "id": "automation-health-failed-session-86122315",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: failed_session",

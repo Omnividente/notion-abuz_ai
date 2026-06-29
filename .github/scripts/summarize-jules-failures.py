@@ -166,26 +166,33 @@ def decide_recovery(
     known_failed = [session for session in failed_sessions if session.task_id]
     counts = Counter(session.task_id for session in known_failed)
 
+    not_todo_decision = None
+    active_decision = None
+
     for session in known_failed:
         status = statuses.get(session.task_id)
         if status is None:
             continue
         if status != "todo":
-            return RecoveryDecision(
-                action="none",
-                task_id=session.task_id,
-                session_id=session.session_id,
-                count_for_task=counts[session.task_id],
-                reason=f"task status is {status}, not todo",
-            )
+            if not not_todo_decision:
+                not_todo_decision = RecoveryDecision(
+                    action="none",
+                    task_id=session.task_id,
+                    session_id=session.session_id,
+                    count_for_task=counts[session.task_id],
+                    reason=f"task status is {status}, not todo",
+                )
+            continue
         if session.task_id in active_task_ids:
-            return RecoveryDecision(
-                action="none",
-                task_id=session.task_id,
-                session_id=session.session_id,
-                count_for_task=counts[session.task_id],
-                reason="an active Jules session already targets this task",
-            )
+            if not active_decision:
+                active_decision = RecoveryDecision(
+                    action="none",
+                    task_id=session.task_id,
+                    session_id=session.session_id,
+                    count_for_task=counts[session.task_id],
+                    reason="an active Jules session already targets this task",
+                )
+            continue
 
         sessions_for_task = tuple(
             item.session_id for item in known_failed if item.task_id == session.task_id
@@ -216,6 +223,11 @@ def decide_recovery(
             count_for_task=count_for_task,
             reason="repeated failed sessions for this task",
         )
+
+    if active_decision:
+        return active_decision
+    if not_todo_decision:
+        return not_todo_decision
 
     if any(not session.task_id for session in failed_sessions):
         return RecoveryDecision(action="none", reason="failed sessions did not expose a task id")
