@@ -2609,7 +2609,7 @@
     },
     {
       "id": "automation-health-repeated-followup-generation-397a567d",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: repeated_followup_generation",
@@ -2631,7 +2631,7 @@
     },
     {
       "id": "automation-health-todo-below-minimum-fb2f52d6",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: todo_below_minimum",
@@ -2685,7 +2685,7 @@
     },
     {
       "id": "claude-code-json-mode-loss-diagnosis-9i0j1k2l",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Diagnose JSON tool-call mode loss in complex queries",
@@ -2718,7 +2718,7 @@
     },
     {
       "id": "proxy-claude-code-json-fallback-mode-coverage-cd02d38c",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add test coverage for JSON mode loss during complex tool chains",
@@ -2800,7 +2800,7 @@
     },
     {
       "id": "proxy-claude-code-json-mode-loss-tool-refusal-b8c7d6",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate JSON tool-call mode loss during tool refusal",
@@ -2812,6 +2812,87 @@
       ],
       "acceptance": [
         "Fix implemented to handle JSON mode loss during tool refusal or task blocked if not reproducible."
+      ]
+    },
+    {
+      "id": "proxy-observability-bridge-decisions-tool-results-c0b2f7",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Enhance observability for tool result continuation loss",
+      "description": "Add explicit bridge decision logging to track when multi-turn tool results fail to connect back to the original user intent due to lost original_query state. Investigate metrics on session_multiturn.go fallback branches.",
+      "allowed_paths": [
+        "internal/proxy/session_multiturn.go",
+        "internal/proxy/session_multiturn_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Explicit logging statements added to track tool result continuation failures.",
+        "Tests added to verify the new bridge decision logs for lost original_query state."
+      ]
+    },
+    {
+      "id": "proxy-regression-notion-persona-leakage-b4eec3",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add regression test coverage for Notion persona leakage variants",
+      "description": "Expand the suite of regression tests for Notion persona leakage to cover edge cases such as identity handoffs in non-English languages (e.g., German, Spanish) and implicit workspace reframing when prompted for code generation.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Additional regression test fixtures added for non-English identity handoffs.",
+        "Tests added for implicit workspace reframing during code generation."
+      ]
+    },
+    {
+      "id": "proxy-json-mode-loss-tool-results-recovery-92643a",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate JSON mode loss during tool result processing",
+      "description": "Investigate whether the model loses JSON tool-call mode when receiving complex tool results and fails to issue the follow-up tool call in the expected format.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Investigation complete with fixes applied if JSON mode loss is confirmed during tool result parsing."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-final-answer-identity-drift-74b153",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate final-answer identity drift for specific subagent queries",
+      "description": "Review final-answer extraction logs to determine if Claude Code specific subagent queries trigger identity drift (Notion persona leakage) right at the end of the multi-turn session.",
+      "allowed_paths": [
+        "internal/proxy/claude_code_final_answer_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests added to verify final-answer extraction doesn't suffer from identity drift for subagent queries."
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-tool-call-loss-55378a",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Test session recovery mechanism under tool-call loss conditions",
+      "description": "Validate that the session recovery mechanism (clean retry) functions correctly when a tool-call refusal or JSON mode loss triggers a retry on the next account.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_recovery_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Session recovery logic tested for scenarios involving tool-call refusal and JSON mode loss."
       ]
     }
   ]

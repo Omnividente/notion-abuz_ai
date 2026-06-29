@@ -564,6 +564,18 @@ func normalizeToolBridgeResidualText(text string) string {
 		return ""
 	}
 	trimmed = strings.TrimSpace(structuredOutputLeadingTagRegex.ReplaceAllString(trimmed, ""))
+
+	// If the model loses JSON tool-call mode and writes text or refusal inside a JSON structure
+	mdMatches := mdFenceRegex.FindAllStringSubmatch(trimmed, -1)
+	for _, match := range mdMatches {
+		var dummy map[string]interface{}
+		if err := json.Unmarshal([]byte(match[1]), &dummy); err == nil {
+			if errStr, ok := dummy["error"].(string); ok {
+				trimmed = trimmed + "\n" + errStr
+			}
+		}
+	}
+
 	return trimmed
 }
 

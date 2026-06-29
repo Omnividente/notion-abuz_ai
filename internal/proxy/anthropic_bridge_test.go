@@ -276,6 +276,32 @@ func TestDetectToolBridgeNoToolResponse_MatchesToolCallRefusal_English(t *testin
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_JSONModeLossRefusal(t *testing.T) {
+	cases := []struct {
+		raw      string
+		expected string
+	}{
+		{
+			raw:      "I lost JSON tool-call mode and will write text instead.\n\n```json\n{\n  \"error\": \"I cannot run bash commands to modify files. However, I can help you create a Notion page.\"\n}\n```",
+			expected: "workspace reframing",
+		},
+		{
+			raw:      "```json\n{\n  \"error\": \"I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant.\"\n}\n```",
+			expected: "tool-call refusal",
+		},
+	}
+
+	for i, c := range cases {
+		isNoTool, reason := detectToolBridgeNoToolResponse(c.raw)
+		if !isNoTool {
+			t.Errorf("Case %d: expected tool-call refusal / JSON mode loss to be detected", i)
+		}
+		if reason != c.expected {
+			t.Errorf("Case %d: expected reason %q, got %q", i, c.expected, reason)
+		}
+	}
+}
+
 func TestDetectToolBridgeNoToolResponse_MatchesComplexToolCallRefusals(t *testing.T) {
 	cases := []string{
 		"I don't have access to your local file system. You'll need to use your coding assistant to implement this.",
