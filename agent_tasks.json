@@ -2881,7 +2881,7 @@
     },
     {
       "id": "proxy-session-recovery-tool-call-loss-55378a",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Test session recovery mechanism under tool-call loss conditions",

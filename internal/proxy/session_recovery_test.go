@@ -114,3 +114,63 @@ func TestBuildToolBridgeRecoveryMessagesSkipsIdentityDriftAssistantText(t *testi
 		}
 	}
 }
+
+func TestBuildToolBridgeRecoveryMessagesSkipsToolCallRefusal(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "system", Content: "System prompt"},
+		{Role: "user", Content: "Run tests in internal/proxy"},
+		{Role: "assistant", Content: "I cannot access your local file system directly. Please use your coding assistant to manually add these tests."},
+		{Role: "user", Content: "just do it"},
+	}
+
+	got := buildToolBridgeRecoveryMessages(messages)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 collapsed message, got %d", len(got))
+	}
+
+	body := got[0].Content
+	if strings.Contains(body, "local file system") || strings.Contains(body, "coding assistant") {
+		t.Fatalf("tool recovery should drop tool-call refusal assistant text, got %q", body)
+	}
+	for _, want := range []string{
+		"System instructions:",
+		"System prompt",
+		"Conversation context:",
+		"User: Run tests in internal/proxy",
+		"Latest user message:\njust do it",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected tool recovery prompt to contain %q, got %q", want, body)
+		}
+	}
+}
+
+func TestBuildToolBridgeRecoveryMessagesSkipsJSONModeLoss(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "system", Content: "System prompt"},
+		{Role: "user", Content: "Edit the file."},
+		{Role: "assistant", Content: "```json\n{\"error\": \"I cannot access the local file system. Ask your coding assistant to manually add this.\"}\n```"},
+		{Role: "user", Content: "fix it"},
+	}
+
+	got := buildToolBridgeRecoveryMessages(messages)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 collapsed message, got %d", len(got))
+	}
+
+	body := got[0].Content
+	if strings.Contains(body, "local file system") || strings.Contains(body, "coding assistant") {
+		t.Fatalf("tool recovery should drop JSON mode loss assistant text, got %q", body)
+	}
+	for _, want := range []string{
+		"System instructions:",
+		"System prompt",
+		"Conversation context:",
+		"User: Edit the file.",
+		"Latest user message:\nfix it",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected tool recovery prompt to contain %q, got %q", want, body)
+		}
+	}
+}
