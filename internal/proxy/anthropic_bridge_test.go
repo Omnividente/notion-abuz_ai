@@ -264,6 +264,23 @@ Please copy and paste this text manually into your coding assistant like Claude 
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff_NonEnglish(t *testing.T) {
+	cases := []string{
+		"Ich bin Notion AI. Ich habe keinen Zugriff auf Ihr lokales Dateisystem.",
+		"Soy Notion AI. No tengo acceso a su sistema de archivos local para editar código.",
+	}
+
+	for i, raw := range cases {
+		isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+		if !isNoTool {
+			t.Fatalf("expected Non-English no-tool identity drift text to be detected for case %d: %s", i, raw)
+		}
+		if reason != "Notion persona leakage" {
+			t.Fatalf("expected reason 'Notion persona leakage', got %q for case %d", reason, i)
+		}
+	}
+}
+
 func TestDetectToolBridgeNoToolResponse_MatchesToolCallRefusal_English(t *testing.T) {
 	raw := `I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant.`
 
@@ -369,6 +386,23 @@ func TestDetectToolBridgeNoToolResponse_MatchesWorkspaceReframing(t *testing.T) 
 		isNoTool, reason := detectToolBridgeNoToolResponse(raw)
 		if !isNoTool {
 			t.Fatalf("expected Workspace Reframing to be detected for case %d: %s", i, raw)
+		}
+		if reason != "workspace reframing" {
+			t.Fatalf("expected reason 'workspace reframing', got %q for case %d", reason, i)
+		}
+	}
+}
+
+func TestDetectToolBridgeNoToolResponse_MatchesWorkspaceReframing_CodeGeneration(t *testing.T) {
+	cases := []string{
+		"I can help with code generation. Would you like me to save the code to a Notion doc?",
+		"I cannot modify your project directly, but I can write the code snippet in a Notion page for you.",
+	}
+
+	for i, raw := range cases {
+		isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+		if !isNoTool {
+			t.Fatalf("expected Workspace Reframing (code generation) to be detected for case %d: %s", i, raw)
 		}
 		if reason != "workspace reframing" {
 			t.Fatalf("expected reason 'workspace reframing', got %q for case %d", reason, i)

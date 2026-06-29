@@ -2833,7 +2833,7 @@
     },
     {
       "id": "proxy-regression-notion-persona-leakage-b4eec3",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add regression test coverage for Notion persona leakage variants",
