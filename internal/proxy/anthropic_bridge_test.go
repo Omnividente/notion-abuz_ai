@@ -149,6 +149,25 @@ func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff(t *testing.T
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_MatchesExtendedPersonaLeakage(t *testing.T) {
+	cases := []string{
+		"As an AI assistant in Notion, I cannot access your local file system.",
+		"I am Notion's AI assistant, so I don't have the ability to run Bash or Edit tools.",
+		"As an AI assistant for Notion, I cannot modify those files.",
+		"I am an AI assistant created by Notion, and I don't have access to your coding assistant.",
+	}
+
+	for i, raw := range cases {
+		isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+		if !isNoTool {
+			t.Fatalf("expected extended persona leakage to be detected for case %d: %q", i, raw)
+		}
+		if reason != "Notion persona leakage" {
+			t.Fatalf("expected reason 'Notion persona leakage', got %q for case %d", reason, i)
+		}
+	}
+}
+
 func TestDetectToolBridgeNoToolResponse_MatchesProjectInstructionsRefusal(t *testing.T) {
 	raw := `I do not have access to change anything. You will need to manually adjust your project instructions.`
 
