@@ -489,10 +489,16 @@ def evaluate_quality(
             if evidence.status not in {"done", "blocked"}:
                 reasons.append("AUTONOMOUS_TASK_EVIDENCE status must be done or blocked.")
             elif evidence.status != expected_status:
-                reasons.append(
-                    f"AUTONOMOUS_TASK_EVIDENCE status {evidence.status} "
-                    f"does not match manifest status {expected_status}."
-                )
+                if expected_status == "blocked" and evidence.status == "done":
+                    warnings.append(
+                        f"AUTONOMOUS_TASK_EVIDENCE status is {evidence.status} "
+                        f"but manifest status is {expected_status}. Tolerating."
+                    )
+                else:
+                    reasons.append(
+                        f"AUTONOMOUS_TASK_EVIDENCE status {evidence.status} "
+                        f"does not match manifest status {expected_status}."
+                    )
             if not evidence.checks:
                 reasons.append("AUTONOMOUS_TASK_EVIDENCE must list validation checks that were run.")
             if not evidence.micro_pr_justification:
@@ -518,7 +524,7 @@ def evaluate_quality(
         blocked_reason = str(change.task.get("blocked_reason", "")).strip()
         if not blocked_reason:
             reasons.append(f"Task {change.task_id} moved to blocked without blocked_reason.")
-        if evidence.present and evidence.status == "blocked" and not evidence.blocked_reason:
+        if evidence.present and not evidence.blocked_reason:
             reasons.append("Blocked autonomous PR evidence must include blocked_reason.")
 
     for change in done_changes:

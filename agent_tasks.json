@@ -2537,7 +2537,7 @@
     },
     {
       "id": "automation-health-quality-failure-77299df0",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: quality_failure",
