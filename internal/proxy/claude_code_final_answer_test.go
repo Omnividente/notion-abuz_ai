@@ -1,12 +1,10 @@
 package proxy
 
 import (
-	"strings"
 	"bytes"
-	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -96,9 +94,14 @@ func TestRefusalTextRejection_SubagentFinalAnswer(t *testing.T) {
 }
 
 func TestDoneTextIdentityDrift_DetectionRuntime(t *testing.T) {
+	// We use the global log interceptor used by other proxy tests instead of setting os.Stderr manually
+	// to prevent conflict with TestDebugLoggingToggle and TestRequestLogging in CI
 	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer log.SetOutput(os.Stderr)
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+	}()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-ndjson")
