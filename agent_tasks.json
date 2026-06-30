@@ -3166,7 +3166,8 @@
     },
     {
       "id": "proxy-investigate-streaming-tool-call-loss-8cc7b17d",
-      "status": "todo",
+      "status": "blocked",
+      "blocked_reason": "The target file internal/proxy/anthropic_stream.go does not exist. The relevant streaming logic is located in internal/proxy/anthropic.go, which is outside the allowed_paths constraint.",
       "area": "proxy",
       "risk": "low",
       "title": "Investigate unhandled edge cases in streaming JSON tool-call mode loss",
