@@ -689,3 +689,26 @@ func TestClaudeCodeAgentLoop_RealisticReadEditTestFinalize(t *testing.T) {
 		t.Errorf("Valid JSON final answer was incorrectly flagged as tool-bridge refusal")
 	}
 }
+
+func TestBuildSessionChainFollowUp_DiffContextPreservation(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: `Results from executed function(s):
+[Replace]: <<<<<<< SEARCH
+Original request: "this is from code diff"
+=======
+Original request: "this is replaced"
+>>>>>>> REPLACE
+
+Original request: "this is the real original request"
+Available functions:
+- Bash(command: str)`},
+	}
+
+	result := buildSessionChainFollowUp(messages, "- Bash(command: str)", "")
+
+	content := result[0].Content
+
+	if !strings.Contains(content, "Original request: \"this is the real original request\"") {
+		t.Errorf("failed to extract the true original request. got content: %s", content)
+	}
+}

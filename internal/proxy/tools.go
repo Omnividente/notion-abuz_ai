@@ -1118,10 +1118,12 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 		m := messages[i]
 		if m.Role == "user" && !strings.Contains(m.Content, "<available-deferred-tools>") {
 			// If this is an existing follow-up, it might already contain the embedded Original request
-			if strings.Contains(m.Content, "Original request: \"") {
-				parts := strings.Split(m.Content, "Original request: \"")
-				if len(parts) > 1 {
-					extracted := strings.Split(parts[1], "\"")[0]
+			lastIndex := strings.LastIndex(m.Content, "Original request: \"")
+			if lastIndex != -1 {
+				start := lastIndex + len("Original request: \"")
+				end := strings.Index(m.Content[start:], "\"")
+				if end != -1 {
+					extracted := m.Content[start : start+end]
 					if extracted != "" {
 						originalQuery = extracted
 						break
