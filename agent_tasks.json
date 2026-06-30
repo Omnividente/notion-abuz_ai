@@ -2949,7 +2949,7 @@
     },
     {
       "id": "proxy-claude-code-instruction-preservation-b0853a59",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add diagnostic coverage for instruction preservation during session handoff",

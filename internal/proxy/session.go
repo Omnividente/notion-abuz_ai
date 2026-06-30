@@ -313,6 +313,14 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		return messages
 	}
 
+	firstUserIdx := -1
+	for i := 0; i < len(messages); i++ {
+		if isMeaningfulUserMessage(messages[i]) {
+			firstUserIdx = i
+			break
+		}
+	}
+
 	clip := func(s string, limit int) string {
 		if limit <= 0 || len([]rune(s)) <= limit {
 			return s
@@ -333,6 +341,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 	}
 
 	var reversed []historyEntry
+	preservedFirstUser := false
 	usedChars := 0
 	for i := lastUserIdx - 1; i >= 0; i-- {
 		m := messages[i]
@@ -374,7 +383,12 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		}
 		usedChars += entryCost
 		reversed = append(reversed, historyEntry{label: label, content: content})
+		if i == firstUserIdx {
+			preservedFirstUser = true
+		}
 	}
+
+	log.Printf("[bridge] diagnostic: instruction preservation during handoff - first user message included: %v, used chars: %d", preservedFirstUser, usedChars)
 
 	var history strings.Builder
 	for i := len(reversed) - 1; i >= 0; i-- {
