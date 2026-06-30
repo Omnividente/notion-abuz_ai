@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-// TestBuildSessionChainFollowUp verifies that the session-based chain follow-up
+// TestBuildSessionChainContinuation verifies that the session-based chain continuation
 // builds a concise message with only the latest tool results.
-func TestBuildSessionChainFollowUp(t *testing.T) {
+func TestBuildSessionChainContinuation(t *testing.T) {
 	messages := []ChatMessage{
 		{Role: "user", Content: "list files in the current directory"},
 		{Role: "assistant", Content: "I'll help with that.", ToolCalls: []ToolCall{
@@ -21,7 +21,7 @@ func TestBuildSessionChainFollowUp(t *testing.T) {
 	}
 
 	compactList := "- Bash(command: str) — Execute shell command\n- Read(file_path: str) — Read a file\n"
-	result := buildSessionChainFollowUp(messages, compactList, "/home/user/project")
+	result := buildSessionChainContinuation(messages, compactList, "/home/user/project")
 
 	if len(result) != 1 {
 		t.Fatalf("expected 1 message, got %d", len(result))
@@ -33,29 +33,29 @@ func TestBuildSessionChainFollowUp(t *testing.T) {
 	content := result[0].Content
 	// Should contain tool results
 	if !strings.Contains(content, "[Bash]: file1.txt") {
-		t.Errorf("expected tool results in follow-up, got: %s", content)
+		t.Errorf("expected tool results in continuation, got: %s", content)
 	}
 	// Should contain CWD
 	if !strings.Contains(content, "Working directory: /home/user/project") {
-		t.Errorf("expected CWD in follow-up, got: %s", content)
+		t.Errorf("expected CWD in continuation, got: %s", content)
 	}
 	// Should contain available functions
 	if !strings.Contains(content, "Available functions:") {
-		t.Errorf("expected function list in follow-up, got: %s", content)
+		t.Errorf("expected function list in continuation, got: %s", content)
 	}
 	// Should contain __done__
 	if !strings.Contains(content, "__done__") {
-		t.Errorf("expected __done__ in follow-up, got: %s", content)
+		t.Errorf("expected __done__ in continuation, got: %s", content)
 	}
 	// Note: We now actively include the original query to prevent tool-result continuation loss,
 	// where Notion's system prompt would otherwise override the thread's coding context.
 	if !strings.Contains(content, "list files in the current directory") {
-		t.Errorf("follow-up should include the original query to preserve coding intent")
+		t.Errorf("continuation should include the original query to preserve coding intent")
 	}
 }
 
-// TestBuildSessionChainFollowUp_MultipleToolResults verifies handling of parallel tool calls.
-func TestBuildSessionChainFollowUp_MultipleToolResults(t *testing.T) {
+// TestBuildSessionChainContinuation_MultipleToolResults verifies handling of parallel tool calls.
+func TestBuildSessionChainContinuation_MultipleToolResults(t *testing.T) {
 	messages := []ChatMessage{
 		{Role: "user", Content: "check both files"},
 		{Role: "assistant", Content: "I'll read both.", ToolCalls: []ToolCall{
@@ -66,7 +66,7 @@ func TestBuildSessionChainFollowUp_MultipleToolResults(t *testing.T) {
 		{Role: "tool", ToolCallID: "call_2", Name: "Read", Content: "content of b"},
 	}
 
-	result := buildSessionChainFollowUp(messages, "- Read(file_path: str)\n", "")
+	result := buildSessionChainContinuation(messages, "- Read(file_path: str)\n", "")
 
 	content := result[0].Content
 	if !strings.Contains(content, "[Read]: content of a") {
@@ -77,8 +77,8 @@ func TestBuildSessionChainFollowUp_MultipleToolResults(t *testing.T) {
 	}
 }
 
-// TestBuildSessionChainFollowUp_TruncatesLargeOutput verifies truncation of large tool output.
-func TestBuildSessionChainFollowUp_TruncatesLargeOutput(t *testing.T) {
+// TestBuildSessionChainContinuation_TruncatesLargeOutput verifies truncation of large tool output.
+func TestBuildSessionChainContinuation_TruncatesLargeOutput(t *testing.T) {
 	largeOutput := strings.Repeat("x", 5000)
 	messages := []ChatMessage{
 		{Role: "user", Content: "read large file"},
@@ -88,7 +88,7 @@ func TestBuildSessionChainFollowUp_TruncatesLargeOutput(t *testing.T) {
 		{Role: "tool", ToolCallID: "call_1", Name: "Read", Content: largeOutput},
 	}
 
-	result := buildSessionChainFollowUp(messages, "- Read(file_path: str)\n", "")
+	result := buildSessionChainContinuation(messages, "- Read(file_path: str)\n", "")
 
 	content := result[0].Content
 	if !strings.Contains(content, "... (truncated)") {
@@ -96,11 +96,11 @@ func TestBuildSessionChainFollowUp_TruncatesLargeOutput(t *testing.T) {
 	}
 	// Should be well under the original 5000 chars
 	if len(content) > 4500 {
-		t.Errorf("follow-up too large: %d chars (expected < 4500)", len(content))
+		t.Errorf("continuation too large: %d chars (expected < 4500)", len(content))
 	}
 }
 
-func TestBuildSessionChainFollowUp_ReadOversizeGuard(t *testing.T) {
+func TestBuildSessionChainContinuation_ReadOversizeGuard(t *testing.T) {
 	messages := []ChatMessage{
 		{Role: "user", Content: "检查为什么 copy 按钮不显示"},
 		{Role: "assistant", Content: "I'll inspect the file.", ToolCalls: []ToolCall{
@@ -109,14 +109,14 @@ func TestBuildSessionChainFollowUp_ReadOversizeGuard(t *testing.T) {
 		{Role: "tool", ToolCallID: "call_1", Name: "Read", Content: "File content (31582 tokens) exceeds maximum allowed tokens (10000). Use offset and limit parameters to read specific portions of the file."},
 	}
 
-	result := buildSessionChainFollowUp(messages, "- Read(file_path: str, offset?: num, limit?: num)\n- Grep(pattern: str)\n", "")
+	result := buildSessionChainContinuation(messages, "- Read(file_path: str, offset?: num, limit?: num)\n- Grep(pattern: str)\n", "")
 	content := result[0].Content
 	if !strings.Contains(content, "Do NOT repeat the same full-file Read") {
-		t.Fatalf("expected oversize read guard in follow-up, got: %s", content)
+		t.Fatalf("expected oversize read guard in continuation, got: %s", content)
 	}
 }
 
-func TestBuildSessionChainFollowUp_LostOriginalQueryLog(t *testing.T) {
+func TestBuildSessionChainContinuation_LostOriginalQueryLog(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 	defer log.SetOutput(os.Stderr)
@@ -129,7 +129,7 @@ func TestBuildSessionChainFollowUp_LostOriginalQueryLog(t *testing.T) {
 		{Role: "tool", ToolCallID: "call_1", Name: "Read", Content: "data"},
 	}
 
-	_ = buildSessionChainFollowUp(messages, "- Read(file_path: str)\n", "")
+	_ = buildSessionChainContinuation(messages, "- Read(file_path: str)\n", "")
 
 	logOutput := buf.String()
 	if !strings.Contains(logOutput, "[bridge] decision: original_query state lost during multi-turn tool result continuation") {
@@ -374,17 +374,17 @@ func TestClaudeCodeAgentLoop_MultipleToolCallsContinuation(t *testing.T) {
 		t.Errorf("expected 4 non-system messages, got %d", rawMsgCount)
 	}
 
-	followUp := buildSessionChainFollowUp(msgs, "Read", "")
-	if len(followUp) != 1 {
-		t.Fatalf("expected 1 follow up, got %d", len(followUp))
+	continuationMessage := buildSessionChainContinuation(msgs, "Read", "")
+	if len(continuationMessage) != 1 {
+		t.Fatalf("expected 1 follow up, got %d", len(continuationMessage))
 	}
-	content := followUp[0].Content
+	content := continuationMessage[0].Content
 
 	if !strings.Contains(content, "[Read]: content A") {
-		t.Errorf("expected followUp to contain first tool result")
+		t.Errorf("expected continuationMessage to contain first tool result")
 	}
 	if !strings.Contains(content, "[Read]: content B") {
-		t.Errorf("expected followUp to contain second tool result")
+		t.Errorf("expected continuationMessage to contain second tool result")
 	}
 }
 
@@ -410,7 +410,7 @@ func TestInjectToolsSessionVsLegacy(t *testing.T) {
 		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "main.go\ntools.go\nserver.go"},
 	}
 
-	// With session: should use session-based follow-up (shorter, no original query)
+	// With session: should use session-based continuation (shorter, no original query)
 	session := &Session{TurnCount: 1, RawMessageCount: 1}
 	resultWithSession := injectToolsIntoMessages(messages, tools, "claude-sonnet-4-20250514", session)
 
@@ -439,7 +439,7 @@ func TestInjectToolsSessionVsLegacy(t *testing.T) {
 }
 
 // TestClaudeCodeAgentLoop_MultiTurnReadEditTest verifies that a multi-turn
-// agentic loop simulating Read -> Edit -> Test tools properly generates session follow-ups
+// agentic loop simulating Read -> Edit -> Test tools properly generates session continuations
 // without including Notion persona leakage or losing intent.
 func TestClaudeCodeAgentLoop_MultiTurnReadEditTest(t *testing.T) {
 	messages := []ChatMessage{
@@ -458,25 +458,25 @@ func TestClaudeCodeAgentLoop_MultiTurnReadEditTest(t *testing.T) {
 		{Role: "tool", Name: "Bash", ToolCallID: "call_3", Content: "PASS\nok  test.go\t0.001s"},
 	}
 
-	followUp := buildSessionChainFollowUp(messages, "Bash, Read, Edit", "")
+	continuationMessage := buildSessionChainContinuation(messages, "Bash, Read, Edit", "")
 
-	if len(followUp) != 1 {
-		t.Fatalf("expected 1 follow-up message, got %d", len(followUp))
+	if len(continuationMessage) != 1 {
+		t.Fatalf("expected 1 continuation message, got %d", len(continuationMessage))
 	}
-	content := followUp[0].Content
+	content := continuationMessage[0].Content
 
-	// Verify that only the latest tool result is included in the follow-up.
+	// Verify that only the latest tool result is included in the continuation.
 	if strings.Contains(content, "[Read]: func TestA()") {
-		t.Errorf("follow-up should not contain earlier Read tool result")
+		t.Errorf("continuation should not contain earlier Read tool result")
 	}
 	if strings.Contains(content, "[Edit]: File updated") {
-		t.Errorf("follow-up should not contain earlier Edit tool result")
+		t.Errorf("continuation should not contain earlier Edit tool result")
 	}
 	if !strings.Contains(content, "[Bash]: PASS") {
-		t.Errorf("follow-up should contain the latest Bash tool result, got: %s", content)
+		t.Errorf("continuation should contain the latest Bash tool result, got: %s", content)
 	}
 	if strings.Contains(content, "Notion AI") {
-		t.Errorf("follow-up should not contain Notion persona leakage")
+		t.Errorf("continuation should not contain Notion persona leakage")
 	}
 }
 
@@ -489,12 +489,12 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationPreservesIntent(t *testing.T)
 		{Role: "tool", Name: "Grep", ToolCallID: "call_1", Content: "login.go:10: func Login() {}"},
 	}
 
-	followUp := buildSessionChainFollowUp(messages, "Grep", "")
-	if len(followUp) != 1 {
+	continuationMessage := buildSessionChainContinuation(messages, "Grep", "")
+	if len(continuationMessage) != 1 {
 		t.Fatalf("expected 1 follow up")
 	}
 
-	content := followUp[0].Content
+	content := continuationMessage[0].Content
 	// Must contain the original request
 	if !strings.Contains(content, "Find the bug in login and fix it.") {
 		t.Errorf("Continuation prompt did not preserve the original coding intent. Content: %s", content)
@@ -509,12 +509,12 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationPreservesIntent(t *testing.T)
 		ChatMessage{Role: "tool", Name: "Bash", ToolCallID: "call_2", Content: "login.go"},
 	)
 
-	followUp2 := buildSessionChainFollowUp(multiTurnMessages, "Grep, Bash", "")
-	if len(followUp2) != 1 {
+	continuationMessage2 := buildSessionChainContinuation(multiTurnMessages, "Grep, Bash", "")
+	if len(continuationMessage2) != 1 {
 		t.Fatalf("expected 1 follow up")
 	}
-	if !strings.Contains(followUp2[0].Content, "Find the bug in login and fix it.") {
-		t.Errorf("Continuation prompt did not preserve the original coding intent across multiple turns. Content: %s", followUp2[0].Content)
+	if !strings.Contains(continuationMessage2[0].Content, "Find the bug in login and fix it.") {
+		t.Errorf("Continuation prompt did not preserve the original coding intent across multiple turns. Content: %s", continuationMessage2[0].Content)
 	}
 }
 
@@ -531,12 +531,12 @@ func TestClaudeCodeAgentLoop_FinalAnswerAvoidsNotionPersona(t *testing.T) {
 		{Role: "tool", Name: "Bash", ToolCallID: "call_2", Content: "PASS"},
 	}
 
-	followUp := buildSessionChainFollowUp(messages, "Read, Bash", "")
-	if len(followUp) != 1 {
+	continuationMessage := buildSessionChainContinuation(messages, "Read, Bash", "")
+	if len(continuationMessage) != 1 {
 		t.Fatalf("expected 1 follow up")
 	}
 
-	content := followUp[0].Content
+	content := continuationMessage[0].Content
 
 	// Must have the `__done__` directive for final answers
 	if !strings.Contains(content, "__done__") {
@@ -578,12 +578,12 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationComplexMarkdown(t *testing.T)
 		{Role: "tool", Name: "Read", ToolCallID: "call_1", Content: longMarkdown},
 	}
 
-	followUp := buildSessionChainFollowUp(messages, "Read", "")
-	if len(followUp) != 1 {
+	continuationMessage := buildSessionChainContinuation(messages, "Read", "")
+	if len(continuationMessage) != 1 {
 		t.Fatalf("expected 1 follow up")
 	}
 
-	content := followUp[0].Content
+	content := continuationMessage[0].Content
 
 	if !strings.Contains(content, "[Read]: # Title") {
 		t.Errorf("Expected markdown title to be present")
@@ -592,7 +592,7 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationComplexMarkdown(t *testing.T)
 		t.Errorf("Expected long tool output to be truncated")
 	}
 	if len(content) > 5000 {
-		t.Errorf("Follow-up prompt should be constrained in size, got %d chars", len(content))
+		t.Errorf("Continuation prompt should be constrained in size, got %d chars", len(content))
 	}
 }
 
@@ -611,19 +611,19 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationInterleaved(t *testing.T) {
 		{Role: "tool", Name: "Read", ToolCallID: "call_2", Content: "content of bar.go"},
 	}
 
-	followUp := buildSessionChainFollowUp(messages, "Grep, Read", "")
-	if len(followUp) != 1 {
+	continuationMessage := buildSessionChainContinuation(messages, "Grep, Read", "")
+	if len(continuationMessage) != 1 {
 		t.Fatalf("expected 1 follow up")
 	}
 
-	content := followUp[0].Content
+	content := continuationMessage[0].Content
 
 	// Should only include the latest tool results after the last assistant message
 	if strings.Contains(content, "[Grep]: found foo in bar.go") {
-		t.Errorf("Follow-up should not contain earlier Grep tool result")
+		t.Errorf("Continuation should not contain earlier Grep tool result")
 	}
 	if !strings.Contains(content, "[Read]: content of bar.go") {
-		t.Errorf("Follow-up should contain the latest Read tool result")
+		t.Errorf("Continuation should contain the latest Read tool result")
 	}
 }
 
@@ -655,31 +655,31 @@ func TestClaudeCodeAgentLoop_RealisticReadEditTestFinalize(t *testing.T) {
 		{Role: "tool", Name: "Bash", ToolCallID: "call_4", Content: "PASS\nok\trouter\t0.002s"},
 	}
 
-	followUp := buildSessionChainFollowUp(messages, "Read, Bash, Edit", "")
-	if len(followUp) != 1 {
-		t.Fatalf("expected 1 follow up message, got %d", len(followUp))
+	continuationMessage := buildSessionChainContinuation(messages, "Read, Bash, Edit", "")
+	if len(continuationMessage) != 1 {
+		t.Fatalf("expected 1 follow up message, got %d", len(continuationMessage))
 	}
-	content := followUp[0].Content
+	content := continuationMessage[0].Content
 
 	// Ensure earlier tool results are dropped (only latest tool block applies)
 	if strings.Contains(content, "[Read]: func Router()") {
-		t.Errorf("follow-up should not contain earlier Read result")
+		t.Errorf("continuation should not contain earlier Read result")
 	}
 	if strings.Contains(content, "FAIL: Expected 200, got 404") {
-		t.Errorf("follow-up should not contain the earlier failing Bash result")
+		t.Errorf("continuation should not contain the earlier failing Bash result")
 	}
 	if strings.Contains(content, "[Edit]: File updated") {
-		t.Errorf("follow-up should not contain the earlier Edit result")
+		t.Errorf("continuation should not contain the earlier Edit result")
 	}
 
 	// Ensure the latest tool result is included
 	if !strings.Contains(content, "[Bash]: PASS") {
-		t.Errorf("follow-up should contain the latest passing Bash result")
+		t.Errorf("continuation should contain the latest passing Bash result")
 	}
 
 	// Verify that final-answer instructions are included so the model knows how to conclude
 	if !strings.Contains(content, "__done__") {
-		t.Errorf("follow-up must include __done__ instruction to properly end the loop")
+		t.Errorf("continuation must include __done__ instruction to properly end the loop")
 	}
 
 	// Final verification that final answer mode works and isn't flagged as drift
@@ -690,7 +690,7 @@ func TestClaudeCodeAgentLoop_RealisticReadEditTestFinalize(t *testing.T) {
 	}
 }
 
-func TestBuildSessionChainFollowUp_DiffContextPreservation(t *testing.T) {
+func TestBuildSessionChainContinuation_DiffContextPreservation(t *testing.T) {
 	messages := []ChatMessage{
 		{Role: "user", Content: `Results from executed function(s):
 [Replace]: <<<<<<< SEARCH
@@ -704,7 +704,7 @@ Available functions:
 - Bash(command: str)`},
 	}
 
-	result := buildSessionChainFollowUp(messages, "- Bash(command: str)", "")
+	result := buildSessionChainContinuation(messages, "- Bash(command: str)", "")
 
 	content := result[0].Content
 

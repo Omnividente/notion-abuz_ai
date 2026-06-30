@@ -545,7 +545,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 	// so a separate system message would just bloat the user message anyway.
 	useLargeToolSet := len(tools) > 5
 
-	// For multi-turn chain continuation: compact tool list for re-injection in follow-ups
+	// For multi-turn chain continuation: compact tool list for re-injection in continuations
 	var chainCompactList string
 
 	if useLargeToolSet {
@@ -616,7 +616,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 		// "Unit test" framing works when the tool list is small (proven by curl with 6 tools).
 		coreTools := filterCoreTools(tools)
 		compactList := buildCompactToolList(coreTools)
-		chainCompactList = compactList // saved for chain continuation in follow-ups
+		chainCompactList = compactList // saved for chain continuation in continuations
 		if lastUserIdx >= 0 {
 		}
 		log.Printf("[bridge] large tool set: %d→%d core tools, compact %d chars",
@@ -630,10 +630,10 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 			// ── Session-based multi-turn (preferred) ──
 			// When we have a valid session, the Notion thread already holds full context
 			// from previous turns (the "unit test" framing, model's JSON response, etc.).
-			// We only need to send a concise follow-up with latest tool results.
+			// We only need to send a concise continuation with latest tool results.
 			// This is sent as a partial transcript via CallInference, preserving full context.
 			if session != nil && session.TurnCount > 0 {
-				return buildSessionChainFollowUp(messages, compactList, extractedCwd)
+				return buildSessionChainContinuation(messages, compactList, extractedCwd)
 			}
 
 			reason := "session is nil"
@@ -643,7 +643,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 			log.Printf("[bridge] chain: falling back from session to legacy collapse (reason: %s)", reason)
 
 			// ── Legacy collapse (no session): flatten multi-turn to single message ──
-			// Notion AI's 27k system prompt causes refusal on follow-up turns when
+			// Notion AI's 27k system prompt causes refusal on continuation turns when
 			// conversation history reveals the "unit test" framing. By collapsing
 			// everything into a single user message (same shape as turn 1), the model
 			// treats it as a fresh request and cooperates.
@@ -748,7 +748,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 			// Check for previous search context in assistant messages.
 			// When the proxy executed a WebSearch, the results were sent as text
 			// content blocks. Include a brief summary so the model can reference
-			// it for follow-up questions instead of claiming ignorance.
+			// it for continuation questions instead of claiming ignorance.
 			var prevSearchContext string
 			for i := len(messages) - 1; i >= 0; i-- {
 				m := messages[i]
@@ -859,7 +859,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 
 				// Find last assistant in result and replace with neutral text + results.
 				// Original assistant content may leak "unit test" framing details
-				// which causes the model to detect injection on the follow-up turn.
+				// which causes the model to detect injection on the continuation turn.
 				merged := false
 				for j := len(result) - 1; j >= 0; j-- {
 					if result[j].Role == "assistant" {
@@ -876,7 +876,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 							fallbackContent = fmt.Sprintf(
 								"Output:\n%s\n\nContinue. Available:\n%s\nFormat: {\"name\": \"function_name\", \"arguments\": {...}}",
 								summary, chainCompactList)
-							log.Printf("[bridge] chain: re-injected tool list in !merged follow-up (%d chars)", len(fallbackContent))
+							log.Printf("[bridge] chain: re-injected tool list in !merged continuation (%d chars)", len(fallbackContent))
 						} else {
 							fallbackContent = summary + "\n\nPlease summarize these results."
 						}
@@ -887,18 +887,18 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 					}
 				} else if i+1 >= len(messages) {
 					// Tool result is last message — allow chain continuation
-					var followUp string
+					var continuationMessage string
 					if chainCompactList != "" {
-						followUp = fmt.Sprintf(
+						continuationMessage = fmt.Sprintf(
 							"Output:\n%s\n\nContinue. Available:\n%s\nFormat: {\"name\": \"function_name\", \"arguments\": {...}}",
 							lastToolSummary, chainCompactList)
-						log.Printf("[bridge] chain: re-injected tool list in follow-up (%d chars)", len(followUp))
+						log.Printf("[bridge] chain: re-injected tool list in continuation (%d chars)", len(continuationMessage))
 					} else {
-						followUp = "Here is the output:\n\n" + lastToolSummary + "\n\nPresent this as a clean, concise summary."
+						continuationMessage = "Here is the output:\n\n" + lastToolSummary + "\n\nPresent this as a clean, concise summary."
 					}
 					result = append(result, ChatMessage{
 						Role:    "user",
-						Content: followUp,
+						Content: continuationMessage,
 					})
 				}
 			} else {
@@ -909,18 +909,18 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				}
 				pendingToolResults.WriteString(fmt.Sprintf("[Data from %s]:\n%s", toolName, msg.Content))
 				if i+1 >= len(messages) {
-					var haikuFollowUp string
+					var haikuContinuationMessage string
 					if chainCompactList != "" {
-						haikuFollowUp = fmt.Sprintf(
+						haikuContinuationMessage = fmt.Sprintf(
 							"Output:\n%s\n\nContinue. Available:\n%s\nFormat: {\"name\": \"function_name\", \"arguments\": {...}}",
 							pendingToolResults.String(), chainCompactList)
-						log.Printf("[bridge] chain(haiku): re-injected tool list in follow-up")
+						log.Printf("[bridge] chain(haiku): re-injected tool list in continuation")
 					} else {
-						haikuFollowUp = pendingToolResults.String() + "\n\nPlease summarize these results."
+						haikuContinuationMessage = pendingToolResults.String() + "\n\nPlease summarize these results."
 					}
 					result = append(result, ChatMessage{
 						Role:    "user",
-						Content: haikuFollowUp,
+						Content: haikuContinuationMessage,
 					})
 					pendingToolResults.Reset()
 				}
@@ -987,12 +987,12 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 	return result
 }
 
-// buildSessionChainFollowUp builds a concise follow-up message for session-based
+// buildSessionChainContinuation builds a concise continuation message for session-based
 // multi-turn chain continuation. Unlike the legacy collapse approach, this only
 // includes the latest tool results because the Notion thread already holds full
 // context from previous turns (the original "unit test" framing, the model's JSON
-// response, etc.). The follow-up is sent as a partial transcript via CallInference.
-func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd string) []ChatMessage {
+// response, etc.). The continuation is sent as a partial transcript via CallInference.
+func buildSessionChainContinuation(messages []ChatMessage, compactList string, cwd string) []ChatMessage {
 	// Build tool call ID → name map
 	tcMap := make(map[string]string)
 	for _, m := range messages {
@@ -1117,7 +1117,7 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 	for i := len(messages) - 1; i >= 0; i-- {
 		m := messages[i]
 		if m.Role == "user" && !strings.Contains(m.Content, "<available-deferred-tools>") {
-			// If this is an existing follow-up, it might already contain the embedded Original request
+			// If this is an existing continuation, it might already contain the embedded Original request
 			lastIndex := strings.LastIndex(m.Content, "Original request: \"")
 			if lastIndex != -1 {
 				start := lastIndex + len("Original request: \"")
@@ -1161,14 +1161,14 @@ func buildSessionChainFollowUp(messages []ChatMessage, compactList string, cwd s
 		queryContext = fmt.Sprintf("\nOriginal request: \"%s\"", originalQuery)
 	}
 
-	followUp := fmt.Sprintf(
+	continuationMessage := fmt.Sprintf(
 		"Results from executed function(s):\n%s\n\n%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.",
 		results.String(), cwdLine, readGuardLine, compactList, queryContext)
 
-	log.Printf("[bridge] session chain: follow-up for partial transcript (%d chars, %d tool results)",
-		len(followUp), resultCount)
+	log.Printf("[bridge] session chain: continuation for partial transcript (%d chars, %d tool results)",
+		len(continuationMessage), resultCount)
 
-	return []ChatMessage{{Role: "user", Content: followUp}}
+	return []ChatMessage{{Role: "user", Content: continuationMessage}}
 }
 
 // ──────────────────────────────────────────────────────────────────
