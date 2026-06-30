@@ -88,6 +88,9 @@ EVIDENCE_BLOCK_RE = re.compile(
     r"<!--\s*AUTONOMOUS_TASK_EVIDENCE\s*(?P<body>.*?)\s*-->",
     re.IGNORECASE | re.DOTALL,
 )
+FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
+INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+FOLLOWUP_WORD_RE = re.compile(r"(?i)(?<![A-Za-z0-9_])follow-?up(?![A-Za-z0-9_])")
 
 EVIDENCE_DIRECT_FIELDS = {
     "task_id",
@@ -344,6 +347,16 @@ def body_has_compromise(pr_title: str, pr_body: str) -> bool:
     return any(phrase in text for phrase in COMPROMISE_PHRASES)
 
 
+def strip_markdown_code(text: str) -> str:
+    without_fenced = FENCED_CODE_RE.sub(" ", text or "")
+    return INLINE_CODE_RE.sub(" ", without_fenced)
+
+
+def repeated_followup_mentions(pr_body: str) -> bool:
+    prose_body = strip_markdown_code(pr_body)
+    return len(FOLLOWUP_WORD_RE.findall(prose_body)) >= 2
+
+
 def normalize_evidence_key(key: str) -> str:
     normalized = key.strip().lower().replace("-", "_").replace(" ", "_")
     return EVIDENCE_SECTION_ALIASES.get(normalized, normalized)
@@ -481,7 +494,7 @@ def evaluate_quality(
 
     lower_body = pr_body.lower()
     if "automation-health-repeated-followup" not in lower_body:
-        if lower_body.count("follow-up") >= 2 or lower_body.count("followup") >= 2:
+        if repeated_followup_mentions(pr_body):
             reasons.append(
                 "PR body repeatedly mentions follow-up tasks. Complete the current task "
                 "fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive."

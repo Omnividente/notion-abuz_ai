@@ -162,6 +162,60 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
         self.assertEqual(decision.recommendation, "Autonomous PR quality gate passed.")
         self.assertTrue(decision.evidence["present"])
 
+    def test_followup_code_identifiers_do_not_trigger_repeated_followup_failure(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        body = "\n".join(
+            [
+                "Implemented context preservation in `buildSessionChainFollowUp`.",
+                "Added `TestBuildSessionChainFollowUp_DiffContextPreservation`.",
+                evidence_body("runtime-fix"),
+            ]
+        )
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=body,
+        )
+
+        self.assertTrue(decision.passed)
+        self.assertFalse(any("follow-up tasks" in reason for reason in decision.reasons))
+
+    def test_repeated_followup_prose_still_fails(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        body = "\n".join(
+            [
+                "The runtime change is included, but one follow-up remains for logs.",
+                "A second followup will handle remaining diagnostics.",
+                evidence_body("runtime-fix"),
+            ]
+        )
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=body,
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("follow-up tasks" in reason for reason in decision.reasons))
+
     def test_test_only_task_without_operational_claim_passes(self) -> None:
         before = manifest(
             [
