@@ -1425,6 +1425,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 									}
 								}
 								if isToolCall {
+									log.Printf("[bridge] robust JSON extraction: successfully extracted %d tool calls from unfenced JSON array format", len(arrayCall))
 									found = true
 									i = j + 1
 								}
@@ -1546,6 +1547,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 			}
 		}
 		if len(calls) > 0 {
+			log.Printf("[bridge] successfully extracted %d tool calls from JSON array format", len(calls))
 			return calls
 		}
 	}
