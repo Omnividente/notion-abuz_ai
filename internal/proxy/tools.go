@@ -1178,6 +1178,12 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 				originalQuery = strings.TrimSpace(originalQuery)
 			}
 
+			if originalQuery == "" {
+				if !strings.HasPrefix(m.Content, "Results from executed function(s):") && !strings.HasPrefix(m.Content, "Available functions:") {
+					originalQuery = strings.TrimSpace(m.Content)
+				}
+			}
+
 			// For very long queries, just take the first part
 			if len([]rune(originalQuery)) > 300 {
 				originalQuery = string([]rune(originalQuery)[:297]) + "..."

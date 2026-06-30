@@ -3012,7 +3012,7 @@
     },
     {
       "id": "diagnose-lost-session-state-570336e7",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Diagnose missing original query context in fallback scenarios",
