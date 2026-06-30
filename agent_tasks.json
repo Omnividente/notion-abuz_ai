@@ -2981,7 +2981,7 @@
     },
     {
       "id": "proxy-observability-bridge-decisions-session-multiturn-7b4c91",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add more descriptive logs for session multi-turn fallback",
@@ -3055,6 +3055,21 @@
       ],
       "acceptance": [
         "Tests added for unfenced JSON and code logic updated if needed."
+      ]
+    },
+    {
+      "id": "proxy-observability-bridge-decisions-session-multiturn-haiku-b2a72b67",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for multi-turn Haiku fallback logic",
+      "description": "Add coverage for the Haiku branch in buildSessionChainContinuation to ensure proper merging of tool results.",
+      "allowed_paths": [
+        "internal/proxy/session_multiturn_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test added for haiku multi-turn continuation in session_multiturn_test.go."
       ]
     }
   ]

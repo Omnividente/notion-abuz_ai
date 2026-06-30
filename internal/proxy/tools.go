@@ -879,6 +879,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 							log.Printf("[bridge] chain: re-injected tool list in !merged continuation (%d chars)", len(fallbackContent))
 						} else {
 							fallbackContent = summary + "\n\nPlease summarize these results."
+							log.Printf("[bridge] chain: using default fallback content without tool list in !merged continuation (%d chars)", len(fallbackContent))
 						}
 						result = append(result, ChatMessage{
 							Role:    "user",
@@ -895,6 +896,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 						log.Printf("[bridge] chain: re-injected tool list in continuation (%d chars)", len(continuationMessage))
 					} else {
 						continuationMessage = "Here is the output:\n\n" + lastToolSummary + "\n\nPresent this as a clean, concise summary."
+						log.Printf("[bridge] chain: using default continuation message without tool list (%d chars)", len(continuationMessage))
 					}
 					result = append(result, ChatMessage{
 						Role:    "user",
@@ -917,6 +919,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 						log.Printf("[bridge] chain(haiku): re-injected tool list in continuation")
 					} else {
 						haikuContinuationMessage = pendingToolResults.String() + "\n\nPlease summarize these results."
+						log.Printf("[bridge] chain(haiku): using default continuation message without tool list (%d chars)", len(haikuContinuationMessage))
 					}
 					result = append(result, ChatMessage{
 						Role:    "user",
