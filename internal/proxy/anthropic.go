@@ -1819,8 +1819,8 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
 		if !actionDetected {
 			if isNoTool {
-				if driftReason == "tool-call refusal" {
-					log.Printf("[bridge] %s decision: tool-call refusal explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
+				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" {
+					log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
 				} else {
 					log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
 				}
@@ -2124,8 +2124,8 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
 		if !actionDetected {
 			if isNoTool {
-				if driftReason == "tool-call refusal" {
-					log.Printf("[bridge] %s decision: tool-call refusal explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
+				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" {
+					log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
 				} else {
 					log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
 				}
