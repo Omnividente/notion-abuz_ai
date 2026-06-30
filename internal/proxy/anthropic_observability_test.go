@@ -65,7 +65,7 @@ func TestEnsureNotionPersonaLeakageLoggedAsDecision(t *testing.T) {
 	)
 
 	output := buf.String()
-	expectedLogFragment := "[bridge] req_test decision: Notion persona leakage detected"
+	expectedLogFragment := "[bridge] req_test decision: Notion persona leakage explicitly detected"
 	if !strings.Contains(output, expectedLogFragment) {
 		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
 	}

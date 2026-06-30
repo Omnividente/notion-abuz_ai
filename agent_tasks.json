@@ -3182,7 +3182,7 @@
     },
     {
       "id": "proxy-investigate-notion-persona-refusals-c198826c",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add detailed payload logging for Notion persona leakage",
@@ -3193,6 +3193,21 @@
       ],
       "acceptance": [
         "Notion persona leakage logs explicitly capture the detected payload."
+      ]
+    },
+    {
+      "id": "proxy-verify-upstream-notion-persona-leakage-response",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for verifying Notion persona leakage response logging",
+      "description": "Add additional test coverage in anthropic_observability_test.go to verify specific cases and edges for Notion persona leakage behavior.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_observability_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test correctly covers multiple edges of Notion persona leakage detection."
       ]
     }
   ]
