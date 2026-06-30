@@ -2933,7 +2933,7 @@
     },
     {
       "id": "proxy-claude-code-tool-result-diff-context-3edb4994",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate tool-result continuation loss across large diff contexts",
@@ -2961,6 +2961,22 @@
       ],
       "acceptance": [
         "Diagnostic coverage added to track instruction preservation during session handoff."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-json-mode-loss-continuation-a1b2c3",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate JSON mode loss on multi-turn context continuation",
+      "description": "Investigate if preserving multi-turn context without explicit instructions causes JSON mode loss in subsequent calls.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session_multiturn_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fix implemented or task blocked with missing offline reproduction details."
       ]
     }
   ]

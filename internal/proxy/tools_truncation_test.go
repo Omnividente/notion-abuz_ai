@@ -16,7 +16,7 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationLargeOutputTruncation(t *test
 		{Role: "tool", Name: "Bash", ToolCallID: "call_1", Content: longOutput},
 	}
 
-	followUp := buildSessionChainFollowUp(messages, "Bash", "")
+	followUp := buildSessionChainContinuation(messages, "Bash", "")
 	if len(followUp) != 1 {
 		t.Fatalf("expected 1 follow up")
 	}
@@ -45,7 +45,7 @@ func TestClaudeCodeAgentLoop_ToolResultContinuationMultibyteTruncation(t *testin
 		{Role: "tool", Name: "Bash", ToolCallID: "call_1", Content: longOutput},
 	}
 
-	followUp := buildSessionChainFollowUp(messages, "Bash", "")
+	followUp := buildSessionChainContinuation(messages, "Bash", "")
 	if len(followUp) != 1 {
 		t.Fatalf("expected 1 follow up")
 	}
