@@ -758,3 +758,24 @@ func TestBuildSessionChainContinuation_StrictJSONInstruction(t *testing.T) {
 		t.Errorf("expected strict JSON instruction in continuation, got: %s", content)
 	}
 }
+
+func TestBuildSessionChainContinuation_UnmatchedQueryFallback(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "this is a completely unmatched query context!"},
+		{Role: "assistant", Content: "Let's fix that.", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"echo"}`}},
+		}},
+		{Role: "tool", Name: "Bash", ToolCallID: "call_1", Content: "echo"},
+	}
+
+	continuationMessages := buildSessionChainContinuation(messages, "- Bash", "")
+
+	if len(continuationMessages) == 0 {
+		t.Fatal("expected continuation messages")
+	}
+
+	content := continuationMessages[0].Content
+	if !strings.Contains(content, "Original request: \"this is a completely unmatched query context!\"") {
+		t.Errorf("expected fallback to retain query, got:\n%s", content)
+	}
+}
