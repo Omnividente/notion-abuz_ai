@@ -1117,19 +1117,53 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 	for i := len(messages) - 1; i >= 0; i-- {
 		m := messages[i]
 		if m.Role == "user" && !strings.Contains(m.Content, "<available-deferred-tools>") {
+			// Helper to extract a string up to the matching closing quote, ignoring escaped quotes
+			extractUntilUnescapedQuote := func(s string) string {
+				var b strings.Builder
+				escapeNext := false
+				for i := 0; i < len(s); i++ {
+					c := s[i]
+					if escapeNext {
+						b.WriteByte(c)
+						escapeNext = false
+						continue
+					}
+					if c == '\\' {
+						b.WriteByte(c)
+						escapeNext = true
+						continue
+					}
+					if c == '"' {
+						break
+					}
+					b.WriteByte(c)
+				}
+				return b.String()
+			}
+
 			// If this is an existing continuation, it might already contain the embedded Original request
 			lastIndex := strings.LastIndex(m.Content, "Original request: \"")
 			if lastIndex != -1 {
 				start := lastIndex + len("Original request: \"")
-				end := strings.Index(m.Content[start:], "\"")
-				if end != -1 {
-					extracted := m.Content[start : start+end]
+				extracted := extractUntilUnescapedQuote(m.Content[start:])
+				if extracted != "" {
+					originalQuery = extracted
+					break
+				}
+			}
+
+			if originalQuery == "" {
+				lastInputIdx := strings.LastIndex(m.Content, "Input: \"")
+				if lastInputIdx != -1 {
+					start := lastInputIdx + len("Input: \"")
+					extracted := extractUntilUnescapedQuote(m.Content[start:])
 					if extracted != "" {
 						originalQuery = extracted
 						break
 					}
 				}
 			}
+
 			if originalQuery == "" {
 				// Extract just the core query text, stopping at things like "Available functions:" if re-entered
 				lines := strings.Split(m.Content, "\n")
