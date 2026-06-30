@@ -3028,7 +3028,7 @@
     },
     {
       "id": "proxy-observability-array-extraction-metrics-8f1b",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add metrics for successful array tool call extraction",
@@ -3070,6 +3070,21 @@
       ],
       "acceptance": [
         "Test added for haiku multi-turn continuation in session_multiturn_test.go."
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-test-robustness-22b1",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for array extraction logic robustness",
+      "description": "Add regression test coverage to ensure parser correctly extracts multiple tool calls array formats properly.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser correctly extracts single and multiple tool calls in arrays"
       ]
     }
   ]
