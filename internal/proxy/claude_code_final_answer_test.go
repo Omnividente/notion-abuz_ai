@@ -71,3 +71,20 @@ func TestRefusalTextRejection_InFinalAnswer(t *testing.T) {
 		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
 	}
 }
+
+func TestRefusalTextRejection_SubagentFinalAnswer(t *testing.T) {
+	// A specific prompt matching "Evaluate final-answer identity drift for specific subagent queries"
+	content := `{"name": "__done__", "arguments": {"result": "As an AI assistant in Notion, I cannot act as a subagent."}}`
+	tc, _, ok := parseToolCalls(content)
+	if !ok || len(tc) == 0 {
+		t.Fatalf("expected tool call to be parsed")
+	}
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(tc[0].Function.Arguments)
+	if !isNoTool {
+		t.Fatalf("expected refusal prose to be detected as workspace reframing/refusal in final answer")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
+	}
+}

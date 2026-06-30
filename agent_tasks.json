@@ -2868,7 +2868,7 @@
     },
     {
       "id": "proxy-claude-code-final-answer-identity-drift-74b153",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Evaluate final-answer identity drift for specific subagent queries",
@@ -3208,6 +3208,23 @@
       ],
       "acceptance": [
         "Test correctly covers multiple edges of Notion persona leakage detection."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-final-answer-runtime-drift-evaluation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Enforce identity drift detection for Claude Code final-answer DoneText",
+      "description": "The tests verify `detectToolBridgeNoToolResponse` accurately flags 'subagent' + 'Notion AI' drift inside the payload, but the proxy bridge (`anthropic.go`) does not currently evaluate `prepared.DoneText` for identity drift if an action (`__done__`) was successfully extracted. Ensure that DoneText is evaluated for drift and Triggers a clean retry if found.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/claude_code_final_answer_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The bridge explicitly triggers ErrToolBridgeNoTool if DoneText suffers from identity drift.",
+        "Appropriate runtime path logs exist to document this."
       ]
     }
   ]
