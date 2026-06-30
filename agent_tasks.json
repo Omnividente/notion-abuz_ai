@@ -3305,7 +3305,7 @@
     },
     {
       "id": "proxy-observability-bridge-decisions-session-multiturn-haiku-b2a72b68",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add diagnostics for multi-turn Haiku fallback mismatches",

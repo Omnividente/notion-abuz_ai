@@ -1038,6 +1038,10 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 		}
 	}
 
+	if lastAssistantIdx == -1 {
+		log.Printf("[bridge] diagnostics: multi-turn Haiku fallback mismatch — failed to find anchor assistant message to merge tool results")
+	}
+
 	// Collect latest tool results (after the last assistant message)
 	var results strings.Builder
 	resultCount := 0
