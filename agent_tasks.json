@@ -3043,7 +3043,7 @@
     },
     {
       "id": "proxy-robustness-unfenced-json-extraction-1a2b",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Evaluate unfenced JSON extraction robustness",

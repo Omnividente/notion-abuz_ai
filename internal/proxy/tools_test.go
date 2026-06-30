@@ -306,6 +306,27 @@ func TestParseToolCalls_RobustJSONExtraction(t *testing.T) {
 			wantHas:   true,
 		},
 		{
+			name:      "Unfenced JSON object format",
+			content:   "Here is the object you requested: {\"name\": \"my_tool_obj\", \"arguments\": {\"foo\": \"baz\"}}",
+			wantCalls: 1,
+			wantRem:   "Here is the object you requested:",
+			wantHas:   true,
+		},
+		{
+			name:      "Unfenced JSON array format",
+			content:   "Here is the tool call you requested: [{\"name\": \"my_tool\", \"arguments\": {\"foo\": \"bar\"}}]",
+			wantCalls: 1,
+			wantRem:   "Here is the tool call you requested:",
+			wantHas:   true,
+		},
+		{
+			name:      "Unfenced malformed arguments",
+			content:   "Here is the tool call you requested: [{\"name\": \"my_tool\", \"arguments\": 123}]",
+			wantCalls: 1,
+			wantRem:   "Here is the tool call you requested:",
+			wantHas:   true,
+		},
+		{
 			name:      "multiple tool calls",
 			content:   "{\"name\": \"Read\", \"arguments\": {\"path\": \"main.go\"}}\n{\"name\": \"Bash\", \"arguments\": {\"command\": \"cat main.go\"}}",
 			wantCalls: 2,

@@ -1506,6 +1506,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 	}
 
 	if len(toolCalls) > 0 {
+		log.Printf("[bridge] robust JSON extraction: successfully extracted %d tool calls from unfenced multi-line output", len(toolCalls))
 		return toolCalls, strings.TrimSpace(remainingBuilder.String()), true
 	}
 
