@@ -3151,7 +3151,7 @@
     },
     {
       "id": "proxy-observability-claude-refusal-b2c9",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Enhance logs for complex Claude refusals",
@@ -3162,6 +3162,36 @@
       ],
       "acceptance": [
         "Diagnostic logs explicitly capture the detected tool call refusal payload."
+      ]
+    },
+    {
+      "id": "proxy-investigate-streaming-tool-call-loss-8cc7b17d",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Investigate unhandled edge cases in streaming JSON tool-call mode loss",
+      "description": "Add diagnostics to catch if Claude Code attempts to output an unhandled refusal in streaming chunks that bypasses the text_delta fallback detection.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_stream.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic coverage added for unhandled streaming chunks during mode loss."
+      ]
+    },
+    {
+      "id": "proxy-investigate-notion-persona-refusals-c198826c",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add detailed payload logging for Notion persona leakage",
+      "description": "Similar to tool-call refusals, log the payload when Notion persona leakage is explicitly detected for better offline diagnosis.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Notion persona leakage logs explicitly capture the detected payload."
       ]
     }
   ]

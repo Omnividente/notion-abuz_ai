@@ -1820,7 +1820,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 		if !actionDetected {
 			if isNoTool {
 				if driftReason == "tool-call refusal" {
-					log.Printf("[bridge] %s decision: tool-call refusal explicitly detected (%d chars), requesting clean retry", requestID, len(prepared.Remaining))
+					log.Printf("[bridge] %s decision: tool-call refusal explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
 				} else {
 					log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
 				}
@@ -2125,7 +2125,7 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 		if !actionDetected {
 			if isNoTool {
 				if driftReason == "tool-call refusal" {
-					log.Printf("[bridge] %s decision: tool-call refusal explicitly detected (%d chars), requesting clean retry", requestID, len(prepared.Remaining))
+					log.Printf("[bridge] %s decision: tool-call refusal explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
 				} else {
 					log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
 				}
