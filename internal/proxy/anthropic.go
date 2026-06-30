@@ -1348,6 +1348,7 @@ func convertAnthropicMessages(system interface{}, msgs []AnthropicMessage) ([]Ch
 						name, _ := m["name"].(string)
 						id, _ := m["id"].(string)
 						inputRaw, _ := json.Marshal(m["input"])
+						log.Printf("[bridge] diagnostic: native tool_use extraction - id=%s name=%s len(input)=%d", id, name, len(inputRaw))
 						cm.ToolCalls = append(cm.ToolCalls, ToolCall{
 							ID:   id,
 							Type: "function",
