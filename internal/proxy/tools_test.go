@@ -285,6 +285,27 @@ func TestParseToolCalls_RobustJSONExtraction(t *testing.T) {
 			wantHas:   true,
 		},
 		{
+			name:      "array format within tool_call xml",
+			content:   "<tool_call>[{\"name\": \"Bash\", \"arguments\": {\"command\": \"ls\"}}]</tool_call>",
+			wantCalls: 1,
+			wantRem:   "",
+			wantHas:   true,
+		},
+		{
+			name:      "array format with multiple calls in xml",
+			content:   "<tool_call>[{\"name\": \"Bash\", \"arguments\": {\"command\": \"ls\"}}, {\"name\": \"Read\", \"arguments\": {\"path\": \"main.go\"}}]</tool_call>",
+			wantCalls: 2,
+			wantRem:   "",
+			wantHas:   true,
+		},
+		{
+			name:      "array format within markdown fences",
+			content:   "Here are the tools:\n```json\n[{\"name\": \"Bash\", \"arguments\": {\"command\": \"ls\"}}]\n```",
+			wantCalls: 1,
+			wantRem:   "Here are the tools:",
+			wantHas:   true,
+		},
+		{
 			name:      "multiple tool calls",
 			content:   "{\"name\": \"Read\", \"arguments\": {\"path\": \"main.go\"}}\n{\"name\": \"Bash\", \"arguments\": {\"command\": \"cat main.go\"}}",
 			wantCalls: 2,
@@ -393,6 +414,13 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			jsonStr:  `{"tool_call": {"name": "test_wrapper", "arguments": {"b": 2}}}`,
 			wantNil:  false,
 			wantName: "test_wrapper",
+			wantArgs: `{"b": 2}`,
+		},
+		{
+			name:     "array tool call wrapper",
+			jsonStr:  `[{"name": "test_wrapper_array", "arguments": {"b": 2}}]`,
+			wantNil:  false,
+			wantName: "test_wrapper_array",
 			wantArgs: `{"b": 2}`,
 		},
 		{
