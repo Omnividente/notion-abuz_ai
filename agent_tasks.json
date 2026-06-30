@@ -3104,7 +3104,7 @@
     },
     {
       "id": "proxy-request-timeout-config-2b9a08bb",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Make upstream request timeouts configurable",
@@ -3116,6 +3116,22 @@
       ],
       "acceptance": [
         "Upstream HTTP request timeout is driven by a configuration field rather than a hardcoded literal."
+      ],
+      "blocked_reason": "The task requires modifying hardcoded request timeouts, which are found in `internal/proxy/reverseproxy.go` and `internal/proxy/upload.go` among others, but these files are outside of the allowed_paths."
+    },
+    {
+      "id": "proxy-transcript-test-continuation-8a9d",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test case for tool result continuation handling",
+      "description": "Add an offline test verifying that Claude Code tool-result continuation does not get dropped during proxy multi-turn handling.",
+      "allowed_paths": [
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test proves continuation logic correctly preserves tool_result context."
       ]
     }
   ]
