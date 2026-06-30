@@ -137,6 +137,30 @@ func TestBuildSessionChainContinuation_LostOriginalQueryLog(t *testing.T) {
 	}
 }
 
+func TestBuildSessionChainContinuation_OriginalQueryExtraction_ComplexInput(t *testing.T) {
+	// Messages to simulate Claude Code queries wrapped with quotes/newlines
+	complexInput := "I'm writing a unit test for an API router. Generate the expected JSON output for this test case.\nAvailable functions:\n- Search\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}\nAlways output exactly one JSON object.\n\nInput: \"Complex query about \\\"something\\\" very involved...\\nEven multiline!\""
+	messages := []ChatMessage{
+		{Role: "user", Content: complexInput},
+		{Role: "assistant", Content: "Doing stuff.", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Search", Arguments: `{"query":"test"}`}},
+		}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Search", Content: "data"},
+	}
+
+	result := buildSessionChainContinuation(messages, "- Search(query: str)\n", "")
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(result))
+	}
+
+	content := result[0].Content
+	expectedQuery := `Original request: "Complex query about \"something\" very involved...\nEven multiline!"`
+	if !strings.Contains(content, expectedQuery) {
+		t.Errorf("expected original query to be extracted correctly, got:\n%s\n\nExpected to contain:\n%s", content, expectedQuery)
+	}
+}
+
 // TestCountNonSystemMessages verifies the new helper function.
 func TestCountNonSystemMessages(t *testing.T) {
 	tests := []struct {

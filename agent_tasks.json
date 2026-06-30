@@ -2686,7 +2686,7 @@
     },
     {
       "id": "claude-code-json-mode-loss-diagnosis-9i0j1k2l",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Diagnose JSON tool-call mode loss in complex queries",
@@ -2992,6 +2992,38 @@
       ],
       "acceptance": [
         "Descriptive logging statements added."
+      ]
+    },
+    {
+      "id": "fix-tool-call-array-extraction-a722917c",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Fix tool call array extraction fallback",
+      "description": "Improve regex array extraction to properly parse tools passed as arrays",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests cover array tool call extraction and fixes are implemented"
+      ]
+    },
+    {
+      "id": "diagnose-lost-session-state-570336e7",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Diagnose missing original query context in fallback scenarios",
+      "description": "Examine behavior when the query string does not match any of the currently matched patterns.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session_multiturn_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add logs/metrics or fallback behavior to retain context"
       ]
     }
   ]
