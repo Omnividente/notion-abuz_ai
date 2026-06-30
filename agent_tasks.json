@@ -2632,7 +2632,7 @@
     },
     {
       "id": "automation-health-todo-below-minimum-fb2f52d6",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: todo_below_minimum",
@@ -2929,6 +2929,38 @@
       "acceptance": [
         "The `repeated_followup_generation` logic in `automation-health-report.py` is updated to exclude PRs containing `automation-health-repeated-followup`.",
         "A regression test is added in `automation-health-report-test.py`."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-tool-result-diff-context-3edb4994",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate tool-result continuation loss across large diff contexts",
+      "description": "Investigate cases where Claude Code drops tool results over extended sessions when diff context is large by analyzing captured traces and reproducing offline. Provide fixes to retain original instruction.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fix implemented to persist tool results or task is blocked if not reproducible offline."
+      ]
+    },
+    {
+      "id": "proxy-claude-code-instruction-preservation-b0853a59",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add diagnostic coverage for instruction preservation during session handoff",
+      "description": "Add diagnostic logging to track if the original subagent instruction is preserved correctly across handoffs. Investigate if implicit workspace reframing causes original user query to be lost.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic coverage added to track instruction preservation during session handoff."
       ]
     }
   ]
