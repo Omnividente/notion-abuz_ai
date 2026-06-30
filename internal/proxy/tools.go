@@ -1307,7 +1307,7 @@ func nativeToolUseToOpenAI(entries []AgentValueEntry) []ToolCall {
 }
 
 // Regex-based fallback parsers for text-based tool call output
-var toolCallXMLRegex = regexp.MustCompile(`(?s)<tool_call>\s*(\{.*?\})\s*</tool_call>`)
+var toolCallXMLRegex = regexp.MustCompile(`(?s)<tool_call>\s*([\[\{].*?[\]\}])\s*</tool_call>`)
 var mdFenceRegex = regexp.MustCompile("(?s)```(?:json|tool_call)?\\s*\\n?(.*?)\\n?```")
 var jsonToolCallRegex = regexp.MustCompile(`(?s)\{"tool_call"\s*:\s*(\{.*?\})\s*\}`)
 

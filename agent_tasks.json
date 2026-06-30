@@ -2996,7 +2996,7 @@
     },
     {
       "id": "fix-tool-call-array-extraction-a722917c",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Fix tool call array extraction fallback",
@@ -3024,6 +3024,37 @@
       ],
       "acceptance": [
         "Add logs/metrics or fallback behavior to retain context"
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-metrics-8f1b",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add metrics for successful array tool call extraction",
+      "description": "Add diagnostic logging or metrics when tool call arrays are successfully parsed via fallback regex, ensuring we track extraction success.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Logging added for array extraction success or confirmed metrics already exist."
+      ]
+    },
+    {
+      "id": "proxy-robustness-unfenced-json-extraction-1a2b",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate unfenced JSON extraction robustness",
+      "description": "Test and evaluate if `parseToolCalls` can successfully extract unfenced valid JSON arrays or objects without Markdown wrappers, ensuring robustness.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests added for unfenced JSON and code logic updated if needed."
       ]
     }
   ]
