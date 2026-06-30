@@ -11,10 +11,24 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
 var ErrToolBridgeNoTool = errors.New("tool bridge produced no usable tool action")
+
+var (
+	doneDriftMetricsMu sync.Mutex
+	doneDriftMetrics   = make(map[string]int)
+)
+
+func recordDoneDriftMetric(reason string) {
+	doneDriftMetricsMu.Lock()
+	doneDriftMetrics[reason]++
+	count := doneDriftMetrics[reason]
+	doneDriftMetricsMu.Unlock()
+	log.Printf("[metrics] final_answer_drift: %s (total: %d)", reason, count)
+}
 
 // citationReplacer is a streaming state machine that replaces Notion's
 // [^{{URL}}] and [^URL] citation markers with numbered references [N]
@@ -1830,6 +1844,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 		} else if prepared.DoneText != "" {
 			isDoneNoTool, doneDriftReason := detectToolBridgeNoToolResponse(prepared.DoneText)
 			if isDoneNoTool {
+				recordDoneDriftMetric(doneDriftReason)
 				log.Printf("[bridge] %s decision: final-answer identity drift explicitly detected in DoneText (%d chars, reason: %s), payload: %q, requesting clean retry", requestID, len(prepared.DoneText), doneDriftReason, truncateForLog(prepared.DoneText, 1000))
 				return ErrToolBridgeNoTool
 			}
@@ -2140,6 +2155,7 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 		} else if prepared.DoneText != "" {
 			isDoneNoTool, doneDriftReason := detectToolBridgeNoToolResponse(prepared.DoneText)
 			if isDoneNoTool {
+				recordDoneDriftMetric(doneDriftReason)
 				log.Printf("[bridge] %s decision: final-answer identity drift explicitly detected in DoneText (%d chars, reason: %s), payload: %q, requesting clean retry", requestID, len(prepared.DoneText), doneDriftReason, truncateForLog(prepared.DoneText, 1000))
 				return ErrToolBridgeNoTool
 			}

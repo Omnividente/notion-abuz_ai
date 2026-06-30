@@ -3229,7 +3229,7 @@
     },
     {
       "id": "proxy-observability-done-text-drift-logging-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add metric counters for final-answer identity drift detections",
