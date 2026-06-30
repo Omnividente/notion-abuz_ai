@@ -133,9 +133,10 @@ def is_autonomous_pr(pr: dict[str, Any], task_ids: list[str], repo: str) -> bool
     labels = labels_of(pr)
     body = str(pr.get("body") or "")
     title = str(pr.get("title") or "")
-    head = pr.get("head") or {}
+    head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
     head_ref = str(head.get("ref") or "")
-    head_repo = ((head.get("repo") or {}).get("full_name") or pr.get("head_repo") or "")
+    head_repo_obj = head.get("repo") if isinstance(head.get("repo"), dict) else {}
+    head_repo = str(head_repo_obj.get("full_name") or pr.get("head_repo") or "")
 
     if "jules" in labels:
         return True
@@ -380,9 +381,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
     autonomous_pulls = [pr for pr in pulls if isinstance(pr, dict) and is_autonomous_pr(pr, task_ids, repo)]
     open_autonomous = [pr for pr in autonomous_pulls if pr.get("state") == "open"]
     autonomous_head_refs = {
-        str((pr.get("head") or {}).get("ref") or pr.get("head_ref") or "")
+        str((pr.get("head") if isinstance(pr.get("head"), dict) else {}).get("ref") or pr.get("head_ref") or "")
         for pr in autonomous_pulls
-        if str((pr.get("head") or {}).get("ref") or pr.get("head_ref") or "")
+        if str((pr.get("head") if isinstance(pr.get("head"), dict) else {}).get("ref") or pr.get("head_ref") or "")
     }
     if len(open_autonomous) > 1:
         add_finding_once(

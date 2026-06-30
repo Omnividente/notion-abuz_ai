@@ -166,6 +166,11 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["status"], "healthy")
         self.assertNotIn("repeated_followup_generation", finding_codes(report))
 
+    def test_malformed_pr_metadata(self) -> None:
+        report = run_fixture("malformed-pr-metadata")
+
+        self.assertEqual(report["status"], "healthy")
+
 
 if __name__ == "__main__":
     unittest.main()

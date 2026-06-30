@@ -1,0 +1,32 @@
+{
+  "now": "2026-06-28T12:00:00Z",
+  "repository": "Omnividente/notion-abuz_ai",
+  "manifest": {
+    "replenishment_policy": {
+      "minimum_todo_tasks": 1
+    },
+    "tasks": [
+      {
+        "id": "runtime-task",
+        "status": "todo",
+        "area": "proxy",
+        "risk": "medium",
+        "title": "Fix runtime proxy behavior",
+        "description": "Use local live smoke artifact to fix reproduced runtime failure.",
+        "allowed_paths": ["internal/proxy/anthropic.go", "agent_tasks.json"],
+        "acceptance": ["Runtime proxy behavior is fixed."]
+      }
+    ]
+  },
+  "pulls": [
+    {
+      "number": 100,
+      "state": "open",
+      "title": "runtime-task",
+      "body": "Fix runtime proxy behavior",
+      "head": "invalid-string-head"
+    }
+  ],
+  "workflow_runs": [],
+  "jules_sessions": []
+}
