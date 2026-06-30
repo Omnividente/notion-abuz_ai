@@ -3259,7 +3259,7 @@
     },
     {
       "id": "automation-health-todo-replenishment-0",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Replenish automation task 0",
@@ -3271,6 +3271,51 @@
       ],
       "acceptance": [
         "Automation task 0 is completed."
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-test-robustness-22b2",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate array extraction edge cases for markdown fencing",
+      "description": "Add regression test coverage for extraction logic where valid JSON arrays of tool calls are incorrectly placed inside arbitrary markdown fencing.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser correctly extracts tool calls in arrays inside arbitrary markdown."
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-test-robustness-22b3",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate array extraction edge cases for multiline JSON strings",
+      "description": "Add regression test coverage for extraction logic where valid JSON arrays contain tool calls with multiline arguments.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser correctly extracts single and multiple tool calls in arrays containing multiline strings."
+      ]
+    },
+    {
+      "id": "proxy-observability-bridge-decisions-session-multiturn-haiku-b2a72b68",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add diagnostics for multi-turn Haiku fallback mismatches",
+      "description": "Add specific proxy logging when multi-turn Haiku fallback logic cannot safely merge tool results with the context history, to catch model regressions.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fallback merge failures in buildSessionChainContinuation are explicitly logged for diagnostics."
       ]
     }
   ]
