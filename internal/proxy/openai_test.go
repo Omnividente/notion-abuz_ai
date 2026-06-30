@@ -1061,6 +1061,31 @@ func TestOpenAIChatStreamTranscoder_JSONToolCallLoss(t *testing.T) {
 	}
 }
 
+func TestOpenAIResponsesStreamTranscoder_JSONToolCallLoss(t *testing.T) {
+	rr := httptest.NewRecorder()
+	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 123)
+	frames := []anthropicSSEFrame{
+		{Event: "message_start", Data: json.RawMessage(`{"message":{"usage":{"input_tokens":11}}}`)},
+		{Event: "content_block_start", Data: json.RawMessage(`{"index":0,"content_block":{"type":"text","text":""}}`)},
+		// Text delta instead of tool_use when Claude Code expects JSON tool calls
+		{Event: "content_block_delta", Data: json.RawMessage(`{"index":0,"delta":{"type":"text_delta","text":"I will read the file now:\n\n` + "```" + `json\n{\n  \"path\": \"README.md\"\n}\n` + "```" + `"}}`)},
+		{Event: "message_delta", Data: json.RawMessage(`{"delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":7}}`)},
+		{Event: "message_stop", Data: json.RawMessage(`{"type":"message_stop"}`)},
+	}
+	for _, frame := range frames {
+		if err := transcoder.HandleFrame(frame); err != nil {
+			t.Fatalf("HandleFrame(%s) error = %v", frame.Event, err)
+		}
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "I will read the file now") {
+		t.Fatalf("body missing fallback conversational text: %s", body)
+	}
+	if !strings.Contains(body, `"usage":{`) || !strings.Contains(body, `"input_tokens":11`) || !strings.Contains(body, `"output_tokens":7`) || !strings.Contains(body, `"total_tokens":18`) {
+		t.Fatalf("body missing usage chunk: %s", body)
+	}
+}
+
 func TestOpenAIResponsesStreamTranscoder_ToolCallChunks(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIResponsesStreamTranscoder(rr, rr, "resp_test", "gpt-5.4", 456)

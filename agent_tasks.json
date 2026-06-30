@@ -2719,7 +2719,7 @@
     },
     {
       "id": "proxy-claude-code-json-fallback-mode-coverage-cd02d38c",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add test coverage for JSON mode loss during complex tool chains",
@@ -3085,6 +3085,37 @@
       ],
       "acceptance": [
         "Parser correctly extracts single and multiple tool calls in arrays"
+      ]
+    },
+    {
+      "id": "proxy-observability-tool-call-metrics-1985092b",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add basic metric counters for tool call frequency",
+      "description": "Add simple counters to track the frequency of different tool calls invoked by the models to help understand usage patterns.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Proxy logs or exposes basic metrics on tool call occurrences."
+      ]
+    },
+    {
+      "id": "proxy-request-timeout-config-2b9a08bb",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Make upstream request timeouts configurable",
+      "description": "Expose the hardcoded request timeouts for upstream calls (e.g. Notion API) as configurable variables in the configuration system.",
+      "allowed_paths": [
+        "internal/proxy/proxy.go",
+        "internal/proxy/config.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Upstream HTTP request timeout is driven by a configuration field rather than a hardcoded literal."
       ]
     }
   ]

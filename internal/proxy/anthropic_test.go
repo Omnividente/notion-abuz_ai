@@ -42,6 +42,25 @@ func TestAnthropicStreaming_ToolCallChunks(t *testing.T) {
 	}
 }
 
+func TestAnthropicStreaming_JSONToolCallLoss(t *testing.T) {
+	rr := httptest.NewRecorder()
+	mf := &mockFlusher{rr}
+
+	sendAnthropicSSE(mf, mf, "content_block_delta", map[string]interface{}{
+		"type":  "content_block_delta",
+		"index": 0,
+		"delta": map[string]interface{}{
+			"type": "text_delta",
+			"text": "I will read the file now:\n\n```json\n{\n  \"path\": \"README.md\"\n}\n```",
+		},
+	})
+
+	body := mf.Body.String()
+	if !strings.Contains(body, "I will read the file now") {
+		t.Fatalf("body missing conversational fallback text block: %s", body)
+	}
+}
+
 func TestAnthropicHandleFrameRobustness(t *testing.T) {
 	// Test that parseNDJSONStream handles malformed/unknown NDJSON events gracefully without panicking
 
