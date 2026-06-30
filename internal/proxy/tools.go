@@ -6,9 +6,23 @@ import (
 	"log"
 	"regexp"
 	"sort"
+	"sync"
 
 	"strings"
 )
+
+var (
+	toolCallMetricsMu sync.Mutex
+	toolCallMetrics   = make(map[string]int)
+)
+
+func recordToolCallMetric(name string) {
+	toolCallMetricsMu.Lock()
+	toolCallMetrics[name]++
+	count := toolCallMetrics[name]
+	toolCallMetricsMu.Unlock()
+	log.Printf("[metrics] tool_call: %s (total: %d)", name, count)
+}
 
 // ──────────────────────────────────────────────────────────────────
 // Model family detection
@@ -1296,6 +1310,7 @@ func nativeToolUseToOpenAI(entries []AgentValueEntry) []ToolCall {
 		if len(e.Input) > 0 && json.Valid(e.Input) {
 			argsStr = string(coerceToolArguments(e.Input))
 		}
+		recordToolCallMetric(e.Name)
 		calls = append(calls, ToolCall{
 			ID:   e.ID,
 			Type: "function",
@@ -1412,6 +1427,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 												}
 											}
 										}
+										recordToolCallMetric(ac.Name)
 										toolCalls = append(toolCalls, ToolCall{
 											ID:   fmt.Sprintf("call_%d_%s", foundCalls, generateUUIDv4()[:8]),
 											Type: "function",
@@ -1448,6 +1464,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 										}
 									}
 								}
+								recordToolCallMetric(direct.Name)
 								toolCalls = append(toolCalls, ToolCall{
 									ID:   fmt.Sprintf("call_%d_%s", foundCalls, generateUUIDv4()[:8]),
 									Type: "function",
@@ -1476,6 +1493,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 											}
 										}
 									}
+									recordToolCallMetric(wrapper.ToolCall.Name)
 									toolCalls = append(toolCalls, ToolCall{
 										ID:   fmt.Sprintf("call_%d_%s", foundCalls, generateUUIDv4()[:8]),
 										Type: "function",
@@ -1536,6 +1554,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 						}
 					}
 				}
+				recordToolCallMetric(call.Name)
 				calls = append(calls, ToolCall{
 					ID:   fmt.Sprintf("call_%d_%d_%s", index, j, generateUUIDv4()[:8]),
 					Type: "function",
@@ -1578,6 +1597,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 					}
 				}
 			}
+			recordToolCallMetric(wrapper.ToolCall.Name)
 			return []ToolCall{{
 				ID:   fmt.Sprintf("call_%d_%s", index, generateUUIDv4()[:8]),
 				Type: "function",
@@ -1599,6 +1619,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 			}
 		}
 	}
+	recordToolCallMetric(call.Name)
 	return []ToolCall{{
 		ID:   fmt.Sprintf("call_%d_%s", index, generateUUIDv4()[:8]),
 		Type: "function",

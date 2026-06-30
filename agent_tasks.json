@@ -3089,7 +3089,7 @@
     },
     {
       "id": "proxy-observability-tool-call-metrics-1985092b",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add basic metric counters for tool call frequency",
