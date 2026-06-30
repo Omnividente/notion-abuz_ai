@@ -3136,7 +3136,7 @@
     },
     {
       "id": "proxy-observability-tool-call-logging-a3b4",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add observability for native tool call parsing",
