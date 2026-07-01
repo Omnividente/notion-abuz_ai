@@ -142,6 +142,13 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["status"], "critical")
         self.assert_has_finding(report, "repeated_failed_sessions_same_task")
 
+    def test_stale_awaiting_user_feedback_after_continue(self) -> None:
+        report = run_fixture("stale-awaiting-user-feedback")
+
+        self.assertEqual(report["status"], "degraded")
+        self.assert_has_finding(report, "stale_awaiting_user_feedback_after_continue")
+        self.assertEqual(report["metrics"]["jules_sessions"]["stale_waiting_after_continue_count"], 1)
+
     def test_master_ci_failed_is_critical(self) -> None:
         report = run_fixture("master-ci-failed")
 

@@ -23,6 +23,10 @@ REPO = "Omnividente/notion-abuz_ai"
 TASK_IDS = ["automation-health-failed-session-86122315", "proxy-runtime-fix"]
 
 
+def epoch(minutes_ago: int) -> int:
+    return int((NOW - timedelta(minutes=minutes_ago)).timestamp())
+
+
 def pr(
     *,
     number: int = 10,
@@ -319,14 +323,117 @@ New task ids:
                 jules_sessions=[
                     session(
                         state="AWAITING_USER_FEEDBACK",
-                        latest_agent_epoch=100,
-                        latest_token_epoch=100,
+                        latest_agent_epoch=epoch(5),
+                        latest_user_epoch=epoch(4),
+                        latest_token_epoch=epoch(4),
                     )
                 ]
             )
         )
 
         self.assertEqual(actions, [])
+
+    def test_stale_awaiting_user_feedback_after_continue_escalates(self) -> None:
+        actions = plan(
+            state(
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        latest_agent_epoch=epoch(90),
+                        latest_user_epoch=epoch(55),
+                        latest_token_epoch=epoch(55),
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "jules_send_message")
+        self.assertTrue(actions[0].dedupe_key.startswith("stale-continue:1234567890123456789:"))
+        self.assertIn("continue уже был отправлен", actions[0].payload["prompt"])
+
+    def test_stale_recorded_continue_escalates_when_token_missing_from_activity(self) -> None:
+        latest_agent = epoch(90)
+        ledger = {
+            "version": 1,
+            "actions": {
+                f"continue:1234567890123456789:{latest_agent}": {
+                    "time": (NOW - timedelta(minutes=55)).isoformat().replace("+00:00", "Z"),
+                    "type": "jules_send_message",
+                }
+            },
+        }
+        actions = plan(
+            state(
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        latest_agent_epoch=latest_agent,
+                        latest_user_epoch=0,
+                        latest_token_epoch=0,
+                    )
+                ]
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "jules_send_message")
+        self.assertTrue(actions[0].dedupe_key.endswith(":attempt-1"))
+
+    def test_stale_continue_escalation_has_cooldown_and_then_deletes_stale_session(self) -> None:
+        latest_agent = epoch(90)
+        prefix = f"stale-continue:1234567890123456789:{latest_agent}:"
+        recent_ledger = {
+            "version": 1,
+            "actions": {
+                f"{prefix}attempt-1": {
+                    "time": (NOW - timedelta(minutes=5)).isoformat().replace("+00:00", "Z"),
+                    "type": "jules_send_message",
+                }
+            },
+        }
+        actions = plan(
+            state(
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        latest_agent_epoch=latest_agent,
+                        latest_user_epoch=epoch(55),
+                        latest_token_epoch=epoch(55),
+                    )
+                ]
+            ),
+            ledger=recent_ledger,
+        )
+        self.assertEqual(actions, [])
+
+        exhausted_ledger = {
+            "version": 1,
+            "actions": {
+                f"{prefix}attempt-{attempt}": {
+                    "time": (NOW - timedelta(minutes=35 + attempt)).isoformat().replace("+00:00", "Z"),
+                    "type": "jules_send_message",
+                }
+                for attempt in range(1, 4)
+            },
+        }
+        actions = plan(
+            state(
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        latest_agent_epoch=latest_agent,
+                        latest_user_epoch=epoch(55),
+                        latest_token_epoch=epoch(55),
+                    )
+                ]
+            ),
+            ledger=exhausted_ledger,
+        )
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "jules_delete_session")
+        self.assertEqual(actions[0].payload["session"], "sessions/1234567890123456789")
 
     def test_failed_session_retries_same_task_once(self) -> None:
         actions = plan(
