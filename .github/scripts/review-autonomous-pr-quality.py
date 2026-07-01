@@ -91,6 +91,9 @@ EVIDENCE_BLOCK_RE = re.compile(
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 FOLLOWUP_WORD_RE = re.compile(r"(?i)(?<![A-Za-z0-9_])follow-?up(?![A-Za-z0-9_])")
+FOLLOWUP_IDENTIFIER_RE = re.compile(
+    r"(?i)(?<![A-Za-z0-9_])(?:[a-z0-9]+[-_])+[a-z0-9]*follow-?up[a-z0-9]*(?:[-_][a-z0-9]+)*(?![A-Za-z0-9_])"
+)
 
 EVIDENCE_DIRECT_FIELDS = {
     "task_id",
@@ -354,6 +357,7 @@ def strip_markdown_code(text: str) -> str:
 
 def repeated_followup_mentions(pr_body: str) -> bool:
     prose_body = strip_markdown_code(pr_body)
+    prose_body = FOLLOWUP_IDENTIFIER_RE.sub(" ", prose_body)
     return len(FOLLOWUP_WORD_RE.findall(prose_body)) >= 2
 
 

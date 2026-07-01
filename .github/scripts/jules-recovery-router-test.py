@@ -142,6 +142,29 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("исправь этот же PR #10", actions[0].payload["body"])
         self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
 
+    def test_quality_fix_prompt_includes_latest_quality_gate_details(self) -> None:
+        quality_comment = """<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->
+
+# Autonomous PR quality gate
+
+Status: failed
+
+Blocking reasons:
+- PR body repeatedly mentions follow-up tasks.
+
+New task ids:
+- proxy-observability-json-tool-call-mode-loss-test-more
+"""
+        actions = plan(
+            state(open_pulls=[pr(labels=["jules", "needs-quality-fix"], comments=[quality_comment])])
+        )
+
+        self.assertEqual(len(actions), 1)
+        body = actions[0].payload["body"]
+        self.assertIn("Детали текущего quality gate failure", body)
+        self.assertIn("PR body repeatedly mentions follow-up tasks", body)
+        self.assertIn("proxy-observability-json-tool-call-mode-loss-test-more", body)
+
     def test_quality_fix_comment_marker_prevents_duplicate(self) -> None:
         marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"
         ledger = {

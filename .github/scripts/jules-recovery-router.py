@@ -24,6 +24,7 @@ ACTIVE_NEXT_TASK_COOLDOWN_MINUTES = 10
 HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
 RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
 MONITOR_COOLDOWN_MINUTES = 7
+MAX_QUALITY_FIX_DETAILS_CHARS = 5000
 SESSION_ID_RE = re.compile(r"(?<!\d)(\d{12,})(?!\d)")
 AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
 ACTIVE_JULES_STATES = {
@@ -411,10 +412,37 @@ def has_pending_checks(pr: dict[str, Any]) -> bool:
     )
 
 
+def latest_quality_fix_details(pr: dict[str, Any]) -> str:
+    for comment in reversed(pr.get("comments", [])):
+        body = str(comment.get("body") or "")
+        if QUALITY_FIX_MARKER not in body:
+            continue
+
+        starts = [
+            body.find("История последних failed SHA/reasons:"),
+            body.find("# Autonomous PR quality gate"),
+        ]
+        starts = [index for index in starts if index >= 0]
+        details = body[min(starts):] if starts else body
+        details = details.strip()
+        if len(details) > MAX_QUALITY_FIX_DETAILS_CHARS:
+            details = details[:MAX_QUALITY_FIX_DETAILS_CHARS].rstrip() + "\n...[truncated]"
+        return details
+    return ""
+
+
 def quality_fix_prompt(pr: dict[str, Any]) -> str:
     number = pr.get("number")
     sha = (pr.get("head") or {}).get("sha") or ""
     marker = f"<!-- {ROUTER_MARKER} action=quality-fix sha={sha} -->"
+    details = latest_quality_fix_details(pr)
+    details_block = ""
+    if details:
+        details_block = (
+            "\n\nДетали текущего quality gate failure ниже. Используй их как source of truth "
+            "для исправления этого же PR:\n\n"
+            f"{details}"
+        )
     return (
         f"{marker}\n\n"
         f"Jules, исправь этот же PR #{number}; не открывай новый PR и не создавай follow-up задачу.\n\n"
@@ -426,6 +454,7 @@ def quality_fix_prompt(pr: dict[str, Any]) -> str:
         "- убери временные scratch-файлы из PR, если они не являются частью acceptance/evidence;\n"
         "- push исправление в эту же PR ветку и дождись повторных checks.\n\n"
         "Не жди ответа пользователя, если действие безопасное и находится внутри scope текущей задачи."
+        f"{details_block}"
     )
 
 
