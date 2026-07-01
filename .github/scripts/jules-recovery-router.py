@@ -25,6 +25,9 @@ HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
 RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
 MONITOR_COOLDOWN_MINUTES = 7
 MAX_QUALITY_FIX_DETAILS_CHARS = 5000
+STALE_AWAITING_FEEDBACK_MINUTES = 30
+STALE_AWAITING_FEEDBACK_COOLDOWN_MINUTES = 30
+MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS = 3
 SESSION_ID_RE = re.compile(r"(?<!\d)(\d{12,})(?!\d)")
 AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
 ACTIVE_JULES_STATES = {
@@ -86,6 +89,16 @@ FINALIZE_PROMPT = """AUTONOMOUS_CONTINUE_TOKEN
 Синхронизируй ветку с последним master, запусти нужную валидацию, отметь выбранную задачу в agent_tasks.json и открой один PR с label `jules`.
 В PR body добавь корректный AUTONOMOUS_TASK_EVIDENCE. Для blocked task обязательно добавь concrete blocked_reason.
 Не задавай новый вопрос-подтверждение.
+"""
+STALE_FEEDBACK_PROMPT = """AUTONOMOUS_CONTINUE_TOKEN
+
+Предыдущий autonomous continue уже был отправлен, но сессия всё ещё ждёт пользователя.
+
+Не жди дополнительного подтверждения. Выбери один безопасный исход:
+- если задачу можно завершить внутри scope/allowed_paths, синхронизируйся с master, запусти нужную валидацию и открой один PR с label `jules` и корректным AUTONOMOUS_TASK_EVIDENCE;
+- если продолжение требует missing secrets, production-доступ, high/critical risk или destructive action, отметь задачу `blocked` в agent_tasks.json, добавь concrete blocked_reason и открой manifest-only PR.
+
+Не задавай новый вопрос-подтверждение и не оставляй сессию в ожидании пользователя.
 """
 
 
@@ -364,6 +377,36 @@ def action_recently_done(
     return now - timestamp < timedelta(minutes=ttl_minutes)
 
 
+def action_time(ledger: dict[str, Any], dedupe_key: str) -> datetime | None:
+    entries = ledger.get("actions") or {}
+    entry = entries.get(dedupe_key) if isinstance(entries, dict) else None
+    if not isinstance(entry, dict):
+        return None
+    return parse_time(str(entry.get("time") or ""))
+
+
+def action_times_with_prefix(
+    ledger: dict[str, Any],
+    prefix: str,
+    *,
+    now: datetime,
+    ttl_minutes: int,
+) -> list[datetime]:
+    entries = ledger.get("actions") or {}
+    if not isinstance(entries, dict):
+        return []
+
+    cutoff = now - timedelta(minutes=ttl_minutes)
+    times: list[datetime] = []
+    for key, entry in entries.items():
+        if not str(key).startswith(prefix) or not isinstance(entry, dict):
+            continue
+        timestamp = parse_time(str(entry.get("time") or ""))
+        if timestamp and timestamp >= cutoff:
+            times.append(timestamp)
+    return sorted(times)
+
+
 def workflow_recently_created(
     state: dict[str, Any],
     workflow: str,
@@ -483,6 +526,73 @@ def should_continue_session(session: dict[str, Any]) -> bool:
     if latest_user_epoch >= latest_agent_epoch:
         return False
     return True
+
+
+def stale_after_autonomous_continue(session: dict[str, Any], *, now: datetime) -> bool:
+    summary = session.get("activity_summary") or {}
+    latest_agent_epoch = int(summary.get("latest_agent_epoch") or 0)
+    latest_user_epoch = int(summary.get("latest_user_epoch") or 0)
+    latest_token_epoch = int(summary.get("latest_token_epoch") or 0)
+    if latest_agent_epoch <= 0 or latest_token_epoch < latest_agent_epoch:
+        return False
+    if latest_user_epoch > latest_token_epoch:
+        return False
+
+    token_time = datetime.fromtimestamp(latest_token_epoch, timezone.utc)
+    return now - token_time >= timedelta(minutes=STALE_AWAITING_FEEDBACK_MINUTES)
+
+
+def stale_after_recorded_continue(
+    ledger: dict[str, Any],
+    dedupe_key: str,
+    *,
+    now: datetime,
+) -> bool:
+    timestamp = action_time(ledger, dedupe_key)
+    if timestamp is None:
+        return False
+    return now - timestamp >= timedelta(minutes=STALE_AWAITING_FEEDBACK_MINUTES)
+
+
+def plan_stale_feedback_action(
+    session: dict[str, Any],
+    ledger: dict[str, Any],
+    *,
+    now: datetime,
+    reason: str,
+) -> RecoveryAction | None:
+    session_id = str(session.get("session_id") or "")
+    if not session_id:
+        return None
+    session_name = str(session.get("name") or f"sessions/{session_id}")
+    summary = session.get("activity_summary") or {}
+    latest_agent = str(summary.get("latest_agent_epoch") or session.get("updateTime") or "")
+    prefix = f"stale-continue:{session_id}:{latest_agent}:"
+    previous = action_times_with_prefix(
+        ledger,
+        prefix,
+        now=now,
+        ttl_minutes=24 * 60,
+    )
+    if previous and now - previous[-1] < timedelta(minutes=STALE_AWAITING_FEEDBACK_COOLDOWN_MINUTES):
+        return None
+    if len(previous) >= MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS:
+        return RecoveryAction(
+            type="jules_delete_session",
+            dedupe_key=f"delete-stale-session:{session_id}:{latest_agent}",
+            reason=f"Delete stale Jules session {session_id} after repeated unanswered autonomous continue prompts",
+            ttl_minutes=24 * 60,
+            payload={"session": session_name},
+        )
+
+    attempt = len(previous) + 1
+    return RecoveryAction(
+        type="jules_send_message",
+        dedupe_key=f"{prefix}attempt-{attempt}",
+        reason=f"Jules session {session_id} is still awaiting user feedback after autonomous continue: {reason}",
+        ttl_minutes=24 * 60,
+        payload={"session": session_name, "prompt": STALE_FEEDBACK_PROMPT},
+    )
 
 
 def failed_sessions_by_task(state: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
@@ -624,6 +734,25 @@ def plan_recovery_actions(
                         payload={"session": session_name, "prompt": prompt},
                     )
                 )
+            elif stale_after_recorded_continue(ledger, dedupe_key, now=now):
+                action = plan_stale_feedback_action(
+                    session,
+                    ledger,
+                    now=now,
+                    reason="recorded continue did not produce new agent activity",
+                )
+                if action:
+                    actions.append(action)
+            return actions
+        if session_state == "AWAITING_USER_FEEDBACK" and stale_after_autonomous_continue(session, now=now):
+            action = plan_stale_feedback_action(
+                session,
+                ledger,
+                now=now,
+                reason="latest autonomous continue token is stale",
+            )
+            if action:
+                actions.append(action)
             return actions
 
     task_statuses = state.get("task_statuses") or {}
@@ -1098,6 +1227,15 @@ def execute_action(
             "POST",
             f"{normalize_session_name(str(payload['session']))}:approvePlan",
             {},
+        )
+        return
+    if action.type == "jules_delete_session":
+        if not jules_clients:
+            raise RuntimeError("Jules API keys are required for jules_delete_session")
+        jules_request_any(
+            jules_clients,
+            "DELETE",
+            normalize_session_name(str(payload["session"])),
         )
         return
     if action.type == "dispatch_workflow":

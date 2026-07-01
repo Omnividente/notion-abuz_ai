@@ -5,6 +5,7 @@ API_BASE="${JULES_API_BASE:-https://jules.googleapis.com/v1alpha}"
 SOURCE="${JULES_SOURCE:-sources/github/${GITHUB_REPOSITORY:-Omnividente/notion-abuz_ai}}"
 LOOKBACK_HOURS="${LOOKBACK_HOURS:-24}"
 MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
+STALE_AWAITING_FEEDBACK_MINUTES="${STALE_AWAITING_FEEDBACK_MINUTES:-30}"
 
 read -r -d '' CONTINUE_PROMPT <<'EOF' || true
 AUTONOMOUS_CONTINUE_TOKEN
@@ -72,6 +73,26 @@ AUTONOMOUS_CONTINUE_TOKEN
 - Проверки/риски
 EOF
 
+read -r -d '' STALE_FEEDBACK_PROMPT <<'EOF' || true
+AUTONOMOUS_CONTINUE_TOKEN
+
+Предыдущий autonomous continue уже был отправлен, но сессия всё ещё ждёт пользователя.
+
+Не жди дополнительного подтверждения. Выбери один безопасный исход:
+- если задачу можно завершить внутри scope/allowed_paths, синхронизируйся с master, запусти нужную валидацию и открой один PR с label `jules` и корректным AUTONOMOUS_TASK_EVIDENCE;
+- если продолжение требует missing secrets, production-доступ, high/critical risk или destructive action, отметь задачу `blocked` в agent_tasks.json, добавь concrete blocked_reason и открой manifest-only PR.
+
+Не задавай новый вопрос-подтверждение и не оставляй сессию в ожидании пользователя.
+
+В финальном сообщении на русском укажи:
+- Этап плана
+- Что сделано
+- Что дальше
+- Зачем
+- Почему так
+- Проверки/риски
+EOF
+
 if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
   echo "::warning::No Jules API keys configured; unattended monitor cannot inspect sessions."
   {
@@ -112,6 +133,7 @@ fi
 now_epoch="$(date -u +%s)"
 cutoff_epoch="$((now_epoch - LOOKBACK_HOURS * 3600))"
 reply_cooldown_seconds="$((MIN_USER_REPLY_INTERVAL_MINUTES * 60))"
+stale_feedback_seconds="$((STALE_AWAITING_FEEDBACK_MINUTES * 60))"
 
 active_sessions=0
 touched_sessions=0
@@ -301,12 +323,24 @@ for i in "${!key_labels[@]}"; do
       continue
     fi
 
-    if [ "${latest_token_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
-      echo "Skipped ${session_name}; autonomous continue already answers the latest wait state."
-      continue
+    prompt="$CONTINUE_PROMPT"
+    if [ "${wait_kind:-continue}" = "finalize" ]; then
+      prompt="$FINALIZE_PROMPT"
     fi
 
-    if [ "${last_user_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
+    if [ "${latest_token_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
+      token_age="$((now_epoch - latest_token_epoch))"
+      if [ "$token_age" -lt "$stale_feedback_seconds" ]; then
+        echo "Skipped ${session_name}; autonomous continue already answers the latest wait state."
+        continue
+      fi
+      if [ "${last_user_epoch:-0}" -gt "${latest_token_epoch:-0}" ]; then
+        echo "Skipped ${session_name}; a newer user message already answers the latest wait state."
+        continue
+      fi
+      echo "Previous autonomous continue for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation."
+      prompt="$STALE_FEEDBACK_PROMPT"
+    elif [ "${last_user_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
       echo "Skipped ${session_name}; a user message already answers the latest wait state."
       continue
     fi
@@ -314,11 +348,6 @@ for i in "${!key_labels[@]}"; do
     if [ "$((now_epoch - last_user_epoch))" -lt "$reply_cooldown_seconds" ]; then
       echo "Skipped ${session_name}; a user message was already sent recently."
       continue
-    fi
-
-    prompt="$CONTINUE_PROMPT"
-    if [ "${wait_kind:-continue}" = "finalize" ]; then
-      prompt="$FINALIZE_PROMPT"
     fi
 
     body="$(jq -n --arg prompt "$prompt" '{prompt: $prompt}')"

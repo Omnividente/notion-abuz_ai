@@ -24,6 +24,8 @@ ACTIVE_STATES = {
     "AWAITING_PLAN_APPROVAL",
     "AWAITING_USER_FEEDBACK",
 }
+AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
+STALE_AWAITING_FEEDBACK_MINUTES = 30
 BLOCKING_LABELS = {"needs-quality-fix", "critic-blocked"}
 TRACKED_LABELS = {"needs-quality-fix", "critic-blocked", "human-review", "no-automerge"}
 MICRO_KEYWORDS = (
@@ -79,6 +81,50 @@ def parse_time(value: str | None) -> datetime | None:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+def parse_epoch(value: str | None) -> int:
+    parsed = parse_time(value)
+    return int(parsed.timestamp()) if parsed else 0
+
+
+def summarize_jules_activities(activities: list[Any]) -> dict[str, Any]:
+    latest_agent_epoch = 0
+    latest_user_epoch = 0
+    latest_token_epoch = 0
+
+    for activity in activities:
+        if not isinstance(activity, dict):
+            continue
+        originator = str(activity.get("originator", "")).lower()
+        epoch = parse_epoch(str(activity.get("createTime") or ""))
+        blob = json.dumps(activity, ensure_ascii=False)
+        if "user" in originator:
+            latest_user_epoch = max(latest_user_epoch, epoch)
+            if AUTONOMOUS_CONTINUE_TOKEN in blob:
+                latest_token_epoch = max(latest_token_epoch, epoch)
+        else:
+            latest_agent_epoch = max(latest_agent_epoch, epoch)
+
+    return {
+        "latest_agent_epoch": latest_agent_epoch,
+        "latest_user_epoch": latest_user_epoch,
+        "latest_token_epoch": latest_token_epoch,
+    }
+
+
+def stale_after_autonomous_continue(session: dict[str, Any], *, now: datetime) -> bool:
+    summary = session.get("activity_summary") or {}
+    latest_agent_epoch = int(summary.get("latest_agent_epoch") or 0)
+    latest_user_epoch = int(summary.get("latest_user_epoch") or 0)
+    latest_token_epoch = int(summary.get("latest_token_epoch") or 0)
+    if latest_agent_epoch <= 0 or latest_token_epoch < latest_agent_epoch:
+        return False
+    if latest_user_epoch > latest_token_epoch:
+        return False
+
+    token_time = datetime.fromtimestamp(latest_token_epoch, timezone.utc)
+    return now - token_time >= timedelta(minutes=STALE_AWAITING_FEEDBACK_MINUTES)
 
 
 def iso_now() -> str:
@@ -571,6 +617,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
 
     sessions_by_state: dict[str, int] = {}
     active_product_sessions = []
+    stale_waiting_after_continue = []
     failed_by_task: dict[str, list[str]] = {}
     failed_without_task = []
     for session in sessions:
@@ -583,6 +630,8 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         task_id = session_task_id(session, session_task_map)
         if kind == "product" and state in ACTIVE_STATES:
             active_product_sessions.append(sid)
+        if state == "AWAITING_USER_FEEDBACK" and stale_after_autonomous_continue(session, now=now):
+            stale_waiting_after_continue.append(sid)
         if state == "FAILED":
             if task_id:
                 failed_by_task.setdefault(task_id, []).append(sid)
@@ -597,6 +646,17 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
                 severity="critical",
                 message="More than one active product Jules session exists.",
                 evidence={"session_ids": active_product_sessions},
+            ),
+        )
+
+    if stale_waiting_after_continue:
+        add_finding_once(
+            findings,
+            Finding(
+                code="stale_awaiting_user_feedback_after_continue",
+                severity="degraded",
+                message="Jules sessions are still awaiting user feedback after an autonomous continue message.",
+                evidence={"session_ids": stale_waiting_after_continue},
             ),
         )
 
@@ -654,6 +714,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         "jules_sessions": {
             "by_state": sessions_by_state,
             "active_product_count": len(active_product_sessions),
+            "stale_waiting_after_continue_count": len(stale_waiting_after_continue),
             "failed_by_task": {task_id: len(ids) for task_id, ids in failed_by_task.items()},
         },
         "windows": windows,
@@ -873,12 +934,28 @@ def collect_live(repo: str, api_url: str) -> dict[str, Any]:
                 {"X-Goog-Api-Key": key},
             )
             sessions = jules_data.get("sessions", []) if isinstance(jules_data, dict) else []
-            data["jules_sessions"] = [
+            matching_sessions = [
                 session
                 for session in sessions
                 if isinstance(session, dict)
                 and ((session.get("sourceContext") or {}).get("source") == source)
             ]
+            for session in matching_sessions:
+                state = str(session.get("state") or "")
+                name = str(session.get("name") or "")
+                if state not in ACTIVE_STATES or not name:
+                    continue
+                try:
+                    activities = request_json(
+                        f"https://jules.googleapis.com/v1alpha/{name}/activities?pageSize=50",
+                        {"X-Goog-Api-Key": key},
+                    )
+                    activity_list = activities.get("activities", []) if isinstance(activities, dict) else []
+                    if isinstance(activity_list, list):
+                        session["activity_summary"] = summarize_jules_activities(activity_list)
+                except ApiError as exc:
+                    session["activity_error"] = str(exc)[:300]
+            data["jules_sessions"] = matching_sessions
             return data
         except ApiError as exc:
             errors.append(str(exc))
