@@ -3466,21 +3466,6 @@
       "acceptance": [
         "Diagnostics correctly track workspace reframing loss."
       ]
-    },
-    {
-      "id": "proxy-observability-json-tool-call-mode-loss-test-more",
-      "status": "todo",
-      "area": "proxy",
-      "risk": "low",
-      "title": "Add test coverage for workspace reframing loss diagnostics",
-      "description": "Add missing test coverage for workspace reframing hints being dropped from context during multi-turn proxy sessions.",
-      "allowed_paths": [
-        "internal/proxy/anthropic_test.go",
-        "agent_tasks.json"
-      ],
-      "acceptance": [
-        "Test coverage is added for workspace reframing loss diagnostics."
-      ]
     }
   ]
 }
