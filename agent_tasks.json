@@ -3424,7 +3424,7 @@
     },
     {
       "id": "proxy-session-recovery-diagnostic-logging",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Improve session recovery diagnostics for missing context",
@@ -3435,7 +3435,8 @@
       ],
       "acceptance": [
         "Missing context markers are correctly logged during session continuation."
-      ]
+      ],
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 1974463741843488682, 10281638319213112295. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
     },
     {
       "id": "proxy-observability-json-tool-call-mode-loss-diagnostics-followup",
