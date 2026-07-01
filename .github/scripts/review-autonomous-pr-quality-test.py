@@ -189,6 +189,34 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
         self.assertTrue(decision.passed)
         self.assertFalse(any("follow-up tasks" in reason for reason in decision.reasons))
 
+    def test_followup_task_ids_do_not_trigger_repeated_followup_failure(self) -> None:
+        task_id = "proxy-observability-json-tool-call-mode-loss-diagnostics-followup"
+        before = manifest([task(task_id, status="todo")])
+        after = manifest([task(task_id, status="done")])
+
+        body = "\n".join(
+            [
+                evidence_body(task_id),
+                f"### Task {task_id}",
+                "Completed the requested runtime diagnostic logging and tests.",
+            ]
+        )
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=body,
+        )
+
+        self.assertTrue(decision.passed)
+        self.assertFalse(any("follow-up tasks" in reason for reason in decision.reasons))
+
     def test_repeated_followup_prose_still_fails(self) -> None:
         before = manifest([task("runtime-fix", status="todo")])
         after = manifest([task("runtime-fix", status="done")])
