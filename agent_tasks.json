@@ -3409,7 +3409,7 @@
     },
     {
       "id": "proxy-observability-json-tool-call-mode-loss-diagnostics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for JSON tool-call mode loss",
@@ -3495,6 +3495,36 @@
       ],
       "acceptance": [
         "Diagnostic logs are added for missing local tools."
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-test-robustness-22b4",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate array extraction edge cases for empty JSON objects",
+      "description": "Add regression test coverage for extraction logic where valid JSON arrays contain tool calls with empty arguments.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser correctly extracts single and multiple tool calls in arrays containing empty strings."
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-test-robustness-22b5",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate array extraction edge cases for single item array",
+      "description": "Add regression test coverage for extraction logic where valid JSON arrays contain tool calls with a single item.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser correctly extracts single and multiple tool calls in arrays containing single item strings."
       ]
     }
   ]
