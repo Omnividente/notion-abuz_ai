@@ -435,7 +435,14 @@ func buildToolBridgeRecoveryMessages(messages []ChatMessage) []ChatMessage {
 		if msg.Role != "assistant" {
 			return false
 		}
-		isNoTool, _ := detectToolBridgeNoToolResponse(content)
+		isNoTool, reason := detectToolBridgeNoToolResponse(content)
+		if isNoTool {
+			if reason == "workspace reframing" {
+				log.Printf("[bridge] diagnostic: workspace reframing explicitly tracked (dropped from context during session recovery)")
+			} else if reason != "" {
+				log.Printf("[bridge] diagnostic: %s explicitly tracked (dropped from context during session recovery)", reason)
+			}
+		}
 		return isNoTool
 	})
 }
