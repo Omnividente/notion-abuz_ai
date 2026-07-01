@@ -3439,7 +3439,7 @@
     },
     {
       "id": "proxy-observability-json-tool-call-mode-loss-diagnostics-followup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add diagnostic logging for JSON tool-call mode loss during session continuation",
@@ -3465,6 +3465,21 @@
       ],
       "acceptance": [
         "Diagnostics correctly track workspace reframing loss."
+      ]
+    },
+    {
+      "id": "proxy-observability-json-tool-call-mode-loss-diagnostics-followup-test-enhancement",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Enhance test coverage for JSON mode loss in session continuation",
+      "description": "Add more varied test cases to explicitly assert that different patterns of JSON mode loss (e.g. Notion persona leakage, workspace reframing) are properly tracked during session continuation.",
+      "allowed_paths": [
+        "internal/proxy/tools_diagnostics_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "More test cases are added for diagnostics tracking."
       ]
     }
   ]
