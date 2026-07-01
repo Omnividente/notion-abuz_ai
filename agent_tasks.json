@@ -3468,18 +3468,18 @@
       ]
     },
     {
-      "id": "proxy-observability-json-tool-call-mode-loss-diagnostics-followup-test-enhancement-39f2",
+      "id": "proxy-observability-workspace-reframing-diagnostics-followup-8b2c",
       "status": "todo",
       "area": "proxy",
       "risk": "low",
-      "title": "Enhance test coverage for JSON mode loss in session continuation",
-      "description": "Add more varied test cases to explicitly assert that different patterns of JSON mode loss (e.g. Notion persona leakage, workspace reframing) are properly tracked during session continuation.",
+      "title": "Add test coverage for workspace reframing loss diagnostics",
+      "description": "Add missing test coverage for workspace reframing hints being dropped from context during multi-turn proxy sessions.",
       "allowed_paths": [
-        "internal/proxy/tools_diagnostics_test.go",
+        "internal/proxy/anthropic_test.go",
         "agent_tasks.json"
       ],
       "acceptance": [
-        "More test cases are added for diagnostics tracking."
+        "Test coverage is added for workspace reframing loss diagnostics."
       ]
     }
   ]
