@@ -1356,6 +1356,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 		}
 	}
 	if len(toolCalls) > 0 {
+		log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to markdown fences, %d calls extracted)", len(toolCalls))
 		return toolCalls, strings.TrimSpace(remaining), true
 	}
 
@@ -1540,6 +1541,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 
 	if len(toolCalls) > 0 {
 		log.Printf("[bridge] robust JSON extraction: successfully extracted %d tool calls from unfenced multi-line output", len(toolCalls))
+		log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (robust extraction fallback, %d calls extracted)", len(toolCalls))
 		return toolCalls, strings.TrimSpace(remainingBuilder.String()), true
 	}
 
