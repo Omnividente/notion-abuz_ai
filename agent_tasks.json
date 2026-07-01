@@ -3349,7 +3349,7 @@
     },
     {
       "id": "automation-health-quality-failure-331b57f6",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: quality_failure",
@@ -3434,6 +3434,21 @@
       ],
       "acceptance": [
         "Missing context markers are correctly logged during session continuation."
+      ]
+    },
+    {
+      "id": "proxy-observability-json-tool-call-mode-loss-diagnostics-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add diagnostic logging for JSON tool-call mode loss during session continuation",
+      "description": "To address potential Notion persona leakage, add explicit logging to track if the bridge loses JSON tool-call mode while processing followups.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/tools.go"
+      ],
+      "acceptance": [
+        "Diagnostic logging is added in the proxy to explicitly track JSON tool-call mode loss."
       ]
     }
   ]
