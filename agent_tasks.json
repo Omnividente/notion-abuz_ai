@@ -3455,7 +3455,7 @@
     },
     {
       "id": "proxy-observability-workspace-reframing-diagnostics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for workspace reframing loss",
@@ -3526,6 +3526,21 @@
       ],
       "acceptance": [
         "Parser correctly extracts single and multiple tool calls in arrays containing single item strings."
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-test-robustness-22b6",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate array extraction edge cases for multi-item array",
+      "description": "Add regression test coverage for extraction logic where valid JSON arrays contain multiple tool calls.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser correctly extracts multiple tool calls in arrays."
       ]
     }
   ]
