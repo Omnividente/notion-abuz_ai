@@ -3059,7 +3059,7 @@
     },
     {
       "id": "proxy-observability-bridge-decisions-session-multiturn-haiku-b2a72b67",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for multi-turn Haiku fallback logic",
@@ -3070,11 +3070,12 @@
       ],
       "acceptance": [
         "Test added for haiku multi-turn continuation in session_multiturn_test.go."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-observability-array-extraction-test-robustness-22b1",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for array extraction logic robustness",
@@ -3085,7 +3086,8 @@
       ],
       "acceptance": [
         "Parser correctly extracts single and multiple tool calls in arrays"
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-observability-tool-call-metrics-1985092b",
@@ -3197,7 +3199,7 @@
     },
     {
       "id": "proxy-verify-upstream-notion-persona-leakage-response",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for verifying Notion persona leakage response logging",
@@ -3208,7 +3210,8 @@
       ],
       "acceptance": [
         "Test correctly covers multiple edges of Notion persona leakage detection."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-claude-code-final-answer-runtime-drift-evaluation",
@@ -3244,7 +3247,7 @@
     },
     {
       "id": "proxy-observability-done-text-drift-test-coverage",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for non-stream final-answer identity drift",
@@ -3255,7 +3258,8 @@
       ],
       "acceptance": [
         "Test confirms non-stream handleAnthropicNonStream path correctly returns ErrToolBridgeNoTool for drift."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "automation-health-todo-replenishment-0",
@@ -3275,7 +3279,7 @@
     },
     {
       "id": "proxy-observability-array-extraction-test-robustness-22b2",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Evaluate array extraction edge cases for markdown fencing",
@@ -3286,11 +3290,12 @@
       ],
       "acceptance": [
         "Parser correctly extracts tool calls in arrays inside arbitrary markdown."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-observability-array-extraction-test-robustness-22b3",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Evaluate array extraction edge cases for multiline JSON strings",
@@ -3301,7 +3306,8 @@
       ],
       "acceptance": [
         "Parser correctly extracts single and multiple tool calls in arrays containing multiline strings."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-observability-bridge-decisions-session-multiturn-haiku-b2a72b68",
@@ -3320,7 +3326,7 @@
     },
     {
       "id": "automation-health-no-eligible-autonomous-task-ae085521",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: no_eligible_autonomous_task",
@@ -3384,6 +3390,51 @@
       "health_finding_code": "repeated_followup_generation",
       "health_finding_severity": "degraded",
       "health_report_generated_at": "2026-07-01T06:35:18Z"
+    },
+    {
+      "id": "proxy-observability-notion-persona-leakage-diagnostics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add diagnostic logging for Notion persona leakage",
+      "description": "Add explicit diagnostic logging in the proxy for Notion persona leakage when Claude Code requests are answered as if the user is inside Notion.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logs are added for Notion persona leakage."
+      ]
+    },
+    {
+      "id": "proxy-observability-json-tool-call-mode-loss-diagnostics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for JSON tool-call mode loss",
+      "description": "Add detailed tracking when JSON tool-call mode is lost and the model falls back to plain text with markdown fences.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "JSON mode loss is explicitly tracked in proxy diagnostics."
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-diagnostic-logging",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Improve session recovery diagnostics for missing context",
+      "description": "Improve session recovery diagnostics to track when session continuation fails due to missing context markers.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Missing context markers are correctly logged during session continuation."
+      ]
     }
   ]
 }
