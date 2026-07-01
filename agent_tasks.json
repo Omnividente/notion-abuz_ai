@@ -3317,6 +3317,73 @@
       "acceptance": [
         "Fallback merge failures in buildSessionChainContinuation are explicitly logged for diagnostics."
       ]
+    },
+    {
+      "id": "automation-health-no-eligible-autonomous-task-ae085521",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: no_eligible_autonomous_task",
+      "description": "Automation Health reported degraded finding `no_eligible_autonomous_task` in window `current`. Message: Todo tasks exist, but none are eligible under risk ceiling and micro-task policy. Evidence: {\"eligible_count\": 0, \"reason\": \"no eligible todo task matched the risk ceiling and micro-task policy\", \"rejected_count\": 6, \"rejected_task_ids\": [\"proxy-observability-bridge-decisions-session-multiturn-haiku-b2a72b67\", \"proxy-observability-array-extraction-test-robustness-22b1\", \"proxy-verify-upstream-notion-persona-leakage-response\", \"proxy-observability-done-text-drift-test-coverage\", \"proxy-observability-array-extraction-test-robustness-22b2\", \"proxy-observability-array-extraction-test-robustness-22b3\"], \"todo_count\": 6}",
+      "allowed_paths": [
+        "scripts/select_agent_task.py",
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/create-automation-meta-task-pr.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `no_eligible_autonomous_task` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `no_eligible_autonomous_task`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "ae085521e7d8",
+      "health_finding_code": "no_eligible_autonomous_task",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-01T06:35:18Z"
+    },
+    {
+      "id": "automation-health-quality-failure-331b57f6",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: quality_failure",
+      "description": "Automation Health reported degraded finding `quality_failure` in window `24h`. Message: At least one autonomous PR was marked needs-quality-fix. Evidence: {\"pr_numbers\": [194]}",
+      "allowed_paths": [
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/workflows/jules_automerge.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `quality_failure` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `quality_failure`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "331b57f676d3",
+      "health_finding_code": "quality_failure",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-01T06:35:18Z"
+    },
+    {
+      "id": "automation-health-repeated-followup-generation-2c02a6f3",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: repeated_followup_generation",
+      "description": "Automation Health reported degraded finding `repeated_followup_generation` in window `current`. Message: Autonomous PRs repeatedly mention follow-up task generation. Evidence: {\"pr_numbers\": [175, 126]}",
+      "allowed_paths": [
+        "scripts/select_agent_task.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `repeated_followup_generation` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `repeated_followup_generation`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "2c02a6f39391",
+      "health_finding_code": "repeated_followup_generation",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-01T06:35:18Z"
     }
   ]
 }
