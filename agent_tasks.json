@@ -3439,7 +3439,7 @@
     },
     {
       "id": "proxy-observability-json-tool-call-mode-loss-diagnostics-followup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Add diagnostic logging for JSON tool-call mode loss during session continuation",

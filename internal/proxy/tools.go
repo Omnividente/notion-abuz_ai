@@ -1040,6 +1040,13 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 
 	if lastAssistantIdx == -1 {
 		log.Printf("[bridge] diagnostics: multi-turn Haiku fallback mismatch — failed to find anchor assistant message to merge tool results")
+	} else {
+		lastMsg := messages[lastAssistantIdx]
+		if len(lastMsg.ToolCalls) == 0 && lastMsg.Content != "" {
+			if isNoTool, reason := detectToolBridgeNoToolResponse(lastMsg.Content); isNoTool {
+				log.Printf("[bridge] diagnostics: JSON tool-call mode loss detected during session continuation (reason: %s)", reason)
+			}
+		}
 	}
 
 	// Collect latest tool results (after the last assistant message)
