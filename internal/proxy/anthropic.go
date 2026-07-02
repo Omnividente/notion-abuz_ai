@@ -654,6 +654,12 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		log.Printf("[bridge] diagnostic: missing local tools explicitly mentioned in residual text")
 	}
 
+	mentionsMCPServerRefusal := strings.Contains(lower, "mcp server")
+
+	if mentionsMCPServerRefusal {
+		log.Printf("[bridge] diagnostic: mcp server explicitly mentioned in residual text")
+	}
+
 	mentionsSystemPromptLeakage := strings.Contains(lower, "system prompt") ||
 		strings.Contains(lower, "project instructions") ||
 		strings.Contains(normalized, "系统提示") ||
