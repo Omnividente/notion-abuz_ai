@@ -779,3 +779,20 @@ func TestBuildSessionChainContinuation_UnmatchedQueryFallback(t *testing.T) {
 		t.Errorf("expected fallback to retain query, got:\n%s", content)
 	}
 }
+
+func TestBuildSessionChainContinuation_TransientAPIFailureRetry(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "search for login"},
+		{Role: "assistant", Content: "I'll run a search.", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Search", Arguments: `{"query":"login"}`}},
+		}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Search", Content: "HTTP/1.1 502 Bad Gateway\nSome proxy error"},
+	}
+
+	result := buildSessionChainContinuation(messages, "- Search(query: str)\n", "")
+	content := result[0].Content
+
+	if !strings.Contains(content, "transient API or search failure") {
+		t.Fatalf("expected transient failure guard line, got:\n%s", content)
+	}
+}
