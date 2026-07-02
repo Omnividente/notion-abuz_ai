@@ -30,7 +30,7 @@
       "low",
       "medium"
     ],
-    "instruction": "When the todo queue is low, add Claude Code bridge investigation tasks that start from live smoke results, captured transcripts, CI failures, or a clearly reproduced runtime behavior. Do not keep generating one-case test-only robustness tasks such as another malformed JSON, HandleFrame, trimCitationContext, missing field, empty payload, or event-type-only test unless it is tied to a reproduced Claude Code bridge failure. Prefer runtime bridge fixes, live-smoke transcript analysis, observability needed for diagnosis, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode retention, session recovery, final-answer mode, instruction preservation, and realistic read/edit/test/finalize transcript coverage. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, workflow, or micro edge-case test tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "instruction": "When the todo queue is low, add Claude Code bridge investigation tasks that start from live smoke results, captured transcripts, CI failures, or a clearly reproduced runtime behavior. Do not keep generating one-case test-only robustness tasks such as another malformed JSON, HandleFrame, trimCitationContext, missing field, empty payload, or event-type-only test unless it is tied to a reproduced Claude Code bridge failure. Prefer runtime bridge fixes, live-smoke transcript analysis, observability needed for diagnosis, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode retention, session recovery, final-answer mode, instruction preservation, transient API/search failure retry or incomplete-context handling, production-router/harness coverage, and realistic read/edit/test/finalize transcript coverage. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, workflow, or micro edge-case test tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
     "max_todo_tasks": 40
   },
   "autonomous_loop_policy": {
@@ -3839,6 +3839,31 @@
       ],
       "acceptance": [
         "Text fallback parses tool call arrays successfully."
+      ]
+    },
+    {
+      "id": "proxy-behavior-transient-api-failure-partial-context-retry",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Recover from transient API/search failure before using partial project context",
+      "description": "Manual Claude Code smoke through the deployed RDSH proxy showed a concrete bridge behavior gap: an initial project-structure request hit a one-off API/search failure, then the agent continued from the partial file list it had already obtained instead of retrying or refetching missing router context. Investigate where Claude Code bridge/session handling can preserve the failure signal, request a retry/refetch, or surface incomplete-context diagnostics before finalizing based on partial data. Use offline reproduction or focused tests that exercise the real production router/server setup or existing internal/proxy harness; do not add another standalone artificial mux test.",
+      "allowed_paths": [
+        "cmd/notion-manager/main_test.go",
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/openai_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A focused offline reproduction or test covers the observed transient API/search failure pattern where the bridge would otherwise continue from partial project context.",
+        "The implementation adds retry/refetch behavior, incomplete-context diagnostics, or a documented bridge decision that prevents silently treating partial context as complete.",
+        "If router coverage is added, it uses the real production router/server setup or an existing internal/proxy harness, not a standalone artificial mux.",
+        "Relevant Go tests pass without live network, real accounts, package installation, or production endpoint access."
       ]
     }
   ]
