@@ -678,6 +678,8 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		return true, "Notion persona leakage"
 	case mentionsMissingLocalTools && mentionsCodingAssistant && mentionsManualHandOff:
 		return true, "tool-call refusal"
+	case mentionsManualHandOff:
+		return true, "manual handoff"
 	default:
 		return false, ""
 	}
@@ -1848,7 +1850,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 		if !actionDetected {
 			if isNoTool {
 				recordIdentityDriftMetric(driftReason)
-				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" {
+				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" || driftReason == "manual handoff" {
 					log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
 				} else {
 					log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
@@ -2160,7 +2162,7 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 		if !actionDetected {
 			if isNoTool {
 				recordIdentityDriftMetric(driftReason)
-				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" {
+				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" || driftReason == "manual handoff" {
 					log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
 				} else {
 					log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
