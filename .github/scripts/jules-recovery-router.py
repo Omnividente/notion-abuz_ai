@@ -465,6 +465,34 @@ def enrich_open_pull_git_conflicts(open_pulls: list[dict[str, Any]], *, repo: st
             text=True,
         )
         merge_output = f"{merge.stdout}\n{merge.stderr}"
+        if merge.returncode != 0 and "unrelated histories" in merge_output:
+            subprocess.run(
+                ["git", "fetch", "--no-tags", "--unshallow", "origin"],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            fetch_full = subprocess.run(
+                [
+                    "git",
+                    "fetch",
+                    "--no-tags",
+                    "origin",
+                    "master:refs/remotes/origin/master",
+                    f"{head_ref}:{remote_ref}",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if fetch_full.returncode == 0:
+                merge = subprocess.run(
+                    ["git", "merge-tree", "--write-tree", "origin/master", remote_ref],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                merge_output = f"{merge.stdout}\n{merge.stderr}"
         if merge.returncode != 0 and "CONFLICT" in merge_output:
             pr["mergeable"] = False
             pr["mergeable_state"] = "dirty"
