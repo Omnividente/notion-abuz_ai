@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"log"
 	"strings"
 	"testing"
 )
@@ -831,6 +832,48 @@ func TestSimplifyToolSchema(t *testing.T) {
 	timeoutDesc, _ := timeoutProp["description"].(string)
 	if timeoutDesc != "Timeout in seconds 🚀" {
 		t.Errorf("expected short description with emoji to be intact, got: %q", timeoutDesc)
+	}
+}
+
+func TestSimplifyToolSchemaObservability(t *testing.T) {
+	// Add test coverage for diagnostic log when truncating long descriptions
+	inputJSON := `{
+		"type": "object",
+		"properties": {
+			"command": {
+				"type": "string",
+				"description": "This is a very long description that goes on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on. And it just keeps going to exceed the two hundred character limit set by the simplification algorithm to ensure truncation works exactly as intended."
+			}
+		}
+	}`
+
+	var rawSchema interface{}
+	if err := json.Unmarshal([]byte(inputJSON), &rawSchema); err != nil {
+		t.Fatalf("failed to unmarshal input json: %v", err)
+	}
+
+	var buf strings.Builder
+
+	// Because log output can be overwritten by other tests in parallel,
+	// we explicitly override standard log output for this test temporarily.
+	// But in proxy tests, memory says:
+	// "intercept the internal globalLogWriter.out instead of using log.SetOutput"
+	// Let's actually do both because another test might have reset log.SetOutput.
+	originalLogOutput := log.Writer()
+	log.SetOutput(&buf)
+
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+		log.SetOutput(originalLogOutput)
+	}()
+
+	simplifyToolSchema(rawSchema)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[bridge] diagnostics: simplifyToolSchema truncated large description to prevent token bloat") {
+		t.Errorf("expected diagnostic log for schema truncation, got: %q", logOutput)
 	}
 }
 
