@@ -3545,7 +3545,7 @@
     },
     {
       "id": "proxy-observability-system-prompt-leakage",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add regression test for system prompt leakage",
@@ -3575,6 +3575,22 @@
       ],
       "acceptance": [
         "Diagnostic logs or behavioral tests are implemented for mcp server refusals."
+      ]
+    },
+    {
+      "id": "proxy-observability-multi-agent-schema-truncation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add regression test for multi-agent tool schema truncation",
+      "description": "Add test coverage for simplifyToolSchema behavior when provided with large multi-agent tool schemas, ensuring non-essential metadata is stripped and lengthy descriptions are truncated to prevent token bloat.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Behavioral or diagnostic test coverage exists proving simplifyToolSchema truncates schemas properly."
       ]
     }
   ]

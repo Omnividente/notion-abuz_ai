@@ -654,6 +654,15 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		log.Printf("[bridge] diagnostic: missing local tools explicitly mentioned in residual text")
 	}
 
+	mentionsSystemPromptLeakage := strings.Contains(lower, "system prompt") ||
+		strings.Contains(lower, "project instructions") ||
+		strings.Contains(normalized, "系统提示") ||
+		strings.Contains(normalized, "项目说明")
+
+	if mentionsSystemPromptLeakage {
+		log.Printf("[bridge] diagnostic: system prompt explicitly mentioned in residual text")
+	}
+
 	mentionsWorkspaceReframing := strings.Contains(lower, "notion page") ||
 		strings.Contains(lower, "notion workspace") ||
 		strings.Contains(lower, "notion database") ||
