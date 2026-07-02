@@ -10,6 +10,47 @@ import (
 	"time"
 )
 
+func TestAnthropicStreaming_FinalAnswerIdentityDriftWithTools(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.WriteHeader(http.StatusOK)
+
+		// 1) Submit text via agent-inference (Notion stream protocol)
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I am Notion AI, I cannot access your local file system, but I can use tools."}]}` + "\n"))
+
+		// 2) Tool call
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"native_tool_use","tool_use_id":"tool-1","name":"bash","input":{"command":"ls"}}]}` + "\n"))
+
+		// 3) Finish inference turn (trigger cb with true)
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [], "finishedAt":"2023-01-01T00:00:00Z"}` + "\n"))
+	}))
+	defer ts.Close()
+
+	// Override NotionAPIBase and transport temporarily
+	origBase := NotionAPIBase
+	NotionAPIBase = ts.URL
+	defer func() { NotionAPIBase = origBase }()
+
+	origClient := getChromeHTTPClient
+	getChromeHTTPClient = func(timeout time.Duration) *http.Client {
+		return ts.Client()
+	}
+	defer func() { getChromeHTTPClient = origClient }()
+
+	rr := httptest.NewRecorder()
+	mf := &mockFlusher{rr}
+
+	// Test that handleAnthropicStream rejects when identity drift exists despite having tools
+	messages := []ChatMessage{{Role: "user", Content: "Hello"}}
+	var enableWorkspaceSearch = true
+
+	err := handleAnthropicStream(mf, &Account{}, messages, "claude-3-5-sonnet", "req-1", true, false, false, &enableWorkspaceSearch, false, nil, nil, nil)
+
+	if err != ErrToolBridgeNoTool {
+		t.Fatalf("expected ErrToolBridgeNoTool, got %v", err)
+	}
+}
+
 // Tests that a Notion persona leakage payload triggers the exact bridge decision log natively.
 func TestEnsureNotionPersonaLeakageLoggedAsDecision(t *testing.T) {
 	// A mock server that responds with NDJSON format representing identity drift text.

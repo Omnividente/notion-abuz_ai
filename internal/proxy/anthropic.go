@@ -1891,16 +1891,18 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 		prepared = prepareToolBridgeResponse(contentStr, nativeToolUses)
 		actionDetected := prepared.HasCalls || prepared.WebSearchQuery != "" || prepared.DoneText != ""
 		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
-		if !actionDetected {
-			if isNoTool {
-				recordIdentityDriftMetric(driftReason)
-				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" || driftReason == "manual handoff" {
-					log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
-				} else {
-					log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
-				}
-				return ErrToolBridgeNoTool
+
+		if isNoTool {
+			recordIdentityDriftMetric(driftReason)
+			if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" || driftReason == "manual handoff" {
+				log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
+			} else {
+				log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
 			}
+			return ErrToolBridgeNoTool
+		}
+
+		if !actionDetected {
 			log.Printf("[bridge] %s decision: missing tool calls (no drift detected, %d chars remaining)", requestID, len(prepared.Remaining))
 		} else if prepared.DoneText != "" {
 			isDoneNoTool, doneDriftReason := detectToolBridgeNoToolResponse(prepared.DoneText)
@@ -2203,16 +2205,18 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 		prepared = prepareToolBridgeResponse(content, nativeToolUses)
 		actionDetected := prepared.HasCalls || prepared.WebSearchQuery != "" || prepared.DoneText != ""
 		isNoTool, driftReason := detectToolBridgeNoToolResponse(prepared.Remaining)
-		if !actionDetected {
-			if isNoTool {
-				recordIdentityDriftMetric(driftReason)
-				if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" || driftReason == "manual handoff" {
-					log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
-				} else {
-					log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
-				}
-				return ErrToolBridgeNoTool
+
+		if isNoTool {
+			recordIdentityDriftMetric(driftReason)
+			if driftReason == "tool-call refusal" || driftReason == "Notion persona leakage" || driftReason == "manual handoff" {
+				log.Printf("[bridge] %s decision: %s explicitly detected (%d chars), payload: %q, requesting clean retry", requestID, driftReason, len(prepared.Remaining), truncateForLog(prepared.Remaining, 1000))
+			} else {
+				log.Printf("[bridge] %s decision: %s detected (%d chars), requesting clean retry", requestID, driftReason, len(prepared.Remaining))
 			}
+			return ErrToolBridgeNoTool
+		}
+
+		if !actionDetected {
 			log.Printf("[bridge] %s decision: missing tool calls (no drift detected, %d chars remaining)", requestID, len(prepared.Remaining))
 		} else if prepared.DoneText != "" {
 			isDoneNoTool, doneDriftReason := detectToolBridgeNoToolResponse(prepared.DoneText)

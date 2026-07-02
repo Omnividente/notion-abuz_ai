@@ -3734,7 +3734,7 @@
     },
     {
       "id": "proxy-behavior-final-answer-identity-drift",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Detect final-answer identity drift after tool use",
