@@ -390,6 +390,14 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 
 	log.Printf("[bridge] diagnostic: instruction preservation during handoff - first user message included: %v, used chars: %d", preservedFirstUser, usedChars)
 
+	// Build tool call ID -> name map to properly resolve tool names in multi-turn
+	tcMap := make(map[string]string)
+	for _, m := range messages {
+		for _, tc := range m.ToolCalls {
+			tcMap[tc.ID] = tc.Function.Name
+		}
+	}
+
 	var trailingReversed []historyEntry
 	for i := len(messages) - 1; i > lastUserIdx; i-- {
 		m := messages[i]
@@ -410,8 +418,13 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			}
 		}
 
+		// Ensure we strictly preserve tool results even if content is empty (e.g. successful bash execution with no output)
 		if content == "" {
-			continue
+			if m.Role == "tool" {
+				content = "(empty output)"
+			} else {
+				continue
+			}
 		}
 		if skipEntry != nil && skipEntry(m, content) {
 			continue
@@ -423,6 +436,11 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			label = "Assistant"
 		case "tool":
 			name := m.Name
+			if name == "" && m.ToolCallID != "" {
+				if n, ok := tcMap[m.ToolCallID]; ok {
+					name = n
+				}
+			}
 			if name == "" {
 				name = "tool"
 			}

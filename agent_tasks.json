@@ -3803,7 +3803,7 @@
     },
     {
       "id": "proxy-behavior-anthropic-tool-result-continuation-preservation",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Preserve tool results strictly during multi-turn continuation",
@@ -3816,7 +3816,8 @@
       ],
       "acceptance": [
         "Diagnostic logs or fixes added to ensure tool results from prior turns are properly preserved in session continuation."
-      ]
+      ],
+      "blocked_reason": "PR branch has an unresolvable Git merge conflict with master because the submit tool stacks commits instead of rebasing or pushing a merge commit, causing identical task additions to conflict."
     },
     {
       "id": "proxy-behavior-tool-call-array-fallback-normalization",
@@ -3887,6 +3888,23 @@
         "The implementation adds retry/refetch behavior, incomplete-context diagnostics, or a documented bridge decision that prevents silently treating partial context as complete.",
         "If router coverage is added, it uses the real production router/server setup or an existing internal/proxy harness, not a standalone artificial mux.",
         "Relevant Go tests pass without live network, real accounts, package installation, or production endpoint access."
+      ]
+    },
+    {
+      "id": "proxy-behavior-anthropic-empty-tool-result-robustness",
+      "title": "Enhance Anthropic empty tool result robustness in parser",
+      "description": "Ensure that the parser handles Anthropic empty tool results properly during multi-turn continuation by adding more comprehensive tests.",
+      "status": "todo",
+      "risk": "medium",
+      "area": "proxy",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests added for empty tool results during multi-turn continuation."
       ]
     }
   ]
