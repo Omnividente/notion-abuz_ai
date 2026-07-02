@@ -286,6 +286,18 @@ func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff_NonEnglish(t
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_MatchesCurrentInterfaceRefusal(t *testing.T) {
+	raw := `I cannot directly execute commands on this machine from the current interface. You can manually run the following powershell command:`
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
+		t.Fatalf("expected current interface tool refusal to be detected")
+	}
+	if reason != "tool-call refusal" {
+		t.Fatalf("expected reason 'tool-call refusal', got %q", reason)
+	}
+}
+
 func TestDetectToolBridgeNoToolResponse_MatchesToolCallRefusal_English(t *testing.T) {
 	raw := `I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant.`
 

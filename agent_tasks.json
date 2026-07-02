@@ -3780,7 +3780,7 @@
     },
     {
       "id": "proxy-behavior-live-current-interface-tool-refusal",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Recover from live current-interface tool refusal in same session",
