@@ -390,6 +390,51 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 
 	log.Printf("[bridge] diagnostic: instruction preservation during handoff - first user message included: %v, used chars: %d", preservedFirstUser, usedChars)
 
+	var trailingReversed []historyEntry
+	for i := len(messages) - 1; i > lastUserIdx; i-- {
+		m := messages[i]
+		if m.Role == "system" || m.Role == "user" {
+			continue
+		}
+
+		content := strings.TrimSpace(m.Content)
+		if m.Role == "assistant" && len(m.ToolCalls) > 0 {
+			var calls []string
+			for _, tc := range m.ToolCalls {
+				calls = append(calls, fmt.Sprintf("Call %s(%s)", tc.Function.Name, tc.Function.Arguments))
+			}
+			if content != "" {
+				content += "\n" + strings.Join(calls, "\n")
+			} else {
+				content = strings.Join(calls, "\n")
+			}
+		}
+
+		if content == "" {
+			continue
+		}
+		if skipEntry != nil && skipEntry(m, content) {
+			continue
+		}
+
+		label := ""
+		switch m.Role {
+		case "assistant":
+			label = "Assistant"
+		case "tool":
+			name := m.Name
+			if name == "" {
+				name = "tool"
+			}
+			label = fmt.Sprintf("Tool (%s)", name)
+		default:
+			continue
+		}
+
+		content = clip(content, maxEntryChars)
+		trailingReversed = append(trailingReversed, historyEntry{label: label, content: content})
+	}
+
 	var history strings.Builder
 	for i := len(reversed) - 1; i >= 0; i-- {
 		if history.Len() > 0 {
@@ -419,6 +464,19 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 
 	prompt.WriteString("\n\nLatest user message:\n")
 	prompt.WriteString(latest)
+
+	if len(trailingReversed) > 0 {
+		prompt.WriteString("\n\nPartial progress since the latest user message:\n")
+		for i := len(trailingReversed) - 1; i >= 0; i-- {
+			prompt.WriteString(trailingReversed[i].label)
+			prompt.WriteString(": ")
+			prompt.WriteString(trailingReversed[i].content)
+			if i > 0 {
+				prompt.WriteString("\n\n")
+			}
+		}
+		prompt.WriteString("\n\nContinue from the partial progress above and provide the next step or final answer.")
+	}
 
 	return []ChatMessage{{
 		Role:    "user",

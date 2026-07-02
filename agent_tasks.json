@@ -3670,7 +3670,7 @@
     },
     {
       "id": "proxy-behavior-multi-turn-tool-result-continuation-loss",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate and fix multi-turn tool result continuation loss",

@@ -174,3 +174,25 @@ func TestBuildToolBridgeRecoveryMessagesSkipsJSONModeLoss(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildRecoveryMessages_MultiTurnTool(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "system", Content: "You are a helpful assistant"},
+		{Role: "user", Content: "First request"},
+		{Role: "assistant", Content: "First response"},
+		{Role: "user", Content: "Write a script to do X"},
+		{Role: "assistant", Content: "I will do that.", ToolCalls: []ToolCall{{ID: "call_1", Function: ToolCallFunction{Name: "Bash", Arguments: "{}"}}}},
+		{Role: "tool", Name: "Bash", Content: "Script executed successfully"},
+	}
+
+	recovered := buildFreshThreadRecoveryMessages(messages)
+
+	if len(recovered) != 1 {
+		t.Fatalf("expected 1 recovered message, got %d", len(recovered))
+	}
+
+	content := recovered[0].Content
+	if !strings.Contains(content, "Script executed successfully") {
+		t.Errorf("Recovered message missing tool result. Content:\n%s", content)
+	}
+}
