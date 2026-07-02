@@ -251,6 +251,21 @@ func TestStripClaudeCodeInstructions_PreservesCodingIntent(t *testing.T) {
 			input: "Run <command name=\"/test\">/test --all</command>",
 			want:  "Run /test --all",
 		},
+		{
+			name:  "preserves user HTML intent",
+			input: "Fix the `<button class=\"test\">` tag rendering.",
+			want:  "Fix the `<button class=\"test\">` tag rendering.",
+		},
+		{
+			name:  "preserves comparison operators",
+			input: "Ensure `if x < y { ... }` is evaluated.",
+			want:  "Ensure `if x < y { ... }` is evaluated.",
+		},
+		{
+			name:  "strips plain subagent tag",
+			input: "Here is context <subagent>write a test</subagent>",
+			want:  "Here is context write a test",
+		},
 	}
 
 	for _, tt := range tests {

@@ -3686,7 +3686,7 @@
     },
     {
       "id": "proxy-behavior-claude-coding-intent-loss-subagent",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Address lost coding intent from subagent-style prompts",
@@ -3760,6 +3760,85 @@
       ],
       "acceptance": [
         "Diagnostics for session recovery truncation are added."
+      ]
+    },
+    {
+      "id": "proxy-behavior-tool-call-refusal-normalization",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Normalize extracted error strings during tool-call refusal",
+      "description": "Enhance the tool-call refusal handling to robustly extract refusal messages from markdown blocks if the LLM drops out of JSON mode.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Logic added to correctly normalize tool refusal text when embedded inside markdown/fences."
+      ]
+    },
+    {
+      "id": "proxy-behavior-anthropic-tool-result-continuation-preservation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Preserve tool results strictly during multi-turn continuation",
+      "description": "Ensure that Anthropic tool results are not merged incorrectly or dropped during long-running tool execution continuations in the proxy.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logs or fixes added to ensure tool results from prior turns are properly preserved in session continuation."
+      ]
+    },
+    {
+      "id": "proxy-behavior-tool-call-array-fallback-normalization",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Improve JSON array parsing for tool-call fallbacks",
+      "description": "Handle the edge case where Claude Code returns tool calls as an array rather than a single JSON object in text fallback modes.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser logic explicitly tests and handles JSON array structure in tool call fallbacks."
+      ]
+    },
+    {
+      "id": "proxy-behavior-anthropic-tool-result-continuation-strictness",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Strict preservation of tool results during multi-turn handoffs",
+      "description": "Ensure Anthropic tool results are correctly bound to user messages during continuation boundaries.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Logic handles multi-turn boundaries without dropping tool results."
+      ]
+    },
+    {
+      "id": "proxy-behavior-json-array-fallback-normalization",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Handle JSON array tool-calls in fallbacks",
+      "description": "Ensure text fallback parsing handles arrays of JSON objects appropriately.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Text fallback parses tool call arrays successfully."
       ]
     }
   ]
