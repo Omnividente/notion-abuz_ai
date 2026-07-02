@@ -3579,7 +3579,7 @@
     },
     {
       "id": "proxy-observability-multi-agent-schema-truncation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add regression test for multi-agent tool schema truncation",
@@ -3606,6 +3606,36 @@
       ],
       "acceptance": [
         "Parser correctly extracts single and multiple tool calls in arrays containing single item strings that are very large."
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-test-robustness-22b8",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate array extraction edge cases for duplicate keys",
+      "description": "Add regression test coverage for extraction logic where valid JSON arrays contain tool calls with duplicate keys.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser correctly extracts single and multiple tool calls in arrays containing duplicate keys."
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-test-robustness-22b9",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate array extraction edge cases for unescaped newlines",
+      "description": "Add regression test coverage for extraction logic where valid JSON arrays contain tool calls with unescaped newlines.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser correctly extracts single and multiple tool calls in arrays containing unescaped newlines."
       ]
     }
   ]

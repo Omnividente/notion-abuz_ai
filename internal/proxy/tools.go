@@ -203,6 +203,7 @@ func simplifySchemaNode(schema interface{}, inArrayItems bool) interface{} {
 				if s, ok := val.(string); ok {
 					if len([]rune(s)) > 200 {
 						out[key] = string([]rune(s)[:197]) + "..."
+						log.Printf("[bridge] diagnostics: simplifyToolSchema truncated large description to prevent token bloat")
 					} else {
 						out[key] = s
 					}
