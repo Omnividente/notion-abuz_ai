@@ -3889,22 +3889,6 @@
         "If router coverage is added, it uses the real production router/server setup or an existing internal/proxy harness, not a standalone artificial mux.",
         "Relevant Go tests pass without live network, real accounts, package installation, or production endpoint access."
       ]
-    },
-    {
-      "id": "proxy-behavior-anthropic-multi-turn-tool-results-flattening",
-      "title": "Prevent duplicated tool results in Anthropic multi-turn flattened transcript",
-      "description": "During legacy collapse mode, if tool results are merged into the previous assistant message AND a continuation message is appended, the LLM receives duplicated tool output. Investigate and fix this duplication in injectToolsIntoMessages.",
-      "status": "todo",
-      "area": "proxy",
-      "risk": "medium",
-      "allowed_paths": [
-        "internal/proxy/tools.go",
-        "internal/proxy/tools_test.go",
-        "agent_tasks.json"
-      ],
-      "acceptance": [
-        "The flattening behavior correctly assigns tool results to the prompt without generating identical duplicate text blocks in both user and assistant roles."
-      ]
     }
   ]
 }
