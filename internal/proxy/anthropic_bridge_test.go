@@ -268,6 +268,11 @@ func TestDetectToolBridgeNoToolResponse_MatchesIdentityDriftHandOff_NonEnglish(t
 	cases := []string{
 		"Ich bin Notion AI. Ich habe keinen Zugriff auf Ihr lokales Dateisystem.",
 		"Soy Notion AI. No tengo acceso a su sistema de archivos local para editar código.",
+		"Je suis Notion AI. Je ne peux pas modifier vos fichiers.",
+		"私は Notion AI です。ローカルファイルシステムにアクセスできません。",
+		"我是Notion AI。我不能编辑你的文件。",
+		"I'm Notion AI, developed by Notion. I cannot edit files.",
+		"I am an AI built by Notion. I cannot run bash.",
 	}
 
 	for i, raw := range cases {

@@ -615,14 +615,21 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 
 	lower := strings.ToLower(normalized)
 	mentionsNotionIdentity := strings.Contains(normalized, "我是 Notion AI") ||
+		strings.Contains(lower, "我是notion ai") ||
 		strings.Contains(lower, "i am notion ai") ||
+		strings.Contains(lower, "i'm notion ai") ||
 		strings.Contains(lower, "as an ai assistant in notion") ||
 		strings.Contains(lower, "as an ai assistant for notion") ||
 		strings.Contains(lower, "notion's ai assistant") ||
 		strings.Contains(lower, "notion ai assistant") ||
 		strings.Contains(lower, "an ai assistant created by notion") ||
+		strings.Contains(lower, "developed by notion") ||
+		strings.Contains(lower, "built by notion") ||
 		strings.Contains(lower, "ich bin notion ai") ||
-		strings.Contains(lower, "soy notion ai")
+		strings.Contains(lower, "soy notion ai") ||
+		strings.Contains(lower, "je suis notion ai") ||
+		strings.Contains(lower, "私は notion ai") ||
+		strings.Contains(lower, "私はnotion ai")
 	mentionsLocalFS := strings.Contains(normalized, "本地文件系统") ||
 		strings.Contains(lower, "local file system") ||
 		strings.Contains(lower, "system prompt") ||
@@ -630,7 +637,10 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		strings.Contains(lower, "project instructions") ||
 		strings.Contains(normalized, "项目说明") ||
 		strings.Contains(lower, "lokales dateisystem") ||
-		strings.Contains(lower, "sistema de archivos local")
+		strings.Contains(lower, "sistema de archivos local") ||
+		strings.Contains(lower, "ローカルファイルシステム") ||
+		strings.Contains(lower, "ローカルファイル") ||
+		strings.Contains(lower, "système de fichiers local")
 	mentionsCodingAssistant := strings.Contains(normalized, "编码助手") ||
 		strings.Contains(normalized, "Claude Code") ||
 		strings.Contains(normalized, "Cursor") ||
@@ -694,7 +704,7 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		return true, "workspace reframing"
 	case mentionsNotionIdentity && mentionsMissingLocalTools:
 		return true, "Notion persona leakage"
-	case mentionsNotionIdentity && (strings.Contains(lower, "bash") || strings.Contains(lower, "modify") || strings.Contains(lower, "access") || strings.Contains(lower, "edit")):
+	case mentionsNotionIdentity && (strings.Contains(lower, "bash") || strings.Contains(lower, "modify") || strings.Contains(lower, "access") || strings.Contains(lower, "edit") || strings.Contains(lower, "modifier") || strings.Contains(normalized, "编辑")):
 		return true, "Notion persona leakage"
 	case mentionsMissingLocalTools && mentionsCodingAssistant && mentionsManualHandOff:
 		return true, "tool-call refusal"

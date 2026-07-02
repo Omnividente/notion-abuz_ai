@@ -3702,7 +3702,7 @@
     },
     {
       "id": "proxy-behavior-notion-persona-leakage-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Enhance Notion persona leakage detection in fallback handling",
