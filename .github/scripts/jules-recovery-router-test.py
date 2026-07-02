@@ -282,6 +282,10 @@ class RecoveryRouterTest(unittest.TestCase):
             router.enrich_open_pull_git_conflicts(open_pulls, repo=REPO)
 
         self.assertEqual(run.call_count, 2)
+        fetch_cmd = run.call_args_list[0].args[0]
+        self.assertIn("--depth=2000", fetch_cmd)
+        self.assertIn("master:refs/remotes/origin/master", fetch_cmd)
+        self.assertIn("jules/task-1234567890123456789:refs/remotes/origin/jules/task-1234567890123456789", fetch_cmd)
         self.assertFalse(open_pulls[0]["mergeable"])
         self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
         self.assertEqual(open_pulls[0]["mergeability_source"], "git-merge-tree")
@@ -295,6 +299,43 @@ class RecoveryRouterTest(unittest.TestCase):
         run.assert_not_called()
         self.assertTrue(open_pulls[0]["mergeable"])
         self.assertEqual(open_pulls[0]["mergeable_state"], "clean")
+
+    def test_git_conflict_fallback_unshallows_unrelated_histories(self) -> None:
+        open_pulls = [
+            pr(
+                labels=["jules"],
+                head_ref="jules/task-1234567890123456789",
+                mergeable=None,
+                mergeable_state="unknown",
+            )
+        ]
+        fetch = router.subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        unrelated = router.subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout="",
+            stderr="fatal: refusing to merge unrelated histories",
+        )
+        unshallow = router.subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        fetch_full = router.subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        conflict = router.subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout="CONFLICT (content): Merge conflict in agent_tasks.json",
+            stderr="",
+        )
+
+        with patch.object(
+            router.subprocess,
+            "run",
+            side_effect=[fetch, unrelated, unshallow, fetch_full, conflict],
+        ) as run:
+            router.enrich_open_pull_git_conflicts(open_pulls, repo=REPO)
+
+        self.assertEqual(run.call_count, 5)
+        self.assertIn("--unshallow", run.call_args_list[2].args[0])
+        self.assertFalse(open_pulls[0]["mergeable"])
+        self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
 
     def test_quality_fix_posts_comment_and_sends_session_message(self) -> None:
         actions = plan(state(open_pulls=[pr(labels=["jules", "needs-quality-fix"])]))
