@@ -173,6 +173,20 @@ func TestDetectToolBridgeNoToolResponse_MatchesExtendedPersonaLeakage(t *testing
 	}
 }
 
+func TestDetectToolBridgeNoToolResponse_MatchesLiveWithinNotionToolRefusal(t *testing.T) {
+	raw := `I cannot run those Bash/Edit/Read functions from here, and I also cannot directly access or repair your local Hyper-V networking or SSH from within Notion.
+
+Based on the output you pasted, the environment where the commands ran is missing basic networking tools.`
+
+	isNoTool, reason := detectToolBridgeNoToolResponse(raw)
+	if !isNoTool {
+		t.Fatalf("expected live within-Notion tool refusal to be detected")
+	}
+	if reason != "Notion persona leakage" {
+		t.Fatalf("expected reason 'Notion persona leakage', got %q", reason)
+	}
+}
+
 func TestEnsureComplexToolCallRefusalLoggedAsDecision(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-ndjson")

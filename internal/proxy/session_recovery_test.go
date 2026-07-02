@@ -145,6 +145,39 @@ func TestBuildToolBridgeRecoveryMessagesSkipsToolCallRefusal(t *testing.T) {
 	}
 }
 
+func TestBuildToolBridgeRecoveryMessagesSkipsWithinNotionToolRefusal(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "system", Content: "System prompt"},
+		{Role: "user", Content: "Fix SSH access to the Hyper-V VMs."},
+		{Role: "assistant", Content: "I cannot run those Bash/Edit/Read functions from here, and I also cannot directly access or repair your local Hyper-V networking or SSH from within Notion."},
+		{Role: "tool", Name: "Bash", Content: "ip: command not found"},
+		{Role: "user", Content: "continue"},
+	}
+
+	got := buildToolBridgeRecoveryMessages(messages)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 collapsed message, got %d", len(got))
+	}
+
+	body := got[0].Content
+	for _, leaked := range []string{"from within Notion", "Bash/Edit/Read functions from here"} {
+		if strings.Contains(body, leaked) {
+			t.Fatalf("tool recovery should drop within-Notion refusal text %q, got %q", leaked, body)
+		}
+	}
+	for _, want := range []string{
+		"System instructions:",
+		"System prompt",
+		"User: Fix SSH access to the Hyper-V VMs.",
+		"Tool (Bash): ip: command not found",
+		"Latest user message:\ncontinue",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected tool recovery prompt to contain %q, got %q", want, body)
+		}
+	}
+}
+
 func TestBuildToolBridgeRecoveryMessagesSkipsJSONModeLoss(t *testing.T) {
 	messages := []ChatMessage{
 		{Role: "system", Content: "System prompt"},

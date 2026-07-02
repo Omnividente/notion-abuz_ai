@@ -659,6 +659,16 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 	mentionsMissingLocalTools := strings.Contains(lower, "read") &&
 		strings.Contains(lower, "edit") &&
 		strings.Contains(lower, "bash")
+	mentionsToolExecutionBoundary := strings.Contains(lower, "from here") ||
+		strings.Contains(lower, "directly access") ||
+		strings.Contains(lower, "directly run") ||
+		strings.Contains(lower, "actually have") ||
+		strings.Contains(lower, "do not have") ||
+		strings.Contains(lower, "don't have") ||
+		strings.Contains(lower, "cannot run") ||
+		strings.Contains(lower, "can't run")
+	mentionsNotionExecutionContext := strings.Contains(lower, "within notion") ||
+		strings.Contains(lower, "from within notion")
 
 	if mentionsMissingLocalTools {
 		log.Printf("[bridge] diagnostic: missing local tools explicitly mentioned in residual text")
@@ -696,6 +706,10 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 	switch {
 	case mentionsNotionIdentity && mentionsLocalFS:
 		return true, "Notion persona leakage"
+	case mentionsNotionExecutionContext && (mentionsMissingLocalTools || mentionsToolExecutionBoundary || strings.Contains(lower, "local") || strings.Contains(lower, "ssh") || strings.Contains(lower, "hyper-v")):
+		return true, "Notion persona leakage"
+	case mentionsMissingLocalTools && mentionsToolExecutionBoundary:
+		return true, "tool-call refusal"
 	case mentionsLocalFS && mentionsCodingAssistant:
 		return true, "tool-call refusal"
 	case mentionsNotionIdentity && mentionsCodingAssistant:
