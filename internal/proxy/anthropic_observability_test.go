@@ -116,6 +116,74 @@ func TestEnsureToolCallRefusalLoggedAsDecision(t *testing.T) {
 	}
 }
 
+func TestMCPServerRefusalDiagnosticLog(t *testing.T) {
+	var buf bytes.Buffer
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+	}()
+
+	// A sample text that mentions mcp server
+	text := "I do not have access to modify the mcp server configuration."
+
+	detectToolBridgeNoToolResponse(text)
+
+	output := buf.String()
+	expectedLogFragment := "[bridge] diagnostic: mcp server explicitly mentioned in residual text"
+
+	if !strings.Contains(output, expectedLogFragment) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
+	}
+}
+
+func TestEnsureMCPServerRefusalLoggedAsDecision(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.WriteHeader(http.StatusOK)
+
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I do not have access to the local file system. You will need to manually adjust your mcp server configuration."}]}` + "\n"))
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [], "finishedAt":"2023-01-01T00:00:00Z"}` + "\n"))
+	}))
+	defer ts.Close()
+
+	origBase := NotionAPIBase
+	NotionAPIBase = ts.URL
+	defer func() { NotionAPIBase = origBase }()
+
+	origClient := getChromeHTTPClient
+	getChromeHTTPClient = func(timeout time.Duration) *http.Client {
+		return ts.Client()
+	}
+	defer func() { getChromeHTTPClient = origClient }()
+
+	var buf bytes.Buffer
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+	}()
+
+	acc := &Account{UserEmail: "test4@test.com"}
+	messages := []ChatMessage{{Role: "user", Content: "test4"}}
+
+	_ = handleAnthropicNonStream(
+		httptest.NewRecorder(), acc, messages, "claude-3-opus", "req_test_4",
+		true, false, false, nil, false, nil, nil, nil,
+	)
+
+	output := buf.String()
+	expectedLogFragmentDecision := "[bridge] req_test_4 decision: tool-call refusal explicitly detected"
+	expectedLogFragmentDiagnostic := "mcp server explicitly mentioned"
+
+	if !strings.Contains(output, expectedLogFragmentDecision) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragmentDecision, output)
+	}
+	if !strings.Contains(output, expectedLogFragmentDiagnostic) {
+		t.Fatalf("expected observability diagnostic log to contain %q, but got:\n%s", expectedLogFragmentDiagnostic, output)
+	}
+}
+
 func TestSystemPromptDiagnosticLog(t *testing.T) {
 	var buf bytes.Buffer
 	originalWriter := globalLogWriter.out

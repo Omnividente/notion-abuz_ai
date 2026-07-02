@@ -3562,7 +3562,7 @@
     },
     {
       "id": "proxy-observability-mcp-server-refusal",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add diagnostic coverage for mcp server refusal",
@@ -3591,6 +3591,21 @@
       ],
       "acceptance": [
         "Behavioral or diagnostic test coverage exists proving simplifyToolSchema truncates schemas properly."
+      ]
+    },
+    {
+      "id": "proxy-observability-array-extraction-test-robustness-22b7",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate array extraction edge cases for large json values",
+      "description": "Add regression test coverage for extraction logic where valid JSON arrays contain single item strings that are very large.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Parser correctly extracts single and multiple tool calls in arrays containing single item strings that are very large."
       ]
     }
   ]
