@@ -311,6 +311,14 @@ func TestDetectToolBridgeNoToolResponse_JSONModeLossRefusal(t *testing.T) {
 			raw:      "```json\n{\n  \"error\": \"I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant.\"\n}\n```",
 			expected: "tool-call refusal",
 		},
+		{
+			raw:      "```json\n{\n  \"message\": \"I do not have access to run terminal commands such as bash or read or edit local files.\",\n  \"nested\": {\"details\": \"You will need to copy and paste this into your coding assistant.\"}\n}\n```",
+			expected: "tool-call refusal",
+		},
+		{
+			raw:      "```json\n[\n  \"I cannot run bash commands to modify files. However, I can help you create a Notion page.\"\n]\n```",
+			expected: "workspace reframing",
+		},
 	}
 
 	for i, c := range cases {

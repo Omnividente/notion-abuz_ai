@@ -3764,7 +3764,7 @@
     },
     {
       "id": "proxy-behavior-tool-call-refusal-normalization",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Normalize extracted error strings during tool-call refusal",

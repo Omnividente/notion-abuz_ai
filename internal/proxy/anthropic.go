@@ -586,6 +586,26 @@ func prepareToolBridgeResponse(content string, nativeToolUses []AgentValueEntry)
 	return prepared
 }
 
+func extractAllStringsFromJSON(v interface{}) []string {
+	var res []string
+	switch val := v.(type) {
+	case string:
+		s := strings.TrimSpace(val)
+		if s != "" {
+			res = append(res, s)
+		}
+	case []interface{}:
+		for _, item := range val {
+			res = append(res, extractAllStringsFromJSON(item)...)
+		}
+	case map[string]interface{}:
+		for _, item := range val {
+			res = append(res, extractAllStringsFromJSON(item)...)
+		}
+	}
+	return res
+}
+
 func normalizeToolBridgeResidualText(text string) string {
 	trimmed := strings.TrimSpace(text)
 	if trimmed == "" {
@@ -596,10 +616,11 @@ func normalizeToolBridgeResidualText(text string) string {
 	// If the model loses JSON tool-call mode and writes text or refusal inside a JSON structure
 	mdMatches := mdFenceRegex.FindAllStringSubmatch(trimmed, -1)
 	for _, match := range mdMatches {
-		var dummy map[string]interface{}
+		var dummy interface{}
 		if err := json.Unmarshal([]byte(match[1]), &dummy); err == nil {
-			if errStr, ok := dummy["error"].(string); ok {
-				trimmed = trimmed + "\n" + errStr
+			strs := extractAllStringsFromJSON(dummy)
+			if len(strs) > 0 {
+				trimmed = trimmed + "\n" + strings.Join(strs, "\n")
 			}
 		}
 	}
