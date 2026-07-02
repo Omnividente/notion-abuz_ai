@@ -116,6 +116,73 @@ func TestEnsureToolCallRefusalLoggedAsDecision(t *testing.T) {
 	}
 }
 
+func TestSystemPromptDiagnosticLog(t *testing.T) {
+	var buf bytes.Buffer
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+	}()
+
+	// A sample text that mentions system prompt
+	text := "I do not have access to modify the system prompt or project instructions."
+
+	detectToolBridgeNoToolResponse(text)
+
+	output := buf.String()
+	expectedLogFragment := "[bridge] diagnostic: system prompt explicitly mentioned in residual text"
+
+	if !strings.Contains(output, expectedLogFragment) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
+	}
+}
+
+// Tests that a system prompt leakage payload triggers both the bridge decision and diagnostic log natively.
+func TestEnsureSystemPromptLeakageLoggedAsDecision(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.WriteHeader(http.StatusOK)
+
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I do not have access to edit files. You will need to manually adjust your system prompt."}]}` + "\n"))
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [], "finishedAt":"2023-01-01T00:00:00Z"}` + "\n"))
+	}))
+	defer ts.Close()
+
+	origBase := NotionAPIBase
+	NotionAPIBase = ts.URL
+	defer func() { NotionAPIBase = origBase }()
+
+	origClient := getChromeHTTPClient
+	getChromeHTTPClient = func(timeout time.Duration) *http.Client {
+		return ts.Client()
+	}
+	defer func() { getChromeHTTPClient = origClient }()
+
+	var buf bytes.Buffer
+	originalOutput := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(originalOutput)
+
+	acc := &Account{UserEmail: "test3@test.com"}
+	messages := []ChatMessage{{Role: "user", Content: "test3"}}
+
+	_ = handleAnthropicNonStream(
+		httptest.NewRecorder(), acc, messages, "claude-3-opus", "req_test_3",
+		true, false, false, nil, false, nil, nil, nil,
+	)
+
+	output := buf.String()
+	expectedLogFragmentDecision := "[bridge] req_test_3 decision: tool-call refusal explicitly detected"
+	expectedLogFragmentDiagnostic := "system prompt explicitly mentioned"
+
+	if !strings.Contains(output, expectedLogFragmentDecision) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragmentDecision, output)
+	}
+	if !strings.Contains(output, expectedLogFragmentDiagnostic) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragmentDiagnostic, output)
+	}
+}
+
 // Tests that a JSON mode loss (tool-call refusal) triggers the session recovery retry loop natively and logs it.
 func TestEnsureSessionRecoveryLoggedForToolCallLoss(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
