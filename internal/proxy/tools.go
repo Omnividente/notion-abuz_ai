@@ -458,7 +458,7 @@ func sanitizeForBridge(messages []ChatMessage) []ChatMessage {
 // - Inline tags like <command-name>/clear</command-name>
 var (
 	blockTagRegex  = regexp.MustCompile(`(?s)<(?:system-reminder|local-command-caveat|available-deferred-tools)>.*?</(?:system-reminder|local-command-caveat|available-deferred-tools)>`)
-	inlineTagRegex = regexp.MustCompile(`</?[a-z][-a-z0-9]*(?:\s+[^>]*?)?>`)
+	inlineTagRegex = regexp.MustCompile(`</?(?:command-name|file|package|mcp-server|project-instructions|hook-reminder|subagent-task|subagent|inner|other|hook|command)(?:\s+[^>]*?)?>`)
 )
 
 func stripClaudeCodeInstructions(content string) string {
