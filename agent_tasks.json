@@ -3470,7 +3470,7 @@
     },
     {
       "id": "proxy-observability-manual-handoff-diagnostics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add diagnostic logging for manual handoff",
