@@ -6,6 +6,7 @@ on:
     types: [opened, synchronize, reopened, labeled, ready_for_review]
 
 permissions:
+  actions: write
   contents: write
   issues: write
   pull-requests: write
@@ -134,7 +135,7 @@ jobs:
       - name: Stop weak autonomous PR before merge
         if: steps.quality.outputs.passed != 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PAT || github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           QUALITY_SUMMARY: ${{ steps.quality.outputs.summary }}
@@ -181,6 +182,21 @@ jobs:
               >/dev/null
             echo "Created autonomous quality-fix request comment."
           fi
+
+          dispatch_body="$(jq -n '{
+            ref: "master",
+            inputs: {
+              mode: "act",
+              health_mode: "enforce"
+            }
+          }')"
+
+          gh api \
+            -X POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_recovery_router.yml/dispatches" \
+            --input <(printf '%s' "$dispatch_body") \
+            >/dev/null
+          echo "Dispatched Jules Recovery Router for immediate quality-fix recovery."
 
           echo "::error::Autonomous PR quality gate failed: ${{ steps.quality.outputs.summary }}"
           exit 1
