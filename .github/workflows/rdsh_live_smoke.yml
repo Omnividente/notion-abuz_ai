@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RDSH_API_KEY: ${{ secrets.RDSH_API_KEY }}
-      RDSH_BASE_URL: ${{ vars.RDSH_BASE_URL || 'https://rdsh.uchitel-izd.com:3120/v1' }}
+      RDSH_BASE_URL: ${{ secrets.RDSH_BASE_URL }}
       SMOKE_MODEL: ${{ inputs.model || 'opus-4.8-high' }}
 
     steps:
@@ -30,6 +30,10 @@ jobs:
           set -euo pipefail
           if [ -z "${RDSH_API_KEY:-}" ]; then
             echo "::error::Missing repository secret RDSH_API_KEY."
+            exit 1
+          fi
+          if [ -z "${RDSH_BASE_URL:-}" ]; then
+            echo "::error::Missing repository secret RDSH_BASE_URL."
             exit 1
           fi
 
