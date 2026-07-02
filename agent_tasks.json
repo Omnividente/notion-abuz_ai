@@ -3803,7 +3803,7 @@
     },
     {
       "id": "proxy-behavior-anthropic-tool-result-continuation-preservation",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Preserve tool results strictly during multi-turn continuation",
@@ -3816,7 +3816,8 @@
       ],
       "acceptance": [
         "Diagnostic logs or fixes added to ensure tool results from prior turns are properly preserved in session continuation."
-      ]
+      ],
+      "blocked_reason": "PR branch has an unresolvable Git merge conflict with master because the submit tool stacks commits instead of rebasing or pushing a merge commit, causing identical task additions to conflict."
     },
     {
       "id": "proxy-behavior-tool-call-array-fallback-normalization",
