@@ -857,10 +857,14 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				// Sonnet/Opus: merge tool result into the previous assistant message
 				// to create a natural conversation without JSON traces
 				toolName := resolveToolName(msg)
+				content := msg.Content
+				if content == "" {
+					content = "(empty output)"
+				}
 				if pendingToolResults.Len() > 0 {
 					pendingToolResults.WriteString("\n\n")
 				}
-				pendingToolResults.WriteString(fmt.Sprintf("Results from %s:\n%s", toolName, msg.Content))
+				pendingToolResults.WriteString(fmt.Sprintf("Results from %s:\n%s", toolName, content))
 
 				// Look ahead: if next message is also tool, keep accumulating
 				if i+1 < len(messages) && messages[i+1].Role == "tool" {
@@ -921,10 +925,14 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 			} else {
 				// Haiku: prepend tool results to next user message
 				toolName := resolveToolName(msg)
+				content := msg.Content
+				if content == "" {
+					content = "(empty output)"
+				}
 				if pendingToolResults.Len() > 0 {
 					pendingToolResults.WriteString("\n\n")
 				}
-				pendingToolResults.WriteString(fmt.Sprintf("[Data from %s]:\n%s", toolName, msg.Content))
+				pendingToolResults.WriteString(fmt.Sprintf("[Data from %s]:\n%s", toolName, content))
 				if i+1 >= len(messages) {
 					var haikuContinuationMessage string
 					if chainCompactList != "" {
@@ -1076,6 +1084,9 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 		} else if m.Role == "tool" {
 			name := resolveName(m)
 			content := m.Content
+			if content == "" {
+				content = "(empty output)"
+			}
 
 			// Simple heuristics for errors
 			lowerContent := strings.ToLower(content)

@@ -3780,7 +3780,7 @@
     },
     {
       "id": "proxy-behavior-anthropic-tool-result-continuation-preservation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Preserve tool results strictly during multi-turn continuation",
@@ -3812,7 +3812,7 @@
     },
     {
       "id": "proxy-behavior-anthropic-tool-result-continuation-strictness",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Strict preservation of tool results during multi-turn handoffs",
@@ -3864,6 +3864,39 @@
         "The implementation adds retry/refetch behavior, incomplete-context diagnostics, or a documented bridge decision that prevents silently treating partial context as complete.",
         "If router coverage is added, it uses the real production router/server setup or an existing internal/proxy harness, not a standalone artificial mux.",
         "Relevant Go tests pass without live network, real accounts, package installation, or production endpoint access."
+      ]
+    },
+    {
+      "id": "proxy-behavior-anthropic-empty-tool-result-robustness",
+      "title": "Enhance Anthropic empty tool result robustness in parser",
+      "description": "Ensure that the parser handles Anthropic empty tool results properly during multi-turn continuation by adding more comprehensive tests.",
+      "status": "todo",
+      "risk": "medium",
+      "area": "proxy",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests added for empty tool results during multi-turn continuation."
+      ]
+    },
+    {
+      "id": "proxy-behavior-anthropic-multi-turn-tool-results-flattening",
+      "title": "Prevent duplicated tool results in Anthropic multi-turn flattened transcript",
+      "description": "During legacy collapse mode, if tool results are merged into the previous assistant message AND a continuation message is appended, the LLM receives duplicated tool output. Investigate and fix this duplication in injectToolsIntoMessages.",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The flattening behavior correctly assigns tool results to the prompt without generating identical duplicate text blocks in both user and assistant roles."
       ]
     }
   ]
