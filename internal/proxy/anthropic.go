@@ -649,6 +649,11 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 	mentionsMissingLocalTools := strings.Contains(lower, "read") &&
 		strings.Contains(lower, "edit") &&
 		strings.Contains(lower, "bash")
+
+	if mentionsMissingLocalTools {
+		log.Printf("[bridge] diagnostic: missing local tools explicitly mentioned in residual text")
+	}
+
 	mentionsWorkspaceReframing := strings.Contains(lower, "notion page") ||
 		strings.Contains(lower, "notion workspace") ||
 		strings.Contains(lower, "notion database") ||

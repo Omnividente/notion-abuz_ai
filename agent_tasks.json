@@ -3485,7 +3485,7 @@
     },
     {
       "id": "proxy-observability-missing-local-tools-diagnostics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add diagnostic logging for missing local tools",
@@ -3541,6 +3541,40 @@
       ],
       "acceptance": [
         "Parser correctly extracts multiple tool calls in arrays."
+      ]
+    },
+    {
+      "id": "proxy-observability-system-prompt-leakage",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add regression test for system prompt leakage",
+      "description": "Add diagnostic logging and behavioral test coverage for identity drift where the assistant explicitly states it cannot change the system prompt.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_test.go",
+        "internal/proxy/anthropic_observability_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic or behavioral test coverage for system prompt leakage drift exists."
+      ]
+    },
+    {
+      "id": "proxy-observability-mcp-server-refusal",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add diagnostic coverage for mcp server refusal",
+      "description": "Ensure there is explicit behavioral test coverage or diagnostic logging for tool-call refusals explicitly referencing the mcp server configuration.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_test.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logs or behavioral tests are implemented for mcp server refusals."
       ]
     }
   ]

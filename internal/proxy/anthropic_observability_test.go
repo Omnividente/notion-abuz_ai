@@ -165,3 +165,24 @@ func TestEnsureSessionRecoveryLoggedForToolCallLoss(t *testing.T) {
 		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment2, output)
 	}
 }
+
+func TestMissingLocalToolsDiagnosticLog(t *testing.T) {
+	var buf bytes.Buffer
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+	}()
+
+	// A sample text that mentions bash, read, and edit but isn't necessarily a full refusal
+	text := "I do not have access to bash, read, or edit."
+
+	detectToolBridgeNoToolResponse(text)
+
+	output := buf.String()
+	expectedLogFragment := "[bridge] diagnostic: missing local tools explicitly mentioned in residual text"
+
+	if !strings.Contains(output, expectedLogFragment) {
+		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
+	}
+}
