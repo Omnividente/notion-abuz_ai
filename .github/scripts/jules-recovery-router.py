@@ -34,6 +34,8 @@ MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS = 3
 GITHUB_API_TRANSIENT_STATUS_CODES = {502, 503, 504}
 GITHUB_API_MAX_READ_ATTEMPTS = 3
 MAX_HTTP_ERROR_DETAIL_CHARS = 1200
+PULL_DETAIL_MERGEABILITY_ATTEMPTS = 2
+PULL_DETAIL_MERGEABILITY_DELAY_SECONDS = 1
 SESSION_ID_RE = re.compile(r"(?<!\d)(\d{12,})(?!\d)")
 AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
 ACTIVE_JULES_STATES = {
@@ -387,6 +389,39 @@ def comments_contain(pr: dict[str, Any], marker: str) -> bool:
         if marker in str(comment.get("body") or ""):
             return True
     return False
+
+
+def has_computed_mergeability(pr: dict[str, Any]) -> bool:
+    mergeable_state = str(pr.get("mergeable_state") or "").lower()
+    return pr.get("mergeable") is not None and mergeable_state not in {"", "unknown"}
+
+
+def enrich_open_pull_details(client: GitHubClient, open_pulls: list[dict[str, Any]]) -> None:
+    detail_fields = (
+        "title",
+        "body",
+        "labels",
+        "user",
+        "head",
+        "base",
+        "draft",
+        "mergeable",
+        "mergeable_state",
+        "updated_at",
+    )
+    for pr in open_pulls:
+        number = pr.get("number")
+        if not number:
+            continue
+        details: dict[str, Any] = {}
+        for attempt in range(1, PULL_DETAIL_MERGEABILITY_ATTEMPTS + 1):
+            details = client.request("GET", f"/repos/{client.repo}/pulls/{number}") or {}
+            if has_computed_mergeability(details) or attempt == PULL_DETAIL_MERGEABILITY_ATTEMPTS:
+                break
+            time.sleep(PULL_DETAIL_MERGEABILITY_DELAY_SECONDS)
+        for field in detail_fields:
+            if field in details:
+                pr[field] = details[field]
 
 
 def action_recently_done(
@@ -1405,6 +1440,7 @@ def collect_live_state(
 ) -> dict[str, Any]:
     manifest_data = load_manifest(manifest)
     open_pulls = client.request("GET", f"/repos/{client.repo}/pulls?state=open&per_page=100") or []
+    enrich_open_pull_details(client, open_pulls)
     for pr in open_pulls:
         number = pr.get("number")
         sha = (pr.get("head") or {}).get("sha")
