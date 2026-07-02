@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import sys
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT_PATH = Path(__file__).with_name("jules-recovery-router.py")
@@ -21,6 +23,21 @@ SPEC.loader.exec_module(router)
 NOW = datetime(2026, 6, 29, 12, 0, 0, tzinfo=timezone.utc)
 REPO = "Omnividente/notion-abuz_ai"
 TASK_IDS = ["automation-health-failed-session-86122315", "proxy-runtime-fix"]
+
+
+class FakeHTTPResponse:
+    def __init__(self, status: int, body: bytes = b"") -> None:
+        self.status = status
+        self._body = body
+
+    def __enter__(self) -> "FakeHTTPResponse":
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._body
 
 
 def epoch(minutes_ago: int) -> int:
@@ -140,6 +157,45 @@ def plan(input_state: dict, ledger: dict | None = None, health_mode: str = "enfo
 
 
 class RecoveryRouterTest(unittest.TestCase):
+    def test_github_get_retries_transient_503(self) -> None:
+        client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")
+        transient = router.urllib.error.HTTPError(
+            "https://api.github.test/repos/example/actions/runs",
+            503,
+            "Service Unavailable",
+            {},
+            io.BytesIO(b"temporary"),
+        )
+
+        with patch.object(router.urllib.request, "urlopen") as urlopen:
+            with patch.object(router.time, "sleep") as sleep:
+                urlopen.side_effect = [
+                    transient,
+                    FakeHTTPResponse(200, b'{"ok": true}'),
+                ]
+
+                result = client.request("GET", "/repos/example/actions/runs")
+
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(urlopen.call_count, 2)
+        sleep.assert_called_once_with(1)
+
+    def test_github_post_does_not_retry_transient_503(self) -> None:
+        client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")
+        transient = router.urllib.error.HTTPError(
+            "https://api.github.test/repos/example/issues/1/comments",
+            503,
+            "Service Unavailable",
+            {},
+            io.BytesIO(b"temporary"),
+        )
+
+        with patch.object(router.urllib.request, "urlopen", side_effect=transient) as urlopen:
+            with self.assertRaises(RuntimeError):
+                client.request("POST", "/repos/example/issues/1/comments", {"body": "comment"})
+
+        self.assertEqual(urlopen.call_count, 1)
+
     def test_quality_fix_posts_comment_and_sends_session_message(self) -> None:
         actions = plan(state(open_pulls=[pr(labels=["jules", "needs-quality-fix"])]))
 

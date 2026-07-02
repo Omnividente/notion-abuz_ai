@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -30,6 +31,9 @@ MAX_QUALITY_FIX_DETAILS_CHARS = 5000
 STALE_AWAITING_FEEDBACK_MINUTES = 30
 STALE_AWAITING_FEEDBACK_COOLDOWN_MINUTES = 30
 MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS = 3
+GITHUB_API_TRANSIENT_STATUS_CODES = {502, 503, 504}
+GITHUB_API_MAX_READ_ATTEMPTS = 3
+MAX_HTTP_ERROR_DETAIL_CHARS = 1200
 SESSION_ID_RE = re.compile(r"(?<!\d)(\d{12,})(?!\d)")
 AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
 ACTIVE_JULES_STATES = {
@@ -151,17 +155,40 @@ class GitHubClient:
             headers=headers,
             method=method,
         )
-        try:
-            with urllib.request.urlopen(req) as resp:
-                if resp.status not in ok:
-                    raise RuntimeError(f"{method} {path} returned HTTP {resp.status}")
-                raw = resp.read()
-                if not raw:
-                    return None
-                return json.loads(raw.decode("utf-8"))
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"{method} {path} returned HTTP {exc.code}: {detail}") from exc
+        max_attempts = GITHUB_API_MAX_READ_ATTEMPTS if method.upper() in {"GET", "HEAD"} else 1
+        for attempt in range(1, max_attempts + 1):
+            try:
+                with urllib.request.urlopen(req) as resp:
+                    if resp.status not in ok:
+                        raise RuntimeError(f"{method} {path} returned HTTP {resp.status}")
+                    raw = resp.read()
+                    if not raw:
+                        return None
+                    return json.loads(raw.decode("utf-8"))
+            except urllib.error.HTTPError as exc:
+                detail = truncate_http_error_detail(exc.read().decode("utf-8", errors="replace"))
+                if (
+                    exc.code in GITHUB_API_TRANSIENT_STATUS_CODES
+                    and attempt < max_attempts
+                ):
+                    sleep_seconds = 2 ** (attempt - 1)
+                    print(
+                        f"GitHub API transient HTTP {exc.code} for {method} {path}; "
+                        f"retrying in {sleep_seconds}s ({attempt}/{max_attempts}).",
+                        file=sys.stderr,
+                    )
+                    time.sleep(sleep_seconds)
+                    continue
+                raise RuntimeError(f"{method} {path} returned HTTP {exc.code}: {detail}") from exc
+
+        raise RuntimeError(f"{method} {path} failed after {max_attempts} attempts")
+
+
+def truncate_http_error_detail(detail: str) -> str:
+    detail = detail.strip()
+    if len(detail) <= MAX_HTTP_ERROR_DETAIL_CHARS:
+        return detail
+    return detail[:MAX_HTTP_ERROR_DETAIL_CHARS].rstrip() + "\n...[truncated]"
 
 
 class JulesClient:
