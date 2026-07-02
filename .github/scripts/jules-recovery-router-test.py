@@ -261,6 +261,41 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertFalse(open_pulls[0]["mergeable"])
         self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
 
+    def test_git_conflict_fallback_marks_unknown_pr_dirty(self) -> None:
+        open_pulls = [
+            pr(
+                labels=["jules"],
+                head_ref="jules/task-1234567890123456789",
+                mergeable=None,
+                mergeable_state="unknown",
+            )
+        ]
+        fetch = router.subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        merge = router.subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout="Auto-merging agent_tasks.json\nCONFLICT (content): Merge conflict in agent_tasks.json",
+            stderr="",
+        )
+
+        with patch.object(router.subprocess, "run", side_effect=[fetch, merge]) as run:
+            router.enrich_open_pull_git_conflicts(open_pulls, repo=REPO)
+
+        self.assertEqual(run.call_count, 2)
+        self.assertFalse(open_pulls[0]["mergeable"])
+        self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
+        self.assertEqual(open_pulls[0]["mergeability_source"], "git-merge-tree")
+
+    def test_git_conflict_fallback_skips_computed_mergeability(self) -> None:
+        open_pulls = [pr(labels=["jules"], mergeable=True, mergeable_state="clean")]
+
+        with patch.object(router.subprocess, "run") as run:
+            router.enrich_open_pull_git_conflicts(open_pulls, repo=REPO)
+
+        run.assert_not_called()
+        self.assertTrue(open_pulls[0]["mergeable"])
+        self.assertEqual(open_pulls[0]["mergeable_state"], "clean")
+
     def test_quality_fix_posts_comment_and_sends_session_message(self) -> None:
         actions = plan(state(open_pulls=[pr(labels=["jules", "needs-quality-fix"])]))
 

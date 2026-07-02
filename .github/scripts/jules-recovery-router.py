@@ -424,6 +424,44 @@ def enrich_open_pull_details(client: GitHubClient, open_pulls: list[dict[str, An
                 pr[field] = details[field]
 
 
+def enrich_open_pull_git_conflicts(open_pulls: list[dict[str, Any]], *, repo: str) -> None:
+    for pr in open_pulls:
+        if has_computed_mergeability(pr):
+            continue
+        head = pr.get("head") or {}
+        head_ref = str(head.get("ref") or "")
+        head_repo = str((head.get("repo") or {}).get("full_name") or "")
+        if not head_ref or head_repo != repo:
+            continue
+
+        remote_ref = f"refs/remotes/origin/{head_ref}"
+        fetch = subprocess.run(
+            ["git", "fetch", "--no-tags", "--depth=1", "origin", f"{head_ref}:{remote_ref}"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if fetch.returncode != 0:
+            print(
+                f"Could not fetch PR branch {head_ref} for conflict fallback: "
+                f"{(fetch.stderr or fetch.stdout).strip()}",
+                file=sys.stderr,
+            )
+            continue
+
+        merge = subprocess.run(
+            ["git", "merge-tree", "--write-tree", "origin/master", remote_ref],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        merge_output = f"{merge.stdout}\n{merge.stderr}"
+        if merge.returncode != 0 and "CONFLICT" in merge_output:
+            pr["mergeable"] = False
+            pr["mergeable_state"] = "dirty"
+            pr["mergeability_source"] = "git-merge-tree"
+
+
 def action_recently_done(
     ledger: dict[str, Any],
     dedupe_key: str,
@@ -1441,6 +1479,7 @@ def collect_live_state(
     manifest_data = load_manifest(manifest)
     open_pulls = client.request("GET", f"/repos/{client.repo}/pulls?state=open&per_page=100") or []
     enrich_open_pull_details(client, open_pulls)
+    enrich_open_pull_git_conflicts(open_pulls, repo=client.repo)
     for pr in open_pulls:
         number = pr.get("number")
         sha = (pr.get("head") or {}).get("sha")
