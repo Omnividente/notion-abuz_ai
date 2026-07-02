@@ -3637,6 +3637,29 @@
       "acceptance": [
         "Parser correctly extracts single and multiple tool calls in arrays containing unescaped newlines."
       ]
+    },
+    {
+      "id": "automation-health-no-eligible-autonomous-task-7f53bcea",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: no_eligible_autonomous_task",
+      "description": "Automation Health reported degraded finding `no_eligible_autonomous_task` in window `current`. Message: Todo tasks exist, but none are eligible under risk ceiling and micro-task policy. Evidence: {\"eligible_count\": 0, \"reason\": \"no eligible todo task matched the risk ceiling and micro-task policy\", \"rejected_count\": 6, \"rejected_task_ids\": [\"proxy-observability-array-extraction-test-robustness-22b4\", \"proxy-observability-array-extraction-test-robustness-22b5\", \"proxy-observability-array-extraction-test-robustness-22b6\", \"proxy-observability-array-extraction-test-robustness-22b7\", \"proxy-observability-array-extraction-test-robustness-22b8\", \"proxy-observability-array-extraction-test-robustness-22b9\"], \"todo_count\": 6}",
+      "allowed_paths": [
+        "scripts/select_agent_task.py",
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/create-automation-meta-task-pr.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `no_eligible_autonomous_task` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `no_eligible_autonomous_task`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "7f53bcea5c09",
+      "health_finding_code": "no_eligible_autonomous_task",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-02T11:33:34Z"
     }
   ]
 }
