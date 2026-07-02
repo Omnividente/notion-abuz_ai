@@ -685,6 +685,8 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 		log.Printf("[bridge] diagnostic: missing local tools explicitly mentioned in residual text")
 	}
 
+	mentionsCurrentInterfaceRefusal := strings.Contains(lower, "cannot directly execute") && strings.Contains(lower, "current interface")
+
 	mentionsMCPServerRefusal := strings.Contains(lower, "mcp server")
 
 	if mentionsMCPServerRefusal {
@@ -728,6 +730,8 @@ func detectToolBridgeNoToolResponse(text string) (bool, string) {
 	case mentionsNotionIdentity && (strings.Contains(lower, "bash") || strings.Contains(lower, "modify") || strings.Contains(lower, "access") || strings.Contains(lower, "edit") || strings.Contains(lower, "modifier") || strings.Contains(normalized, "编辑")):
 		return true, "Notion persona leakage"
 	case mentionsMissingLocalTools && mentionsCodingAssistant && mentionsManualHandOff:
+		return true, "tool-call refusal"
+	case mentionsCurrentInterfaceRefusal:
 		return true, "tool-call refusal"
 	case mentionsManualHandOff:
 		return true, "manual handoff"
