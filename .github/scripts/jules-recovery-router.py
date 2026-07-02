@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -24,10 +25,17 @@ ACTIVE_NEXT_TASK_COOLDOWN_MINUTES = 10
 HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
 RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
 MONITOR_COOLDOWN_MINUTES = 7
+QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES = 30
+CONFLICT_RECOVERY_COOLDOWN_MINUTES = 30
 MAX_QUALITY_FIX_DETAILS_CHARS = 5000
 STALE_AWAITING_FEEDBACK_MINUTES = 30
 STALE_AWAITING_FEEDBACK_COOLDOWN_MINUTES = 30
 MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS = 3
+GITHUB_API_TRANSIENT_STATUS_CODES = {502, 503, 504}
+GITHUB_API_MAX_READ_ATTEMPTS = 3
+MAX_HTTP_ERROR_DETAIL_CHARS = 1200
+PULL_DETAIL_MERGEABILITY_ATTEMPTS = 2
+PULL_DETAIL_MERGEABILITY_DELAY_SECONDS = 1
 SESSION_ID_RE = re.compile(r"(?<!\d)(\d{12,})(?!\d)")
 AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
 ACTIVE_JULES_STATES = {
@@ -149,17 +157,40 @@ class GitHubClient:
             headers=headers,
             method=method,
         )
-        try:
-            with urllib.request.urlopen(req) as resp:
-                if resp.status not in ok:
-                    raise RuntimeError(f"{method} {path} returned HTTP {resp.status}")
-                raw = resp.read()
-                if not raw:
-                    return None
-                return json.loads(raw.decode("utf-8"))
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"{method} {path} returned HTTP {exc.code}: {detail}") from exc
+        max_attempts = GITHUB_API_MAX_READ_ATTEMPTS if method.upper() in {"GET", "HEAD"} else 1
+        for attempt in range(1, max_attempts + 1):
+            try:
+                with urllib.request.urlopen(req) as resp:
+                    if resp.status not in ok:
+                        raise RuntimeError(f"{method} {path} returned HTTP {resp.status}")
+                    raw = resp.read()
+                    if not raw:
+                        return None
+                    return json.loads(raw.decode("utf-8"))
+            except urllib.error.HTTPError as exc:
+                detail = truncate_http_error_detail(exc.read().decode("utf-8", errors="replace"))
+                if (
+                    exc.code in GITHUB_API_TRANSIENT_STATUS_CODES
+                    and attempt < max_attempts
+                ):
+                    sleep_seconds = 2 ** (attempt - 1)
+                    print(
+                        f"GitHub API transient HTTP {exc.code} for {method} {path}; "
+                        f"retrying in {sleep_seconds}s ({attempt}/{max_attempts}).",
+                        file=sys.stderr,
+                    )
+                    time.sleep(sleep_seconds)
+                    continue
+                raise RuntimeError(f"{method} {path} returned HTTP {exc.code}: {detail}") from exc
+
+        raise RuntimeError(f"{method} {path} failed after {max_attempts} attempts")
+
+
+def truncate_http_error_detail(detail: str) -> str:
+    detail = detail.strip()
+    if len(detail) <= MAX_HTTP_ERROR_DETAIL_CHARS:
+        return detail
+    return detail[:MAX_HTTP_ERROR_DETAIL_CHARS].rstrip() + "\n...[truncated]"
 
 
 class JulesClient:
@@ -360,6 +391,77 @@ def comments_contain(pr: dict[str, Any], marker: str) -> bool:
     return False
 
 
+def has_computed_mergeability(pr: dict[str, Any]) -> bool:
+    mergeable_state = str(pr.get("mergeable_state") or "").lower()
+    return pr.get("mergeable") is not None and mergeable_state not in {"", "unknown"}
+
+
+def enrich_open_pull_details(client: GitHubClient, open_pulls: list[dict[str, Any]]) -> None:
+    detail_fields = (
+        "title",
+        "body",
+        "labels",
+        "user",
+        "head",
+        "base",
+        "draft",
+        "mergeable",
+        "mergeable_state",
+        "updated_at",
+    )
+    for pr in open_pulls:
+        number = pr.get("number")
+        if not number:
+            continue
+        details: dict[str, Any] = {}
+        for attempt in range(1, PULL_DETAIL_MERGEABILITY_ATTEMPTS + 1):
+            details = client.request("GET", f"/repos/{client.repo}/pulls/{number}") or {}
+            if has_computed_mergeability(details) or attempt == PULL_DETAIL_MERGEABILITY_ATTEMPTS:
+                break
+            time.sleep(PULL_DETAIL_MERGEABILITY_DELAY_SECONDS)
+        for field in detail_fields:
+            if field in details:
+                pr[field] = details[field]
+
+
+def enrich_open_pull_git_conflicts(open_pulls: list[dict[str, Any]], *, repo: str) -> None:
+    for pr in open_pulls:
+        if has_computed_mergeability(pr):
+            continue
+        head = pr.get("head") or {}
+        head_ref = str(head.get("ref") or "")
+        head_repo = str((head.get("repo") or {}).get("full_name") or "")
+        if not head_ref or head_repo != repo:
+            continue
+
+        remote_ref = f"refs/remotes/origin/{head_ref}"
+        fetch = subprocess.run(
+            ["git", "fetch", "--no-tags", "--depth=1", "origin", f"{head_ref}:{remote_ref}"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if fetch.returncode != 0:
+            print(
+                f"Could not fetch PR branch {head_ref} for conflict fallback: "
+                f"{(fetch.stderr or fetch.stdout).strip()}",
+                file=sys.stderr,
+            )
+            continue
+
+        merge = subprocess.run(
+            ["git", "merge-tree", "--write-tree", "origin/master", remote_ref],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        merge_output = f"{merge.stdout}\n{merge.stderr}"
+        if merge.returncode != 0 and "CONFLICT" in merge_output:
+            pr["mergeable"] = False
+            pr["mergeable_state"] = "dirty"
+            pr["mergeability_source"] = "git-merge-tree"
+
+
 def action_recently_done(
     ledger: dict[str, Any],
     dedupe_key: str,
@@ -455,6 +557,11 @@ def has_pending_checks(pr: dict[str, Any]) -> bool:
     )
 
 
+def is_conflicting_pr(pr: dict[str, Any]) -> bool:
+    mergeable_state = str(pr.get("mergeable_state") or "").lower()
+    return pr.get("mergeable") is False or mergeable_state == "dirty"
+
+
 def latest_quality_fix_details(pr: dict[str, Any]) -> str:
     for comment in reversed(pr.get("comments", [])):
         body = str(comment.get("body") or "")
@@ -497,6 +604,32 @@ def quality_fix_prompt(pr: dict[str, Any]) -> str:
         "- убери временные scratch-файлы из PR, если они не являются частью acceptance/evidence;\n"
         "- push исправление в эту же PR ветку и дождись повторных checks.\n\n"
         "Не жди ответа пользователя, если действие безопасное и находится внутри scope текущей задачи."
+        f"{details_block}"
+    )
+
+
+def conflict_recovery_prompt(pr: dict[str, Any]) -> str:
+    number = pr.get("number")
+    sha = (pr.get("head") or {}).get("sha") or ""
+    marker = f"<!-- {ROUTER_MARKER} action=conflict-recovery sha={sha} -->"
+    details = latest_quality_fix_details(pr)
+    details_block = ""
+    if details:
+        details_block = (
+            "\n\nУ PR также есть unresolved quality gate details. После синхронизации ветки "
+            "исправь их в этом же PR:\n\n"
+            f"{details}"
+        )
+    return (
+        f"{marker}\n\n"
+        f"Jules, PR #{number} конфликтует с текущим `master`; исправь эту же PR ветку и не открывай новый PR.\n\n"
+        "Что нужно сделать:\n"
+        "- синхронизируй PR branch с последним `master`;\n"
+        "- resolve merge conflicts внутри scope текущей задачи и allowed_paths;\n"
+        "- сохрани один task status/evidence в agent_tasks.json и AUTONOMOUS_TASK_EVIDENCE;\n"
+        "- если конфликт нельзя безопасно решить внутри scope, отметь текущую задачу `blocked` с concrete blocked_reason;\n"
+        "- запусти релевантные проверки и push исправление в эту же PR ветку.\n\n"
+        "Не жди ответа пользователя, если действие безопасное и не требует секретов, production-доступа или destructive changes."
         f"{details_block}"
     )
 
@@ -638,13 +771,47 @@ def plan_recovery_actions(
         if "stop-loop" in labels or "human-review" in labels or "no-automerge" in labels:
             continue
 
+        if is_conflicting_pr(pr):
+            dedupe_key = f"conflict-recovery:{number}:{sha}"
+            marker = f"{ROUTER_MARKER} action=conflict-recovery sha={sha}"
+            has_marker = comments_contain(pr, marker)
+            if not action_recently_done(
+                ledger,
+                dedupe_key,
+                now=now,
+                ttl_minutes=CONFLICT_RECOVERY_COOLDOWN_MINUTES,
+            ) and (
+                not has_marker or extract_session_id_from_pr(pr)
+            ):
+                prompt = conflict_recovery_prompt(pr)
+                actions.append(
+                    RecoveryAction(
+                        type="conflict_recovery",
+                        dedupe_key=dedupe_key,
+                        reason=f"PR #{number} is dirty/conflicting with master",
+                        ttl_minutes=CONFLICT_RECOVERY_COOLDOWN_MINUTES,
+                        payload={
+                            "pr_number": number,
+                            "body": prompt,
+                            "comment_needed": not has_marker,
+                            "session_id": extract_session_id_from_pr(pr),
+                        },
+                    )
+                )
+            return actions
+
         if "needs-quality-fix" in labels:
             if has_pending_checks(pr):
                 return actions
             dedupe_key = f"quality-fix:{number}:{sha}"
             marker = f"{ROUTER_MARKER} action=quality-fix sha={sha}"
             has_marker = comments_contain(pr, marker)
-            if not action_recently_done(ledger, dedupe_key, now=now, ttl_minutes=7 * 24 * 60) and (
+            if not action_recently_done(
+                ledger,
+                dedupe_key,
+                now=now,
+                ttl_minutes=QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES,
+            ) and (
                 not has_marker or extract_session_id_from_pr(pr)
             ):
                 prompt = quality_fix_prompt(pr)
@@ -653,7 +820,7 @@ def plan_recovery_actions(
                         type="quality_fix_recovery",
                         dedupe_key=dedupe_key,
                         reason=f"PR #{number} has unresolved needs-quality-fix",
-                        ttl_minutes=7 * 24 * 60,
+                        ttl_minutes=QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES,
                         payload={
                             "pr_number": number,
                             "body": prompt,
@@ -1174,7 +1341,7 @@ def execute_action(
 ) -> None:
     payload = action.payload
     jules_clients = jules_clients or []
-    if action.type == "quality_fix_recovery":
+    if action.type in {"quality_fix_recovery", "conflict_recovery"}:
         if payload.get("comment_needed", True):
             client.request(
                 "POST",
@@ -1185,7 +1352,7 @@ def execute_action(
         session_id = str(payload.get("session_id") or "")
         if session_id:
             if not jules_clients:
-                raise RuntimeError("Jules API keys are required for quality_fix_recovery sendMessage")
+                raise RuntimeError(f"Jules API keys are required for {action.type} sendMessage")
             jules_request_any(
                 jules_clients,
                 "POST",
@@ -1311,6 +1478,8 @@ def collect_live_state(
 ) -> dict[str, Any]:
     manifest_data = load_manifest(manifest)
     open_pulls = client.request("GET", f"/repos/{client.repo}/pulls?state=open&per_page=100") or []
+    enrich_open_pull_details(client, open_pulls)
+    enrich_open_pull_git_conflicts(open_pulls, repo=client.repo)
     for pr in open_pulls:
         number = pr.get("number")
         sha = (pr.get("head") or {}).get("sha")

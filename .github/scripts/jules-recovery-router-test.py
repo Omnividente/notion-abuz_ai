@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import sys
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT_PATH = Path(__file__).with_name("jules-recovery-router.py")
@@ -21,6 +23,40 @@ SPEC.loader.exec_module(router)
 NOW = datetime(2026, 6, 29, 12, 0, 0, tzinfo=timezone.utc)
 REPO = "Omnividente/notion-abuz_ai"
 TASK_IDS = ["automation-health-failed-session-86122315", "proxy-runtime-fix"]
+
+
+class FakeHTTPResponse:
+    def __init__(self, status: int, body: bytes = b"") -> None:
+        self.status = status
+        self._body = body
+
+    def __enter__(self) -> "FakeHTTPResponse":
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._body
+
+
+class FakeGitHubClient:
+    def __init__(self, responses: list[dict]) -> None:
+        self.repo = REPO
+        self.responses = list(responses)
+        self.calls: list[tuple[str, str]] = []
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        body: dict | None = None,
+        ok: tuple[int, ...] = (200, 201, 204),
+    ) -> dict:
+        self.calls.append((method, path))
+        if not self.responses:
+            raise AssertionError(f"unexpected request: {method} {path}")
+        return self.responses.pop(0)
 
 
 def epoch(minutes_ago: int) -> int:
@@ -37,11 +73,15 @@ def pr(
     body: str = "",
     comments: list[str] | None = None,
     check_runs: list[dict] | None = None,
+    mergeable: bool | None = True,
+    mergeable_state: str = "clean",
 ) -> dict:
     return {
         "number": number,
         "title": "Autonomous PR",
         "body": body,
+        "mergeable": mergeable,
+        "mergeable_state": mergeable_state,
         "labels": [{"name": label} for label in labels or []],
         "user": {"login": user},
         "head": {
@@ -136,6 +176,126 @@ def plan(input_state: dict, ledger: dict | None = None, health_mode: str = "enfo
 
 
 class RecoveryRouterTest(unittest.TestCase):
+    def test_github_get_retries_transient_503(self) -> None:
+        client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")
+        transient = router.urllib.error.HTTPError(
+            "https://api.github.test/repos/example/actions/runs",
+            503,
+            "Service Unavailable",
+            {},
+            io.BytesIO(b"temporary"),
+        )
+
+        with patch.object(router.urllib.request, "urlopen") as urlopen:
+            with patch.object(router.time, "sleep") as sleep:
+                urlopen.side_effect = [
+                    transient,
+                    FakeHTTPResponse(200, b'{"ok": true}'),
+                ]
+
+                result = client.request("GET", "/repos/example/actions/runs")
+
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(urlopen.call_count, 2)
+        sleep.assert_called_once_with(1)
+
+    def test_github_post_does_not_retry_transient_503(self) -> None:
+        client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")
+        transient = router.urllib.error.HTTPError(
+            "https://api.github.test/repos/example/issues/1/comments",
+            503,
+            "Service Unavailable",
+            {},
+            io.BytesIO(b"temporary"),
+        )
+
+        with patch.object(router.urllib.request, "urlopen", side_effect=transient) as urlopen:
+            with self.assertRaises(RuntimeError):
+                client.request("POST", "/repos/example/issues/1/comments", {"body": "comment"})
+
+        self.assertEqual(urlopen.call_count, 1)
+
+    def test_open_pull_details_enrich_mergeability(self) -> None:
+        open_pulls = [pr(labels=["jules"], mergeable=None, mergeable_state="")]
+        client = FakeGitHubClient(
+            [
+                {
+                    "number": 10,
+                    "title": "Detailed PR",
+                    "mergeable": False,
+                    "mergeable_state": "dirty",
+                    "labels": [{"name": "jules"}],
+                    "head": {"ref": "jules/task-1234567890123456789", "sha": "def456"},
+                }
+            ]
+        )
+
+        router.enrich_open_pull_details(client, open_pulls)
+
+        self.assertEqual(client.calls, [("GET", f"/repos/{REPO}/pulls/10")])
+        self.assertEqual(open_pulls[0]["title"], "Detailed PR")
+        self.assertFalse(open_pulls[0]["mergeable"])
+        self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
+        self.assertEqual(open_pulls[0]["head"]["sha"], "def456")
+
+    def test_open_pull_details_retries_unknown_mergeability_once(self) -> None:
+        open_pulls = [pr(labels=["jules"], mergeable=None, mergeable_state="")]
+        client = FakeGitHubClient(
+            [
+                {"number": 10, "mergeable": None, "mergeable_state": "unknown"},
+                {"number": 10, "mergeable": False, "mergeable_state": "dirty"},
+            ]
+        )
+
+        with patch.object(router.time, "sleep") as sleep:
+            router.enrich_open_pull_details(client, open_pulls)
+
+        self.assertEqual(
+            client.calls,
+            [
+                ("GET", f"/repos/{REPO}/pulls/10"),
+                ("GET", f"/repos/{REPO}/pulls/10"),
+            ],
+        )
+        sleep.assert_called_once_with(1)
+        self.assertFalse(open_pulls[0]["mergeable"])
+        self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
+
+    def test_git_conflict_fallback_marks_unknown_pr_dirty(self) -> None:
+        open_pulls = [
+            pr(
+                labels=["jules"],
+                head_ref="jules/task-1234567890123456789",
+                mergeable=None,
+                mergeable_state="unknown",
+            )
+        ]
+        fetch = router.subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        merge = router.subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout="Auto-merging agent_tasks.json\nCONFLICT (content): Merge conflict in agent_tasks.json",
+            stderr="",
+        )
+
+        with patch.object(router.subprocess, "run", side_effect=[fetch, merge]) as run:
+            router.enrich_open_pull_git_conflicts(open_pulls, repo=REPO)
+
+        self.assertEqual(run.call_count, 2)
+        self.assertFalse(open_pulls[0]["mergeable"])
+        self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
+        self.assertEqual(open_pulls[0]["mergeability_source"], "git-merge-tree")
+
+    def test_git_conflict_fallback_skips_computed_mergeability(self) -> None:
+        open_pulls = [pr(labels=["jules"], mergeable=True, mergeable_state="clean")]
+
+        with patch.object(router.subprocess, "run") as run:
+            router.enrich_open_pull_git_conflicts(open_pulls, repo=REPO)
+
+        run.assert_not_called()
+        self.assertTrue(open_pulls[0]["mergeable"])
+        self.assertEqual(open_pulls[0]["mergeable_state"], "clean")
+
     def test_quality_fix_posts_comment_and_sends_session_message(self) -> None:
         actions = plan(state(open_pulls=[pr(labels=["jules", "needs-quality-fix"])]))
 
@@ -196,6 +356,28 @@ New task ids:
         self.assertFalse(actions[0].payload["comment_needed"])
         self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
 
+    def test_quality_fix_recovery_retries_after_cooldown(self) -> None:
+        marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"
+        ledger = {
+            "version": 1,
+            "actions": {
+                "quality-fix:10:abc123": {
+                    "time": (NOW - timedelta(minutes=31)).isoformat().replace("+00:00", "Z"),
+                    "type": "quality_fix_recovery",
+                }
+            },
+        }
+
+        actions = plan(
+            state(open_pulls=[pr(labels=["jules", "needs-quality-fix"], comments=[marker])]),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_recovery")
+        self.assertFalse(actions[0].payload["comment_needed"])
+        self.assertEqual(actions[0].ttl_minutes, 30)
+
     def test_quality_fix_waits_for_pending_checks_on_new_head(self) -> None:
         actions = plan(
             state(
@@ -209,6 +391,86 @@ New task ids:
         )
 
         self.assertEqual(actions, [])
+
+    def test_conflicting_jules_pr_sends_conflict_recovery(self) -> None:
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules"],
+                        mergeable=False,
+                        mergeable_state="dirty",
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "conflict_recovery")
+        self.assertEqual(actions[0].payload["pr_number"], 10)
+        self.assertTrue(actions[0].payload["comment_needed"])
+        self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
+        self.assertIn("конфликтует с текущим `master`", actions[0].payload["body"])
+        self.assertIn("не открывай новый PR", actions[0].payload["body"])
+
+    def test_conflicting_quality_fix_pr_prioritizes_branch_sync(self) -> None:
+        quality_comment = """<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->
+
+# Autonomous PR quality gate
+
+Status: failed
+
+Blocking reasons:
+- More than one task was marked done.
+"""
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules", "needs-quality-fix"],
+                        comments=[quality_comment],
+                        mergeable=False,
+                        mergeable_state="dirty",
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "conflict_recovery")
+        self.assertIn("unresolved quality gate details", actions[0].payload["body"])
+        self.assertIn("More than one task was marked done", actions[0].payload["body"])
+
+    def test_conflict_recovery_retries_after_cooldown(self) -> None:
+        marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=conflict-recovery sha=abc123 -->"
+        ledger = {
+            "version": 1,
+            "actions": {
+                "conflict-recovery:10:abc123": {
+                    "time": (NOW - timedelta(minutes=31)).isoformat().replace("+00:00", "Z"),
+                    "type": "conflict_recovery",
+                }
+            },
+        }
+
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules"],
+                        comments=[marker],
+                        mergeable=False,
+                        mergeable_state="dirty",
+                    )
+                ]
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "conflict_recovery")
+        self.assertFalse(actions[0].payload["comment_needed"])
+        self.assertEqual(actions[0].ttl_minutes, 30)
 
     def test_missing_jules_label_is_repaired(self) -> None:
         actions = plan(
