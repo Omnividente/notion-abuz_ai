@@ -1054,6 +1054,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 	var results strings.Builder
 	resultCount := 0
 	needsReadNarrowing := false
+	hasTransientFailure := false
 
 	// Tracing for agent loop
 	var traceParts []string
@@ -1084,11 +1085,20 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 				strings.HasPrefix(lowerContent, "error:") ||
 				(name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens"))
 
-			if isError {
+			isTransientError := strings.Contains(lowerContent, "502 bad gateway") ||
+				strings.Contains(lowerContent, "timeout") ||
+				strings.Contains(lowerContent, "connection refused") ||
+				strings.Contains(lowerContent, "internal server error") ||
+				(strings.HasPrefix(lowerContent, "error:") && (name == "Search" || name == "Glob" || name == "LS" || name == "Find"))
+
+			if isError || isTransientError {
 				traceParts = append(traceParts, fmt.Sprintf("err[%s]", name))
 				if i > lastAssistantIdx {
 					currentRoundErrors = append(currentRoundErrors, name)
 					hasErrorInLatestTurn = true
+					if isTransientError {
+						hasTransientFailure = true
+					}
 				}
 			}
 
@@ -1139,6 +1149,10 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 	readGuardLine := ""
 	if needsReadNarrowing {
 		readGuardLine = "The previous Read call was too large. Do NOT repeat the same full-file Read. Use Grep to narrow scope or call Read with both offset and limit.\n"
+	}
+	transientGuardLine := ""
+	if hasTransientFailure {
+		transientGuardLine = "Warning: A recent tool call encountered a transient API or search failure. Do NOT finalize your answer based on partial context. Please retry the failed tool or use a different search method to ensure you have complete project context.\n"
 	}
 
 	// Extract the original user query to preserve coding intent
@@ -1231,8 +1245,8 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 	}
 
 	continuationMessage := fmt.Sprintf(
-		"Results from executed function(s):\n%s\n\n%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.\nAlways output exactly one JSON object.",
-		results.String(), cwdLine, readGuardLine, compactList, queryContext)
+		"Results from executed function(s):\n%s\n\n%s%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.\nAlways output exactly one JSON object.",
+		results.String(), cwdLine, readGuardLine, transientGuardLine, compactList, queryContext)
 
 	log.Printf("[bridge] session chain: continuation for partial transcript (%d chars, %d tool results)",
 		len(continuationMessage), resultCount)

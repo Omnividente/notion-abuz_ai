@@ -3843,7 +3843,7 @@
     },
     {
       "id": "proxy-behavior-transient-api-failure-partial-context-retry",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Recover from transient API/search failure before using partial project context",
