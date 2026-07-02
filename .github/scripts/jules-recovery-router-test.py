@@ -40,6 +40,25 @@ class FakeHTTPResponse:
         return self._body
 
 
+class FakeGitHubClient:
+    def __init__(self, responses: list[dict]) -> None:
+        self.repo = REPO
+        self.responses = list(responses)
+        self.calls: list[tuple[str, str]] = []
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        body: dict | None = None,
+        ok: tuple[int, ...] = (200, 201, 204),
+    ) -> dict:
+        self.calls.append((method, path))
+        if not self.responses:
+            raise AssertionError(f"unexpected request: {method} {path}")
+        return self.responses.pop(0)
+
+
 def epoch(minutes_ago: int) -> int:
     return int((NOW - timedelta(minutes=minutes_ago)).timestamp())
 
@@ -195,6 +214,52 @@ class RecoveryRouterTest(unittest.TestCase):
                 client.request("POST", "/repos/example/issues/1/comments", {"body": "comment"})
 
         self.assertEqual(urlopen.call_count, 1)
+
+    def test_open_pull_details_enrich_mergeability(self) -> None:
+        open_pulls = [pr(labels=["jules"], mergeable=None, mergeable_state="")]
+        client = FakeGitHubClient(
+            [
+                {
+                    "number": 10,
+                    "title": "Detailed PR",
+                    "mergeable": False,
+                    "mergeable_state": "dirty",
+                    "labels": [{"name": "jules"}],
+                    "head": {"ref": "jules/task-1234567890123456789", "sha": "def456"},
+                }
+            ]
+        )
+
+        router.enrich_open_pull_details(client, open_pulls)
+
+        self.assertEqual(client.calls, [("GET", f"/repos/{REPO}/pulls/10")])
+        self.assertEqual(open_pulls[0]["title"], "Detailed PR")
+        self.assertFalse(open_pulls[0]["mergeable"])
+        self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
+        self.assertEqual(open_pulls[0]["head"]["sha"], "def456")
+
+    def test_open_pull_details_retries_unknown_mergeability_once(self) -> None:
+        open_pulls = [pr(labels=["jules"], mergeable=None, mergeable_state="")]
+        client = FakeGitHubClient(
+            [
+                {"number": 10, "mergeable": None, "mergeable_state": "unknown"},
+                {"number": 10, "mergeable": False, "mergeable_state": "dirty"},
+            ]
+        )
+
+        with patch.object(router.time, "sleep") as sleep:
+            router.enrich_open_pull_details(client, open_pulls)
+
+        self.assertEqual(
+            client.calls,
+            [
+                ("GET", f"/repos/{REPO}/pulls/10"),
+                ("GET", f"/repos/{REPO}/pulls/10"),
+            ],
+        )
+        sleep.assert_called_once_with(1)
+        self.assertFalse(open_pulls[0]["mergeable"])
+        self.assertEqual(open_pulls[0]["mergeable_state"], "dirty")
 
     def test_quality_fix_posts_comment_and_sends_session_message(self) -> None:
         actions = plan(state(open_pulls=[pr(labels=["jules", "needs-quality-fix"])]))
