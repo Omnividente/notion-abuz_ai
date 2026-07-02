@@ -3779,6 +3779,29 @@
       ]
     },
     {
+      "id": "proxy-behavior-live-current-interface-tool-refusal",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Recover from live current-interface tool refusal in same session",
+      "description": "Live Claude Code bridge smoke after PR #227 still produced a same-session refusal: 'I cannot directly execute commands on this machine from the current interface' and then gave manual PowerShell steps instead of emitting a tool call or triggering clean recovery. Investigate why generic current-interface/tool-execution refusals without an explicit 'Notion AI' identity string can pass through as final prose. Add a focused offline reproduction from the captured transcript and fix the bridge so tool-enabled requests either emit usable tool calls or trigger sanitized clean retry without preserving contaminated assistant text.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/session.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/anthropic_observability_test.go",
+        "internal/proxy/session_recovery_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A focused offline test covers a tool-enabled request where the model says it cannot directly execute commands from the current interface and offers manual Hyper-V/PowerShell steps.",
+        "The bridge classifies that response as tool-call refusal or identity/tool-mode drift instead of returning it as a successful final answer.",
+        "Same-session recovery drops the contaminated assistant refusal text before retrying or continuing.",
+        "Relevant Go tests pass without live network, real accounts, package installation, or production endpoint access."
+      ]
+    },
+    {
       "id": "proxy-behavior-anthropic-tool-result-continuation-preservation",
       "status": "todo",
       "area": "proxy",
