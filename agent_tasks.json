@@ -4054,7 +4054,7 @@
     },
     {
       "id": "proxy-improve-continuation-logging",
-      "status": "done",
+      "status": "todo",
       "area": "proxy",
       "risk": "low",
       "title": "Improve observability of tool result continuation mismatches",
@@ -4086,7 +4086,7 @@
     },
     {
       "id": "proxy-observability-session-handoff-diagnostics",
-      "status": "done",
+      "status": "todo",
       "area": "proxy",
       "risk": "low",
       "title": "Enhance session handoff diagnostic logging",
@@ -4134,7 +4134,7 @@
     },
     {
       "id": "proxy-diagnose-multi-turn-tool-loss-reason-followup-test",
-      "status": "done",
+      "status": "todo",
       "area": "proxy",
       "risk": "low",
       "title": "Add integration test for JSON tool-call mode loss during session continuation",
@@ -4148,7 +4148,7 @@
     },
     {
       "id": "proxy-behavior-tool-choice-mode-tracking-fallback",
-      "status": "done",
+      "status": "todo",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure consistent tool choice mode tracking across all parsers",
