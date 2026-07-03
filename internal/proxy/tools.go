@@ -1578,10 +1578,61 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 	var arrayCall []struct {
 		Name      string          `json:"name"`
 		Arguments json.RawMessage `json:"arguments"`
+		ToolCall  *struct {
+			Name      string          `json:"name"`
+			Arguments json.RawMessage `json:"arguments"`
+		} `json:"tool_call"`
 	}
 	if err := json.Unmarshal([]byte(jsonStr), &arrayCall); err == nil && len(arrayCall) > 0 {
 		var calls []ToolCall
 		for j, call := range arrayCall {
+			var name string
+			var args json.RawMessage
+			if call.Name != "" {
+				name = call.Name
+				args = call.Arguments
+			} else if call.ToolCall != nil && call.ToolCall.Name != "" {
+				name = call.ToolCall.Name
+				args = call.ToolCall.Arguments
+			}
+
+			if name != "" {
+				argsStr := "{}"
+				if json.Valid(args) {
+					coercedArgs := coerceToolArguments(args)
+					var parsed interface{}
+					if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
+						if _, isMap := parsed.(map[string]interface{}); isMap {
+							argsStr = string(coercedArgs)
+						}
+					}
+				}
+				recordToolCallMetric(name)
+				calls = append(calls, ToolCall{
+					ID:   fmt.Sprintf("call_%d_%d_%s", index, j, generateUUIDv4()[:8]),
+					Type: "function",
+					Function: ToolCallFunction{
+						Name:      name,
+						Arguments: argsStr,
+					},
+				})
+			}
+		}
+		if len(calls) > 0 {
+			log.Printf("[bridge] successfully extracted %d tool calls from JSON array format", len(calls))
+			return calls
+		}
+	}
+
+	var wrapperArray struct {
+		ToolCall []struct {
+			Name      string          `json:"name"`
+			Arguments json.RawMessage `json:"arguments"`
+		} `json:"tool_call"`
+	}
+	if err := json.Unmarshal([]byte(jsonStr), &wrapperArray); err == nil && len(wrapperArray.ToolCall) > 0 {
+		var calls []ToolCall
+		for j, call := range wrapperArray.ToolCall {
 			if call.Name != "" {
 				argsStr := "{}"
 				if json.Valid(call.Arguments) {
@@ -1605,7 +1656,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 			}
 		}
 		if len(calls) > 0 {
-			log.Printf("[bridge] successfully extracted %d tool calls from JSON array format", len(calls))
+			log.Printf("[bridge] successfully extracted %d tool calls from JSON wrapper array format", len(calls))
 			return calls
 		}
 	}

@@ -3821,7 +3821,7 @@
     },
     {
       "id": "proxy-behavior-tool-call-array-fallback-normalization",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Improve JSON array parsing for tool-call fallbacks",
@@ -3939,6 +3939,36 @@
         "A focused offline test reproduces a multi-turn recovery scenario where large tool result blocks are truncated, dropping critical context.",
         "Bridge fixes are implemented to preserve essential structure (file boundaries, errors) during truncation.",
         "Relevant tests pass without live network."
+      ]
+    },
+    {
+      "id": "proxy-behavior-diagnostics-xml-regex-array-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add explicit metrics for XML tool call array parsing",
+      "description": "Add missing metric increments or diagnostic logs specifically when Claude Code returns tool arrays inside the standard XML tool format. This helps observe the array fallback behavior in production.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Explicit diagnostics or metrics exist for the array parsing branch."
+      ]
+    },
+    {
+      "id": "proxy-behavior-diagnostics-xml-regex-array-metrics-2",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Evaluate tool choice impact on XML wrapper format",
+      "description": "Evaluate how different tool_choice modes impact the frequency of array fallbacks in Claude Code tool responses.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostics logged for array vs object wrapper ratios depending on tool choice mode."
       ]
     }
   ]

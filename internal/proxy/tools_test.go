@@ -532,8 +532,8 @@ func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 			name:     "wrapper format with array tool_call",
 			jsonStr:  `{"tool_call": [{"name": "test_wrapper", "arguments": {"b": 2}}]}`,
 			wantNil:  false,
-			wantName: "",
-			wantArgs: `{}`,
+			wantName: "test_wrapper",
+			wantArgs: `{"b": 2}`,
 		},
 		{
 			name:     "wrapper format string instead of object",
