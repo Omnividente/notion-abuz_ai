@@ -458,6 +458,26 @@ func TestParseToolCalls_JSON_Array_AdvancedEdgeCases(t *testing.T) {
 				`{"path": "main.go", "diff": "{\"old\": \"func A()\", \"new\": \"func B()\"}"}`,
 			},
 		},
+		{
+			name:      "array of tool wrapper objects (tool_calls field)",
+			content:   "I lost my JSON mode, but here are my calls:\n```json\n[{\"tool_calls\": [{\"name\": \"Write\", \"arguments\": {\"path\": \"foo.txt\"}}, {\"name\": \"Bash\", \"arguments\": {\"command\": \"ls\"}}]}]\n```",
+			wantCalls: 2,
+			wantNames: []string{"Write", "Bash"},
+			wantArgs: []string{
+				`{"path": "foo.txt"}`,
+				`{"command": "ls"}`,
+			},
+		},
+		{
+			name:      "single tool wrapper object with array of calls (tool_calls field)",
+			content:   "Here is what I want to do:\n```json\n{\"tool_calls\": [{\"name\": \"Write\", \"arguments\": {\"path\": \"bar.txt\"}}, {\"name\": \"Bash\", \"arguments\": {\"command\": \"pwd\"}}]}\n```",
+			wantCalls: 2,
+			wantNames: []string{"Write", "Bash"},
+			wantArgs: []string{
+				`{"path": "bar.txt"}`,
+				`{"command": "pwd"}`,
+			},
+		},
 	}
 
 	for _, tt := range tests {

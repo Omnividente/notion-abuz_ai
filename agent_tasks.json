@@ -4178,7 +4178,7 @@
     },
     {
       "id": "proxy-resilience-robust-array-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Robust fallback for JSON tool-call mode loss in nested arrays",
@@ -4269,6 +4269,23 @@
       ],
       "acceptance": [
         "Detailed diagnostic log is emitted describing the last state before the drop to legacy."
+      ]
+    },
+    {
+      "id": "proxy-resilience-robust-array-fallback-edge-cases",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Ensure fallback array parsing safely skips malformed embedded structures",
+      "description": "When Claude Code loses tool choice mode and returns deeply nested non-standard array tool wrapper patterns with missing argument keys, `parseToolCallJSONList` should explicitly skip invalid structures and continue extracting standard ones to prevent complete failure of tool execution in the loop.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "parseToolCallJSONList properly ignores elements that lack name and arguments without crashing or losing sibling tool calls.",
+        "Add a relevant fallback test case with malformed objects."
       ]
     }
   ]

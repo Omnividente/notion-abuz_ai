@@ -1675,24 +1675,36 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 			Name      string          `json:"name"`
 			Arguments json.RawMessage `json:"arguments"`
 		} `json:"tool_call"`
+		ToolCalls []struct {
+			Name      string          `json:"name"`
+			Arguments json.RawMessage `json:"arguments"`
+		} `json:"tool_calls"`
 	}
 	if err := json.Unmarshal([]byte(jsonStr), &arrayCall); err == nil && len(arrayCall) > 0 {
 		var calls []ToolCall
 		for j, call := range arrayCall {
-			var name string
-			var args json.RawMessage
+			type Entry struct {
+				Name string
+				Args json.RawMessage
+			}
+			var entries []Entry
+
 			if call.Name != "" {
-				name = call.Name
-				args = call.Arguments
+				entries = append(entries, Entry{call.Name, call.Arguments})
 			} else if call.ToolCall != nil && call.ToolCall.Name != "" {
-				name = call.ToolCall.Name
-				args = call.ToolCall.Arguments
+				entries = append(entries, Entry{call.ToolCall.Name, call.ToolCall.Arguments})
+			} else if len(call.ToolCalls) > 0 {
+				for _, tc := range call.ToolCalls {
+					if tc.Name != "" {
+						entries = append(entries, Entry{tc.Name, tc.Arguments})
+					}
+				}
 			}
 
-			if name != "" {
+			for k, entry := range entries {
 				argsStr := "{}"
-				if json.Valid(args) {
-					coercedArgs := coerceToolArguments(args)
+				if json.Valid(entry.Args) {
+					coercedArgs := coerceToolArguments(entry.Args)
 					var parsed interface{}
 					if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
 						if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
@@ -1700,12 +1712,12 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 						}
 					}
 				}
-				recordToolCallMetric(name)
+				recordToolCallMetric(entry.Name)
 				calls = append(calls, ToolCall{
-					ID:   fmt.Sprintf("call_%d_%d_%s", index, j, generateUUIDv4()[:8]),
+					ID:   fmt.Sprintf("call_%d_%d_%d_%s", index, j, k, generateUUIDv4()[:8]),
 					Type: "function",
 					Function: ToolCallFunction{
-						Name:      name,
+						Name:      entry.Name,
 						Arguments: argsStr,
 					},
 				})
@@ -1724,37 +1736,59 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 			Name      string          `json:"name"`
 			Arguments json.RawMessage `json:"arguments"`
 		} `json:"tool_call"`
+		ToolCalls []struct {
+			Name      string          `json:"name"`
+			Arguments json.RawMessage `json:"arguments"`
+		} `json:"tool_calls"`
 	}
-	if err := json.Unmarshal([]byte(jsonStr), &wrapperArray); err == nil && len(wrapperArray.ToolCall) > 0 {
-		var calls []ToolCall
-		for j, call := range wrapperArray.ToolCall {
-			if call.Name != "" {
-				argsStr := "{}"
-				if json.Valid(call.Arguments) {
-					coercedArgs := coerceToolArguments(call.Arguments)
-					var parsed interface{}
-					if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
-						if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
-							argsStr = string(coercedArgs)
-						}
-					}
-				}
-				recordToolCallMetric(call.Name)
-				calls = append(calls, ToolCall{
-					ID:   fmt.Sprintf("call_%d_%d_%s", index, j, generateUUIDv4()[:8]),
-					Type: "function",
-					Function: ToolCallFunction{
-						Name:      call.Name,
-						Arguments: argsStr,
-					},
-				})
+	if err := json.Unmarshal([]byte(jsonStr), &wrapperArray); err == nil {
+		type ExtractedCall struct {
+			Name      string          `json:"name"`
+			Arguments json.RawMessage `json:"arguments"`
+		}
+		var extracted []ExtractedCall
+
+		if len(wrapperArray.ToolCall) > 0 {
+			for _, tc := range wrapperArray.ToolCall {
+				extracted = append(extracted, ExtractedCall{tc.Name, tc.Arguments})
+			}
+		} else if len(wrapperArray.ToolCalls) > 0 {
+			for _, tc := range wrapperArray.ToolCalls {
+				extracted = append(extracted, ExtractedCall{tc.Name, tc.Arguments})
 			}
 		}
-		if len(calls) > 0 {
-			recordXMLArrayMetric("wrapper_array", toolChoiceMode...)
-			log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool wrapper arrays, %d calls extracted)", len(calls))
-			log.Printf("[bridge] successfully extracted %d tool calls from JSON wrapper array format", len(calls))
-			return calls
+
+		if len(extracted) > 0 {
+			var calls []ToolCall
+			for j, call := range extracted {
+				if call.Name != "" {
+					argsStr := "{}"
+					if json.Valid(call.Arguments) {
+						coercedArgs := coerceToolArguments(call.Arguments)
+						var parsed interface{}
+						if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
+							if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
+								argsStr = string(coercedArgs)
+							}
+						}
+					}
+					recordToolCallMetric(call.Name)
+					calls = append(calls, ToolCall{
+						ID:   fmt.Sprintf("call_%d_%d_%s", index, j, generateUUIDv4()[:8]),
+						Type: "function",
+						Function: ToolCallFunction{
+							Name:      call.Name,
+							Arguments: argsStr,
+						},
+					})
+				}
+			}
+			if len(calls) > 0 {
+				recordXMLArrayMetric("wrapper_array", toolChoiceMode...)
+				log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool wrapper arrays, %d calls extracted)", len(calls))
+				log.Printf("[bridge] successfully extracted %d tool calls from JSON wrapper array format", len(calls))
+				return calls
+			}
 		}
 	}
 
