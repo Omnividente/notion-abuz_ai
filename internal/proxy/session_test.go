@@ -124,7 +124,6 @@ func TestBuildRecoveryMessages_InstructionPreservation_LongHistoryLost(t *testin
 	}
 }
 
-
 func TestBuildRecoveryMessages_DiagnosticLogging_SkippedEntries(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
