@@ -1480,7 +1480,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 											coercedArgs := coerceToolArguments(args)
 											var parsed interface{}
 											if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
-												if _, isMap := parsed.(map[string]interface{}); isMap {
+												if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
 													argsStr = string(coercedArgs)
 												}
 											}
@@ -1517,7 +1517,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 									coercedArgs := coerceToolArguments(direct.Arguments)
 									var parsed interface{}
 									if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
-										if _, isMap := parsed.(map[string]interface{}); isMap {
+										if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
 											argsStr = string(coercedArgs)
 										}
 									}
@@ -1546,7 +1546,7 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 										coercedArgs := coerceToolArguments(wrapper.ToolCall.Arguments)
 										var parsed interface{}
 										if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
-											if _, isMap := parsed.(map[string]interface{}); isMap {
+											if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
 												argsStr = string(coercedArgs)
 											}
 										}
@@ -1622,7 +1622,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 					coercedArgs := coerceToolArguments(args)
 					var parsed interface{}
 					if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
-						if _, isMap := parsed.(map[string]interface{}); isMap {
+						if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
 							argsStr = string(coercedArgs)
 						}
 					}
@@ -1659,7 +1659,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 					coercedArgs := coerceToolArguments(call.Arguments)
 					var parsed interface{}
 					if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
-						if _, isMap := parsed.(map[string]interface{}); isMap {
+						if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
 							argsStr = string(coercedArgs)
 						}
 					}
@@ -1702,7 +1702,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 				coercedArgs := coerceToolArguments(wrapper.ToolCall.Arguments)
 				var parsed interface{}
 				if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
-					if _, isMap := parsed.(map[string]interface{}); isMap {
+					if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
 						argsStr = string(coercedArgs)
 					}
 				}
@@ -1724,7 +1724,7 @@ func parseToolCallJSONList(jsonStr string, index int) []ToolCall {
 		coercedArgs := coerceToolArguments(call.Arguments)
 		var parsed interface{}
 		if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
-			if _, isMap := parsed.(map[string]interface{}); isMap {
+			if _, isMap := parsed.(map[string]interface{}); isMap || (parsed == nil && string(coercedArgs) == "null") {
 				argsStr = string(coercedArgs)
 			}
 		}
