@@ -1502,7 +1502,7 @@ func convertAnthropicMessages(system interface{}, msgs []AnthropicMessage) ([]Ch
 			}
 		}
 
-		if cm.Content != "" || cm.Role == "assistant" || len(cm.ToolCalls) > 0 {
+		if cm.Content != "" || cm.Role == "assistant" || len(cm.ToolCalls) > 0 || cm.Role == "tool" {
 			result = append(result, cm)
 		}
 	}

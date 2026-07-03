@@ -3894,7 +3894,7 @@
       "id": "proxy-behavior-anthropic-empty-tool-result-robustness",
       "title": "Enhance Anthropic empty tool result robustness in parser",
       "description": "Ensure that the parser handles Anthropic empty tool results properly during multi-turn continuation by adding more comprehensive tests.",
-      "status": "todo",
+      "status": "done",
       "risk": "medium",
       "area": "proxy",
       "allowed_paths": [
@@ -3905,6 +3905,22 @@
       ],
       "acceptance": [
         "Tests added for empty tool results during multi-turn continuation."
+      ]
+    },
+    {
+      "id": "proxy-behavior-claude-api-json-array-handling",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for parsing Anthropic API JSON tool call arrays in proxy",
+      "description": "While Anthropic natively supports JSON array structures, proxy JSON parsers may need verification against edge cases involving deeply nested JSON strings during tool fallbacks.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A unit test validates extraction of JSON array tool calls during text fallback."
       ]
     }
   ]

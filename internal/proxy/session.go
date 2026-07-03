@@ -354,7 +354,11 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			content = normalizeSessionUserContent(m.Content)
 		}
 		if content == "" {
-			continue
+			if m.Role == "tool" {
+				content = "(empty output)"
+			} else {
+				continue
+			}
 		}
 		if skipEntry != nil && skipEntry(m, content) {
 			continue
