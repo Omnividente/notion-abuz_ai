@@ -123,3 +123,30 @@ func TestBuildRecoveryMessages_InstructionPreservation_LongHistoryLost(t *testin
 		t.Errorf("Expected diagnostic log indicating first user message was lost due to truncation, got: %s", logOutput)
 	}
 }
+
+
+func TestBuildRecoveryMessages_DiagnosticLogging_SkippedEntries(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Do something"},
+		{Role: "assistant", Content: "I will do it."},
+		{Role: "user", Content: "Another query"},
+		{Role: "assistant", Content: "Okay"},
+		{Role: "tool", Content: "(empty output)", Name: "bash"},
+	}
+
+	buildRecoveryMessages(messages, func(msg ChatMessage, content string) bool {
+		if msg.Role == "tool" && content == "(empty output)" {
+			return true
+		}
+		return false
+	})
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[bridge] diagnostic: skipped entry during recovery traversal") {
+		t.Errorf("Expected diagnostic log for skipped entry, got: %s", logOutput)
+	}
+}

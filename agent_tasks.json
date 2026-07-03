@@ -4086,7 +4086,7 @@
     },
     {
       "id": "proxy-observability-session-handoff-diagnostics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Enhance session handoff diagnostic logging",

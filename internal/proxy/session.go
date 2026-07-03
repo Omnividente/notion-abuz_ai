@@ -418,6 +418,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			}
 		}
 		if skipEntry != nil && skipEntry(m, content) {
+			log.Printf("[bridge] diagnostic: skipped entry during recovery traversal (role: %s, name: %s)", m.Role, m.Name)
 			continue
 		}
 
@@ -493,6 +494,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			}
 		}
 		if skipEntry != nil && skipEntry(m, content) {
+			log.Printf("[bridge] diagnostic: skipped entry during recovery traversal (role: %s, name: %s)", m.Role, m.Name)
 			continue
 		}
 
