@@ -20,7 +20,18 @@ var (
 
 	toolModeLossMetricsMu sync.Mutex
 	toolModeLossMetrics   = make(map[string]int)
+
+	sessionFallbackMetricsMu sync.Mutex
+	sessionFallbackMetrics   = make(map[string]int)
 )
+
+func recordSessionFallbackMetric(reason string) {
+	sessionFallbackMetricsMu.Lock()
+	sessionFallbackMetrics[reason]++
+	count := sessionFallbackMetrics[reason]
+	sessionFallbackMetricsMu.Unlock()
+	log.Printf("[metrics] session_fallback: %s (total: %d)", reason, count)
+}
 
 func recordToolModeLossMetric(reason string) {
 	toolModeLossMetricsMu.Lock()
@@ -681,6 +692,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 			if session != nil {
 				reason = "TurnCount is 0"
 			}
+			recordSessionFallbackMetric(reason)
 			log.Printf("[bridge] chain: falling back from session to legacy collapse (reason: %s)", reason)
 
 			// ── Legacy collapse (no session): flatten multi-turn to single message ──

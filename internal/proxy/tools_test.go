@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"strings"
@@ -1127,5 +1128,53 @@ func TestParseToolCalls_CanonicalizationInFallbacks(t *testing.T) {
 				t.Errorf("expected arguments %q, got %q", expectedArgsCanonical, call.Function.Arguments)
 			}
 		})
+	}
+}
+
+func TestSessionFallbackMetrics(t *testing.T) {
+	// Reset the metric state
+	sessionFallbackMetricsMu.Lock()
+	sessionFallbackMetrics = make(map[string]int)
+	sessionFallbackMetricsMu.Unlock()
+
+	// Capture log output
+	var buf bytes.Buffer
+	originalLogOutput := log.Writer()
+	defer log.SetOutput(originalLogOutput)
+	log.SetOutput(&buf)
+
+	// Call it once
+	recordSessionFallbackMetric("session is nil")
+
+	// Call it again
+	recordSessionFallbackMetric("session is nil")
+
+	// Call it with a different reason
+	recordSessionFallbackMetric("TurnCount is 0")
+
+	// Check metrics directly
+	sessionFallbackMetricsMu.Lock()
+	countNil := sessionFallbackMetrics["session is nil"]
+	countZero := sessionFallbackMetrics["TurnCount is 0"]
+	sessionFallbackMetricsMu.Unlock()
+
+	if countNil != 2 {
+		t.Errorf("Expected 'session is nil' count to be 2, got %d", countNil)
+	}
+
+	if countZero != 1 {
+		t.Errorf("Expected 'TurnCount is 0' count to be 1, got %d", countZero)
+	}
+
+	// Check log output
+	out := buf.String()
+	if !strings.Contains(out, "[metrics] session_fallback: session is nil (total: 1)") {
+		t.Errorf("Log output missing initial 'session is nil' line. Got: %s", out)
+	}
+	if !strings.Contains(out, "[metrics] session_fallback: session is nil (total: 2)") {
+		t.Errorf("Log output missing incremented 'session is nil' line. Got: %s", out)
+	}
+	if !strings.Contains(out, "[metrics] session_fallback: TurnCount is 0 (total: 1)") {
+		t.Errorf("Log output missing 'TurnCount is 0' line. Got: %s", out)
 	}
 }
