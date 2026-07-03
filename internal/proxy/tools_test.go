@@ -1218,3 +1218,51 @@ func TestSessionFallbackMetrics(t *testing.T) {
 		t.Errorf("Log output missing 'TurnCount is 0' line. Got: %s", out)
 	}
 }
+
+func TestParseToolCalls_RobustBracketCountingNestedBraces(t *testing.T) {
+	// A JSON payload where a string literal contains nested and unbalanced braces.
+	// We want to ensure it extracts successfully without corrupting extraction.
+	rawArgs := `{"text": "here is an { unbalanced brace inside a string"}`
+
+	// A valid tool call followed by another valid tool call
+	content := "Preceding text {\"name\": \"tool1\", \"arguments\": " + rawArgs + "} {\"name\": \"tool2\", \"arguments\": {}} trailing text"
+
+	calls, _, hasCalls := parseToolCalls(content)
+	if !hasCalls || len(calls) != 2 {
+		t.Fatalf("expected 2 calls, got %d", len(calls))
+	}
+	if calls[0].Function.Name != "tool1" {
+		t.Errorf("expected first call to be tool1, got %s", calls[0].Function.Name)
+	}
+	if calls[1].Function.Name != "tool2" {
+		t.Errorf("expected second call to be tool2, got %s", calls[1].Function.Name)
+	}
+}
+
+func TestParseToolCalls_RobustBracketCountingNegativeDepth(t *testing.T) {
+	// A payload where a malformed block creates negative bracket depth,
+	// which shouldn't prevent extraction of a sibling tool call.
+	content := "malformed { \"invalid\": true }} {\"name\": \"tool2\", \"arguments\": {}}"
+
+	calls, _, hasCalls := parseToolCalls(content)
+	if !hasCalls || len(calls) != 1 {
+		t.Fatalf("expected 1 call, got %d", len(calls))
+	}
+	if calls[0].Function.Name != "tool2" {
+		t.Errorf("expected call to be tool2, got %s", calls[0].Function.Name)
+	}
+}
+
+func TestParseToolCalls_RobustBracketCountingUnclosedString(t *testing.T) {
+	// A payload where a string literal is unclosed and spans a newline,
+	// which shouldn't prevent extraction of a subsequent valid sibling tool call.
+	content := "malformed {\"name\": \"tool1\", \"arguments\": \"unclosed string } \n {\"name\": \"tool2\", \"arguments\": {}}"
+
+	calls, _, hasCalls := parseToolCalls(content)
+	if !hasCalls || len(calls) != 1 {
+		t.Fatalf("expected 1 call, got %d", len(calls))
+	}
+	if calls[0].Function.Name != "tool2" {
+		t.Errorf("expected call to be tool2, got %s", calls[0].Function.Name)
+	}
+}
