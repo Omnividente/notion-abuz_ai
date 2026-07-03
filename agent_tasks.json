@@ -4307,14 +4307,15 @@
     },
     {
       "id": "proxy-diagnostics-track-raw-fallback-parse-failure",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for completely unparseable fallback blocks",
       "description": "Currently, if the robust fallback extraction attempts to parse tool calls but ultimately extracts 0 calls, we just silently return the text. We should add a diagnostic metric that explicitly tracks 'unparseable_json_candidate_blocks' so we know how often the agent generates truly broken JSON that neither bracket counting nor XML extraction can save.",
       "allowed_paths": [
         "internal/proxy/tools.go",
-        "agent_tasks.json"
+        "agent_tasks.json",
+        "internal/proxy/tools_test.go"
       ],
       "acceptance": [
         "A sync.Mutex protected metric map tracks occurrences where a block was attempted in fallback but yielded 0 valid tool calls.",
@@ -4380,6 +4381,36 @@
       ],
       "acceptance": [
         "A counter logs the occurrences where system prompt logic exceeds its constraints."
+      ]
+    },
+    {
+      "id": "proxy-observability-record-context-truncation-in-system-prompt",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for system prompt dropping during session proxying",
+      "description": "Log an observable metric when the user prompt exceeds typical size boundaries without hitting Notion limits, causing drop behavior.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences where system prompt logic drops contexts."
+      ]
+    },
+    {
+      "id": "proxy-resilience-robust-extraction-json-multiline",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Ensure fallback extraction correctly ignores isolated brackets on empty lines",
+      "description": "Ensure bracket parsing safely ignores single isolated braces inside a large markdown output before failing the extraction.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fallback extractor successfully skips solitary matching brackets and proceeds to finding correct candidates."
       ]
     }
   ]
