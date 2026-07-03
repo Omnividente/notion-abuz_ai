@@ -4117,7 +4117,7 @@
     },
     {
       "id": "proxy-diagnose-multi-turn-tool-loss-reason",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Diagnose reasons for JSON tool-call mode loss during session continuation",
@@ -4130,6 +4130,20 @@
       "acceptance": [
         "A specific metric for session continuation tool-mode loss is added.",
         "The reason strings are captured in observability tools."
+      ]
+    },
+    {
+      "id": "proxy-diagnose-multi-turn-tool-loss-reason-followup-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add integration test for JSON tool-call mode loss during session continuation",
+      "description": "Add an integration test to verify that `detectToolBridgeNoToolResponse` is correctly invoked and metrics are recorded when `isNoTool` is true during multi-turn continuation.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go"
+      ],
+      "acceptance": [
+        "A test case simulating tool mode loss and verifying metrics is added."
       ]
     }
   ]

@@ -17,7 +17,18 @@ var (
 
 	xmlArrayMetricsMu sync.Mutex
 	xmlArrayMetrics   = make(map[string]int)
+
+	toolModeLossMetricsMu sync.Mutex
+	toolModeLossMetrics   = make(map[string]int)
 )
+
+func recordToolModeLossMetric(reason string) {
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics[reason]++
+	count := toolModeLossMetrics[reason]
+	toolModeLossMetricsMu.Unlock()
+	log.Printf("[metrics] tool_mode_loss: %s (total: %d)", reason, count)
+}
 
 func recordToolCallMetric(name string) {
 	toolCallMetricsMu.Lock()
@@ -1068,6 +1079,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 		if len(lastMsg.ToolCalls) == 0 && lastMsg.Content != "" {
 			if isNoTool, reason := detectToolBridgeNoToolResponse(lastMsg.Content); isNoTool {
 				log.Printf("[bridge] diagnostics: JSON tool-call mode loss detected during session continuation (reason: %s)", reason)
+				recordToolModeLossMetric(reason)
 			}
 		}
 	}
