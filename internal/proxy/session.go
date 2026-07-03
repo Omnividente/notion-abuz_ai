@@ -10,6 +10,19 @@ import (
 	"time"
 )
 
+var (
+	contextLossMetricsMu sync.Mutex
+	contextLossMetrics   = make(map[string]int)
+)
+
+func recordContextLossMetric(reason string) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics[reason]++
+	count := contextLossMetrics[reason]
+	contextLossMetricsMu.Unlock()
+	log.Printf("[metrics] context_loss: %s (total: %d)", reason, count)
+}
+
 // Session represents an active multi-turn conversation mapped to a Notion thread.
 // A thread is bound to the account that created it — subsequent turns must use the same account.
 type Session struct {
@@ -341,6 +354,12 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 
 		log.Printf("[bridge] diagnostic: session recovery truncated %s context (original: %d chars, limit: %d chars)", label, len(runes), limit)
 
+		if label == "system" {
+			recordContextLossMetric("system_instruction_truncated")
+		} else if strings.HasPrefix(label, "Tool") {
+			recordContextLossMetric("tool_result_truncated")
+		}
+
 		if limit < 50 {
 			return string(runes[:limit]) + "..."
 		}
@@ -410,6 +429,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		entryCost := len(label) + len(content) + 4
 		if usedChars > 0 && usedChars+entryCost > maxHistoryChars {
 			log.Printf("[bridge] diagnostic: session recovery truncated conversation history (used %d chars, dropping oldest entries)", usedChars)
+			recordContextLossMetric("conversation_history_dropped")
 			break
 		}
 		usedChars += entryCost
@@ -419,6 +439,9 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		}
 	}
 
+	if !preservedFirstUser {
+		recordContextLossMetric("first_user_message_dropped")
+	}
 	log.Printf("[bridge] diagnostic: instruction preservation during handoff - first user message included: %v, used chars: %d", preservedFirstUser, usedChars)
 
 	// Build tool call ID -> name map to properly resolve tool names in multi-turn
