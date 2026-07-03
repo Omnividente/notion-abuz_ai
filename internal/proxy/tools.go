@@ -1433,6 +1433,11 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 		}
 	}
 	if len(toolCalls) > 0 {
+		mode := ""
+		if len(toolChoiceMode) > 0 && toolChoiceMode[0] != "" {
+			mode = "_mode_" + toolChoiceMode[0]
+		}
+		recordToolModeLossMetric("xml_wrapper_fallback" + mode)
 		log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML wrapper, %d calls extracted)", len(toolCalls))
 		return toolCalls, strings.TrimSpace(remaining), true
 	}
@@ -1449,6 +1454,11 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 		}
 	}
 	if len(toolCalls) > 0 {
+		mode := ""
+		if len(toolChoiceMode) > 0 && toolChoiceMode[0] != "" {
+			mode = "_mode_" + toolChoiceMode[0]
+		}
+		recordToolModeLossMetric("markdown_fence_fallback" + mode)
 		log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to markdown fences, %d calls extracted)", len(toolCalls))
 		return toolCalls, strings.TrimSpace(remaining), true
 	}

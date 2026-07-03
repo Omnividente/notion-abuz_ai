@@ -4148,7 +4148,7 @@
     },
     {
       "id": "proxy-behavior-tool-choice-mode-tracking-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Ensure consistent tool choice mode tracking across all parsers",
