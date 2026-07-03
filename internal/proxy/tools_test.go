@@ -1,10 +1,10 @@
 package proxy
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"strings"
-	"bytes"
 	"testing"
 )
 
