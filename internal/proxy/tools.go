@@ -695,6 +695,16 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				reason = "TurnCount is 0"
 			}
 			recordSessionFallbackMetric(reason)
+			var roles []string
+			for _, m := range messages {
+				snippet := m.Content
+				if len(snippet) > 50 {
+					snippet = string([]rune(snippet)[:47]) + "..."
+				}
+				roles = append(roles, fmt.Sprintf("%s(len=%d): %q", m.Role, len(m.Content), snippet))
+			}
+			log.Printf("[bridge] diagnostics: falling back from session to legacy collapse. reason: %s. messages: %d. roles: [%s]", reason, len(messages), strings.Join(roles, ", "))
+			// Keep the original log string pattern for existing tests or monitors just in case
 			log.Printf("[bridge] chain: falling back from session to legacy collapse (reason: %s)", reason)
 
 			// ── Legacy collapse (no session): flatten multi-turn to single message ──
@@ -1108,7 +1118,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 		for _, m := range messages {
 			snippet := m.Content
 			if len(snippet) > 50 {
-				snippet = snippet[:47] + "..."
+				snippet = string([]rune(snippet)[:47]) + "..."
 			}
 			roles = append(roles, fmt.Sprintf("%s(len=%d): %q", m.Role, len(m.Content), snippet))
 		}

@@ -4258,7 +4258,7 @@
     },
     {
       "id": "proxy-observability-multi-turn-fallback-diagnostics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add diagnostics to track explicitly when fallback to multi-turn legacy happens",
