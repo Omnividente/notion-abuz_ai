@@ -362,3 +362,64 @@ func TestMissingLocalToolsDiagnosticLog(t *testing.T) {
 		t.Fatalf("expected observability log to contain %q, but got:\n%s", expectedLogFragment, output)
 	}
 }
+
+// Tests that a prematurely closed SSE stream propagates as an incomplete generation (error event)
+// rather than failing to return a valid JSON payload (by incorrectly sending message_stop).
+func TestAnthropicStreaming_PrematureCloseRecovery(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.WriteHeader(http.StatusOK)
+
+		flusher, _ := w.(http.Flusher)
+		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"Here is some starting text. "}]}` + "\n"))
+		flusher.Flush()
+
+		// abruptly close without finishedAt by hijacking and closing TCP socket
+		hijacker, ok := w.(http.Hijacker)
+		if ok {
+			conn, _, _ := hijacker.Hijack()
+			conn.Close()
+		}
+	}))
+	defer ts.Close()
+
+	origBase := NotionAPIBase
+	NotionAPIBase = ts.URL
+	defer func() { NotionAPIBase = origBase }()
+
+	origClient := getChromeHTTPClient
+	getChromeHTTPClient = func(timeout time.Duration) *http.Client {
+		return ts.Client()
+	}
+	defer func() { getChromeHTTPClient = origClient }()
+
+	acc := &Account{UserEmail: "test@example.com", SpaceID: "space1"}
+	messages := []ChatMessage{{Role: "user", Content: "Hello"}}
+	outputConfig := &AnthropicOutputConfig{}
+
+	rr := httptest.NewRecorder()
+	mf := &mockFlusher{rr}
+
+	err := streamAnthropicTextResponse(mf, acc, messages, "claude-3-5-sonnet-20241022", "req-1", false, false, outputConfig, CallOptions{})
+	if err != nil {
+		t.Errorf("expected no error to be returned when partial stream fails, got %v", err)
+	}
+
+	body := rr.Body.String()
+
+	if strings.Contains(body, "api_error") && !strings.Contains(body, `"type":"error"`) {
+		// Just want to see what is logged.
+	}
+
+	if !strings.Contains(body, "Here is some starting text.") {
+		t.Errorf("Should contain partial text emitted before connection closed. Body: %s", body)
+	}
+
+	if strings.Contains(body, "message_stop") {
+		t.Errorf("Should NOT contain message_stop if stream fails prematurely. Body: %s", body)
+	}
+
+	if !strings.Contains(body, `"event":"error"`) && !strings.Contains(body, `event: error`) {
+		t.Errorf("Should emit an SSE error event to tell the client the stream aborted. Body: %s", body)
+	}
+}
