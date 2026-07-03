@@ -4101,7 +4101,7 @@
     },
     {
       "id": "proxy-behavior-multi-turn-fallback-truncation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Investigate string truncation limits for large file dumps in multi-turn fallback",
@@ -4113,6 +4113,23 @@
       "acceptance": [
         "Diagnostic logs are added for session truncation in multi-turn fallbacks.",
         "Metrics for large string clipping occurrences are exported."
+      ]
+    },
+    {
+      "id": "proxy-diagnose-multi-turn-tool-loss-reason",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Diagnose reasons for JSON tool-call mode loss during session continuation",
+      "description": "The current tool multi-turn logic in `internal/proxy/tools.go` detects JSON tool-call mode loss (`isNoTool`) when finding an anchor assistant message but does not expose clear diagnostics or reason tags back to the prompt payload if recovery fails. Investigate adding a specific metric or logging label indicating *why* tool-call mode was lost during tool continuation so we can correlate failures across different models or prompt modifications.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A specific metric for session continuation tool-mode loss is added.",
+        "The reason strings are captured in observability tools."
       ]
     }
   ]
