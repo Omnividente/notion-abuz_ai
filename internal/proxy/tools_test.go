@@ -1071,3 +1071,61 @@ func TestCoerceToolArgumentsArray(t *testing.T) {
 		})
 	}
 }
+
+func TestParseToolCalls_CanonicalizationInFallbacks(t *testing.T) {
+	// A JSON payload with extra spaces, out of order keys, and string-booleans
+	// that coerceToolArguments will canonicalize.
+	rawArgs := ` {
+		"b": "true",
+		"a" : 123
+	} `
+	expectedArgsCanonical := `{"a":123,"b":true}`
+
+	tests := []struct {
+		name    string
+		content string
+	}{
+		{
+			name:    "Markdown fence object",
+			content: "Some text\n```json\n{\"name\": \"test_tool\", \"arguments\": " + rawArgs + "}\n```\nmore text",
+		},
+		{
+			name:    "Markdown fence array",
+			content: "Some text\n```json\n[{\"name\": \"test_tool\", \"arguments\": " + rawArgs + "}]\n```\nmore text",
+		},
+		{
+			name:    "Unfenced object",
+			content: "Some text {\"name\": \"test_tool\", \"arguments\": " + rawArgs + "} more text",
+		},
+		{
+			name:    "Unfenced array",
+			content: "Some text [{\"name\": \"test_tool\", \"arguments\": " + rawArgs + "}] more text",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls, _, hasCalls := parseToolCalls(tt.content)
+			if !hasCalls || len(calls) != 1 {
+				t.Fatalf("expected 1 call, got %d", len(calls))
+			}
+			call := calls[0]
+			if call.Function.Name != "test_tool" {
+				t.Errorf("expected name 'test_tool', got %q", call.Function.Name)
+			}
+
+			var gotArgs map[string]interface{}
+			_ = json.Unmarshal([]byte(call.Function.Arguments), &gotArgs)
+
+			var wantArgs map[string]interface{}
+			_ = json.Unmarshal([]byte(expectedArgsCanonical), &wantArgs)
+
+			gb, _ := json.Marshal(gotArgs)
+			wb, _ := json.Marshal(wantArgs)
+
+			if string(gb) != string(wb) {
+				t.Errorf("expected arguments %q, got %q", expectedArgsCanonical, call.Function.Arguments)
+			}
+		})
+	}
+}

@@ -4004,7 +4004,7 @@
     },
     {
       "id": "proxy-behavior-nested-json-array-serialization-fallback-validation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Evaluate JSON formatting impacts on other fallback paths",
@@ -4016,6 +4016,23 @@
       ],
       "acceptance": [
         "Tests verify that JSON canonicalization is handled robustly in the other fallback pathways."
+      ]
+    },
+    {
+      "id": "proxy-behavior-anthropic-sse-stream-timeout-recovery",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Evaluate SSE stream connection reset recovery",
+      "description": "Ensure the proxy handles premature SSE connection resets (e.g. from upstream capacity issues) gracefully by returning an incomplete response that preserves session continuation on retry, rather than breaking the JSON format.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_observability_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test verifies that a prematurely closed SSE stream propagates as an incomplete generation rather than failing to return a valid JSON payload.",
+        "No regressions in normal SSE parsing."
       ]
     }
   ]
