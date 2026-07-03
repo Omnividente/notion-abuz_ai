@@ -1266,3 +1266,41 @@ func TestParseToolCalls_RobustBracketCountingUnclosedString(t *testing.T) {
 		t.Errorf("expected call to be tool2, got %s", calls[0].Function.Name)
 	}
 }
+
+func TestBuildTranscript_LegacyCollapseSearchContextDrop(t *testing.T) {
+	// Reset metrics
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Query 1"},
+		{Role: "assistant", Content: "Here is what I found.\n\n---\nSources:\n[1] example.com"},
+		{Role: "user", Content: "Query 2"},
+		{Role: "assistant", Content: "Calling a tool", ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "Glob"}}}},
+		{Role: "tool", Content: "results", ToolCallID: "1", Name: "Glob"},
+	}
+
+	// Create a tool to trigger the fallback logic properly
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name: "Glob",
+			},
+		},
+	}
+	for i := 0; i < 6; i++ {
+		tools = append(tools, Tool{Type: "function", Function: ToolFunction{Name: "ToolX"}})
+	}
+
+	injectToolsIntoMessages(messages, tools, "claude-4", nil)
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["legacy_collapse_dropped_search_context"]
+	contextLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Errorf("Expected legacy_collapse_dropped_search_context to be 1, got %d", count)
+	}
+}
