@@ -24,9 +24,9 @@ var (
 	identityDriftMetricsMu sync.Mutex
 	identityDriftMetrics   = make(map[string]int)
 
-	toolCallRefusalMetricsMu sync.Mutex
-	toolCallRefusalMetrics   = make(map[string]int)
-	emptyResponseMetricsMu sync.Mutex
+	toolCallRefusalMetricsMu  sync.Mutex
+	toolCallRefusalMetrics    = make(map[string]int)
+	emptyResponseMetricsMu    sync.Mutex
 	emptyResponseMetricsCount int
 )
 
