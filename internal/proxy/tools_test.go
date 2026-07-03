@@ -430,6 +430,62 @@ func TestParseToolCalls_RobustJSONExtraction(t *testing.T) {
 	}
 }
 
+func TestParseToolCalls_JSON_Array_AdvancedEdgeCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		content   string
+		wantCalls int
+		wantNames []string
+		wantArgs  []string
+	}{
+		{
+			name: "deeply nested json strings in array",
+			content: "I'll use the tools now.\n```json\n[\n  {\n    \"name\": \"Write\",\n    \"arguments\": {\n      \"path\": \"test.json\",\n      \"content\": \"{\\\"nested\\\": {\\\"array\\\": [1, 2, 3], \\\"string\\\": \\\"value\\\"}}\"\n    }\n  },\n  {\n    \"name\": \"Bash\",\n    \"arguments\": {\n      \"command\": \"cat test.json | jq '.nested.string'\"\n    }\n  }\n]\n```\nHope this works!",
+			wantCalls: 2,
+			wantNames: []string{"Write", "Bash"},
+			wantArgs: []string{
+				`{"path": "test.json", "content": "{\"nested\": {\"array\": [1, 2, 3], \"string\": \"value\"}}"}`,
+				`{"command": "cat test.json | jq '.nested.string'"}`,
+			},
+		},
+		{
+			name: "unfenced array with nested structures",
+			content: "Executing:\n[\n  {\"name\": \"Edit\", \"arguments\": {\"path\": \"main.go\", \"diff\": \"{\\\"old\\\": \\\"func A()\\\", \\\"new\\\": \\\"func B()\\\"}\"}}\n]",
+			wantCalls: 1,
+			wantNames: []string{"Edit"},
+			wantArgs: []string{
+				`{"path": "main.go", "diff": "{\"old\": \"func A()\", \"new\": \"func B()\"}"}`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls, _, hasCalls := parseToolCalls(tt.content)
+			if !hasCalls && tt.wantCalls > 0 {
+				t.Fatalf("expected tool calls, got none")
+			}
+			if len(calls) != tt.wantCalls {
+				t.Fatalf("expected %d tool calls, got %d", tt.wantCalls, len(calls))
+			}
+			for i, name := range tt.wantNames {
+				if calls[i].Function.Name != name {
+					t.Errorf("call %d: expected name %s, got %s", i, name, calls[i].Function.Name)
+				}
+				var gotArgs, wantArgs map[string]interface{}
+				_ = json.Unmarshal([]byte(calls[i].Function.Arguments), &gotArgs)
+				_ = json.Unmarshal([]byte(tt.wantArgs[i]), &wantArgs)
+
+				gb, _ := json.Marshal(gotArgs)
+				wb, _ := json.Marshal(wantArgs)
+				if string(gb) != string(wb) {
+					t.Errorf("call %d: expected args %s, got %s", i, string(wb), string(gb))
+				}
+			}
+		})
+	}
+}
+
 // We want to test parseToolCallJSON which is an internal function in package proxy
 func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 	tests := []struct {
