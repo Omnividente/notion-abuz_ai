@@ -4069,7 +4069,7 @@
     },
     {
       "id": "proxy-observability-bridge-context-loss",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add bridge context loss observability",
@@ -4082,6 +4082,21 @@
       "acceptance": [
         "Log events are generated when important tool results are dropped during session handoff.",
         "Tests verify context preservation metrics."
+      ]
+    },
+    {
+      "id": "proxy-observability-session-handoff-diagnostics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Enhance session handoff diagnostic logging",
+      "description": "Add more detailed diagnostic logging for skipped tool result entries (e.g. bash results with no output that fail to pass the skipEntry filter) to better track exact context drops during multi-turn continuation.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic log covers skipped tool result entries during trailing history traversal."
       ]
     }
   ]
