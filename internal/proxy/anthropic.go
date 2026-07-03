@@ -24,8 +24,10 @@ var (
 	identityDriftMetricsMu sync.Mutex
 	identityDriftMetrics   = make(map[string]int)
 
-	toolCallRefusalMetricsMu sync.Mutex
-	toolCallRefusalMetrics   = make(map[string]int)
+	toolCallRefusalMetricsMu  sync.Mutex
+	toolCallRefusalMetrics    = make(map[string]int)
+	emptyResponseMetricsMu    sync.Mutex
+	emptyResponseMetricsCount int
 )
 
 func recordDoneDriftMetric(reason string) {
@@ -45,6 +47,14 @@ func recordIdentityDriftMetric(reason string) {
 	count := identityDriftMetrics[reason]
 	identityDriftMetricsMu.Unlock()
 	log.Printf("[metrics] identity_drift: %s (total: %d)", reason, count)
+}
+
+func recordEmptyResponseMetric() {
+	emptyResponseMetricsMu.Lock()
+	emptyResponseMetricsCount++
+	count := emptyResponseMetricsCount
+	emptyResponseMetricsMu.Unlock()
+	log.Printf("[metrics] empty_response: total: %d", count)
 }
 
 func recordToolCallRefusalMetric(reason string) {
@@ -1292,6 +1302,7 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 			}
 
 			if reqErr != nil && errors.Is(reqErr, ErrEmptyResponse) {
+				recordEmptyResponseMetric()
 				// Empty response — account/thread in bad state, clear session and try next account
 				log.Printf("[empty] %s returned empty response, trying next account", acc.UserEmail)
 				sawEmptyResponse = true

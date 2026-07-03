@@ -4225,7 +4225,7 @@
     },
     {
       "id": "proxy-observability-track-empty-inference",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track frequency of ErrEmptyResponse from Notion",
@@ -4334,6 +4334,21 @@
       ],
       "acceptance": [
         "A metric counter tracks specific cases where tool schemas are altered or dropped due to invalid structures."
+      ]
+    },
+    {
+      "id": "proxy-observability-track-context-loss-multi-turn-tool-results",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for dropped tool results during session multi-turn legacy fallback",
+      "description": "When multi-turn tracking drops back to legacy collapse, track how many tool results were explicitly ignored in `buildTranscript` because of mismatched turns.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A metric counter tracks ignored/dropped tool results during multi-turn mismatch."
       ]
     }
   ]
