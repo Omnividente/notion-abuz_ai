@@ -1134,8 +1134,13 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 			if name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens") {
 				needsReadNarrowing = true
 			}
-			if len([]rune(content)) > 4000 {
-				content = string([]rune(content)[:4000]) + "\n... (truncated)"
+			runes := []rune(content)
+			if len(runes) > 4000 {
+				dropped := string(runes[4000:])
+				droppedLines := strings.Count(dropped, "\n")
+				log.Printf("[bridge] diagnostic: multi-turn continuation truncated %s output (original: %d chars, limit: 4000 chars, dropped %d lines)", name, len(runes), droppedLines)
+				recordContextLossMetric("tool_continuation_truncated")
+				content = string(runes[:4000]) + "\n... (truncated)"
 			}
 			if results.Len() > 0 {
 				results.WriteString("\n")

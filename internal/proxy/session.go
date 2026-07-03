@@ -352,7 +352,19 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			return s
 		}
 
-		log.Printf("[bridge] diagnostic: session recovery truncated %s context (original: %d chars, limit: %d chars)", label, len(runes), limit)
+		droppedLines := 0
+		if limit < 50 {
+			dropped := string(runes[limit:])
+			droppedLines = strings.Count(dropped, "\n")
+		} else {
+			headLimit := limit / 2
+			tailLimit := limit - headLimit - 25
+			if len(runes) > headLimit + tailLimit {
+				dropped := string(runes[headLimit : len(runes)-tailLimit])
+				droppedLines = strings.Count(dropped, "\n")
+			}
+		}
+		log.Printf("[bridge] diagnostic: session recovery truncated %s context (original: %d chars, limit: %d chars, dropped %d lines)", label, len(runes), limit, droppedLines)
 
 		if label == "system" {
 			recordContextLossMetric("system_instruction_truncated")
