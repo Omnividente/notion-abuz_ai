@@ -1779,3 +1779,35 @@ func injectCodingAssistantInstruction(messages []ChatMessage) []ChatMessage {
 	result = append(result, messages...)
 	return result
 }
+
+// detectImplicitSearch inspects the last meaningful user message to determine if it implicitly
+// requests web or workspace search, even if the tools aren't explicitly provided.
+func detectImplicitSearch(messages []ChatMessage) (bool, bool) {
+	var lastUserMsg string
+	for i := len(messages) - 1; i >= 0; i-- {
+		if isMeaningfulUserMessage(messages[i]) {
+			lastUserMsg = messages[i].Content
+			break
+		}
+	}
+
+	if lastUserMsg == "" {
+		return false, false
+	}
+
+	lower := strings.ToLower(lastUserMsg)
+
+	webSearch := strings.Contains(lower, "search the web") ||
+		strings.Contains(lower, "search online") ||
+		strings.Contains(lower, "google for") ||
+		strings.Contains(lower, "look up online") ||
+		strings.Contains(lower, "search google")
+
+	workspaceSearch := strings.Contains(lower, "search notion") ||
+		strings.Contains(lower, "search my workspace") ||
+		strings.Contains(lower, "search workspace") ||
+		strings.Contains(lower, "find in notion") ||
+		strings.Contains(lower, "look in notion")
+
+	return webSearch, workspaceSearch
+}
