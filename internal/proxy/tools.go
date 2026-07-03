@@ -1505,6 +1505,7 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 	str := content
 	i := 0
 	foundCalls := 0
+	foundCandidateBlock := false
 
 	for i < len(str) {
 		if str[i] == '{' || str[i] == '[' {
@@ -1556,6 +1557,7 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 					if (isObject && c == '}' && objDepth == 0 && arrDepth == 0) || (!isObject && c == ']' && arrDepth == 0 && objDepth == 0) {
 						// Found a balanced object or array
 						candidate := str[i : j+1]
+						foundCandidateBlock = true
 
 						if !isObject {
 							var arrayCall []struct {
@@ -1699,6 +1701,15 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 
 		log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (robust extraction fallback, %d calls extracted)", len(toolCalls))
 		return toolCalls, strings.TrimSpace(remainingBuilder.String()), true
+	}
+
+	if foundCandidateBlock {
+		mode := ""
+		if len(toolChoiceMode) > 0 && toolChoiceMode[0] != "" {
+			mode = "_mode_" + toolChoiceMode[0]
+		}
+		recordToolModeLossMetric("unparseable_json_candidate_blocks" + mode)
+		log.Printf("[bridge] diagnostics: fallback extraction found JSON candidates but yielded 0 valid tool calls (unparseable)")
 	}
 
 	return nil, content, false

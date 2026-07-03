@@ -1349,3 +1349,31 @@ func TestInjectToolsIntoMessages_LegacyFallbackDiagnostics(t *testing.T) {
 		t.Errorf("Expected user role and length in log, got:\n%s", output)
 	}
 }
+
+func TestParseToolCallsUnparseableMetric(t *testing.T) {
+	// Reset the metric map
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
+
+	// Parse unparseable block
+	content := `{
+		"unrelated": true,
+		"broken": [
+			1, 2, {}
+		]
+	}`
+
+	_, _, ok := parseToolCalls(content)
+	if ok {
+		t.Fatalf("Expected parseToolCalls to fail on unparseable block")
+	}
+
+	toolModeLossMetricsMu.Lock()
+	count := toolModeLossMetrics["unparseable_json_candidate_blocks"]
+	toolModeLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Fatalf("Expected 1 unparseable_json_candidate_blocks, got %d", count)
+	}
+}
