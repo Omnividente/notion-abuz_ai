@@ -439,8 +439,8 @@ func TestParseToolCalls_JSON_Array_AdvancedEdgeCases(t *testing.T) {
 		wantArgs  []string
 	}{
 		{
-			name: "deeply nested json strings in array",
-			content: "I'll use the tools now.\n```json\n[\n  {\n    \"name\": \"Write\",\n    \"arguments\": {\n      \"path\": \"test.json\",\n      \"content\": \"{\\\"nested\\\": {\\\"array\\\": [1, 2, 3], \\\"string\\\": \\\"value\\\"}}\"\n    }\n  },\n  {\n    \"name\": \"Bash\",\n    \"arguments\": {\n      \"command\": \"cat test.json | jq '.nested.string'\"\n    }\n  }\n]\n```\nHope this works!",
+			name:      "deeply nested json strings in array",
+			content:   "I'll use the tools now.\n```json\n[\n  {\n    \"name\": \"Write\",\n    \"arguments\": {\n      \"path\": \"test.json\",\n      \"content\": \"{\\\"nested\\\": {\\\"array\\\": [1, 2, 3], \\\"string\\\": \\\"value\\\"}}\"\n    }\n  },\n  {\n    \"name\": \"Bash\",\n    \"arguments\": {\n      \"command\": \"cat test.json | jq '.nested.string'\"\n    }\n  }\n]\n```\nHope this works!",
 			wantCalls: 2,
 			wantNames: []string{"Write", "Bash"},
 			wantArgs: []string{
@@ -449,8 +449,8 @@ func TestParseToolCalls_JSON_Array_AdvancedEdgeCases(t *testing.T) {
 			},
 		},
 		{
-			name: "unfenced array with nested structures",
-			content: "Executing:\n[\n  {\"name\": \"Edit\", \"arguments\": {\"path\": \"main.go\", \"diff\": \"{\\\"old\\\": \\\"func A()\\\", \\\"new\\\": \\\"func B()\\\"}\"}}\n]",
+			name:      "unfenced array with nested structures",
+			content:   "Executing:\n[\n  {\"name\": \"Edit\", \"arguments\": {\"path\": \"main.go\", \"diff\": \"{\\\"old\\\": \\\"func A()\\\", \\\"new\\\": \\\"func B()\\\"}\"}}\n]",
 			wantCalls: 1,
 			wantNames: []string{"Edit"},
 			wantArgs: []string{
