@@ -1505,6 +1505,12 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 					inString = !inString
 				}
 
+				// If we hit a literal newline while inside a JSON string, the string is unclosed/invalid.
+				// Resetting inString prevents swallowing subsequent brackets.
+				if c == '\n' && inString {
+					inString = false
+				}
+
 				if !inString {
 					if c == '{' {
 						objDepth++
@@ -1514,6 +1520,12 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 						arrDepth++
 					} else if c == ']' {
 						arrDepth--
+					}
+
+					// If depth goes negative, we've encountered unbalanced closing brackets outside of a string,
+					// meaning this candidate boundary is invalid. Break early to recover and advance the outer loop.
+					if objDepth < 0 || arrDepth < 0 {
+						break
 					}
 
 					if (isObject && c == '}' && objDepth == 0 && arrDepth == 0) || (!isObject && c == ']' && arrDepth == 0 && objDepth == 0) {
