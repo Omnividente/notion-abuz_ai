@@ -4353,14 +4353,15 @@
     },
     {
       "id": "proxy-observability-legacy-collapse-dropped-search-context",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for dropped search context during multi-turn legacy fallback",
       "description": "Track when search results (which might exceed limits) are explicitly ignored during legacy multi-turn tracking in `buildTranscript`.",
       "allowed_paths": [
         "internal/proxy/tools.go",
-        "agent_tasks.json"
+        "agent_tasks.json",
+        "internal/proxy/tools_test.go"
       ],
       "acceptance": [
         "A metric counter tracks ignored/dropped search contexts during multi-turn mismatch."
