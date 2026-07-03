@@ -1453,14 +1453,24 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 							var arrayCall []struct {
 								Name      string          `json:"name"`
 								Arguments json.RawMessage `json:"arguments"`
+								ToolCall  *struct {
+									Name      string          `json:"name"`
+									Arguments json.RawMessage `json:"arguments"`
+								} `json:"tool_call"`
 							}
 							if err := json.Unmarshal([]byte(candidate), &arrayCall); err == nil && len(arrayCall) > 0 {
 								isToolCall := false
 								for _, ac := range arrayCall {
-									if ac.Name != "" {
+									name := ac.Name
+									args := ac.Arguments
+									if name == "" && ac.ToolCall != nil {
+										name = ac.ToolCall.Name
+										args = ac.ToolCall.Arguments
+									}
+									if name != "" {
 										argsStr := "{}"
-										if json.Valid(ac.Arguments) {
-											coercedArgs := coerceToolArguments(ac.Arguments)
+										if json.Valid(args) {
+											coercedArgs := coerceToolArguments(args)
 											var parsed interface{}
 											if err := json.Unmarshal(coercedArgs, &parsed); err == nil {
 												if _, isMap := parsed.(map[string]interface{}); isMap {
@@ -1468,12 +1478,12 @@ func parseToolCalls(content string) ([]ToolCall, string, bool) {
 												}
 											}
 										}
-										recordToolCallMetric(ac.Name)
+										recordToolCallMetric(name)
 										toolCalls = append(toolCalls, ToolCall{
 											ID:   fmt.Sprintf("call_%d_%s", foundCalls, generateUUIDv4()[:8]),
 											Type: "function",
 											Function: ToolCallFunction{
-												Name:      ac.Name,
+												Name:      name,
 												Arguments: argsStr,
 											},
 										})
