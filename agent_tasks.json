@@ -4241,7 +4241,7 @@
     },
     {
       "id": "proxy-observability-log-session-fallback-rates",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track fallback rates from multi-turn session mode to legcay collapse mode",
@@ -4254,6 +4254,21 @@
       "acceptance": [
         "A sync.Mutex protected metric map specifically records occurrences of session chain legacy fallbacks.",
         "The metric increments when `chain: falling back from session to legacy collapse` logging executes."
+      ]
+    },
+    {
+      "id": "proxy-observability-multi-turn-fallback-diagnostics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add diagnostics to track explicitly when fallback to multi-turn legacy happens",
+      "description": "Log precise details regarding multi-turn fallback drops to understand what prompts lead to the fallback from multi-turn session mode, to support live-smoke troubleshooting.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/tools.go"
+      ],
+      "acceptance": [
+        "Detailed diagnostic log is emitted describing the last state before the drop to legacy."
       ]
     }
   ]
