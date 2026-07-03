@@ -4054,7 +4054,7 @@
     },
     {
       "id": "proxy-improve-continuation-logging",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Improve observability of tool result continuation mismatches",

@@ -1077,7 +1077,16 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 	}
 
 	if lastAssistantIdx == -1 {
-		log.Printf("[bridge] diagnostics: multi-turn Haiku fallback mismatch — failed to find anchor assistant message to merge tool results")
+		// Log detailed diagnostics for Haiku failures: message counts, roles, and snippets
+		var roles []string
+		for _, m := range messages {
+			snippet := m.Content
+			if len(snippet) > 50 {
+				snippet = snippet[:47] + "..."
+			}
+			roles = append(roles, fmt.Sprintf("%s(len=%d): %q", m.Role, len(m.Content), snippet))
+		}
+		log.Printf("[bridge] diagnostics: multi-turn Haiku fallback mismatch — failed to find anchor assistant message to merge tool results. total messages: %d. roles: [%s]", len(messages), strings.Join(roles, ", "))
 	} else {
 		lastMsg := messages[lastAssistantIdx]
 		if len(lastMsg.ToolCalls) == 0 && lastMsg.Content != "" {
