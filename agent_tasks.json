@@ -3852,7 +3852,7 @@
     },
     {
       "id": "proxy-behavior-json-array-fallback-normalization",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Handle JSON array tool-calls in fallbacks",
@@ -3985,6 +3985,21 @@
       ],
       "acceptance": [
         "Error responses matching known missing-context patterns trigger a clean fallback instead of crashing or leaking to user."
+      ]
+    },
+    {
+      "id": "proxy-behavior-nested-json-array-serialization",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Ensure deep nested JSON object arrays are safely marshaled",
+      "description": "Evaluate tool call parsing and extraction of arguments where a nested array contains mixed structure data types, ensuring deterministic and robust string conversion during arguments JSON marshaling.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Deeply nested JSON array arguments in parsed tool calls are serialized efficiently and identically across fallback parsing paths."
       ]
     }
   ]
