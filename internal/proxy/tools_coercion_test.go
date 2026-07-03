@@ -44,6 +44,11 @@ func TestCoerceToolArguments(t *testing.T) {
 			input:    `{}`,
 			expected: `{}`,
 		},
+		{
+			name:     "deeply nested json array canonicalization",
+			input:    `{  "a": [  { "b": 2, "c": 3 }  ] , "z": 1}`,
+			expected: `{"a":[{"b":2,"c":3}],"z":1}`,
+		},
 	}
 
 	for _, tt := range tests {

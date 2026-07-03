@@ -1290,7 +1290,14 @@ func coerceToolArguments(argsRaw json.RawMessage) json.RawMessage {
 
 	changed := coerceValue(parsed)
 	if !changed {
-		return argsRaw
+		isObjOrArr := false
+		switch parsed.(type) {
+		case map[string]interface{}, []interface{}:
+			isObjOrArr = true
+		}
+		if !isObjOrArr {
+			return argsRaw
+		}
 	}
 
 	coerced, err := json.Marshal(parsed)

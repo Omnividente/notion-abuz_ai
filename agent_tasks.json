@@ -3989,7 +3989,7 @@
     },
     {
       "id": "proxy-behavior-nested-json-array-serialization",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Ensure deep nested JSON object arrays are safely marshaled",
@@ -4000,6 +4000,22 @@
       ],
       "acceptance": [
         "Deeply nested JSON array arguments in parsed tool calls are serialized efficiently and identically across fallback parsing paths."
+      ]
+    },
+    {
+      "id": "proxy-behavior-nested-json-array-serialization-fallback-validation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Evaluate JSON formatting impacts on other fallback paths",
+      "description": "Ensure the updated JSON marshaling canonicalization applied in coerceToolArguments does not negatively impact formatting edge cases in non-XML Markdown fallback parsing logic.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify that JSON canonicalization is handled robustly in the other fallback pathways."
       ]
     }
   ]
