@@ -3909,7 +3909,7 @@
     },
     {
       "id": "proxy-behavior-claude-api-json-array-handling",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for parsing Anthropic API JSON tool call arrays in proxy",
@@ -3921,6 +3921,24 @@
       ],
       "acceptance": [
         "A unit test validates extraction of JSON array tool calls during text fallback."
+      ]
+    },
+    {
+      "id": "proxy-behavior-live-smoke-tool-result-truncation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Investigate tool result truncation during long session recovery",
+      "description": "Live smoke transcripts occasionally show dropped context when large tool results are truncated across multiple session recovery rounds. Investigate where truncation heuristics in buildToolBridgeRecoveryMessages and CallInference are losing important lines from diff or search outputs, and implement behavior-level bridge fixes to preserve critical context like file boundaries or error summaries.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_recovery_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A focused offline test reproduces a multi-turn recovery scenario where large tool result blocks are truncated, dropping critical context.",
+        "Bridge fixes are implemented to preserve essential structure (file boundaries, errors) during truncation.",
+        "Relevant tests pass without live network."
       ]
     }
   ]
