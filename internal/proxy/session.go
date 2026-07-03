@@ -359,7 +359,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		} else {
 			headLimit := limit / 2
 			tailLimit := limit - headLimit - 25
-			if len(runes) > headLimit + tailLimit {
+			if len(runes) > headLimit+tailLimit {
 				dropped := string(runes[headLimit : len(runes)-tailLimit])
 				droppedLines = strings.Count(dropped, "\n")
 			}
