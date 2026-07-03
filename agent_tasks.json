@@ -4020,7 +4020,7 @@
     },
     {
       "id": "proxy-behavior-anthropic-sse-stream-timeout-recovery",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Evaluate SSE stream connection reset recovery",
@@ -4033,6 +4033,23 @@
       "acceptance": [
         "Test verifies that a prematurely closed SSE stream propagates as an incomplete generation rather than failing to return a valid JSON payload.",
         "No regressions in normal SSE parsing."
+      ]
+    },
+    {
+      "id": "proxy-behavior-missing-search-tool",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Evaluate implicit search capabilities when search tool is missing",
+      "description": "Ensure the proxy handles cases where the user requests information requiring search, but Claude Code (or the frontend) did not enable the web search or workspace search tools explicitly.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Test verifies the proxy correctly handles implicit search requirements.",
+        "Documentation updated if necessary."
       ]
     }
   ]
