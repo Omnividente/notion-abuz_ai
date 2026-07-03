@@ -961,9 +961,19 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 			log.Printf("[search] X-Workspace-Search header override: %v", b)
 		}
 
+		// ── Implicit search detection ──
+		implicitWeb, implicitWorkspace := detectImplicitSearch(messages)
+		if implicitWeb || implicitWorkspace {
+			log.Printf("[bridge] implicit search detected: web=%v, workspace=%v", implicitWeb, implicitWorkspace)
+		}
+
 		// Convert Anthropic tools to OpenAI tools format for tool injection
 		hasTools := !isResearcher && len(req.Tools) > 0
-		enableWebSearch := effectiveWebSearch
+		enableWebSearch := effectiveWebSearch || implicitWeb
+
+		if implicitWorkspace {
+			enableWorkspaceSearch = boolPtr(true)
+		}
 
 		// ── Multi-turn session management ──
 		// Compute fingerprint BEFORE tool injection so it's stable across turns.

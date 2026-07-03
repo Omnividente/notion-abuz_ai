@@ -4037,7 +4037,7 @@
     },
     {
       "id": "proxy-behavior-missing-search-tool",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Evaluate implicit search capabilities when search tool is missing",
@@ -4050,6 +4050,21 @@
       "acceptance": [
         "Test verifies the proxy correctly handles implicit search requirements.",
         "Documentation updated if necessary."
+      ]
+    },
+    {
+      "id": "proxy-improve-continuation-logging",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Improve observability of tool result continuation mismatches",
+      "description": "When multi-turn session continuation fails to find an anchor assistant message (e.g. Haiku failures), log detailed diagnostics including message indices, total counts, and snippet previews to ease future debugging of tool result drops.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logging added when lastAssistantIdx == -1 in buildSessionChainContinuation."
       ]
     }
   ]
