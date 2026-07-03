@@ -39,6 +39,10 @@ var ErrResearchQuotaExhausted = errors.New("research mode usage limit exceeded")
 // This typically means the account/thread is in a bad state and should be retried.
 var ErrEmptyResponse = errors.New("empty response from inference")
 
+// ErrMissingContext is returned when Notion API rejects the request because of
+// missing tool context or malformed history (e.g., mismatched tool calls/results).
+var ErrMissingContext = errors.New("missing tool context or malformed history")
+
 var (
 	NotionAPIBase        = "https://www.notion.so/api/v3"
 	DefaultClientVersion = "23.13.20260313.1423"
@@ -1410,8 +1414,12 @@ func CallInference(acc *Account, messages []ChatMessage, model string, disableBu
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		LogNotionResponseText(requestID, "POST /runInferenceTranscript error body", string(body))
-		return fmt.Errorf("notion API error %d: %s", resp.StatusCode, string(body[:min(len(body), 500)]))
+		bodyStr := string(body)
+		LogNotionResponseText(requestID, "POST /runInferenceTranscript error body", bodyStr)
+		if strings.Contains(bodyStr, "missing tool context") || strings.Contains(bodyStr, "malformed history") {
+			return ErrMissingContext
+		}
+		return fmt.Errorf("notion API error %d: %s", resp.StatusCode, bodyStr[:min(len(bodyStr), 500)])
 	}
 
 	// Decompress
@@ -2761,6 +2769,9 @@ func parseNDJSONStream(reader io.Reader, requestID string, cb StreamCallback, na
 				"line_count": lineCount,
 				"message":    errEvt.Message,
 			})
+			if strings.Contains(errEvt.Message, "missing tool context") || strings.Contains(errEvt.Message, "malformed history") {
+				return ErrMissingContext
+			}
 			return fmt.Errorf("notion error: %s", errEvt.Message)
 		}
 	}
@@ -3214,8 +3225,12 @@ func callResearcherInference(acc *Account, messages []ChatMessage, cb StreamCall
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		LogNotionResponseText(requestID, "POST /runInferenceTranscript researcher error body", string(body))
-		return fmt.Errorf("notion researcher API error %d: %s", resp.StatusCode, string(body[:min(len(body), 500)]))
+		bodyStr := string(body)
+		LogNotionResponseText(requestID, "POST /runInferenceTranscript researcher error body", bodyStr)
+		if strings.Contains(bodyStr, "missing tool context") || strings.Contains(bodyStr, "malformed history") {
+			return ErrMissingContext
+		}
+		return fmt.Errorf("notion researcher API error %d: %s", resp.StatusCode, bodyStr[:min(len(bodyStr), 500)])
 	}
 
 	reader, cleanup, err := decompressBody(resp)
@@ -3510,6 +3525,9 @@ func parseResearcherStream(reader io.Reader, requestID string, cb StreamCallback
 				"line_count": lineCount,
 				"message":    errEvt.Message,
 			})
+			if strings.Contains(errEvt.Message, "missing tool context") || strings.Contains(errEvt.Message, "malformed history") {
+				return ErrMissingContext
+			}
 			return fmt.Errorf("notion researcher error: %s", errEvt.Message)
 		}
 	}

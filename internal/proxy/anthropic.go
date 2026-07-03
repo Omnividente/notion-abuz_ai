@@ -1290,9 +1290,13 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 				continue
 			}
 
-			if reqErr != nil && errors.Is(reqErr, ErrToolBridgeNoTool) {
+			if reqErr != nil && (errors.Is(reqErr, ErrToolBridgeNoTool) || errors.Is(reqErr, ErrMissingContext)) {
 				if !toolBridgeRetried {
-					log.Printf("[bridge] decision: retry triggered by ErrToolBridgeNoTool (%s), clearing session and retrying once with sanitized recovery prompt", acc.UserEmail)
+					reason := "ErrToolBridgeNoTool"
+					if errors.Is(reqErr, ErrMissingContext) {
+						reason = "ErrMissingContext"
+					}
+					log.Printf("[bridge] decision: retry triggered by %s (%s), clearing session and retrying once with sanitized recovery prompt", reason, acc.UserEmail)
 					toolBridgeRetried = true
 					if fingerprint != "" {
 						globalSessionManager.Delete(fingerprint)

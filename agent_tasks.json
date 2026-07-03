@@ -3973,7 +3973,7 @@
     },
     {
       "id": "proxy-behavior-missing-context-error-resilience",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Improve resilience against missing-context API errors",
@@ -4159,6 +4159,83 @@
       ],
       "acceptance": [
         "Metrics correctly include toolChoiceMode for robust bracket extraction."
+      ]
+    },
+    {
+      "id": "proxy-observability-log-tool-call-refusals",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Improve diagnostic logging for tool call refusals",
+      "description": "When detectToolBridgeNoToolResponse identifies a refusal (e.g. manual handoff), we log it, but we could explicitly track refusal categories (missing tool context, persona leakage) as specific metric counters to better observe frequency in live environments.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A metric counter tracks specific refusal types detected by detectToolBridgeNoToolResponse."
+      ]
+    },
+    {
+      "id": "proxy-resilience-robust-array-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Robust fallback for JSON tool-call mode loss in nested arrays",
+      "description": "Claude Code occasionally wraps multiple tool calls inside a generic `tool_calls: [...]` array block when it loses strict JSON mode. parseToolCalls should more resiliently unpack these wrappers without assuming a single nested tool object.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "parseToolCalls safely handles an array of tool objects wrapped in a parent array."
+      ]
+    },
+    {
+      "id": "proxy-observability-record-context-truncation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Emit diagnostic log on excessive context truncation",
+      "description": "When the proxy truncates context (e.g., in clip or truncateForLog) for large outputs, it should record a synchronized metric for observability of how often Claude Code might be missing long output.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks whenever string inputs are truncated before sending to Claude Code."
+      ]
+    },
+    {
+      "id": "proxy-behavior-ensure-session-recovery-keeps-tool-results",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Ensure session recovery prompt correctly re-embeds recent tool results",
+      "description": "During a session recovery fallback (buildToolBridgeRecoveryMessages), any tool result blocks generated immediately before the fallback trigger must be accurately preserved in the 'Partial progress' section so the agent doesn't repeat work.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Session recovery logic correctly captures tool results directly following the last user message."
+      ]
+    },
+    {
+      "id": "proxy-observability-track-empty-inference",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track frequency of ErrEmptyResponse from Notion",
+      "description": "Create a metric counter to track how often Notion returns an empty inference response (ErrEmptyResponse), causing a fallback attempt.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/notion.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Metric counter tracks empty response events."
       ]
     }
   ]
