@@ -395,6 +395,8 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 	for _, m := range messages {
 		if m.Role == "system" && strings.TrimSpace(m.Content) != "" {
 			systemParts = append(systemParts, strings.TrimSpace(m.Content))
+		} else if m.Role == "system" && strings.TrimSpace(m.Content) == "" {
+			recordContextLossMetric("empty_system_prompt_dropped")
 		}
 	}
 
@@ -420,11 +422,13 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			if m.Role == "tool" {
 				content = "(empty output)"
 			} else {
+				recordContextLossMetric("recovery_empty_entry_dropped")
 				continue
 			}
 		}
 		if skipEntry != nil && skipEntry(m, content) {
 			log.Printf("[bridge] diagnostic: skipped entry during recovery traversal (role: %s, name: %s)", m.Role, m.Name)
+			recordContextLossMetric("recovery_skipped_entry")
 			continue
 		}
 
@@ -496,11 +500,13 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			if m.Role == "tool" {
 				content = "(empty output)"
 			} else {
+				recordContextLossMetric("recovery_empty_entry_dropped")
 				continue
 			}
 		}
 		if skipEntry != nil && skipEntry(m, content) {
 			log.Printf("[bridge] diagnostic: skipped entry during recovery traversal (role: %s, name: %s)", m.Role, m.Name)
+			recordContextLossMetric("recovery_skipped_entry")
 			continue
 		}
 

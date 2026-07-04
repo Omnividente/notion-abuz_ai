@@ -4385,7 +4385,7 @@
     },
     {
       "id": "proxy-observability-record-context-truncation-in-system-prompt",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for system prompt dropping during session proxying",
@@ -4441,6 +4441,36 @@
       ],
       "acceptance": [
         "A counter tracks occurrences where search context logic drops/truncates texts in assistant messages."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-system-message-dropped",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for dropped system messages in proxy layer",
+      "description": "Log an observable metric when the entire system message from Claude Code is dropped because it gets overshadowed by the Notion 27k system prompt.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences where system messages are explicitly dropped from the proxy request."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-empty-wrapper-only-user-message-dropped",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for dropped empty wrapper-only user message in proxy layer",
+      "description": "Log an observable metric when an empty wrapper-only user message from Claude Code is dropped during tool injection sanitization.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences where empty wrapper-only user messages are explicitly dropped from the proxy request."
       ]
     }
   ]
