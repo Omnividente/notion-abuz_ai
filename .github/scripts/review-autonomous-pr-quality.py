@@ -138,6 +138,8 @@ class ChangedTask:
 class EvidenceBlock:
     present: bool = False
     raw_count: int = 0
+    source: str = "missing"
+    autofilled: bool = False
     task_id: str = ""
     status: str = ""
     blocked_reason: str = ""
@@ -158,6 +160,7 @@ class QualityDecision:
     changed_files: list[str] = field(default_factory=list)
     new_task_ids: list[str] = field(default_factory=list)
     evidence: dict[str, Any] = field(default_factory=dict)
+    autofill_evidence_block: str = ""
     recommendation: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -170,6 +173,7 @@ class QualityDecision:
             "changed_files": self.changed_files,
             "new_task_ids": self.new_task_ids,
             "evidence": self.evidence,
+            "autofill_evidence_block": self.autofill_evidence_block,
             "recommendation": self.recommendation,
         }
 
@@ -370,6 +374,10 @@ def clean_evidence_value(value: str) -> str:
     return value.strip().strip("`").strip()
 
 
+def safe_evidence_line(value: str) -> str:
+    return " ".join(str(value).replace("\r", " ").replace("\n", " ").split())
+
+
 def extract_evidence_files(entries: list[str]) -> list[str]:
     files: list[str] = []
     for entry in entries:
@@ -382,7 +390,7 @@ def extract_evidence_files(entries: list[str]) -> list[str]:
 
 def parse_evidence_block(pr_body: str) -> EvidenceBlock:
     matches = list(EVIDENCE_BLOCK_RE.finditer(pr_body or ""))
-    block = EvidenceBlock(present=bool(matches), raw_count=len(matches))
+    block = EvidenceBlock(present=bool(matches), raw_count=len(matches), source="pr_body" if matches else "missing")
     if not matches:
         return block
 
@@ -432,10 +440,95 @@ def parse_evidence_block(pr_body: str) -> EvidenceBlock:
     return block
 
 
+def render_evidence_block(block: EvidenceBlock) -> str:
+    lines = [
+        "<!-- AUTONOMOUS_TASK_EVIDENCE",
+        f"task_id: {safe_evidence_line(block.task_id)}",
+        f"status: {safe_evidence_line(block.status)}",
+    ]
+    if block.blocked_reason:
+        lines.append(f"blocked_reason: {safe_evidence_line(block.blocked_reason)}")
+    lines.append("acceptance:")
+    lines.extend(f"- {safe_evidence_line(item)}" for item in block.acceptance)
+    lines.append("evidence_files:")
+    lines.extend(f"- {safe_evidence_line(item)}" for item in block.evidence_files)
+    lines.append("checks:")
+    lines.extend(f"- {safe_evidence_line(item)}" for item in block.checks)
+    lines.append(f"micro_pr_justification: {safe_evidence_line(block.micro_pr_justification)}")
+    lines.append("-->")
+    return "\n".join(lines)
+
+
+def synthesize_evidence_block(
+    *,
+    done_changes: list[ChangedTask],
+    blocked_changes: list[ChangedTask],
+    changed_files: list[str],
+    pr_body: str,
+) -> EvidenceBlock | None:
+    completed = done_changes or blocked_changes
+    if len(completed) != 1:
+        return None
+    if not any(is_manifest_path(path) for path in changed_files):
+        return None
+
+    change = completed[0]
+    status = "done" if done_changes else "blocked"
+    if status == "done":
+        evidence_files = [path for path in changed_files if not is_scratch_file(path)]
+    else:
+        evidence_files = ["agent_tasks.json"]
+    if not evidence_files:
+        return None
+
+    task = change.task
+    acceptance_items = task.get("acceptance") if isinstance(task.get("acceptance"), list) else []
+    evidence_target = ", ".join(evidence_files)
+    acceptance = [
+        f"{str(item).strip()} -> {evidence_target}"
+        for item in acceptance_items
+        if str(item).strip()
+    ]
+    if status == "blocked" and not acceptance:
+        acceptance = ["Task blocked with concrete manifest reason -> agent_tasks.json"]
+
+    checks = [
+        "python3 scripts/validate_agent_tasks.py agent_tasks.json",
+        "GitHub Actions CI/live-smoke checks for this PR",
+    ]
+    body_lower = pr_body.lower()
+    if "go test ./..." in body_lower:
+        checks.append("go test ./...")
+    if "go vet ./..." in body_lower:
+        checks.append("go vet ./...")
+
+    block = EvidenceBlock(
+        present=True,
+        raw_count=1,
+        source="autofill",
+        autofilled=True,
+        task_id=change.task_id,
+        status=status,
+        blocked_reason=str(task.get("blocked_reason") or "").strip() if status == "blocked" else "",
+        acceptance=acceptance,
+        evidence=evidence_files,
+        checks=checks,
+        evidence_files=evidence_files,
+        micro_pr_justification=(
+            "Synthesized by trusted quality gate from one changed task status, "
+            "changed evidence files, and PR checks because Jules may not have "
+            "permission to edit PR metadata."
+        ),
+    )
+    return block
+
+
 def evidence_to_dict(block: EvidenceBlock) -> dict[str, Any]:
     return {
         "present": block.present,
         "raw_count": block.raw_count,
+        "source": block.source,
+        "autofilled": block.autofilled,
         "task_id": block.task_id,
         "status": block.status,
         "acceptance_count": len(block.acceptance),
@@ -473,6 +566,7 @@ def evaluate_quality(
     numstat: dict[str, tuple[int, int]],
     pr_title: str,
     pr_body: str,
+    allow_evidence_autofill: bool = False,
 ) -> QualityDecision:
     done_changes = status_changes(before_manifest, after_manifest, "done")
     blocked_changes = status_changes(before_manifest, after_manifest, "blocked")
@@ -489,6 +583,7 @@ def evaluate_quality(
     changed_lines = changed_line_count(numstat, changed_files)
     evidence = parse_evidence_block(pr_body)
     scratch_files = [path for path in changed_files if is_scratch_file(path)]
+    autofill_evidence_block = ""
 
     if scratch_files:
         reasons.append(
@@ -516,7 +611,24 @@ def evaluate_quality(
 
     if done_changes or blocked_changes:
         if not evidence.present:
-            reasons.append("PR body is missing the AUTONOMOUS_TASK_EVIDENCE block required for autonomous PRs.")
+            if allow_evidence_autofill:
+                autofill = synthesize_evidence_block(
+                    done_changes=done_changes,
+                    blocked_changes=blocked_changes,
+                    changed_files=changed_files,
+                    pr_body=pr_body,
+                )
+                if autofill is not None:
+                    evidence = autofill
+                    autofill_evidence_block = render_evidence_block(autofill)
+                    warnings.append(
+                        "AUTONOMOUS_TASK_EVIDENCE was missing from PR body; "
+                        "trusted quality gate synthesized it from manifest diff and changed files."
+                    )
+                else:
+                    reasons.append("PR body is missing the AUTONOMOUS_TASK_EVIDENCE block required for autonomous PRs.")
+            else:
+                reasons.append("PR body is missing the AUTONOMOUS_TASK_EVIDENCE block required for autonomous PRs.")
         elif evidence.raw_count > 1:
             reasons.append("PR body contains more than one AUTONOMOUS_TASK_EVIDENCE block.")
         else:
@@ -637,15 +749,24 @@ def evaluate_quality(
         changed_files=changed_files,
         new_task_ids=added_tasks,
         evidence=evidence_to_dict(evidence),
+        autofill_evidence_block=autofill_evidence_block,
         recommendation=recommendation,
     )
 
 
 def write_github_outputs(path: Path, decision: QualityDecision) -> None:
     summary = "; ".join(decision.reasons or decision.warnings or [decision.recommendation])
+    def write_output(output: Any, key: str, value: str) -> None:
+        if "\n" in value:
+            output.write(f"{key}<<EOF\n{value}\nEOF\n")
+        else:
+            output.write(f"{key}={value}\n")
+
     with path.open("a", encoding="utf-8") as output:
-        output.write(f"passed={'true' if decision.passed else 'false'}\n")
-        output.write(f"summary={summary}\n")
+        write_output(output, "passed", "true" if decision.passed else "false")
+        write_output(output, "summary", summary)
+        write_output(output, "evidence_autofill", "true" if decision.autofill_evidence_block else "false")
+        write_output(output, "evidence_source", str(decision.evidence.get("source") or ""))
 
 
 def write_report(path: Path, decision: QualityDecision) -> None:
@@ -679,6 +800,8 @@ def write_report(path: Path, decision: QualityDecision) -> None:
     if evidence:
         lines.append("Evidence block:")
         lines.append(f"- present: `{str(evidence.get('present')).lower()}`")
+        lines.append(f"- source: `{evidence.get('source') or ''}`")
+        lines.append(f"- autofilled: `{str(evidence.get('autofilled')).lower()}`")
         lines.append(f"- task_id: `{evidence.get('task_id') or ''}`")
         lines.append(f"- status: `{evidence.get('status') or ''}`")
         lines.append(f"- evidence_files: `{', '.join(evidence.get('evidence_files') or [])}`")
@@ -704,6 +827,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pr-body", default="")
     parser.add_argument("--pr-body-file", default="")
     parser.add_argument("--report", type=Path)
+    parser.add_argument(
+        "--allow-evidence-autofill",
+        action="store_true",
+        help="allow trusted automation to synthesize missing PR-body evidence from the manifest diff",
+    )
+    parser.add_argument("--autofill-evidence-file", type=Path)
     parser.add_argument("--github-output", default=os.environ.get("GITHUB_OUTPUT", ""))
     parser.add_argument("--json", action="store_true")
     return parser
@@ -727,6 +856,7 @@ def main(argv: list[str] | None = None) -> int:
             numstat=numstat,
             pr_title=args.pr_title,
             pr_body=read_pr_body(args),
+            allow_evidence_autofill=args.allow_evidence_autofill,
         )
     except (QualityInputError, json.JSONDecodeError, OSError) as exc:
         decision = QualityDecision(
@@ -737,6 +867,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.report:
         write_report(args.report, decision)
+
+    if args.autofill_evidence_file and decision.autofill_evidence_block:
+        args.autofill_evidence_file.write_text(decision.autofill_evidence_block + "\n", encoding="utf-8")
 
     if args.github_output:
         write_github_outputs(Path(args.github_output), decision)
