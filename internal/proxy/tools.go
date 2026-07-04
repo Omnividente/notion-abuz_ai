@@ -652,6 +652,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 					if match := cwdRe.FindStringSubmatch(m.Content); len(match) >= 2 {
 						extractedCwd = match[1]
 						log.Printf("[bridge] extracted CWD from system prompt: %s", extractedCwd)
+						recordContextLossMetric("system_message_dropped_cwd_regex")
 					}
 					log.Printf("[bridge] dropped system message (%d chars)", len(m.Content))
 					recordContextLossMetric("system_message_dropped")

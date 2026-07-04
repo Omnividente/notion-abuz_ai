@@ -4537,7 +4537,7 @@
     },
     {
       "id": "proxy-observability-detect-system-message-dropped-regex-match",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for dropped system message based on regex match",
@@ -4593,6 +4593,21 @@
       ],
       "acceptance": [
         "A test asserts that CWD is correctly extracted from a system message matching the <cwd> regex."
+      ]
+    },
+    {
+      "id": "proxy-observability-search-context-truncation-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add integration test for search context truncation metrics",
+      "description": "Add an integration test to ensure that search_context_truncated is incremented when search context exceeds limits.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test explicitly validates the counter increment for search_context_truncated when a long search context is truncated during legacy collapse or session continuation."
       ]
     }
   ]
