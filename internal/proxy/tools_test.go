@@ -1950,10 +1950,7 @@ func TestFallbackMissingAnchorMetric(t *testing.T) {
 }
 
 
-
-
-
-func TestLegacyCollapse_DroppedSearchContext(t *testing.T) {
+func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
 	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
 	contextLossMetricsMu.Lock()
 	original := contextLossMetrics
@@ -1973,30 +1970,26 @@ func TestLegacyCollapse_DroppedSearchContext(t *testing.T) {
 
 	messages := []ChatMessage{
 		{Role: "user", Content: "First query"},
-		{Role: "assistant", Content: longSearchCtx}, // this is the previous search context from earlier turn
-		{Role: "tool", Content: "some result", ToolCallID: "tc_initial"}, // i=2
-		{Role: "user", Content: "What is the answer?"}, // userQueryIdx will be 3
-		{Role: "assistant", Content: "I will use bash", ToolCalls: []ToolCall{{ID: "tc1", Function: ToolCallFunction{Name: "Bash"}}}},
-		{Role: "tool", Content: "result", ToolCallID: "tc1", Name: "Bash"}, // i=5
+		{Role: "assistant", Content: longSearchCtx},
+		{Role: "user", Content: "What is the answer?"},
 	}
 
-	// <= 5 tools triggers legacy collapse
 	tools := []Tool{
 		{Function: ToolFunction{Name: "T1"}},
 		{Function: ToolFunction{Name: "T2"}},
 		{Function: ToolFunction{Name: "T3"}},
 		{Function: ToolFunction{Name: "T4"}},
 		{Function: ToolFunction{Name: "T5"}},
-		{Function: ToolFunction{Name: "T6"}}, // need >5 to trigger useLargeToolSet
+		{Function: ToolFunction{Name: "T6"}},
 	}
 
-	injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil) // nil session ensures we fall back to legacy collapse
+	injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil)
 
 	contextLossMetricsMu.Lock()
-	count := contextLossMetrics["legacy_collapse_dropped_search_context"]
+	count := contextLossMetrics["search_context_truncated"]
 	contextLossMetricsMu.Unlock()
 
 	if count < 1 {
-		t.Errorf("Expected legacy_collapse_dropped_search_context metric to be >= 1, got %d", count)
+		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
 	}
 }
