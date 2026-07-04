@@ -4430,7 +4430,7 @@
     },
     {
       "id": "proxy-observability-detect-search-context-truncation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for search context dropping during multi-turn continuation",
@@ -4503,6 +4503,21 @@
       ],
       "acceptance": [
         "A mechanism exists to surface 'tool_schema_simplification_recursion_limit' metric to a higher-level telemetry endpoint or dashboard."
+      ]
+    },
+    {
+      "id": "proxy-observability-track-retry-loops",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for detected retry loops during session chain continuation",
+      "description": "Log an observable metric when the multi-turn continuation detects a potential retry loop (call -> err -> call -> err).",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences of detected retry loops."
       ]
     }
   ]
