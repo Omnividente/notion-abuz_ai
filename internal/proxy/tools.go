@@ -472,6 +472,7 @@ func sanitizeForBridge(messages []ChatMessage) []ChatMessage {
 				bridgeInserted = true
 				log.Printf("[bridge] [%d] replaced system prompt (%d chars → %d chars)", i, len(msg.Content), len(bridgeSystemPrompt))
 			} else {
+				recordContextLossMetric("system_message_dropped")
 				log.Printf("[bridge] [%d] dropped extra system message (%d chars)", i, len(msg.Content))
 			}
 		case "user":
@@ -653,6 +654,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 						log.Printf("[bridge] extracted CWD from system prompt: %s", extractedCwd)
 					}
 					log.Printf("[bridge] dropped system message (%d chars)", len(m.Content))
+					recordContextLossMetric("system_message_dropped")
 				}
 			} else if m.Role == "user" && strings.TrimSpace(m.Content) == "" && m.ToolCallID == "" && len(m.ToolCalls) == 0 {
 				log.Printf("[bridge] dropped empty wrapper-only user message after sanitization")
