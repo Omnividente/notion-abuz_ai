@@ -65,7 +65,10 @@ jobs:
       (github.event.pull_request.merged == true &&
        !contains(github.event.pull_request.labels.*.name, 'stop-loop') &&
        (github.event.pull_request.user.login == 'google-jules[bot]' ||
-        contains(github.event.pull_request.labels.*.name, 'jules') ||
+        contains(github.event.pull_request.body || '', 'PR created automatically by Jules') ||
+        contains(github.event.pull_request.body || '', 'jules.google.com/task') ||
+        startsWith(github.event.pull_request.head.ref, 'jules-') ||
+        startsWith(github.event.pull_request.head.ref, 'jules/') ||
         (startsWith(github.event.pull_request.head.ref, 'automation-health-meta-') &&
          contains(github.event.pull_request.body || '', 'AUTOMATION_HEALTH_META_TASK')) ||
         (startsWith(github.event.pull_request.head.ref, 'automation-recovery-failed-session-block-') &&
