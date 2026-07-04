@@ -1713,3 +1713,32 @@ func TestInjectToolsIntoMessages_SuggestionModeMetric(t *testing.T) {
 		t.Fatalf("Expected 1 suggestion_mode_trigger metric, got %d", count)
 	}
 }
+
+func TestBuildSessionChainContinuation_EmptyToolList(t *testing.T) {
+	// Reset the metric counter at the beginning of the test
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "do it"},
+		{Role: "assistant", Content: "working on it", ToolCalls: []ToolCall{{ID: "tc1", Function: ToolCallFunction{Name: "Bash"}}}},
+		{Role: "tool", Content: "done", ToolCallID: "tc1"},
+	}
+
+	// This should trigger the warning and log "empty_tools_fallback"
+	result := buildSessionChainContinuation(messages, "", "/cwd")
+
+	// Ensure result is returned and not empty
+	if len(result) == 0 {
+		t.Fatalf("Expected non-empty result")
+	}
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["empty_tools_fallback"]
+	contextLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Errorf("Expected empty_tools_fallback metric count 1, got %d", count)
+	}
+}
