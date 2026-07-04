@@ -1823,7 +1823,7 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 		if len(calls) > 0 {
 			recordXMLArrayMetric("direct_array", toolChoiceMode...)
 			log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool arrays, %d calls extracted)", len(calls))
-			log.Printf("[bridge] successfully extracted %d tool calls from JSON array format", len(calls))
+			log.Printf("[bridge] successfully extracted %d tool calls from JSON array format (mode: %v)", len(calls), toolChoiceMode)
 			return calls
 		}
 	}
@@ -1884,7 +1884,7 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 			if len(calls) > 0 {
 				recordXMLArrayMetric("wrapper_array", toolChoiceMode...)
 				log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool wrapper arrays, %d calls extracted)", len(calls))
-				log.Printf("[bridge] successfully extracted %d tool calls from JSON wrapper array format", len(calls))
+				log.Printf("[bridge] successfully extracted %d tool calls from JSON wrapper array format (mode: %v)", len(calls), toolChoiceMode)
 				return calls
 			}
 		}
