@@ -347,15 +347,14 @@ def summarize_activities(activities: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def is_autonomous_pr(pr: dict[str, Any], *, repo: str, task_ids: list[str]) -> bool:
-    labels = labels_of(pr)
     head = pr.get("head") or {}
     head_ref = str(head.get("ref") or "")
     head_repo = str((head.get("repo") or {}).get("full_name") or "")
     user = str((pr.get("user") or {}).get("login") or "")
-    title = str(pr.get("title") or "")
     body = str(pr.get("body") or "")
 
-    if user == "google-jules[bot]" or "jules" in labels:
+    user_lower = user.lower()
+    if user == "google-jules[bot]" or ("jules" in user_lower and user_lower.endswith("[bot]")):
         return True
     if "PR created automatically by Jules" in body or "jules.google.com/task" in body:
         return True
@@ -366,8 +365,6 @@ def is_autonomous_pr(pr: dict[str, Any], *, repo: str, task_ids: list[str]) -> b
     return any(
         head_ref == task_id
         or head_ref.startswith(f"{task_id}-")
-        or task_id in title
-        or task_id in body
         for task_id in task_ids
     )
 

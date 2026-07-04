@@ -176,19 +176,17 @@ def task_statuses(manifest: dict[str, Any]) -> dict[str, str]:
 
 
 def is_autonomous_pr(pr: dict[str, Any], task_ids: list[str], repo: str) -> bool:
-    labels = labels_of(pr)
     body = str(pr.get("body") or "")
-    title = str(pr.get("title") or "")
+    user = str((pr.get("user") or {}).get("login") or "")
     head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
     head_ref = str(head.get("ref") or "")
     head_repo_obj = head.get("repo") if isinstance(head.get("repo"), dict) else {}
     head_repo = str(head_repo_obj.get("full_name") or pr.get("head_repo") or "")
 
-    if "jules" in labels:
+    user_lower = user.lower()
+    if user == "google-jules[bot]" or ("jules" in user_lower and user_lower.endswith("[bot]")):
         return True
     if "PR created automatically by Jules" in body or "jules.google.com/task" in body:
-        return True
-    if any(task_id and (task_id in title or task_id in body) for task_id in task_ids):
         return True
     if head_repo and repo and head_repo != repo:
         return False

@@ -105,6 +105,7 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
         pr_title: str = "",
         pr_body: str = "",
         numstat: dict[str, tuple[int, int]] | None = None,
+        allow_evidence_autofill: bool = False,
     ):
         return quality.evaluate_quality(
             before_manifest=before,
@@ -114,6 +115,7 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
             numstat=numstat or {path: (10, 0) for path in changed_files},
             pr_title=pr_title,
             pr_body=pr_body,
+            allow_evidence_autofill=allow_evidence_autofill,
         )
 
     def test_blocks_116_style_test_only_observability_completion(self) -> None:
@@ -386,6 +388,52 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
 
         self.assertFalse(decision.passed)
         self.assertTrue(any("AUTONOMOUS_TASK_EVIDENCE" in reason for reason in decision.reasons))
+
+    def test_trusted_autofill_missing_evidence_block_for_done_task(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=["internal/proxy/anthropic.go", "agent_tasks.json"],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body="Runtime bridge decision logging was updated. Checks: go test ./...",
+            allow_evidence_autofill=True,
+        )
+
+        self.assertTrue(decision.passed)
+        self.assertEqual(decision.evidence["source"], "autofill")
+        self.assertTrue(decision.evidence["autofilled"])
+        self.assertIn("runtime-fix", decision.autofill_evidence_block)
+        self.assertIn("internal/proxy/anthropic.go", decision.autofill_evidence_block)
+        self.assertIn("go test ./...", decision.autofill_evidence_block)
+
+    def test_trusted_autofill_requires_single_changed_task(self) -> None:
+        before = manifest(
+            [
+                task("runtime-fix-one", status="todo"),
+                task("runtime-fix-two", status="todo"),
+            ]
+        )
+        after = manifest(
+            [
+                task("runtime-fix-one", status="done"),
+                task("runtime-fix-two", status="done"),
+            ]
+        )
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=["internal/proxy/anthropic.go", "agent_tasks.json"],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            allow_evidence_autofill=True,
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertEqual(decision.evidence["source"], "missing")
+        self.assertFalse(decision.autofill_evidence_block)
 
     def test_mismatched_evidence_task_id_fails(self) -> None:
         before = manifest([task("runtime-fix", status="todo")])

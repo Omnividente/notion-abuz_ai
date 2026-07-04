@@ -129,8 +129,40 @@ jobs:
             --pr-title "${PR_TITLE}" \
             --pr-body-file /tmp/pr-body.md \
             --report /tmp/autonomous-pr-quality.md \
+            --allow-evidence-autofill \
+            --autofill-evidence-file /tmp/autonomous-autofill-evidence.md \
             --github-output "$GITHUB_OUTPUT" \
             --json | tee /tmp/autonomous-pr-quality.json
+
+      - name: Persist synthesized evidence in PR body
+        if: steps.quality.outputs.passed == 'true' && steps.quality.outputs.evidence_autofill == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PAT || github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          current_body="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json body --jq '.body // ""')"
+          if printf '%s' "$current_body" | grep -q 'AUTONOMOUS_TASK_EVIDENCE'; then
+            echo "PR body already contains AUTONOMOUS_TASK_EVIDENCE; skipping synthesized evidence update."
+            exit 0
+          fi
+
+          {
+            printf '%s\n\n' "$current_body"
+            cat /tmp/autonomous-autofill-evidence.md
+          } > /tmp/pr-body-with-autofill-evidence.md
+
+          jq -n --rawfile body /tmp/pr-body-with-autofill-evidence.md '{body: $body}' \
+            > /tmp/pr-body-with-autofill-evidence.json
+
+          gh api \
+            -X PATCH \
+            "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            --input /tmp/pr-body-with-autofill-evidence.json \
+            >/dev/null
+
+          echo "Persisted synthesized AUTONOMOUS_TASK_EVIDENCE in PR body."
 
       - name: Stop weak autonomous PR before merge
         if: steps.quality.outputs.passed != 'true'
