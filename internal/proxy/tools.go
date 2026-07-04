@@ -757,6 +757,10 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 					}
 				}
 			}
+			if userQueryIdx == -1 {
+				recordContextLossMetric("missing_user_message_in_fallback")
+				log.Printf("[bridge] warning: failed to find a meaningful user message during legacy collapse, context extraction may fail")
+			}
 			// Collect tool results only from the CURRENT chain (after userQueryIdx).
 			// This prevents cross-query pollution in interactive mode.
 			var lastRoundResults strings.Builder
