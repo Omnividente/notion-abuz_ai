@@ -4475,7 +4475,7 @@
     },
     {
       "id": "proxy-observability-detect-system-schema-recursion",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for unbounded schema depth in simplification",
@@ -4487,6 +4487,22 @@
       ],
       "acceptance": [
         "A counter tracks and breaks out of recursion if depth exceeds a safe limit (e.g. 100)."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-system-schema-recursion-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add telemetry for schema recursion limit occurrences",
+      "description": "Although we now break out of unbounded schema recursion, we should ensure this metric is actively reported to the dashboard or logged with greater severity to identify rogue integrations or malicious payloads.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A mechanism exists to surface 'tool_schema_simplification_recursion_limit' metric to a higher-level telemetry endpoint or dashboard."
       ]
     }
   ]

@@ -1554,3 +1554,36 @@ func TestSimplifyToolSchema_PropertiesArrayFallback(t *testing.T) {
 		t.Errorf("expected 'items' to be empty map, got %v", itemsMap)
 	}
 }
+
+func TestSimplifyToolSchema_UnboundedRecursion(t *testing.T) {
+	// Create a deeply nested structure exceeding maxSchemaDepth (100)
+	var root map[string]interface{} = map[string]interface{}{}
+	current := root
+	for i := 0; i < 105; i++ {
+		next := map[string]interface{}{}
+		current["nested"] = next
+		current = next
+	}
+
+	result := simplifyToolSchema(root)
+
+	// If it doesn't panic, the test basically passes on safety,
+	// but we should also check that at depth 100 it returns an empty map
+	// instead of continuing.
+
+	depth := 0
+	currResult, ok := result.(map[string]interface{})
+	for ok {
+		if next, exists := currResult["nested"]; exists {
+			currResult, ok = next.(map[string]interface{})
+			depth++
+		} else {
+			break
+		}
+	}
+
+	// It should reach exactly maxSchemaDepth (100).
+	if depth != 100 {
+		t.Errorf("Expected truncated recursion depth 100, got %d", depth)
+	}
+}
