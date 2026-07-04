@@ -146,6 +146,70 @@ func TestBuildRecoveryMessages_DiagnosticLogging_SkippedEntries(t *testing.T) {
 
 	logOutput := buf.String()
 	if !strings.Contains(logOutput, "[bridge] diagnostic: skipped entry during recovery traversal") {
-		t.Errorf("Expected diagnostic log for skipped entry, got: %s", logOutput)
+		t.Errorf("Expected skipped entry log, got: %s", logOutput)
+	}
+}
+
+func TestBuildRecoveryMessages_ContextLoss_TrailingDropped(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Latest query"},
+		{Role: "assistant", Content: strings.Repeat("A", 800), ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "bash", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "1", Content: strings.Repeat("a", 800)},
+		{Role: "assistant", Content: strings.Repeat("B", 800), ToolCalls: []ToolCall{{ID: "2", Function: ToolCallFunction{Name: "bash", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "2", Content: strings.Repeat("b", 800)},
+		{Role: "assistant", Content: strings.Repeat("C", 800), ToolCalls: []ToolCall{{ID: "3", Function: ToolCallFunction{Name: "bash", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "3", Content: strings.Repeat("c", 800)},
+		{Role: "assistant", Content: strings.Repeat("D", 800), ToolCalls: []ToolCall{{ID: "4", Function: ToolCallFunction{Name: "bash", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "4", Content: strings.Repeat("d", 800)},
+	}
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[metrics] context_loss: trailing_progress_dropped") {
+		t.Errorf("Expected context loss metric for trailing_progress_dropped, got: %s", logOutput)
+	}
+}
+
+func TestBuildRecoveryMessages_ContextLoss_EmptySystemMessage(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	messages := []ChatMessage{
+		{Role: "system", Content: "   \n "}, // Empty after trim
+		{Role: "user", Content: "First query to trigger needsFreshThreadRecovery"},
+		{Role: "assistant", Content: "ack"},
+		{Role: "user", Content: "Latest query"},
+	}
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[metrics] context_loss: empty_system_prompt_dropped") {
+		t.Errorf("Expected context loss metric for empty_system_prompt_dropped, got: %s", logOutput)
+	}
+}
+
+func TestBuildRecoveryMessages_ContextLoss_EmptyEntry(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "First query to trigger needsFreshThreadRecovery"},
+		{Role: "assistant", Content: "   "}, // Empty after trim
+		{Role: "user", Content: "Latest query"},
+	}
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[metrics] context_loss: recovery_empty_entry_dropped") {
+		t.Errorf("Expected context loss metric for recovery_empty_entry_dropped, got: %s", logOutput)
 	}
 }
