@@ -98,8 +98,29 @@ jobs:
               -d "$body"
           }
 
+          dispatch_next_task() {
+            body="$(jq -n \
+              '{
+                ref: "master",
+                inputs: {
+                  focus: "proxy",
+                  risk_ceiling: "medium",
+                  allow_parallel: "false"
+                }
+              }')"
+
+            curl -fsS \
+              -X POST \
+              -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/jules_next_task.yml/dispatches" \
+              -d "$body"
+          }
+
           cycles="${CYCLES}"
           interval="${INTERVAL_SECONDS}"
+          saw_active_sessions="0"
 
           for i in $(seq 1 "$cycles"); do
             echo "Burst monitor pass ${i}/${cycles}"
@@ -125,6 +146,10 @@ jobs:
             echo "Open autonomous PRs: ${open_prs}"
             echo "Failed recovery action: ${failed_recovery_action:-none}"
 
+            if [ "${active_sessions}" != "0" ]; then
+              saw_active_sessions="1"
+            fi
+
             if [ "${open_prs}" != "0" ]; then
               echo "Autonomous PR is open; automerge workflow will take over."
               exit 0
@@ -148,7 +173,12 @@ jobs:
             fi
 
             if [ "${active_sessions}" = "0" ]; then
-              echo "No active Jules sessions remain; burst monitor can stop."
+              if [ "${saw_active_sessions}" = "1" ]; then
+                echo "No active Jules sessions remain and no autonomous PR is open; dispatching next task."
+                dispatch_next_task
+              else
+                echo "No active Jules sessions remain; burst monitor can stop."
+              fi
               exit 0
             fi
 
