@@ -856,7 +856,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				if m.Role == "assistant" && strings.Contains(m.Content, "---\nSources:") {
 					ctx := m.Content
 					if len([]rune(ctx)) > 600 {
-						log.Printf("[bridge] truncated large previous search context to 600 runes")
+						log.Printf("[bridge] truncated large previous search context (len=%d runes) to 600 runes", len([]rune(ctx)))
 						recordContextLossMetric("search_context_truncated")
 						ctx = string([]rune(ctx)[:600]) + "..."
 					}
@@ -1282,7 +1282,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 		if m.Role == "assistant" && strings.Contains(m.Content, "---\nSources:") {
 			ctx := m.Content
 			if len([]rune(ctx)) > 600 {
-				log.Printf("[bridge] truncated large previous search context to 600 runes")
+				log.Printf("[bridge] truncated large previous search context (len=%d runes) to 600 runes", len([]rune(ctx)))
 				recordContextLossMetric("search_context_truncated")
 				ctx = string([]rune(ctx)[:600]) + "..."
 			}

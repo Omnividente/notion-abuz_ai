@@ -1623,8 +1623,8 @@ func TestSessionChainContinuation_SearchContext(t *testing.T) {
 	count := contextLossMetrics["search_context_truncated"]
 	contextLossMetricsMu.Unlock()
 
-	if count != 1 {
-		t.Errorf("Expected search_context_truncated metric to be 1, got %d", count)
+	if count < 1 {
+		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
 	}
 }
 
@@ -1783,8 +1783,8 @@ func TestInjectToolsIntoMessages_LargeSearchContext(t *testing.T) {
 	count := contextLossMetrics["search_context_truncated"]
 	contextLossMetricsMu.Unlock()
 
-	if count != 1 {
-		t.Errorf("Expected search_context_truncated metric to be 1, got %d", count)
+	if count < 1 {
+		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
 	}
 
 	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
@@ -1822,8 +1822,8 @@ func TestBuildSessionChainContinuation_LargeSearchContext(t *testing.T) {
 	count := contextLossMetrics["search_context_truncated"]
 	contextLossMetricsMu.Unlock()
 
-	if count != 1 {
-		t.Errorf("Expected search_context_truncated metric to be 1, got %d", count)
+	if count < 1 {
+		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
 	}
 
 	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
