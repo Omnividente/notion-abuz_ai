@@ -527,7 +527,6 @@ func TestParseToolCalls_JSON_Array_AdvancedEdgeCases(t *testing.T) {
 	}
 }
 
-// We want to test parseToolCallJSON which is an internal function in package proxy
 func TestParseToolCallJSON_WrapperFormats(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1946,5 +1945,104 @@ func TestFallbackMissingAnchorMetric(t *testing.T) {
 
 	if val == 0 {
 		t.Errorf("Expected fallback_missing_anchor metric to be incremented, got %d", val)
+	}
+}
+
+func TestLegacyCollapse_SearchContextTruncation(t *testing.T) {
+	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
+	contextLossMetricsMu.Lock()
+	original := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	t.Cleanup(func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = original
+		contextLossMetricsMu.Unlock()
+	})
+
+	longSearchCtx := "---\nSources:\n[1] "
+	for i := 0; i < 700; i++ {
+		longSearchCtx += "a"
+	}
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Test user query"},
+		{Role: "assistant", Content: longSearchCtx},
+		{Role: "user", Content: "What is the answer?"},
+	}
+
+	// <= 5 tools triggers legacy collapse
+	tools := []Tool{
+		{Function: ToolFunction{Name: "T1"}},
+		{Function: ToolFunction{Name: "T2"}},
+		{Function: ToolFunction{Name: "T3"}},
+	}
+
+	res := injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil)
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["search_context_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if count < 1 {
+		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
+	}
+
+	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
+		t.Errorf("Expected truncated result to have '...'")
+	}
+}
+
+import (
+	"strings"
+	"testing"
+)
+
+func TestLegacyCollapse_SearchContextTruncation(t *testing.T) {
+	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
+	contextLossMetricsMu.Lock()
+	original := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	t.Cleanup(func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = original
+		contextLossMetricsMu.Unlock()
+	})
+
+	longSearchCtx := "---\nSources:\n[1] "
+	for i := 0; i < 700; i++ {
+		longSearchCtx += "a"
+	}
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Test user query"},
+		{Role: "assistant", Content: longSearchCtx}, // this is the previous search context
+		{Role: "user", Content: "What is the answer?"},
+		{Role: "assistant", Content: "I will use bash", ToolCalls: []ToolCall{{ID: "tc1", Function: ToolCallFunction{Name: "Bash"}}}},
+		{Role: "tool", Content: "result", ToolCallID: "tc1", Name: "Bash"},
+	}
+
+	// <= 5 tools triggers legacy collapse
+	tools := []Tool{
+		{Function: ToolFunction{Name: "T1"}},
+		{Function: ToolFunction{Name: "T2"}},
+		{Function: ToolFunction{Name: "T3"}},
+	}
+
+	res := injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil)
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["search_context_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if count < 1 {
+		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
+	}
+
+	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
+		t.Errorf("Expected truncated result to have '...'")
 	}
 }

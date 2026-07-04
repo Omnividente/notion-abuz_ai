@@ -4597,7 +4597,7 @@
     },
     {
       "id": "proxy-observability-search-context-truncation-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add integration test for search context truncation metrics",
@@ -4779,6 +4779,21 @@
       ],
       "acceptance": [
         "A test explicitly validates the counter increment for legacy_collapse_dropped_search_context when a long search context is dropped."
+      ]
+    },
+    {
+      "id": "proxy-observability-search-context-truncation-metrics-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for search context truncation short metrics",
+      "description": "Add an integration test to ensure normal/short search context is not truncated and metrics aren't incremented.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test validates that search_context_truncated is not incremented for short search context."
       ]
     }
   ]
