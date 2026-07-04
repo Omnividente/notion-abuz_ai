@@ -1878,3 +1878,53 @@ func TestParseToolCalls_XMLArrayFallbackMetrics(t *testing.T) {
 		t.Errorf("Expected wrapper_array metric to be 1, got %d", wrapperCount)
 	}
 }
+
+func TestParseToolCalls_XMLWrapperFallbackTracking(t *testing.T) {
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
+
+	content := "<tool_call>{\"name\": \"test_tool\", \"arguments\": {\"param\": 1}}</tool_call>"
+
+	calls, _, hasCalls := parseToolCalls(content, "auto")
+
+	if !hasCalls || len(calls) != 1 {
+		t.Fatalf("expected 1 call, got %d", len(calls))
+	}
+	if calls[0].Function.Name != "test_tool" {
+		t.Errorf("expected test_tool, got %s", calls[0].Function.Name)
+	}
+
+	toolModeLossMetricsMu.Lock()
+	count := toolModeLossMetrics["xml_wrapper_fallback_mode_auto"]
+	toolModeLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Errorf("expected xml_wrapper_fallback_mode_auto count to be 1, got %d", count)
+	}
+}
+
+func TestParseToolCalls_MarkdownFenceFallbackTracking(t *testing.T) {
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
+
+	content := "```json\n{\"name\": \"test_tool\", \"arguments\": {\"param\": 1}}\n```"
+
+	calls, _, hasCalls := parseToolCalls(content, "any")
+
+	if !hasCalls || len(calls) != 1 {
+		t.Fatalf("expected 1 call, got %d", len(calls))
+	}
+	if calls[0].Function.Name != "test_tool" {
+		t.Errorf("expected test_tool, got %s", calls[0].Function.Name)
+	}
+
+	toolModeLossMetricsMu.Lock()
+	count := toolModeLossMetrics["markdown_fence_fallback_mode_any"]
+	toolModeLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Errorf("expected markdown_fence_fallback_mode_any count to be 1, got %d", count)
+	}
+}
