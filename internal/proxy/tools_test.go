@@ -1974,9 +1974,10 @@ func TestLegacyCollapse_DroppedSearchContext(t *testing.T) {
 	messages := []ChatMessage{
 		{Role: "user", Content: "First query"},
 		{Role: "assistant", Content: longSearchCtx}, // this is the previous search context from earlier turn
-		{Role: "user", Content: "What is the answer?"}, // userQueryIdx will be 2
+		{Role: "tool", Content: "some result", ToolCallID: "tc_initial"}, // i=2
+		{Role: "user", Content: "What is the answer?"}, // userQueryIdx will be 3
 		{Role: "assistant", Content: "I will use bash", ToolCalls: []ToolCall{{ID: "tc1", Function: ToolCallFunction{Name: "Bash"}}}},
-		{Role: "tool", Content: "result", ToolCallID: "tc1", Name: "Bash"},
+		{Role: "tool", Content: "result", ToolCallID: "tc1", Name: "Bash"}, // i=5
 	}
 
 	// <= 5 tools triggers legacy collapse
