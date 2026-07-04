@@ -4491,7 +4491,7 @@
     },
     {
       "id": "proxy-observability-detect-system-schema-recursion-followup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add telemetry for schema recursion limit occurrences",

@@ -496,3 +496,18 @@ func isFreePlan(acc *Account) bool {
 		return false
 	}
 }
+
+func HandleAdminMetrics(auth *DashboardAuth) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if auth.HasAdminPassword() && !auth.ValidateSession(r) {
+			http.Error(w, `{"error":"unauthorized, dashboard login required"}`, http.StatusUnauthorized)
+			return
+		}
+
+		metrics := GetContextLossMetrics()
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"context_loss": metrics,
+		})
+	}
+}
