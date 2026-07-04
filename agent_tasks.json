@@ -4803,7 +4803,7 @@
     },
     {
       "id": "automation-health-no-eligible-autonomous-task-e587fcdb",
-      "status": "done",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: no_eligible_autonomous_task",
@@ -4822,7 +4822,8 @@
       "health_finding_hash": "e587fcdbecfd",
       "health_finding_code": "no_eligible_autonomous_task",
       "health_finding_severity": "degraded",
-      "health_report_generated_at": "2026-07-04T22:10:02Z"
+      "health_report_generated_at": "2026-07-04T22:10:02Z",
+      "blocked_reason": "Task is blocked because it is an operational/observability finding and no direct logging change or script modification is required within the allowed_paths."
     },
     {
       "id": "proxy-anthropic-sse-midstream-reset",
