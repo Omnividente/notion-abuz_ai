@@ -1928,3 +1928,23 @@ func TestParseToolCalls_MarkdownFenceFallbackTracking(t *testing.T) {
 		t.Errorf("expected markdown_fence_fallback_mode_any count to be 1, got %d", count)
 	}
 }
+func TestFallbackMissingAnchorMetric(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "do something"},
+		{Role: "tool", Content: "result"}, // tool result without previous assistant message
+	}
+
+	buildSessionChainContinuation(messages, "", "")
+
+	contextLossMetricsMu.Lock()
+	val := contextLossMetrics["fallback_missing_anchor"]
+	contextLossMetricsMu.Unlock()
+
+	if val == 0 {
+		t.Errorf("Expected fallback_missing_anchor metric to be incremented, got %d", val)
+	}
+}
