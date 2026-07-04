@@ -1587,3 +1587,43 @@ func TestSimplifyToolSchema_UnboundedRecursion(t *testing.T) {
 		t.Errorf("Expected truncated recursion depth 100, got %d", depth)
 	}
 }
+
+func TestSessionChainContinuation_SearchContext(t *testing.T) {
+	// Reset metrics
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	longSearchContext := "---\nSources:\n[1] Something very very long. " + strings.Repeat("A", 700)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Hello"},
+		{Role: "assistant", Content: longSearchContext, ToolCalls: []ToolCall{
+			{ID: "call_1", Function: ToolCallFunction{Name: "Search", Arguments: `{"query": "test"}`}},
+		}},
+		{Role: "tool", Content: "result", ToolCallID: "call_1", Name: "Search"},
+	}
+
+	continuation := buildSessionChainContinuation(messages, "- Search(query)", "")
+
+	if len(continuation) == 0 {
+		t.Fatalf("expected continuation message")
+	}
+
+	content := continuation[0].Content
+	if !strings.Contains(content, "---\nSources:\n[1] Something very very long.") {
+		t.Errorf("expected continuation to include search context")
+	}
+
+	if !strings.Contains(content, "...") {
+		t.Errorf("expected search context to be truncated")
+	}
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["search_context_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Errorf("Expected search_context_truncated metric to be 1, got %d", count)
+	}
+}

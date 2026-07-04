@@ -1257,6 +1257,21 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 		transientGuardLine = "Warning: A recent tool call encountered a transient API or search failure. Do NOT finalize your answer based on partial context. Please retry the failed tool or use a different search method to ensure you have complete project context.\n"
 	}
 
+	// Extract the previous search context from assistant messages to prevent hallucination in next turn
+	var prevSearchContext string
+	for i := len(messages) - 1; i >= 0; i-- {
+		m := messages[i]
+		if m.Role == "assistant" && strings.Contains(m.Content, "---\nSources:") {
+			ctx := m.Content
+			if len([]rune(ctx)) > 600 {
+				recordContextLossMetric("search_context_truncated")
+				ctx = string([]rune(ctx)[:600]) + "..."
+			}
+			prevSearchContext = ctx
+			break // use the most recent search results
+		}
+	}
+
 	// Extract the original user query to preserve coding intent
 	var originalQuery string
 	for i := len(messages) - 1; i >= 0; i-- {
@@ -1347,9 +1362,14 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 		queryContext = fmt.Sprintf("\nOriginal request: \"%s\"", originalQuery)
 	}
 
+	searchContextBlock := ""
+	if prevSearchContext != "" {
+		searchContextBlock = fmt.Sprintf("\n%s\n", prevSearchContext)
+	}
+
 	continuationMessage := fmt.Sprintf(
-		"Results from executed function(s):\n%s\n\n%s%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.\nAlways output exactly one JSON object.",
-		results.String(), cwdLine, readGuardLine, transientGuardLine, compactList, queryContext)
+		"Results from executed function(s):\n%s\n%s\n%s%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.\nAlways output exactly one JSON object.",
+		results.String(), searchContextBlock, cwdLine, readGuardLine, transientGuardLine, compactList, queryContext)
 
 	log.Printf("[bridge] session chain: continuation for partial transcript (%d chars, %d tool results)",
 		len(continuationMessage), resultCount)
