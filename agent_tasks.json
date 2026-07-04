@@ -4738,7 +4738,7 @@
     },
     {
       "id": "proxy-observability-track-large-search-context-truncation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track large search context truncation",
@@ -4764,6 +4764,21 @@
       ],
       "acceptance": [
         "A fallback tracking metric logs missing anchor occurrences."
+      ]
+    },
+    {
+      "id": "proxy-observability-track-large-search-context-truncation-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add track metrics for previous search context dropped",
+      "description": "Add an integration test to ensure that legacy_collapse_dropped_search_context is incremented when search context exceeds limits and dropped.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test explicitly validates the counter increment for legacy_collapse_dropped_search_context when a long search context is dropped."
       ]
     }
   ]
