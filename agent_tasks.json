@@ -4753,7 +4753,7 @@
     },
     {
       "id": "proxy-observability-track-failed-assistant-anchor-mismatch",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track missing assistant anchor during fallback",

@@ -1141,6 +1141,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 	}
 
 	if lastAssistantIdx == -1 {
+		recordContextLossMetric("fallback_missing_anchor")
 		// Log detailed diagnostics for Haiku failures: message counts, roles, and snippets
 		var roles []string
 		for _, m := range messages {
