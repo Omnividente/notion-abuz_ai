@@ -4370,7 +4370,7 @@
     },
     {
       "id": "proxy-observability-detect-system-prompt-drift",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add metric tracking for system prompt drifting",
@@ -4426,6 +4426,21 @@
       ],
       "acceptance": [
         "A metric counter tracks specific cases for unhandled nested structures."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-search-context-truncation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for search context dropping during multi-turn continuation",
+      "description": "Log an observable metric when the assistant's previous search context string exceeds size boundaries and gets truncated during multi-turn continuation.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences where search context logic drops/truncates texts in assistant messages."
       ]
     }
   ]

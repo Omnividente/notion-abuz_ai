@@ -370,6 +370,8 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 
 		if label == "system" {
 			recordContextLossMetric("system_instruction_truncated")
+		} else if label == "User (latest)" {
+			recordContextLossMetric("latest_user_message_truncated")
 		} else if strings.HasPrefix(label, "Tool") {
 			recordContextLossMetric("tool_result_truncated")
 		} else {
@@ -522,6 +524,13 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		}
 
 		content = clip(content, maxEntryChars, label)
+		entryCost := len(label) + len(content) + 4
+		if usedChars > 0 && usedChars+entryCost > maxHistoryChars {
+			log.Printf("[bridge] diagnostic: session recovery truncated partial progress (used %d chars, dropping oldest entries)", usedChars)
+			recordContextLossMetric("trailing_progress_dropped")
+			break
+		}
+		usedChars += entryCost
 		trailingReversed = append(trailingReversed, historyEntry{label: label, content: content})
 	}
 
@@ -535,7 +544,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		history.WriteString(reversed[i].content)
 	}
 
-	latest := normalizeSessionUserContent(messages[lastUserIdx].Content)
+	latest := clip(normalizeSessionUserContent(messages[lastUserIdx].Content), 8000, "User (latest)")
 
 	var prompt strings.Builder
 	prompt.WriteString("Continue this conversation on a fresh thread.\n")
