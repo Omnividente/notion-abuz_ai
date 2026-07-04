@@ -1791,3 +1791,42 @@ func TestInjectToolsIntoMessages_LargeSearchContext(t *testing.T) {
 		t.Errorf("Expected truncated result to have '...'")
 	}
 }
+
+func TestBuildSessionChainContinuation_LargeSearchContext(t *testing.T) {
+	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
+	contextLossMetricsMu.Lock()
+	original := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	t.Cleanup(func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = original
+		contextLossMetricsMu.Unlock()
+	})
+
+	longSearchCtx := "---\nSources:\n[1] "
+	for i := 0; i < 700; i++ {
+		longSearchCtx += "a"
+	}
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Test user query"},
+		{Role: "assistant", Content: longSearchCtx, ToolCalls: []ToolCall{{ID: "tc1", Function: ToolCallFunction{Name: "Bash"}}}},
+		{Role: "tool", Content: "done", ToolCallID: "tc1"},
+	}
+
+	res := buildSessionChainContinuation(messages, "T1, T2", "/cwd")
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["search_context_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Errorf("Expected search_context_truncated metric to be 1, got %d", count)
+	}
+
+	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
+		t.Errorf("Expected truncated result to have '...'")
+	}
+}
