@@ -4690,7 +4690,7 @@
     },
     {
       "id": "proxy-tools-track-xml-wrapper-mode-loss",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track xml wrapper fallback mode loss",
