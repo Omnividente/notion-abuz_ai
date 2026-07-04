@@ -4674,7 +4674,7 @@
     },
     {
       "id": "proxy-anthropic-handle-web-search-implicit",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Handle implicit web search via detectImplicitSearch",
