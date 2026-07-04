@@ -1951,6 +1951,8 @@ func TestFallbackMissingAnchorMetric(t *testing.T) {
 
 
 
+
+
 func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
 	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
 	contextLossMetricsMu.Lock()
@@ -1975,7 +1977,6 @@ func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
 		{Role: "user", Content: "What is the answer?"},
 	}
 
-	// Make len(tools) > 5 to trigger large tool set
 	tools := []Tool{
 		{Function: ToolFunction{Name: "T1"}},
 		{Function: ToolFunction{Name: "T2"}},
