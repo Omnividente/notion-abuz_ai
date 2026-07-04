@@ -1948,3 +1948,47 @@ func TestFallbackMissingAnchorMetric(t *testing.T) {
 		t.Errorf("Expected fallback_missing_anchor metric to be incremented, got %d", val)
 	}
 }
+
+func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
+	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
+	contextLossMetricsMu.Lock()
+	original := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	t.Cleanup(func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = original
+		contextLossMetricsMu.Unlock()
+	})
+
+	longSearchCtx := "---\nSources:\n[1] "
+	for i := 0; i < 700; i++ {
+		longSearchCtx += "a"
+	}
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "First query"},
+		{Role: "assistant", Content: longSearchCtx},
+		{Role: "user", Content: "What is the answer?"},
+	}
+
+	tools := []Tool{
+		{Function: ToolFunction{Name: "T1"}},
+		{Function: ToolFunction{Name: "T2"}},
+		{Function: ToolFunction{Name: "T3"}},
+		{Function: ToolFunction{Name: "T4"}},
+		{Function: ToolFunction{Name: "T5"}},
+		{Function: ToolFunction{Name: "T6"}},
+	}
+
+	injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil)
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["search_context_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if count < 1 {
+		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
+	}
+}
