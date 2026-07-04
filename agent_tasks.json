@@ -4598,7 +4598,7 @@
     {
       "id": "proxy-observability-search-context-truncation-metrics",
       "status": "done",
-      "area": "proxy",
+      "area": "test",
       "risk": "low",
       "title": "Add integration test for search context truncation metrics",
       "description": "Add an integration test to ensure that search_context_truncated is incremented when search context exceeds limits.",
