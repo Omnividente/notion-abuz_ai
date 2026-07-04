@@ -1240,6 +1240,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 		if strings.HasPrefix(p1, "call[") && strings.HasPrefix(p2, "err[") &&
 			p1 == p3 && p2 == p4 {
 			log.Printf("[bridge] session chain: warning, detected potential retry loop (same tools called repeatedly after errors)")
+			recordContextLossMetric("retry_loop_detected")
 		}
 	}
 

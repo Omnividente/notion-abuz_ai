@@ -4507,7 +4507,7 @@
     },
     {
       "id": "proxy-observability-track-retry-loops",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for detected retry loops during session chain continuation",
@@ -4563,6 +4563,21 @@
       ],
       "acceptance": [
         "A counter tracks occurrences where SUGGESTION MODE is detected and tool injection is skipped."
+      ]
+    },
+    {
+      "id": "proxy-observability-track-missing-tools-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tracking for detected fallback to empty tools list",
+      "description": "Log an observable metric when the multi-turn continuation uses an empty tool list because previous ones were omitted.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences of empty tool fallbacks."
       ]
     }
   ]
