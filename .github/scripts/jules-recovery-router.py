@@ -366,8 +366,6 @@ def is_autonomous_pr(pr: dict[str, Any], *, repo: str, task_ids: list[str]) -> b
     return any(
         head_ref == task_id
         or head_ref.startswith(f"{task_id}-")
-        or task_id in title
-        or task_id in body
         for task_id in task_ids
     )
 

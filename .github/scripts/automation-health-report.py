@@ -188,8 +188,6 @@ def is_autonomous_pr(pr: dict[str, Any], task_ids: list[str], repo: str) -> bool
         return True
     if "PR created automatically by Jules" in body or "jules.google.com/task" in body:
         return True
-    if any(task_id and (task_id in title or task_id in body) for task_id in task_ids):
-        return True
     if head_repo and repo and head_repo != repo:
         return False
     if head_ref.startswith(("jules-", "jules/")):

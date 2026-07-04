@@ -18,6 +18,11 @@ jules_body_markers = (
     "jules.google.com/task",
 )
 
+head_matches_task = any(
+    head_ref == task_id or head_ref.startswith(f"{task_id}-")
+    for task_id in task_ids
+)
+
 is_autonomous = (
     user == "google-jules[bot]"
     or "jules" in labels
@@ -26,13 +31,7 @@ is_autonomous = (
         head_repo == repo
         and (
             head_ref.startswith(("jules-", "jules/"))
-            or any(
-                head_ref == task_id
-                or head_ref.startswith(f"{task_id}-")
-                or task_id in title
-                or task_id in body
-                for task_id in task_ids
-            )
+            or head_matches_task
         )
     )
 )
