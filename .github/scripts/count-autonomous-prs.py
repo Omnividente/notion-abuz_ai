@@ -17,12 +17,13 @@ with open(sys.argv[1], "r", encoding="utf-8") as f:
 repo = os.environ["GITHUB_REPOSITORY"]
 count = 0
 for pr in pulls:
-    labels = {label["name"] for label in pr.get("labels", [])}
     head = pr.get("head", {})
     head_ref = head.get("ref", "")
     head_repo = (head.get("repo") or {}).get("full_name", "")
+    user = str((pr.get("user") or {}).get("login") or "")
     body = pr.get("body") or ""
-    if "jules" in labels:
+    user_lower = user.lower()
+    if user == "google-jules[bot]" or ("jules" in user_lower and user_lower.endswith("[bot]")):
         count += 1
         continue
     if "PR created automatically by Jules" in body or "jules.google.com/task" in body:

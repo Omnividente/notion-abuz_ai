@@ -42,14 +42,15 @@ class ClassifyAutonomousPRTest(unittest.TestCase):
 
     def test_jules_signals_are_autonomous(self) -> None:
         self.assertTrue(self.classify(PR_USER="google-jules[bot]"))
-        self.assertTrue(self.classify(PR_LABELS_JSON=json.dumps(["jules"])))
+        self.assertTrue(self.classify(PR_USER="jules-agent[bot]"))
         self.assertTrue(self.classify(PR_BODY="PR created automatically by Jules"))
         self.assertTrue(self.classify(PR_BODY="https://jules.google.com/task/123"))
         self.assertTrue(self.classify(PR_HEAD_REF="jules/proxy-fix"))
 
-    def test_task_id_in_body_does_not_classify_control_plane_pr(self) -> None:
+    def test_label_or_task_id_in_body_does_not_classify_control_plane_pr(self) -> None:
         self.assertFalse(
             self.classify(
+                PR_LABELS_JSON=json.dumps(["jules"]),
                 PR_BODY=(
                     "Reproduced PR #295 locally for "
                     "proxy-observability-track-large-tool-result-fallbacks."
