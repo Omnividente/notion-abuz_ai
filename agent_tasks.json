@@ -4612,7 +4612,7 @@
     },
     {
       "id": "proxy-tools-validate-search-tool-injection",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate search tool injection handles large responses",
@@ -4638,6 +4638,86 @@
       ],
       "acceptance": [
         "A counter tracks occurrences of large tool result fallbacks."
+      ]
+    },
+    {
+      "id": "proxy-tools-validate-xml-array-fallback",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate XML array fallback handling",
+      "description": "Ensure text fallback parsing handles XML tool call arrays properly.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A metric or log exists to confirm graceful handling of XML array fallback."
+      ]
+    },
+    {
+      "id": "proxy-tools-track-legacy-collapse",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track legacy collapse dropped search context",
+      "description": "Add explicit metrics when search contexts are dropped in legacy collapse fallback.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A metric exists for dropped search contexts in legacy collapse."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-handle-web-search-implicit",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Handle implicit web search via detectImplicitSearch",
+      "description": "Ensure implicit web search intents are successfully detected and enabled.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Implicit web search detection is verified in tests."
+      ]
+    },
+    {
+      "id": "proxy-tools-track-xml-wrapper-mode-loss",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track xml wrapper fallback mode loss",
+      "description": "Add tracking for when xml wrapper fallback occurs during tool call extraction.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Mode loss from XML wrapper fallback is tracked via metrics."
+      ]
+    },
+    {
+      "id": "proxy-session-clip-truncation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track session clip truncation",
+      "description": "Ensure clip function in session.go correctly tracks context loss.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Context truncation in clip is logged with metrics."
       ]
     }
   ]
