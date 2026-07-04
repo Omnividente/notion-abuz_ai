@@ -222,11 +222,18 @@ func buildCompactToolList(tools []Tool) string {
 
 // simplifyToolSchema removes bloated metadata (titles, examples) and truncates long
 // descriptions from JSON schemas to prevent token bloat with large tool sets.
+const maxSchemaDepth = 100
+
 func simplifyToolSchema(schema interface{}) interface{} {
-	return simplifySchemaNode(schema, false)
+	return simplifySchemaNode(schema, false, 0)
 }
 
-func simplifySchemaNode(schema interface{}, inArrayItems bool) interface{} {
+func simplifySchemaNode(schema interface{}, inArrayItems bool, depth int) interface{} {
+	if depth >= maxSchemaDepth {
+		recordContextLossMetric("tool_schema_simplification_recursion_limit")
+		log.Printf("[bridge] diagnostics: simplifySchemaNode dropped schema to prevent recursive unbounded depth panic, returning empty schema")
+		return map[string]interface{}{}
+	}
 	if schema == nil {
 		return nil
 	}
@@ -247,10 +254,10 @@ func simplifySchemaNode(schema interface{}, inArrayItems bool) interface{} {
 						out[key] = s
 					}
 				} else {
-					out[key] = simplifySchemaNode(val, inArrayItems)
+					out[key] = simplifySchemaNode(val, inArrayItems, depth+1)
 				}
 			case "items":
-				out[key] = simplifySchemaNode(val, true)
+				out[key] = simplifySchemaNode(val, true, depth+1)
 			case "$ref", "anyOf", "allOf", "oneOf", "properties", "additionalProperties", "patternProperties":
 				if inArrayItems {
 					// Drop complex nested structures inside array items to prevent token bloat
@@ -260,16 +267,16 @@ func simplifySchemaNode(schema interface{}, inArrayItems bool) interface{} {
 					// instead of 'continue' which drops it and can invalidate the json schema entirely
 					return map[string]interface{}{}
 				}
-				out[key] = simplifySchemaNode(val, inArrayItems)
+				out[key] = simplifySchemaNode(val, inArrayItems, depth+1)
 			default:
-				out[key] = simplifySchemaNode(val, inArrayItems)
+				out[key] = simplifySchemaNode(val, inArrayItems, depth+1)
 			}
 		}
 		return out
 	case []interface{}:
 		var out []interface{}
 		for _, item := range v {
-			out = append(out, simplifySchemaNode(item, inArrayItems))
+			out = append(out, simplifySchemaNode(item, inArrayItems, depth+1))
 		}
 		return out
 	default:
