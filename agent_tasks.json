@@ -4445,7 +4445,7 @@
     },
     {
       "id": "proxy-observability-detect-system-message-dropped",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for dropped system messages in proxy layer",
@@ -4518,6 +4518,21 @@
       ],
       "acceptance": [
         "A counter tracks occurrences of detected retry loops."
+      ]
+    },
+    {
+      "id": "proxy-observability-detect-system-message-dropped-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add metric for missing user messages in fallback",
+      "description": "Log an observable metric when user messages are inexplicably missing or dropped during proxy processing.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences where expected user messages are missing."
       ]
     }
   ]
