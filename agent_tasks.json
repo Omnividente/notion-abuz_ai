@@ -4324,7 +4324,7 @@
     },
     {
       "id": "proxy-observability-record-tool-schema-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track fallback to empty schema on invalid tool schemas",
@@ -4411,6 +4411,21 @@
       ],
       "acceptance": [
         "Fallback extractor successfully skips solitary matching brackets and proceeds to finding correct candidates."
+      ]
+    },
+    {
+      "id": "proxy-observability-record-context-loss-reason-details",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track additional failure modes for context loss metrics",
+      "description": "Add specific context loss tracking for other deeply recursive invalid properties inside simplifySchemaNode.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A metric counter tracks specific cases for unhandled nested structures."
       ]
     }
   ]

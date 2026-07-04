@@ -1377,3 +1377,65 @@ func TestParseToolCallsUnparseableMetric(t *testing.T) {
 		t.Fatalf("Expected 1 unparseable_json_candidate_blocks, got %d", count)
 	}
 }
+
+func TestSimplifyToolSchema_ComplexArrayFallback(t *testing.T) {
+	rawJSON := `{"type": "array", "items": {"$ref": "#/defs/complex"}}`
+	var rawSchema interface{}
+	if err := json.Unmarshal([]byte(rawJSON), &rawSchema); err != nil {
+		t.Fatalf("failed to parse test schema: %v", err)
+	}
+
+	var buf bytes.Buffer
+	originalLogOutput := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(originalLogOutput)
+
+	// Lock and reset contextLossMetrics
+	contextLossMetricsMu.Lock()
+	oldMetrics := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	defer func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = oldMetrics
+		contextLossMetricsMu.Unlock()
+	}()
+
+	simplified := simplifyToolSchema(rawSchema)
+
+	// Verify log
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[bridge] diagnostics: simplifySchemaNode dropped complex array item \"$ref\" to prevent token bloat, returning empty schema") {
+		t.Errorf("expected diagnostic log for schema fallback, got: %q", logOutput)
+	}
+
+	// Verify metric
+	contextLossMetricsMu.Lock()
+	metricCount := contextLossMetrics["tool_schema_simplification_fallback"]
+	contextLossMetricsMu.Unlock()
+
+	if metricCount != 1 {
+		t.Errorf("expected metric 'tool_schema_simplification_fallback' to be 1, got %d", metricCount)
+	}
+
+	// Verify output is {"items": {}} map essentially
+	simplifiedMap, ok := simplified.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected map[string]interface{}, got %T", simplified)
+	}
+
+	itemsObj, ok := simplifiedMap["items"]
+	if !ok {
+		t.Fatalf("expected 'items' key in output")
+	}
+
+	itemsMap, ok := itemsObj.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'items' to be map[string]interface{}, got %T", itemsObj)
+	}
+
+	if len(itemsMap) != 0 {
+		t.Errorf("expected empty schema fallback, got %v", itemsMap)
+	}
+}

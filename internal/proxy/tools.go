@@ -254,7 +254,11 @@ func simplifySchemaNode(schema interface{}, inArrayItems bool) interface{} {
 			case "$ref", "anyOf", "allOf", "oneOf":
 				if inArrayItems {
 					// Drop complex nested structures inside array items to prevent token bloat
-					continue
+					recordContextLossMetric("tool_schema_simplification_fallback")
+					log.Printf("[bridge] diagnostics: simplifySchemaNode dropped complex array item %q to prevent token bloat, returning empty schema", key)
+					// Returning an empty schema map for complex dropped properties
+					// instead of 'continue' which drops it and can invalidate the json schema entirely
+					return map[string]interface{}{}
 				}
 				out[key] = simplifySchemaNode(val, inArrayItems)
 			default:
