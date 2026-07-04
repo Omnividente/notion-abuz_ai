@@ -1949,10 +1949,6 @@ func TestFallbackMissingAnchorMetric(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
 	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
 	contextLossMetricsMu.Lock()
