@@ -4567,7 +4567,7 @@
     },
     {
       "id": "proxy-observability-track-missing-tools-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tracking for detected fallback to empty tools list",
@@ -4623,6 +4623,21 @@
       ],
       "acceptance": [
         "A metric or log exists to confirm graceful handling of large search context injections."
+      ]
+    },
+    {
+      "id": "proxy-observability-track-large-tool-result-fallbacks",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track large tool result fallbacks",
+      "description": "Log when tool results are truncated or fallbacks happen due to size.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A counter tracks occurrences of large tool result fallbacks."
       ]
     }
   ]

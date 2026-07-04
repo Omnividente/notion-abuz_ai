@@ -1104,6 +1104,11 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 // context from previous turns (the original "unit test" framing, the model's JSON
 // response, etc.). The continuation is sent as a partial transcript via CallInference.
 func buildSessionChainContinuation(messages []ChatMessage, compactList string, cwd string) []ChatMessage {
+	if compactList == "" {
+		log.Printf("[bridge] warning: multi-turn session continuation invoked with empty tool list")
+		recordContextLossMetric("empty_tools_fallback")
+	}
+
 	// Build tool call ID → name map
 	tcMap := make(map[string]string)
 	for _, m := range messages {
