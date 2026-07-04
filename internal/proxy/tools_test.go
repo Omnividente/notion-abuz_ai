@@ -1788,6 +1788,6 @@ func TestInjectToolsIntoMessages_LargeSearchContext(t *testing.T) {
 	}
 
 	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
-	    t.Errorf("Expected truncated result to have '...'")
+		t.Errorf("Expected truncated result to have '...'")
 	}
 }
