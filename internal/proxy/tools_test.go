@@ -1830,3 +1830,51 @@ func TestBuildSessionChainContinuation_LargeSearchContext(t *testing.T) {
 		t.Errorf("Expected truncated result to have '...'")
 	}
 }
+
+func TestParseToolCalls_XMLArrayFallbackMetrics(t *testing.T) {
+	xmlArrayMetricsMu.Lock()
+	xmlArrayMetrics = make(map[string]int)
+	xmlArrayMetricsMu.Unlock()
+
+	// Direct array in XML wrapper
+	contentDirect := `<tool_call>
+[
+  {"name": "tool_a", "arguments": {"a": 1}},
+  {"name": "tool_b", "arguments": {"b": 2}}
+]
+</tool_call>`
+
+	calls, _, _ := parseToolCalls(contentDirect, "auto")
+	if len(calls) != 2 {
+		t.Fatalf("expected 2 calls, got %d", len(calls))
+	}
+
+	xmlArrayMetricsMu.Lock()
+	directCount := xmlArrayMetrics["direct_array_mode_auto"]
+	xmlArrayMetricsMu.Unlock()
+
+	if directCount != 1 {
+		t.Errorf("Expected direct_array_mode_auto metric to be 1, got %d", directCount)
+	}
+
+	// Wrapper array in XML wrapper
+	contentWrapper := `<tool_call>
+{"tool_call": [
+  {"name": "tool_c", "arguments": {"c": 3}},
+  {"name": "tool_d", "arguments": {"d": 4}}
+]}
+</tool_call>`
+
+	callsWrapper, _, _ := parseToolCalls(contentWrapper)
+	if len(callsWrapper) != 2 {
+		t.Fatalf("expected 2 calls, got %d", len(callsWrapper))
+	}
+
+	xmlArrayMetricsMu.Lock()
+	wrapperCount := xmlArrayMetrics["wrapper_array"]
+	xmlArrayMetricsMu.Unlock()
+
+	if wrapperCount != 1 {
+		t.Errorf("Expected wrapper_array metric to be 1, got %d", wrapperCount)
+	}
+}

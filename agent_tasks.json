@@ -4642,7 +4642,7 @@
     },
     {
       "id": "proxy-tools-validate-xml-array-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate XML array fallback handling",
