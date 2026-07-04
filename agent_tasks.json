@@ -4786,14 +4786,14 @@
       "status": "todo",
       "area": "proxy",
       "risk": "low",
-      "title": "Add test for search context truncation short metrics",
-      "description": "Add an integration test to ensure normal/short search context is not truncated and metrics aren't incremented.",
+      "title": "Add test for search context truncation empty metrics",
+      "description": "Add an integration test to ensure empty search context is not truncated and metrics aren't incremented inappropriately.",
       "allowed_paths": [
         "internal/proxy/tools_test.go",
         "agent_tasks.json"
       ],
       "acceptance": [
-        "A test validates that search_context_truncated is not incremented for short search context."
+        "A test validates that search_context_truncated is not incremented for normal/short search context."
       ]
     }
   ]
