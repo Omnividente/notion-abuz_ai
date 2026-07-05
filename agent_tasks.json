@@ -5157,7 +5157,7 @@
     },
     {
       "id": "proxy-observability-tool-schema-metric-comma-ok",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate tool_schema_truncated metric using comma-ok idiom",
@@ -5183,6 +5183,21 @@
       ],
       "acceptance": [
         "Metric maps are explicitly reset at the start of each relevant test."
+      ]
+    },
+    {
+      "id": "proxy-observability-metric-tool-schema-json-comma-ok",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate tool_schema_json_truncated metric using comma-ok idiom",
+      "description": "In the proxy tests, update the assertion for the 'tool_schema_json_truncated' metric to use the comma-ok idiom to prevent false positives from missing map keys. In TestSimplifyToolSchemaJSONTruncation, the metric tool_schema_json_truncated is asserted using simply count, exists := ... but could be improved.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The test asserting the `tool_schema_json_truncated` metric uses the comma-ok idiom correctly."
       ]
     }
   ]

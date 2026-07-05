@@ -981,11 +981,30 @@ func TestSimplifyToolSchemaObservability(t *testing.T) {
 		log.SetOutput(originalLogOutput)
 	}()
 
+	contextLossMetricsMu.Lock()
+	oldMetrics := contextLossMetrics
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	defer func() {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = oldMetrics
+		contextLossMetricsMu.Unlock()
+	}()
+
 	simplifyToolSchema(rawSchema)
 
 	logOutput := buf.String()
 	if !strings.Contains(logOutput, "[bridge] diagnostics: simplifyToolSchema truncated large description to prevent token bloat") {
 		t.Errorf("expected diagnostic log for schema truncation, got: %q", logOutput)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("expected metric 'tool_schema_truncated' to be 1 and exist, got %d (exists: %v)", count, exists)
 	}
 }
 
