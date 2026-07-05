@@ -4987,7 +4987,7 @@
     },
     {
       "id": "proxy-session-recovery-system-instruction-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate context loss metrics emission for empty system message dropped",
@@ -5016,6 +5016,21 @@
       "acceptance": [
         "Add length limit check on candidate blocks during fallback extraction in tools.go.",
         "Ensure metric tracking of large unparseable json is correctly sized."
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-system-instruction-metrics-verification",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate context loss metrics emission for recovery empty entry dropped",
+      "description": "In the proxy (internal/proxy/session.go), verify and extend tests for metric emission when an empty conversation history entry is dropped during session recovery.",
+      "allowed_paths": [
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests assert that the 'recovery_empty_entry_dropped' context loss metric is explicitly recorded when an empty history entry is dropped in buildRecoveryMessages."
       ]
     }
   ]
