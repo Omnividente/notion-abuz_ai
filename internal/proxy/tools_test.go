@@ -1183,7 +1183,6 @@ func TestParseToolCalls_CanonicalizationInFallbacks(t *testing.T) {
 }
 
 func TestSessionFallbackMetrics(t *testing.T) {
-	// Reset the metric state
 	sessionFallbackMetricsMu.Lock()
 	sessionFallbackMetrics = make(map[string]int)
 	sessionFallbackMetricsMu.Unlock()
@@ -1279,7 +1278,6 @@ func TestParseToolCalls_RobustBracketCountingUnclosedString(t *testing.T) {
 }
 
 func TestBuildTranscript_LegacyCollapseSearchContextDrop(t *testing.T) {
-	// Reset metrics
 	contextLossMetricsMu.Lock()
 	contextLossMetrics = make(map[string]int)
 	contextLossMetricsMu.Unlock()
@@ -1362,7 +1360,6 @@ func TestInjectToolsIntoMessages_LegacyFallbackDiagnostics(t *testing.T) {
 }
 
 func TestParseToolCallsUnparseableMetric(t *testing.T) {
-	// Reset the metric map
 	toolModeLossMetricsMu.Lock()
 	toolModeLossMetrics = make(map[string]int)
 	toolModeLossMetricsMu.Unlock()
@@ -1595,7 +1592,6 @@ func TestSimplifyToolSchema_UnboundedRecursion(t *testing.T) {
 }
 
 func TestSessionChainContinuation_SearchContext(t *testing.T) {
-	// Reset metrics
 	contextLossMetricsMu.Lock()
 	contextLossMetrics = make(map[string]int)
 	contextLossMetricsMu.Unlock()
@@ -1635,7 +1631,6 @@ func TestSessionChainContinuation_SearchContext(t *testing.T) {
 }
 
 func TestInjectToolsIntoMessages_DropsEmptyWrapperUserMessage(t *testing.T) {
-	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
 	contextLossMetricsMu.Lock()
 	original := contextLossMetrics
 	contextLossMetrics = make(map[string]int)
@@ -1692,7 +1687,6 @@ func TestInjectToolsIntoMessages_DropsEmptyWrapperUserMessage(t *testing.T) {
 }
 
 func TestInjectToolsIntoMessages_SuggestionModeMetric(t *testing.T) {
-	// Reset the metric map
 	toolModeLossMetricsMu.Lock()
 	toolModeLossMetrics = make(map[string]int)
 	toolModeLossMetricsMu.Unlock()
@@ -1723,7 +1717,6 @@ func TestInjectToolsIntoMessages_SuggestionModeMetric(t *testing.T) {
 }
 
 func TestBuildSessionChainContinuation_EmptyToolList(t *testing.T) {
-	// Reset the metric counter at the beginning of the test
 	contextLossMetricsMu.Lock()
 	contextLossMetrics = make(map[string]int)
 	contextLossMetricsMu.Unlock()
@@ -1752,7 +1745,6 @@ func TestBuildSessionChainContinuation_EmptyToolList(t *testing.T) {
 }
 
 func TestInjectToolsIntoMessages_LargeSearchContext(t *testing.T) {
-	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
 	contextLossMetricsMu.Lock()
 	original := contextLossMetrics
 	contextLossMetrics = make(map[string]int)
@@ -1801,7 +1793,6 @@ func TestInjectToolsIntoMessages_LargeSearchContext(t *testing.T) {
 }
 
 func TestBuildSessionChainContinuation_LargeSearchContext(t *testing.T) {
-	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
 	contextLossMetricsMu.Lock()
 	original := contextLossMetrics
 	contextLossMetrics = make(map[string]int)
@@ -1977,7 +1968,6 @@ func TestFallbackMissingAnchorMetric(t *testing.T) {
 }
 
 func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
-	// Reset metrics carefully, though it is package level, tests run sequentially in proxy package.
 	contextLossMetricsMu.Lock()
 	original := contextLossMetrics
 	contextLossMetrics = make(map[string]int)
@@ -2049,7 +2039,6 @@ func TestSimplifyToolSchema_UnboundedRecursionArray(t *testing.T) {
 	}
 }
 func TestBuildSessionChainContinuation_NonEmptyToolList(t *testing.T) {
-	// Reset the metric counter at the beginning of the test
 	contextLossMetricsMu.Lock()
 	contextLossMetrics = make(map[string]int)
 	contextLossMetricsMu.Unlock()
@@ -2150,7 +2139,6 @@ func TestBuildToolList_SchemaTruncation(t *testing.T) {
 }
 
 func TestParseToolCallsUnparseableMetricTruncated(t *testing.T) {
-	// Reset the metric map
 	toolModeLossMetricsMu.Lock()
 	toolModeLossMetrics = make(map[string]int)
 	toolModeLossMetricsMu.Unlock()
@@ -2184,7 +2172,6 @@ func TestParseToolCallsUnparseableMetricTruncated(t *testing.T) {
 }
 
 func TestBuildSessionChainContinuation_NoToolsNonEmptySequence(t *testing.T) {
-	// Reset the metric counter at the beginning of the test
 	contextLossMetricsMu.Lock()
 	contextLossMetrics = make(map[string]int)
 	contextLossMetricsMu.Unlock()
@@ -2210,7 +2197,6 @@ func TestBuildSessionChainContinuation_NoToolsNonEmptySequence(t *testing.T) {
 	}
 }
 func TestParseToolCalls_ValidCandidateNotLoggedAsUnparseable(t *testing.T) {
-	// Reset the metrics map
 	toolModeLossMetricsMu.Lock()
 	toolModeLossMetrics = make(map[string]int)
 	toolModeLossMetricsMu.Unlock()
