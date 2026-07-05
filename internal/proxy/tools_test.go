@@ -984,17 +984,6 @@ func TestSimplifyToolSchemaObservability(t *testing.T) {
 		log.SetOutput(originalLogOutput)
 	}()
 
-	contextLossMetricsMu.Lock()
-	oldMetrics := contextLossMetrics
-	contextLossMetrics = make(map[string]int)
-	contextLossMetricsMu.Unlock()
-
-	defer func() {
-		contextLossMetricsMu.Lock()
-		contextLossMetrics = oldMetrics
-		contextLossMetricsMu.Unlock()
-	}()
-
 	simplifyToolSchema(rawSchema)
 
 	logOutput := buf.String()
@@ -1415,18 +1404,6 @@ func TestSimplifyToolSchema_ComplexArrayFallback(t *testing.T) {
 	log.SetOutput(&buf)
 	defer log.SetOutput(originalLogOutput)
 
-	// Lock and reset contextLossMetrics
-	contextLossMetricsMu.Lock()
-	oldMetrics := contextLossMetrics
-	contextLossMetrics = make(map[string]int)
-	contextLossMetricsMu.Unlock()
-
-	defer func() {
-		contextLossMetricsMu.Lock()
-		contextLossMetrics = oldMetrics
-		contextLossMetricsMu.Unlock()
-	}()
-
 	simplified := simplifyToolSchema(rawSchema)
 
 	// Verify log
@@ -1534,18 +1511,6 @@ func TestSimplifyToolSchema_PropertiesArrayFallback(t *testing.T) {
 	log.SetOutput(&buf)
 	defer log.SetOutput(originalLogOutput)
 
-	// Lock and reset contextLossMetrics
-	contextLossMetricsMu.Lock()
-	oldMetrics := contextLossMetrics
-	contextLossMetrics = make(map[string]int)
-	contextLossMetricsMu.Unlock()
-
-	defer func() {
-		contextLossMetricsMu.Lock()
-		contextLossMetrics = oldMetrics
-		contextLossMetricsMu.Unlock()
-	}()
-
 	simplified := simplifyToolSchema(rawSchema)
 	logOutput := buf.String()
 
@@ -1584,17 +1549,6 @@ func TestSimplifyToolSchema_PropertiesArrayFallback(t *testing.T) {
 }
 
 func TestSimplifyToolSchema_UnboundedRecursion(t *testing.T) {
-	contextLossMetricsMu.Lock()
-	oldMetrics := contextLossMetrics
-	contextLossMetrics = make(map[string]int)
-	contextLossMetricsMu.Unlock()
-
-	defer func() {
-		contextLossMetricsMu.Lock()
-		contextLossMetrics = oldMetrics
-		contextLossMetricsMu.Unlock()
-	}()
-
 	// Create a deeply nested structure exceeding maxSchemaDepth (100)
 	var root map[string]interface{} = map[string]interface{}{}
 	current := root
@@ -1893,10 +1847,6 @@ func TestParseToolCalls_XMLArrayFallbackMetrics(t *testing.T) {
 	xmlArrayMetrics = make(map[string]int)
 	xmlArrayMetricsMu.Unlock()
 
-	toolModeLossMetricsMu.Lock()
-	toolModeLossMetrics = make(map[string]int)
-	toolModeLossMetricsMu.Unlock()
-
 	// Direct array in XML wrapper
 	contentDirect := `<tool_call>
 [
@@ -2071,17 +2021,6 @@ func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
 }
 
 func TestSimplifyToolSchema_UnboundedRecursionArray(t *testing.T) {
-	contextLossMetricsMu.Lock()
-	oldMetrics := contextLossMetrics
-	contextLossMetrics = make(map[string]int)
-	contextLossMetricsMu.Unlock()
-
-	defer func() {
-		contextLossMetricsMu.Lock()
-		contextLossMetrics = oldMetrics
-		contextLossMetricsMu.Unlock()
-	}()
-
 	// Create a deeply nested array structure exceeding maxSchemaDepth (100)
 	var current interface{} = []interface{}{}
 
