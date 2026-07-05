@@ -103,9 +103,9 @@ CONTINUE_PROMPT = """AUTONOMOUS_CONTINUE_TOKEN
 
 Продолжай без ожидания ответа пользователя.
 
-Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг и продолжай.
+Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг или guarded high-risk шаг выбранной задачи и продолжай.
 Если последнее сообщение спрашивает, нужно ли запустить локальный сервер, локальные тесты, offline reproduction или изучить логи/artifacts, ответ: да, сделай это сам, если действие безопасно, недеструктивно, остается внутри scope/allowed_paths и не требует секретов.
-Если нужны live secrets, реальные credentials, production-доступ, high/critical risk или destructive action, не жди пользователя: зафиксируй concrete blocked_reason в agent_tasks.json и открой manifest-only PR.
+Если нужны live secrets, реальные credentials, production-доступ, critical risk, unguarded high-risk work или destructive action, не жди пользователя: зафиксируй concrete blocked_reason в agent_tasks.json и открой manifest-only PR.
 Оставайся внутри scope выбранной задачи и allowed_paths.
 Не создавай micro-PR/follow-up без live smoke, transcript, CI или offline reproduction evidence.
 Когда задача готова, открой один PR с label `jules` и корректным AUTONOMOUS_TASK_EVIDENCE.
@@ -124,7 +124,7 @@ STALE_FEEDBACK_PROMPT = """AUTONOMOUS_CONTINUE_TOKEN
 
 Не жди дополнительного подтверждения. Выбери один безопасный исход:
 - если задачу можно завершить внутри scope/allowed_paths, синхронизируйся с master, запусти нужную валидацию и открой один PR с label `jules` и корректным AUTONOMOUS_TASK_EVIDENCE;
-- если продолжение требует missing secrets, production-доступ, high/critical risk или destructive action, отметь задачу `blocked` в agent_tasks.json, добавь concrete blocked_reason и открой manifest-only PR.
+- если продолжение требует missing secrets, production-доступ, critical risk, unguarded high-risk work или destructive action, отметь задачу `blocked` в agent_tasks.json, добавь concrete blocked_reason и открой manifest-only PR.
 
 Не задавай новый вопрос-подтверждение и не оставляй сессию в ожидании пользователя.
 """
@@ -882,6 +882,7 @@ def plan_recovery_actions(
     health_mode: str = "enforce",
 ) -> list[RecoveryAction]:
     actions: list[RecoveryAction] = []
+    risk_ceiling = str(state.get("risk_ceiling") or "high")
     open_prs = [
         pr for pr in state.get("open_pulls", [])
         if is_autonomous_pr(pr, repo=repo, task_ids=task_ids)
@@ -1108,7 +1109,7 @@ def plan_recovery_actions(
                             "inputs": {
                                 "task_id": task_id,
                                 "focus": "proxy",
-                                "risk_ceiling": "medium",
+                                "risk_ceiling": risk_ceiling,
                                 "allow_parallel": "false",
                                 "recovery_session_id": session_id,
                                 "recovery_reason": "failed Jules session recovered by router",
@@ -1171,7 +1172,7 @@ def plan_recovery_actions(
                         "ref": "master",
                         "inputs": {
                             "focus": "proxy",
-                            "risk_ceiling": "medium",
+                            "risk_ceiling": risk_ceiling,
                             "allow_parallel": "false",
                         },
                     },
@@ -1269,7 +1270,7 @@ def plan_recovery_actions(
                         "ref": "master",
                         "inputs": {
                             "focus": "proxy",
-                            "risk_ceiling": "medium",
+                            "risk_ceiling": risk_ceiling,
                             "allow_parallel": "false",
                         },
                     },
@@ -1714,6 +1715,7 @@ def collect_live_state(
         "open_pulls": open_pulls,
         "workflow_runs": workflow_runs,
         "selector": run_selector(manifest, focus=focus, risk_ceiling=risk_ceiling),
+        "risk_ceiling": risk_ceiling,
         "task_statuses": task_statuses_from_manifest(manifest_data),
         "jules": collect_jules_sessions(
             jules_clients,
@@ -1751,7 +1753,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ledger-file", type=Path, default=None)
     parser.add_argument("--mode", choices=("plan", "act"), default="plan")
     parser.add_argument("--focus", default="proxy")
-    parser.add_argument("--risk-ceiling", default="medium")
+    parser.add_argument("--risk-ceiling", default=os.environ.get("AUTONOMOUS_RISK_CEILING", "high"))
     parser.add_argument(
         "--health-mode",
         choices=("disabled", "shadow", "enforce"),

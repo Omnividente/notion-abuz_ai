@@ -37,6 +37,62 @@ OPERATIONAL_KEYWORDS = (
     "json tool-call",
 )
 
+HIGH_RISK_EVIDENCE_TOKENS = (
+    "live smoke",
+    "local live smoke",
+    "rdsh local live smoke",
+    "rdsh_local_live_smoke",
+    "artifact",
+    "artifacts",
+    "transcript",
+    "ci failure",
+    "reproduced",
+    "runtime failure",
+    "failing log",
+    "offline reproduction",
+    "claude code",
+    "tool-call",
+    "tool call",
+    "notion persona",
+    "notion ai",
+    "session recovery",
+    "json tool-call",
+    "api failure",
+    "search failure",
+    "incomplete context",
+)
+
+NEGATED_HIGH_RISK_EVIDENCE_PATTERNS = (
+    "without reproduced",
+    "without a reproduced",
+    "without concrete evidence",
+    "without live smoke",
+    "without transcript",
+    "without ci failure",
+    "without offline reproduction",
+    "no reproduced",
+    "no concrete evidence",
+    "no live smoke",
+    "no transcript",
+    "no ci failure",
+    "no offline reproduction",
+    "not evidence-backed",
+)
+
+HIGH_RISK_VALIDATION_TOKENS = (
+    "go test",
+    "go vet",
+    "npm run build",
+    "live smoke",
+    "rdsh",
+    "offline reproduction",
+    "workflow_dispatch",
+    "ci/live-smoke",
+    "ci failure",
+    "transcript",
+    "artifact",
+)
+
 OBSERVABILITY_KEYWORDS = (
     "bridge decision",
     "observability",
@@ -342,6 +398,22 @@ def is_operational_task(task: dict[str, Any]) -> bool:
 def requires_observability_proof(task: dict[str, Any]) -> bool:
     text = task_goal_text(task)
     return any(keyword in text for keyword in OBSERVABILITY_KEYWORDS)
+
+
+def is_high_risk_task(task: dict[str, Any]) -> bool:
+    return str(task.get("risk") or "") == "high"
+
+
+def high_risk_task_has_evidence(task: dict[str, Any]) -> bool:
+    text = task_goal_text(task)
+    if any(pattern in text for pattern in NEGATED_HIGH_RISK_EVIDENCE_PATTERNS):
+        return False
+    return any(token in text for token in HIGH_RISK_EVIDENCE_TOKENS)
+
+
+def high_risk_checks_have_validation(evidence: EvidenceBlock, pr_body: str) -> bool:
+    text = "\n".join([*evidence.checks, pr_body]).lower()
+    return any(token in text for token in HIGH_RISK_VALIDATION_TOKENS)
 
 
 def diff_has_direct_observability_assertion(diff_text: str) -> bool:
@@ -687,6 +759,7 @@ def evaluate_quality(
         task = change.task
         operational = is_operational_task(task)
         observability = requires_observability_proof(task)
+        high_risk = is_high_risk_task(task)
         expected_acceptance = task_acceptance_count(task)
 
         if evidence.present and evidence.status == "done" and len(evidence.acceptance) < expected_acceptance:
@@ -709,6 +782,22 @@ def evaluate_quality(
                 f"Task {change.task_id} requires observability/logging proof, "
                 "but the diff has no runtime/script change and no direct log-capture assertion."
             )
+
+        if high_risk:
+            if not high_risk_task_has_evidence(task):
+                reasons.append(
+                    f"High-risk task {change.task_id} is not tied to live smoke, transcript, "
+                    "CI failure, offline reproduction, or Claude Code bridge evidence."
+                )
+            if not has_runtime_or_script:
+                reasons.append(
+                    f"High-risk task {change.task_id} was marked done without a runtime/script change."
+                )
+            if evidence.present and evidence.status == "done" and not high_risk_checks_have_validation(evidence, pr_body):
+                reasons.append(
+                    f"High-risk task {change.task_id} evidence must include tests, live smoke, "
+                    "offline reproduction, CI/live-smoke checks, artifacts, or transcript validation."
+                )
 
         if operational and compromise and only_tests_docs_manifest(changed_files) and not has_runtime_or_script:
             reasons.append(

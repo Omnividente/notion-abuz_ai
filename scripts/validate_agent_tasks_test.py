@@ -16,14 +16,14 @@ def base_manifest(task: dict) -> dict:
         "merge_policy": {
             "low": "auto_merge_after_ci",
             "medium": "auto_merge_after_ci",
-            "high": "human_review_required",
+            "high": "auto_merge_after_strict_evidence",
             "critical": "manual_only",
         },
         "replenishment_policy": {
             "minimum_todo_tasks": 1,
             "batch_size": 1,
             "max_todo_tasks": 10,
-            "allowed_risks_for_generated_tasks": ["low", "medium"],
+            "allowed_risks_for_generated_tasks": ["low", "medium", "high"],
             "instruction": "Keep useful tasks queued.",
         },
         "autonomous_loop_policy": {

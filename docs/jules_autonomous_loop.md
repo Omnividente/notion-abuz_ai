@@ -95,12 +95,22 @@ observable, and covered by deterministic script tests where practical.
 
 Do not ask the user what to do next when a safe `todo` task exists.
 Ask for human review only when the change requires secrets, production access,
-deployment changes, workflow permission changes, or high/critical-risk work.
+deployment changes, workflow permission changes, critical-risk work, or
+unguarded high-risk work.
 
-For low/medium-risk tasks, do not ask the user to choose between implementation
-approaches. If multiple safe approaches exist, choose the smallest reversible
-change that satisfies the selected task's acceptance criteria. If unsure, add
-focused tests first and then implement the smallest passing fix.
+For low/medium-risk tasks, and for high-risk tasks selected by the guarded
+selector under `risk_ceiling=high`, do not ask the user to choose between
+implementation approaches. If multiple safe approaches exist, choose the
+smallest reversible change that satisfies the selected task's acceptance
+criteria. If unsure, add focused tests first and then implement the smallest
+passing fix.
+
+High-risk tasks are autonomous only when they are tied to live smoke,
+transcripts, CI failures, offline reproduction, or Claude Code bridge evidence,
+stay inside narrow `allowed_paths`, and avoid secrets, account data, deployment
+or runtime data, local config, token files, workflow permission changes, and
+destructive actions. If those conditions are not true, mark the task blocked
+with a concrete `blocked_reason` instead of waiting for user input.
 
 In unattended mode, ordinary engineering uncertainty must be resolved by the
 agent. If a possible step belongs to a separate task, leave it out of the
@@ -137,7 +147,8 @@ below `replenishment_policy.minimum_todo_tasks`, provided that:
 
 1. The finding is grounded in code, docs, tests, CI logs, or a captured live
    smoke result.
-2. The new task is low/medium risk and fits in one PR.
+2. The new task is low/medium risk, or guarded high risk with concrete bridge
+   evidence, and fits in one PR.
 3. The task has concrete `allowed_paths` and acceptance criteria.
 4. The task does not require secrets, production data, deployment changes, or
    workflow permission changes.
@@ -217,7 +228,9 @@ uses `scripts/select_agent_task.py` to pick one eligible task. The selector
 prefers runtime, local live-smoke, artifact, and transcript-backed work over
 micro test-only tasks. It rejects low-risk test-only tasks without concrete live
 smoke, transcript, CI, or offline reproduction evidence unless a human provided
-that exact `task_id`.
+that exact `task_id`. It accepts high-risk tasks only under `risk_ceiling=high`
+and only when the task is evidence-backed, bounded to implementation paths plus
+focused tests/docs/manifest, and avoids protected data or deployment surfaces.
 
 ## Local Helper Scripts
 
@@ -244,7 +257,9 @@ When the queue is low or research discovers new bounded follow-up work:
 
 1. Prefer Claude Code bridge stabilization, transcript fixtures, and regression
    coverage over feature expansion.
-2. Generate low/medium-risk tasks only.
+2. Generate low/medium-risk tasks by default. Generate high-risk tasks only
+   when a concrete live smoke, transcript, CI failure, or offline reproduction
+   proves the broader runtime risk is justified.
 3. Each new task must include:
    - stable `id`
    - `area`
@@ -294,8 +309,9 @@ Autonomous PRs must not edit:
 - built binaries
 - real account/session dumps
 
-Workflow changes must be performed manually or through a dedicated human-reviewed
-task.
+Workflow changes must be performed manually or through a dedicated automation
+task with explicit `allowed_paths`, deterministic script tests, and no workflow
+permission escalation.
 
 ## Validation Contract
 

@@ -18,7 +18,7 @@
   "merge_policy": {
     "low": "auto_merge_after_ci",
     "medium": "auto_merge_after_ci",
-    "high": "human_review_required",
+    "high": "auto_merge_after_strict_evidence",
     "critical": "manual_only"
   },
   "replenishment_policy": {
@@ -28,19 +28,20 @@
     "tasks_per_run": 1,
     "allowed_risks_for_generated_tasks": [
       "low",
-      "medium"
+      "medium",
+      "high"
     ],
-    "instruction": "When the todo queue is low, add Claude Code bridge investigation tasks that start from live smoke results, captured transcripts, CI failures, or a clearly reproduced runtime behavior. Do not keep generating one-case test-only robustness tasks such as another malformed JSON, HandleFrame, trimCitationContext, missing field, empty payload, or event-type-only test unless it is tied to a reproduced Claude Code bridge failure. Prefer runtime bridge fixes, live-smoke transcript analysis, observability needed for diagnosis, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode retention, session recovery, final-answer mode, instruction preservation, transient API/search failure retry or incomplete-context handling, production-router/harness coverage, and realistic read/edit/test/finalize transcript coverage. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, workflow, or micro edge-case test tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "instruction": "When the todo queue is low, add Claude Code bridge investigation tasks that start from live smoke results, captured transcripts, CI failures, or a clearly reproduced runtime behavior. Generated high-risk tasks are allowed only when they are guarded by concrete bridge evidence, have narrow allowed_paths, include focused validation criteria, and avoid secrets, account data, deployment/runtime data, local config, token files, and workflow permission changes. Do not keep generating one-case test-only robustness tasks such as another malformed JSON, HandleFrame, trimCitationContext, missing field, empty payload, or event-type-only test unless it is tied to a reproduced Claude Code bridge failure. Prefer runtime bridge fixes, live-smoke transcript analysis, observability needed for diagnosis, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode retention, session recovery, final-answer mode, instruction preservation, transient API/search failure retry or incomplete-context handling, production-router/harness coverage, and realistic read/edit/test/finalize transcript coverage. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, workflow, or micro edge-case test tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
     "max_todo_tasks": 40
   },
   "autonomous_loop_policy": {
     "operating_model": "docs/jules_autonomous_loop.md",
-    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium and whose scope directly improves Claude Code bridge reliability through live smoke analysis, runtime bridge behavior, or a reproduced transcript-level failure. Do not select narrow test-only robustness tasks when they only add another edge-case test for existing behavior; mark those tasks blocked and choose the next live-smoke or runtime-focused task instead. Do not autonomously select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, or workflow tasks unless a concrete Claude Code bridge failure requires that area or the task_id is explicitly requested.",
-    "anti_stall_rule": "Never ask the user what to do next while safe low or medium risk tasks can be selected or generated.",
+    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low, medium, or guarded high and whose scope directly improves Claude Code bridge reliability through live smoke analysis, runtime bridge behavior, or a reproduced transcript-level failure. A high-risk task is eligible only when scripts/select_agent_task.py accepts it under risk_ceiling=high: it must be evidence-backed, bounded to implementation paths plus focused tests/docs/manifest, and must not touch secrets, account data, deployment/runtime data, local config, token files, or workflow permissions. Do not select narrow test-only robustness tasks when they only add another edge-case test for existing behavior; mark those tasks blocked and choose the next live-smoke or runtime-focused task instead. Do not autonomously select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, or workflow tasks unless a concrete Claude Code bridge failure requires that area or the task_id is explicitly requested.",
+    "anti_stall_rule": "Never ask the user what to do next while safe low, medium, or guarded high risk tasks can be selected or generated.",
     "stabilization_first": true,
     "max_pr_scope": "one task id per PR",
     "failure_rule": "If CI fails because of the current change, fix it before opening or updating the PR. If CI fails for an unrelated reason, add a follow-up task and explain the limitation in the PR body.",
-    "discovery_rule": "For Claude Code bridge research and compatibility tasks, add low/medium-risk follow-up todo tasks only for concrete gaps discovered from live smoke results, captured transcripts, CI failures, or offline reproductions of real Claude Code behavior. Prefer findings about Notion persona leakage, tool-call refusal, JSON tool-call mode loss, tool-result continuation, session retry/recovery, final-answer mode, and realistic read/edit/test/finalize transcripts. Do not create more single-edge-case test-only tasks for already-covered parsing or HandleFrame robustness unless a live/reproduced bridge failure proves the gap matters. Keep generated tasks non-duplicative, scoped to one PR, below max_todo_tasks, and backed by allowed_paths plus acceptance criteria."
+    "discovery_rule": "For Claude Code bridge research and compatibility tasks, add low/medium-risk follow-up todo tasks, or guarded high-risk tasks only when concrete live smoke, transcript, CI failure, or offline reproduction evidence proves the risk is justified. Prefer findings about Notion persona leakage, tool-call refusal, JSON tool-call mode loss, tool-result continuation, session retry/recovery, final-answer mode, and realistic read/edit/test/finalize transcripts. Do not create more single-edge-case test-only tasks for already-covered parsing or HandleFrame robustness unless a live/reproduced bridge failure proves the gap matters. Keep generated tasks non-duplicative, scoped to one PR, below max_todo_tasks, and backed by allowed_paths plus acceptance criteria."
   },
   "tasks": [
     {
@@ -5016,6 +5017,30 @@
       "acceptance": [
         "Add length limit check on candidate blocks during fallback extraction in tools.go.",
         "Ensure metric tracking of large unparseable json is correctly sized."
+      ]
+    },
+    {
+      "id": "proxy-russian-notion-ai-persona-drift-regression",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "high",
+      "title": "Fix Russian Claude Code requests answered as Notion AI persona",
+      "description": "A live Jules/Claude Code bridge session reproduced a regression where a Russian coding request was answered as Notion AI instead of staying in coding-proxy/tool-call mode. The observed answer included English `Notion AI` inside Russian prose and refused Bash/Edit/Glob/local filesystem/tool-call behavior: `Я — Notion AI, ассистент внутри Notion, а не сторонний coding-прокси вроде Claude Code...`. This high-risk task is evidence-backed because it targets a real transcript-level bridge failure, not a generic phrase match.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_bridge_test.go",
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add an offline regression test using Russian or mixed Russian/English Claude Code-style prompts where the upstream response says `Notion AI` in English and refuses Bash/Edit/Glob/Read/tool-call/local filesystem capabilities.",
+        "The bridge must classify that answer as Notion persona leakage, tool-call refusal, or equivalent Claude Code bridge drift and route it through the existing recovery/continuation behavior instead of returning it as a final user answer.",
+        "Cover Russian wording variants around `coding-прокси`, `формат вызовов функций`, `Bash`, `Edit`, `Glob`, `Read`, local filesystem access, command execution, and requests to inspect project structure after a transient API/search failure.",
+        "Do not implement a broad rule that treats every `Notion AI` mention as a bug; tests must preserve a normal Notion-related user question that should remain answerable.",
+        "If a transient API/search/listing failure produces partial project context, the bridge must retry, continue, or explicitly mark incomplete-context recovery instead of confidently continuing from partial data without trying to recover missing context.",
+        "Run `go test ./internal/proxy -run \"TestDetectToolBridgeNoToolResponse|Test.*Recovery|Test.*Bridge|Test.*Notion\" -count=1` and `go test ./internal/proxy -count=1`, or block with a concrete reason naming the missing reproducible hook."
       ]
     }
   ]

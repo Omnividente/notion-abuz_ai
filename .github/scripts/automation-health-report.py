@@ -294,7 +294,7 @@ def add_finding_once(findings: list[Finding], finding: Finding) -> None:
         findings.append(finding)
 
 
-def selector_diagnostics(manifest: dict[str, Any]) -> dict[str, Any]:
+def selector_diagnostics(manifest: dict[str, Any], *, risk_ceiling: str) -> dict[str, Any]:
     selector_path = Path(__file__).parents[2] / "scripts" / "select_agent_task.py"
     if not selector_path.exists():
         return {"available": False, "error": "scripts/select_agent_task.py not found"}
@@ -306,9 +306,10 @@ def selector_diagnostics(manifest: dict[str, Any]) -> dict[str, Any]:
         module = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = module
         spec.loader.exec_module(module)
-        selection = module.select_task(manifest, risk_ceiling="medium", focus="proxy")
+        selection = module.select_task(manifest, risk_ceiling=risk_ceiling, focus="proxy")
         data = selection.to_dict()
         data["available"] = True
+        data["risk_ceiling"] = risk_ceiling
         return data
     except Exception as exc:  # pragma: no cover - defensive live-report path
         return {"available": False, "error": str(exc)[:300]}
@@ -320,6 +321,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
     manifest = data.get("manifest") if isinstance(data.get("manifest"), dict) else {}
     task_ids = task_ids_from_manifest(manifest)
     statuses = task_statuses(manifest)
+    risk_ceiling = str(data.get("risk_ceiling") or os.environ.get("AUTONOMOUS_RISK_CEILING") or "high")
     pulls = data.get("pulls") if isinstance(data.get("pulls"), list) else []
     workflow_runs = data.get("workflow_runs") if isinstance(data.get("workflow_runs"), list) else []
     sessions = data.get("jules_sessions") if isinstance(data.get("jules_sessions"), list) else []
@@ -386,7 +388,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             ),
         )
 
-    selector = selector_diagnostics(manifest)
+    selector = selector_diagnostics(manifest, risk_ceiling=risk_ceiling)
     if selector.get("available") is False:
         add_finding_once(
             findings,
@@ -407,11 +409,12 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             Finding(
                 code="no_eligible_autonomous_task",
                 severity="degraded",
-                message="Todo tasks exist, but none are eligible under risk ceiling and micro-task policy.",
+                message="Todo tasks exist, but none are eligible under risk ceiling, guarded-high policy, and micro-task policy.",
                 evidence={
                     "todo_count": selector.get("todo_count"),
                     "eligible_count": selector.get("eligible_count"),
                     "rejected_count": selector.get("rejected_count"),
+                    "risk_ceiling": selector.get("risk_ceiling"),
                     "reason": selector.get("reason"),
                     "rejected_task_ids": [
                         item.get("task_id")
@@ -707,6 +710,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             "selector_selected": selector.get("selected"),
             "selector_reason": selector.get("reason"),
             "selector_reason_code": selector.get("reason_code"),
+            "selector_risk_ceiling": selector.get("risk_ceiling"),
             "blocked_without_reason_count": len(blocked_without_reason),
         },
         "jules_sessions": {
@@ -797,6 +801,7 @@ def write_markdown(report: dict[str, Any]) -> str:
                 f"- Eligible autonomous tasks: `{task_metrics.get('eligible_count')}`; "
                 f"rejected by selector: `{task_metrics.get('rejected_count')}`"
             ),
+            f"- Selector risk ceiling: `{task_metrics.get('selector_risk_ceiling') or ''}`",
             f"- Selector reason: `{task_metrics.get('selector_reason_code') or ''}`",
             f"- Blocked tasks without reason: `{task_metrics.get('blocked_without_reason_count', 0)}`",
             f"- Active product Jules sessions: `{session_metrics.get('active_product_count', 0)}`",

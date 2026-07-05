@@ -16,8 +16,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
+import select_agent_task
 
-SAFE_RISKS = {"low", "medium"}
+
+RISK_ORDER = ("low", "medium", "high")
 
 
 @dataclass(frozen=True)
@@ -49,7 +51,6 @@ def observe(data: dict[str, Any], task_id: str | None, risk_ceiling: str) -> Sel
     if not isinstance(tasks, list):
         raise ValueError("manifest tasks must be an array")
 
-    allowed_risks = {"low"} if risk_ceiling == "low" else SAFE_RISKS
     todos = [task for task in tasks if isinstance(task, dict) and task.get("status") == "todo"]
     print(f"Todo tasks: {len(todos)}")
 
@@ -58,8 +59,9 @@ def observe(data: dict[str, Any], task_id: str | None, risk_ceiling: str) -> Sel
         risk = task.get("risk")
         if task_id and current_id != task_id:
             continue
-        if risk not in allowed_risks:
-            print(f"Skipping {current_id}: risk {risk!r} exceeds ceiling {risk_ceiling!r}")
+        rejection_reason = select_agent_task.task_rejection_reason(task, risk_ceiling)
+        if rejection_reason:
+            print(f"Skipping {current_id}: {rejection_reason}")
             continue
         return task_from_dict(task)
 
@@ -216,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo-root", default=".", help="repository root")
     parser.add_argument("--manifest", default="agent_tasks.json", help="task manifest path relative to repo root")
     parser.add_argument("--task-id", default=None, help="optional exact task id")
-    parser.add_argument("--risk-ceiling", choices=["low", "medium"], default="medium")
+    parser.add_argument("--risk-ceiling", choices=list(RISK_ORDER), default="medium")
     parser.add_argument("--validation", choices=["none", "manifest", "fast", "full"], default="manifest")
     return run_loop(parser.parse_args(argv))
 

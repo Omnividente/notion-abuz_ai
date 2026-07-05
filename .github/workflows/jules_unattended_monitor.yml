@@ -138,6 +138,7 @@ jobs:
           steps.cooldown.outputs.should_dispatch == 'true'
         env:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+          AUTONOMOUS_RISK_CEILING: ${{ vars.AUTONOMOUS_RISK_CEILING || 'high' }}
         run: |
           set -euo pipefail
 
@@ -145,12 +146,13 @@ jobs:
             --arg task_id "${{ steps.jules-monitor.outputs.failed_task_id }}" \
             --arg recovery_session_id "${{ steps.jules-monitor.outputs.failed_session_id }}" \
             --arg recovery_reason "${{ steps.jules-monitor.outputs.failed_recovery_reason }}" \
+            --arg risk_ceiling "${AUTONOMOUS_RISK_CEILING}" \
             '{
               ref: "master",
               inputs: {
                 task_id: $task_id,
                 focus: "proxy",
-                risk_ceiling: "medium",
+                risk_ceiling: $risk_ceiling,
                 allow_parallel: "false",
                 recovery_session_id: $recovery_session_id,
                 recovery_reason: $recovery_reason
@@ -176,14 +178,17 @@ jobs:
           steps.cooldown.outputs.should_dispatch == 'true'
         env:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+          AUTONOMOUS_RISK_CEILING: ${{ vars.AUTONOMOUS_RISK_CEILING || 'high' }}
         run: |
           set -euo pipefail
 
-          body="$(jq -n '{
+          body="$(jq -n \
+            --arg risk_ceiling "${AUTONOMOUS_RISK_CEILING}" \
+            '{
             ref: "master",
             inputs: {
               focus: "proxy",
-              risk_ceiling: "medium"
+              risk_ceiling: $risk_ceiling
             }
           }')"
 

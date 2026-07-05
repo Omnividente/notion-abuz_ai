@@ -11,6 +11,7 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT_PATH = Path(__file__).with_name("automation-health-report.py")
@@ -27,7 +28,7 @@ def run_fixture(name: str) -> dict:
         output_json = Path(tmpdir) / "automation-health.json"
         output_md = Path(tmpdir) / "automation-health.md"
         github_output = Path(tmpdir) / "github-output.txt"
-        with redirect_stdout(StringIO()):
+        with patch.dict("os.environ", {"AUTONOMOUS_RISK_CEILING": "high"}), redirect_stdout(StringIO()):
             exit_code = health.main(
                 [
                     "--fixture-dir",
@@ -109,7 +110,9 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["metrics"]["tasks"]["eligible_count"], 0)
         self.assertEqual(report["metrics"]["tasks"]["rejected_count"], 2)
         self.assertEqual(report["metrics"]["tasks"]["selector_reason_code"], "no_eligible_autonomous_task")
+        self.assertEqual(report["metrics"]["tasks"]["selector_risk_ceiling"], "high")
         self.assertIn("Eligible autonomous tasks", report["_markdown"])
+        self.assertIn("Selector risk ceiling", report["_markdown"])
 
     def test_missing_jules_api_key_is_not_a_failure(self) -> None:
         report = run_fixture("missing-jules-api-key")

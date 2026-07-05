@@ -165,9 +165,12 @@ Research findings must become durable project assets:
   phrase.
 
 When Jules investigates Claude Code compatibility, it may create new low/medium
-risk tasks from its findings even when the todo queue is not below the
-replenishment threshold. Those tasks must have concrete `allowed_paths`,
-acceptance criteria, and one-PR scope.
+risk tasks, or guarded high-risk tasks backed by live smoke, transcript, CI
+failure, or offline reproduction evidence, even when the todo queue is not below
+the replenishment threshold. Those tasks must have concrete `allowed_paths`,
+acceptance criteria, one-PR scope, and no access to secrets, account data,
+deployment/runtime data, local config, token files, workflow permissions, or
+destructive actions.
 
 ## Failure Taxonomy
 

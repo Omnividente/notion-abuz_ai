@@ -41,6 +41,7 @@ jobs:
         run: |
           python3 scripts/select_agent_task_test.py
           python3 scripts/select_agent_task.py --manifest agent_tasks.json --risk-ceiling medium --focus proxy --json
+          python3 scripts/select_agent_task.py --manifest agent_tasks.json --risk-ceiling high --focus proxy --json
 
       - name: Validate Jules recovery scripts
         run: |

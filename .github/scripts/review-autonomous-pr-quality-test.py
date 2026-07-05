@@ -22,6 +22,7 @@ def task(
     task_id: str,
     *,
     status: str,
+    risk: str = "low",
     title: str = "Ensure workspace reframing events are logged as bridge decisions",
     description: str = "Verify and test that workspace reframing is explicitly emitted as a bridge decision log.",
     allowed_paths: list[str] | None = None,
@@ -32,7 +33,7 @@ def task(
         "id": task_id,
         "status": status,
         "area": "proxy",
-        "risk": "low",
+        "risk": risk,
         "title": title,
         "description": description,
         "allowed_paths": allowed_paths
@@ -163,6 +164,129 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
         self.assertTrue(decision.passed)
         self.assertEqual(decision.recommendation, "Autonomous PR quality gate passed.")
         self.assertTrue(decision.evidence["present"])
+
+    def test_evidence_backed_high_risk_runtime_change_passes(self) -> None:
+        before = manifest(
+            [
+                task(
+                    "high-bridge-fix",
+                    status="todo",
+                    risk="high",
+                    title="Fix Claude Code Notion AI tool-call refusal",
+                    description=(
+                        "Live smoke transcript reproduced a Claude Code bridge failure where "
+                        "the upstream answered as Notion AI and refused tool-call mode."
+                    ),
+                    acceptance=[
+                        "Runtime bridge preserves tool-call mode after Notion AI refusal -> internal/proxy/anthropic.go",
+                        "Focused regression covers the transcript -> internal/proxy/anthropic_bridge_test.go",
+                    ],
+                )
+            ]
+        )
+        after = manifest(
+            [
+                task(
+                    "high-bridge-fix",
+                    status="done",
+                    risk="high",
+                    title="Fix Claude Code Notion AI tool-call refusal",
+                    description=(
+                        "Live smoke transcript reproduced a Claude Code bridge failure where "
+                        "the upstream answered as Notion AI and refused tool-call mode."
+                    ),
+                    acceptance=[
+                        "Runtime bridge preserves tool-call mode after Notion AI refusal -> internal/proxy/anthropic.go",
+                        "Focused regression covers the transcript -> internal/proxy/anthropic_bridge_test.go",
+                    ],
+                )
+            ]
+        )
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: notion persona tool-call refusal")',
+            pr_body=evidence_body(
+                "high-bridge-fix",
+                acceptance=[
+                    "Runtime bridge preserves tool-call mode after Notion AI refusal -> internal/proxy/anthropic.go",
+                    "Focused regression covers the transcript -> internal/proxy/anthropic_bridge_test.go",
+                ],
+                checks=[
+                    "python3 scripts/validate_agent_tasks.py agent_tasks.json",
+                    "go test ./internal/proxy -run TestDetectToolBridgeNoToolResponse -count=1",
+                ],
+            ),
+        )
+
+        self.assertTrue(decision.passed)
+
+    def test_high_risk_done_requires_evidence_backed_task_text(self) -> None:
+        before = manifest([task("high-bridge-fix", status="todo", risk="high")])
+        after = manifest([task("high-bridge-fix", status="done", risk="high")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body("high-bridge-fix"),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("High-risk task" in reason and "not tied" in reason for reason in decision.reasons))
+
+    def test_high_risk_done_requires_runtime_or_script_change(self) -> None:
+        before = manifest(
+            [
+                task(
+                    "high-bridge-fix",
+                    status="todo",
+                    risk="high",
+                    title="Fix Claude Code Notion AI tool-call refusal",
+                    description="Offline reproduction shows a Notion AI tool-call refusal.",
+                )
+            ]
+        )
+        after = manifest(
+            [
+                task(
+                    "high-bridge-fix",
+                    status="done",
+                    risk="high",
+                    title="Fix Claude Code Notion AI tool-call refusal",
+                    description="Offline reproduction shows a Notion AI tool-call refusal.",
+                )
+            ]
+        )
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=["internal/proxy/anthropic_bridge_test.go", "agent_tasks.json"],
+            diff_text="+ t.Run(\"notion persona\", func(t *testing.T) {})",
+            pr_body=evidence_body(
+                "high-bridge-fix",
+                evidence_files=["internal/proxy/anthropic_bridge_test.go", "agent_tasks.json"],
+                checks=[
+                    "python3 scripts/validate_agent_tasks.py agent_tasks.json",
+                    "go test ./internal/proxy -run TestDetectToolBridgeNoToolResponse -count=1",
+                ],
+            ),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("without a runtime/script change" in reason for reason in decision.reasons))
 
     def test_followup_code_identifiers_do_not_trigger_repeated_followup_failure(self) -> None:
         before = manifest([task("runtime-fix", status="todo")])

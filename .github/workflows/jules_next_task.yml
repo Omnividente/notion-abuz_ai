@@ -25,11 +25,12 @@ on:
       risk_ceiling:
         description: "Maximum risk Jules may implement autonomously"
         required: false
-        default: "medium"
+        default: "high"
         type: choice
         options:
           - low
           - medium
+          - high
       allow_parallel:
         description: "Allow dispatching even when an autonomous PR is open"
         required: false
@@ -82,7 +83,7 @@ jobs:
         env:
           TASK_ID: ${{ inputs.task_id || '' }}
           FOCUS: ${{ inputs.focus || 'proxy' }}
-          RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
+          RISK_CEILING: ${{ inputs.risk_ceiling || vars.AUTONOMOUS_RISK_CEILING || 'high' }}
         run: |
           set -euo pipefail
 
@@ -236,7 +237,7 @@ jobs:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
           TASK_ID: ${{ steps.select-task.outputs.task_id }}
           FOCUS: ${{ inputs.focus || 'proxy' }}
-          RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
+          RISK_CEILING: ${{ inputs.risk_ceiling || vars.AUTONOMOUS_RISK_CEILING || 'high' }}
           SELECTED_TASK_TITLE: ${{ steps.select-task.outputs.title }}
           SELECTED_TASK_SCORE: ${{ steps.select-task.outputs.score }}
           SELECTED_TASK_REASON: ${{ steps.select-task.outputs.reason }}
@@ -282,11 +283,24 @@ jobs:
           reproduction, log inspection, or artifact inspection. If it is safe,
           non-destructive, inside the selected task scope and allowed_paths, run it.
           If a reproduction requires live secrets, real credentials, production
-          access, or high/critical risk, do not ask the user inside the Jules
+          access, critical risk, or destructive action, do not ask the user inside the Jules
           session. Instead update the selected task to blocked with the exact
           missing evidence or permission and open one manifest-only PR.
           Only wait for user input when the task is blocked by missing permissions,
-          missing secrets, high/critical risk, or an unavoidable destructive action.
+          missing secrets, critical risk, or an unavoidable destructive action.
+
+          HIGH-RISK AUTONOMY:
+          High-risk tasks may be implemented only when TASK_ID was selected by
+          scripts/select_agent_task.py under risk_ceiling=high. Treat that as a
+          guarded autonomous task, not as permission for broad refactoring. A
+          high-risk task must be grounded in live smoke, transcript, CI failure,
+          offline reproduction, or Claude Code bridge evidence; it must stay
+          inside allowed_paths; it must not touch secrets, account data,
+          deployment/runtime data, local config, token files, or destructive
+          operations. For high-risk tasks, run the strongest safe validation
+          available for the touched surface and include that validation in
+          AUTONOMOUS_TASK_EVIDENCE. If the evidence or safe validation is
+          missing, mark the task blocked with a concrete blocked_reason.
 
           FAILED SESSION RECOVERY MODE:
           If Recovery session id is non-empty, this session is the single allowed
@@ -347,7 +361,7 @@ jobs:
           2. Validate agent_tasks.json mentally against scripts/validate_agent_tasks.py before editing it.
           3. TASK_ID was selected before this session by scripts/select_agent_task.py.
           4. Implement only the selected TASK_ID. Do not switch to the first todo task.
-          5. If there are fewer than the manifest minimum todo tasks, add a small batch of new low/medium-risk tasks before finishing.
+          5. If there are fewer than the manifest minimum todo tasks, add a small batch of new low/medium-risk tasks, or guarded high-risk tasks only when backed by concrete bridge evidence, before finishing.
           6. Implement exactly ONE complete task in one PR.
           7. Stay inside the selected task's allowed_paths. You may edit agent_tasks.json only to update task status or add follow-up tasks.
           8. Update agent_tasks.json: set the completed task status to "done"
@@ -365,8 +379,9 @@ jobs:
           RESEARCH AND DISCOVERY POLICY:
           Some tasks are investigative. Do not only execute literal user bullet
           points when code, tests, docs, or CI reveal a broader compatibility gap.
-          Convert concrete findings into durable low/medium-risk todo tasks even
-          when the queue is not below the replenishment threshold. Each generated
+          Convert concrete findings into durable low/medium-risk todo tasks, or
+          guarded high-risk tasks when the fix is evidence-backed and needs
+          broader runtime validation, even when the queue is not below the replenishment threshold. Each generated
           task must be non-duplicative, fit one PR, stay below max_todo_tasks, and
           include precise allowed_paths and acceptance criteria. If a discovered
           fix is required for the selected task and remains inside allowed_paths,
@@ -454,7 +469,7 @@ jobs:
 
           STRICT RULES:
           - Never ask the user what to do if safe todo work exists.
-          - Do not ask the user to choose between implementation approaches for low/medium-risk tasks.
+          - Do not ask the user to choose between implementation approaches for low/medium-risk tasks or guarded high-risk tasks selected by the task selector.
           - Do not ask whether to include work that belongs to a separate task; exclude it and continue.
           - Do not ask whether to add tests when acceptance criteria require tests; add focused offline tests.
           - Do not ask whether to fix CI failures caused by your changes; fix them inside the selected task scope.
@@ -462,7 +477,7 @@ jobs:
           - Do not stop in AWAITING_USER_FEEDBACK for ordinary engineering judgment.
           - If multiple safe approaches exist, choose the smallest reversible change that satisfies the selected task's acceptance criteria.
           - If unsure, write focused tests first, then implement the smallest passing fix.
-          - Ask for user input only when blocked by missing permissions, missing secrets, high/critical risk, or an unavoidable destructive action.
+          - Ask for user input only when blocked by missing permissions, missing secrets, critical risk, or an unavoidable destructive action.
           - Keep PRs small and bounded: one task id per PR.
           - Do not modify secrets, account JSON, token files, generated logs, binaries, local config.yaml, or runtime data.
           - Do not modify .github/workflows/** unless the selected task explicitly allows workflow work.
@@ -470,7 +485,7 @@ jobs:
           - Do not add network calls in tests.
           - Do not change deployment files unless explicitly allowed.
           - Do not add new dependencies unless the task requires them and the dependency is justified in the PR body.
-          - If a task is high or critical risk, create/refine a human-review task instead of implementing it.
+          - If a task is critical risk, create/refine a human-review task instead of implementing it. If a high-risk task lacks concrete bridge evidence or safe validation, block it with a concrete blocked_reason.
           - Prefer focused tests over broad refactors.
           - Do not finish a PR by adding only another isolated edge-case test
             unless the selected task explicitly connects it to a reproduced

@@ -15,7 +15,7 @@ AUTONOMOUS_CONTINUE_TOKEN
 
 Пиши все пользовательские сообщения, объяснения плана, PR title/body и финальные summary на русском. Оставляй file paths, task ids, команды, API names, code identifiers и quoted errors на языке оригинала.
 
-Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг и продолжай.
+Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг или guarded high-risk шаг выбранной задачи и продолжай.
 Если последнее сообщение спрашивает, нужно ли запустить локальный сервер, локальные тесты, offline reproduction или изучить логи/artifacts, ответ: да, сделай это сам, если действие безопасно, недеструктивно, остается внутри scope/allowed_paths и не требует секретов.
 Если для воспроизведения нужны live secrets, реальные credentials или production-доступ, не спрашивай пользователя в этой сессии. Вместо этого зафиксируй точный blocker в agent_tasks.json и открой manifest-only PR.
 Оставайся внутри scope выбранной задачи и allowed_paths.
@@ -38,7 +38,7 @@ micro_pr_justification: <why this is one complete task theme, not a micro PR>
 -->
 Если status: blocked, добавь строку `blocked_reason: <concrete blocker>`.
 Все `evidence_files` должны быть файлами, измененными этим PR.
-Не задавай новый вопрос-подтверждение, если нет блокера из-за missing permissions, missing secrets, high/critical risk или неизбежного destructive action.
+Не задавай новый вопрос-подтверждение, если нет блокера из-за missing permissions, missing secrets, critical risk, unguarded high-risk work или неизбежного destructive action.
 
 В следующем сообщении обязательно кратко укажи:
 - Этап плана
@@ -81,7 +81,7 @@ AUTONOMOUS_CONTINUE_TOKEN
 
 Не жди дополнительного подтверждения. Выбери один безопасный исход:
 - если задачу можно завершить внутри scope/allowed_paths, синхронизируйся с master, запусти нужную валидацию и открой один PR с label `jules` и корректным AUTONOMOUS_TASK_EVIDENCE;
-- если продолжение требует missing secrets, production-доступ, high/critical risk или destructive action, отметь задачу `blocked` в agent_tasks.json, добавь concrete blocked_reason и открой manifest-only PR.
+- если продолжение требует missing secrets, production-доступ, critical risk, unguarded high-risk work или destructive action, отметь задачу `blocked` в agent_tasks.json, добавь concrete blocked_reason и открой manifest-only PR.
 
 Не задавай новый вопрос-подтверждение и не оставляй сессию в ожидании пользователя.
 

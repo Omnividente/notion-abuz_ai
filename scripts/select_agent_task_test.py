@@ -135,11 +135,124 @@ class SelectAgentTaskTest(unittest.TestCase):
         selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
 
         self.assertFalse(selected.selected)
-        self.assertEqual(selected.reason, "no eligible todo task matched the risk ceiling and micro-task policy")
+        self.assertEqual(
+            selected.reason,
+            "no eligible todo task matched the risk ceiling, guarded-high policy, and micro-task policy",
+        )
         self.assertEqual(selected.reason_code, "no_eligible_autonomous_task")
         self.assertEqual(selected.todo_count, 1)
         self.assertEqual(selected.eligible_count, 0)
         self.assertEqual(selected.rejected_count, 0)
+
+    def test_high_ceiling_selects_evidence_backed_high_runtime_task(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "medium-task",
+                    title="Small proxy improvement",
+                    description="A regular medium runtime task.",
+                    risk="medium",
+                    allowed_paths=["internal/proxy/tools.go", "internal/proxy/tools_test.go", "agent_tasks.json"],
+                ),
+                task(
+                    "high-bridge-task",
+                    title="Fix Claude Code Notion persona regression from live smoke",
+                    description=(
+                        "Live smoke transcript reproduced a Claude Code bridge failure where the "
+                        "upstream answered as Notion AI and refused Bash/Edit/Glob tool-call mode."
+                    ),
+                    risk="high",
+                    allowed_paths=[
+                        "internal/proxy/anthropic.go",
+                        "internal/proxy/anthropic_bridge_test.go",
+                        "agent_tasks.json",
+                    ],
+                ),
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="high", focus="proxy")
+
+        self.assertTrue(selected.selected)
+        self.assertEqual(selected.task_id, "high-bridge-task")
+        self.assertEqual(selected.rejected_count, 0)
+
+    def test_high_ceiling_rejects_high_task_without_evidence(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "unguarded-high",
+                    title="Rewrite bridge internals",
+                    description="Broad runtime refactor without a reproduced failure.",
+                    risk="high",
+                    allowed_paths=[
+                        "internal/proxy/anthropic.go",
+                        "internal/proxy/anthropic_bridge_test.go",
+                        "agent_tasks.json",
+                    ],
+                )
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="high", focus="proxy")
+
+        self.assertFalse(selected.selected)
+        self.assertEqual(selected.reason_code, "no_eligible_autonomous_task")
+        self.assertEqual(selected.rejected_count, 1)
+        self.assertIn("high-risk task without concrete", selected.rejected[0]["reason"])
+
+    def test_high_ceiling_rejects_high_task_with_sensitive_path(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "sensitive-high",
+                    title="Fix Claude Code bridge failure from live smoke",
+                    description="Live smoke transcript reproduced a Claude Code runtime failure.",
+                    risk="high",
+                    allowed_paths=["config.yaml", "internal/proxy/anthropic.go", "agent_tasks.json"],
+                )
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="high", focus="proxy")
+
+        self.assertFalse(selected.selected)
+        self.assertEqual(selected.rejected_count, 1)
+        self.assertIn("touches secrets", selected.rejected[0]["reason"])
+
+    def test_exact_high_task_requires_high_ceiling_and_guard(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "high-bridge-task",
+                    title="Fix Claude Code Notion persona regression",
+                    description="Offline reproduction shows Notion AI tool-call refusal.",
+                    risk="high",
+                    allowed_paths=[
+                        "internal/proxy/anthropic.go",
+                        "internal/proxy/anthropic_bridge_test.go",
+                        "agent_tasks.json",
+                    ],
+                )
+            ]
+        }
+
+        with self.assertRaisesRegex(ValueError, "exceeds ceiling"):
+            select_agent_task.select_task(
+                data,
+                risk_ceiling="medium",
+                focus="proxy",
+                task_id="high-bridge-task",
+            )
+
+        selected = select_agent_task.select_task(
+            data,
+            risk_ceiling="high",
+            focus="proxy",
+            task_id="high-bridge-task",
+        )
+        self.assertTrue(selected.selected)
+        self.assertEqual(selected.task_id, "high-bridge-task")
 
     def test_no_todo_tasks_has_distinct_reason_code(self) -> None:
         data = {
