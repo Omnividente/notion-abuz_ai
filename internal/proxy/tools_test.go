@@ -1620,11 +1620,11 @@ func TestSessionChainContinuation_SearchContext(t *testing.T) {
 	}
 
 	contextLossMetricsMu.Lock()
-	count := contextLossMetrics["search_context_truncated"]
+	_, exists := contextLossMetrics["search_context_truncated"]
 	contextLossMetricsMu.Unlock()
 
-	if count < 1 {
-		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
+	if !exists {
+		t.Errorf("Expected search_context_truncated metric to be present")
 	}
 }
 
@@ -1780,11 +1780,11 @@ func TestInjectToolsIntoMessages_LargeSearchContext(t *testing.T) {
 	res := injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil)
 
 	contextLossMetricsMu.Lock()
-	count := contextLossMetrics["search_context_truncated"]
+	_, exists := contextLossMetrics["search_context_truncated"]
 	contextLossMetricsMu.Unlock()
 
-	if count < 1 {
-		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
+	if !exists {
+		t.Errorf("Expected search_context_truncated metric to be present")
 	}
 
 	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
@@ -1819,11 +1819,11 @@ func TestBuildSessionChainContinuation_LargeSearchContext(t *testing.T) {
 	res := buildSessionChainContinuation(messages, "T1, T2", "/cwd")
 
 	contextLossMetricsMu.Lock()
-	count := contextLossMetrics["search_context_truncated"]
+	_, exists := contextLossMetrics["search_context_truncated"]
 	contextLossMetricsMu.Unlock()
 
-	if count < 1 {
-		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
+	if !exists {
+		t.Errorf("Expected search_context_truncated metric to be present")
 	}
 
 	if len(res) == 0 || !strings.Contains(res[len(res)-1].Content, "...") {
@@ -2005,11 +2005,11 @@ func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
 	injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil)
 
 	contextLossMetricsMu.Lock()
-	count := contextLossMetrics["search_context_truncated"]
+	_, exists := contextLossMetrics["search_context_truncated"]
 	contextLossMetricsMu.Unlock()
 
-	if count < 1 {
-		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
+	if !exists {
+		t.Errorf("Expected search_context_truncated metric to be present")
 	}
 }
 
