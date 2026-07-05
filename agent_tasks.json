@@ -44,6 +44,21 @@
   },
   "tasks": [
     {
+      "id": "proxy-observability-fallback-missing-anchor-comma-ok",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate fallback missing anchor metrics map using comma-ok idiom in internal/proxy/tools_test.go",
+      "description": "In the proxy (internal/proxy/tools_test.go), update the test that asserts the 'fallback_missing_anchor' metric to use the comma-ok idiom (`count, exists := metrics[\"fallback_missing_anchor\"]`) instead of checking if it equals 0, preventing false positives from missing map keys.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The test asserting the `fallback_missing_anchor` metric uses the comma-ok idiom correctly."
+      ]
+    },
+    {
       "id": "dashboard-login-error-toast-coverage-app-tsx-cb13a8e9",
       "status": "done",
       "area": "web",
@@ -5037,7 +5052,7 @@
     },
     {
       "id": "proxy-observability-tool-continuation-no-tools",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate context loss metrics emission when multi-turn session continuation invoked with empty tool list and no fallback",
