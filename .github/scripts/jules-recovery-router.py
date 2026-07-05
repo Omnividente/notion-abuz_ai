@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -26,6 +27,24 @@ HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
 RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
 MONITOR_COOLDOWN_MINUTES = 7
 QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES = 30
+QUALITY_FIX_CIRCUIT_BREAKER_ATTEMPTS = 3
+QUALITY_FIX_CIRCUIT_BREAKER_TTL_MINUTES = 7 * 24 * 60
+QUALITY_FIX_CIRCUIT_BREAKER_LABELS = ("human-review", "no-automerge", "stop-loop")
+AUTONOMOUS_PR_STOP_LABELS = set(QUALITY_FIX_CIRCUIT_BREAKER_LABELS)
+RECOVERY_LABEL_DEFINITIONS = {
+    "human-review": {
+        "color": "d4c5f9",
+        "description": "Needs human review before autonomous processing continues",
+    },
+    "no-automerge": {
+        "color": "b60205",
+        "description": "Do not merge automatically",
+    },
+    "stop-loop": {
+        "color": "5319e7",
+        "description": "Autonomous recovery circuit breaker stopped this loop",
+    },
+}
 CONFLICT_RECOVERY_COOLDOWN_MINUTES = 30
 MAX_QUALITY_FIX_DETAILS_CHARS = 5000
 STALE_AWAITING_FEEDBACK_MINUTES = 30
@@ -389,6 +408,10 @@ def comments_contain(pr: dict[str, Any], marker: str) -> bool:
     return False
 
 
+def has_autonomous_stop_label(pr: dict[str, Any]) -> bool:
+    return bool(labels_of(pr) & AUTONOMOUS_PR_STOP_LABELS)
+
+
 def has_computed_mergeability(pr: dict[str, Any]) -> bool:
     mergeable_state = str(pr.get("mergeable_state") or "").lower()
     return pr.get("mergeable") is not None and mergeable_state not in {"", "unknown"}
@@ -621,6 +644,67 @@ def latest_quality_fix_details(pr: dict[str, Any]) -> str:
     return ""
 
 
+def quality_fix_recovery_attempt_shas(pr: dict[str, Any], ledger: dict[str, Any]) -> list[str]:
+    number = str(pr.get("number") or "")
+    shas: list[str] = []
+    seen: set[str] = set()
+
+    def add_sha(value: str) -> None:
+        sha = value.strip()
+        if not sha or sha in seen:
+            return
+        seen.add(sha)
+        shas.append(sha)
+
+    marker_pattern = re.compile(
+        rf"{re.escape(ROUTER_MARKER)}\s+action=quality-fix\s+sha=([a-zA-Z0-9._/-]+)"
+    )
+    for comment in pr.get("comments", []):
+        body = str(comment.get("body") or "")
+        for match in marker_pattern.finditer(body):
+            add_sha(match.group(1))
+
+    prefix = f"quality-fix:{number}:"
+    for key, entry in (ledger.get("actions") or {}).items():
+        if not isinstance(entry, dict) or entry.get("type") != "quality_fix_recovery":
+            continue
+        key_text = str(key)
+        if key_text.startswith(prefix):
+            add_sha(key_text.removeprefix(prefix))
+
+    return shas
+
+
+def quality_fix_circuit_breaker_marker(pr: dict[str, Any]) -> str:
+    sha = (pr.get("head") or {}).get("sha") or ""
+    return f"{ROUTER_MARKER} action=quality-fix-circuit-breaker sha={sha}"
+
+
+def quality_fix_circuit_breaker_comment(
+    pr: dict[str, Any],
+    *,
+    attempt_shas: list[str],
+) -> str:
+    number = pr.get("number")
+    sha = (pr.get("head") or {}).get("sha") or ""
+    marker = f"<!-- {quality_fix_circuit_breaker_marker(pr)} -->"
+    details = latest_quality_fix_details(pr)
+    attempt_list = ", ".join(attempt_shas[-5:]) if attempt_shas else "unknown"
+    details_block = f"\n\nПоследний quality gate details:\n\n{details}" if details else ""
+    labels = ", ".join(f"`{label}`" for label in QUALITY_FIX_CIRCUIT_BREAKER_LABELS)
+    return (
+        f"{marker}\n\n"
+        f"Autonomous recovery circuit breaker остановил PR #{number} на SHA `{sha}`.\n\n"
+        f"Причина: PR уже получил {len(attempt_shas)} quality-fix recovery попытки "
+        "и продолжает возвращаться в тот же failure loop.\n\n"
+        f"Router добавляет labels {labels} и больше не будет отправлять Jules "
+        "повторный quality-fix prompt по этому PR. Следующая автономная задача может продолжаться, "
+        "а этот PR требует отдельного human review или закрытия/ручной правки.\n\n"
+        f"Учтённые recovery SHA: {attempt_list}."
+        f"{details_block}"
+    )
+
+
 def quality_fix_prompt(pr: dict[str, Any]) -> str:
     number = pr.get("number")
     sha = (pr.get("head") or {}).get("sha") or ""
@@ -801,6 +885,7 @@ def plan_recovery_actions(
     open_prs = [
         pr for pr in state.get("open_pulls", [])
         if is_autonomous_pr(pr, repo=repo, task_ids=task_ids)
+        and not has_autonomous_stop_label(pr)
     ]
     open_prs.sort(key=lambda item: int(item.get("number") or 0))
 
@@ -808,8 +893,6 @@ def plan_recovery_actions(
         labels = labels_of(pr)
         number = pr.get("number")
         sha = str((pr.get("head") or {}).get("sha") or "")
-        if "stop-loop" in labels or "human-review" in labels or "no-automerge" in labels:
-            continue
 
         if is_conflicting_pr(pr):
             dedupe_key = f"conflict-recovery:{number}:{sha}"
@@ -842,6 +925,38 @@ def plan_recovery_actions(
 
         if "needs-quality-fix" in labels:
             if has_pending_checks(pr):
+                return actions
+            attempt_shas = quality_fix_recovery_attempt_shas(pr, ledger)
+            if len(attempt_shas) >= QUALITY_FIX_CIRCUIT_BREAKER_ATTEMPTS:
+                dedupe_key = f"quality-fix-circuit-breaker:{number}:{sha}"
+                marker = quality_fix_circuit_breaker_marker(pr)
+                has_marker = comments_contain(pr, marker)
+                if not action_recently_done(
+                    ledger,
+                    dedupe_key,
+                    now=now,
+                    ttl_minutes=QUALITY_FIX_CIRCUIT_BREAKER_TTL_MINUTES,
+                ) or not has_marker:
+                    actions.append(
+                        RecoveryAction(
+                            type="quality_fix_circuit_breaker",
+                            dedupe_key=dedupe_key,
+                            reason=(
+                                f"PR #{number} exceeded "
+                                f"{QUALITY_FIX_CIRCUIT_BREAKER_ATTEMPTS} quality-fix recovery attempts"
+                            ),
+                            ttl_minutes=QUALITY_FIX_CIRCUIT_BREAKER_TTL_MINUTES,
+                            payload={
+                                "pr_number": number,
+                                "labels": list(QUALITY_FIX_CIRCUIT_BREAKER_LABELS),
+                                "body": quality_fix_circuit_breaker_comment(
+                                    pr,
+                                    attempt_shas=attempt_shas,
+                                ),
+                                "comment_needed": not has_marker,
+                            },
+                        )
+                    )
                 return actions
             dedupe_key = f"quality-fix:{number}:{sha}"
             marker = f"{ROUTER_MARKER} action=quality-fix sha={sha}"
@@ -1373,6 +1488,35 @@ def load_recent_session_tasks(client: GitHubClient) -> dict[str, Any]:
     return parsed if isinstance(parsed, dict) else {}
 
 
+def ensure_repository_labels(client: GitHubClient, labels: list[str]) -> None:
+    for label in labels:
+        definition = RECOVERY_LABEL_DEFINITIONS.get(label)
+        if not definition:
+            continue
+        encoded = urllib.parse.quote(label, safe="")
+        try:
+            client.request(
+                "GET",
+                f"/repos/{client.repo}/labels/{encoded}",
+                ok=(200,),
+            )
+            continue
+        except RuntimeError as exc:
+            if "HTTP 404" not in str(exc):
+                raise
+
+        client.request(
+            "POST",
+            f"/repos/{client.repo}/labels",
+            {
+                "name": label,
+                "color": definition["color"],
+                "description": definition["description"],
+            },
+            ok=(201,),
+        )
+
+
 def execute_action(
     client: GitHubClient,
     action: RecoveryAction,
@@ -1413,6 +1557,23 @@ def execute_action(
             "POST",
             f"/repos/{client.repo}/issues/{payload['pr_number']}/labels",
             {"labels": payload["labels"]},
+            ok=(200, 201),
+        )
+        return
+    if action.type == "quality_fix_circuit_breaker":
+        labels = [str(label) for label in payload.get("labels", []) if str(label)]
+        if payload.get("comment_needed", True):
+            client.request(
+                "POST",
+                f"/repos/{client.repo}/issues/{payload['pr_number']}/comments",
+                {"body": payload["body"]},
+                ok=(201,),
+            )
+        ensure_repository_labels(client, labels)
+        client.request(
+            "POST",
+            f"/repos/{client.repo}/issues/{payload['pr_number']}/labels",
+            {"labels": labels},
             ok=(200, 201),
         )
         return

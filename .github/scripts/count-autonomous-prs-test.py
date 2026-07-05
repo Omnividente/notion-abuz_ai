@@ -81,6 +81,18 @@ class CountAutonomousPRsTest(unittest.TestCase):
             0,
         )
 
+    def test_ignores_stopped_autonomous_prs(self) -> None:
+        self.assertEqual(
+            self.count(
+                [
+                    pr(user="google-jules[bot]", labels=["human-review"]),
+                    pr(body="PR created automatically by Jules", labels=["no-automerge"]),
+                    pr(head_ref="jules-runtime-fix", labels=["stop-loop"]),
+                ]
+            ),
+            0,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

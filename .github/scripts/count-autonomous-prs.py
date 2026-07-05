@@ -16,7 +16,16 @@ with open(sys.argv[1], "r", encoding="utf-8") as f:
 
 repo = os.environ["GITHUB_REPOSITORY"]
 count = 0
+stop_labels = {"human-review", "no-automerge", "stop-loop"}
 for pr in pulls:
+    labels = {
+        str(label.get("name", ""))
+        for label in pr.get("labels", [])
+        if isinstance(label, dict) and label.get("name")
+    }
+    if labels & stop_labels:
+        continue
+
     head = pr.get("head", {})
     head_ref = head.get("ref", "")
     head_repo = (head.get("repo") or {}).get("full_name", "")

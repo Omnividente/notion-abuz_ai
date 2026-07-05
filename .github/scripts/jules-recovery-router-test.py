@@ -430,6 +430,86 @@ New task ids:
         self.assertFalse(actions[0].payload["comment_needed"])
         self.assertEqual(actions[0].ttl_minutes, 30)
 
+    def test_quality_fix_under_attempt_limit_still_sends_recovery(self) -> None:
+        comments = [
+            "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=aaa111 -->",
+            "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=bbb222 -->",
+        ]
+
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(labels=["jules", "needs-quality-fix"], sha="ccc333", comments=comments)
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_recovery")
+        self.assertEqual(actions[0].payload["pr_number"], 10)
+
+    def test_quality_fix_circuit_breaker_stops_repeated_recovery_loop(self) -> None:
+        comments = [
+            "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=aaa111 -->",
+            "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=bbb222 -->",
+        ]
+        ledger = {
+            "version": 1,
+            "actions": {
+                "quality-fix:10:ccc333": {
+                    "time": (NOW - timedelta(minutes=31)).isoformat().replace("+00:00", "Z"),
+                    "type": "quality_fix_recovery",
+                }
+            },
+        }
+
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(labels=["jules", "needs-quality-fix"], sha="ddd444", comments=comments)
+                ]
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_circuit_breaker")
+        self.assertEqual(
+            actions[0].payload["labels"],
+            ["human-review", "no-automerge", "stop-loop"],
+        )
+        self.assertIn("circuit breaker", actions[0].payload["body"])
+        self.assertIn("aaa111, bbb222, ccc333", actions[0].payload["body"])
+
+    def test_quality_fix_circuit_breaker_execution_adds_labels_and_comment(self) -> None:
+        action = router.RecoveryAction(
+            type="quality_fix_circuit_breaker",
+            dedupe_key="quality-fix-circuit-breaker:10:abc123",
+            reason="too many attempts",
+            ttl_minutes=router.QUALITY_FIX_CIRCUIT_BREAKER_TTL_MINUTES,
+            payload={
+                "pr_number": 10,
+                "labels": ["human-review", "no-automerge", "stop-loop"],
+                "body": "stop",
+            },
+        )
+        client = FakeGitHubClient([{}, {}])
+
+        with patch.object(router, "ensure_repository_labels") as ensure_labels:
+            router.execute_action(client, action)
+
+        ensure_labels.assert_called_once_with(
+            client,
+            ["human-review", "no-automerge", "stop-loop"],
+        )
+        self.assertEqual(
+            client.calls,
+            [
+                ("POST", f"/repos/{REPO}/issues/10/comments"),
+                ("POST", f"/repos/{REPO}/issues/10/labels"),
+            ],
+        )
+
     def test_quality_fix_waits_for_pending_checks_on_new_head(self) -> None:
         actions = plan(
             state(
@@ -443,6 +523,18 @@ New task ids:
         )
 
         self.assertEqual(actions, [])
+
+    def test_stopped_autonomous_pr_does_not_block_next_task(self) -> None:
+        actions = plan(
+            state(
+                open_pulls=[pr(labels=["jules", "human-review"])],
+                selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "dispatch_workflow")
+        self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
 
     def test_conflicting_jules_pr_sends_conflict_recovery(self) -> None:
         actions = plan(
