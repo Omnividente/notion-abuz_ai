@@ -1992,3 +1992,19 @@ func TestLegacyCollapse_SearchContextTruncatedMetrics(t *testing.T) {
 		t.Errorf("Expected search_context_truncated metric to be >= 1, got %d", count)
 	}
 }
+
+func TestSimplifyToolSchema_UnboundedRecursionArray(t *testing.T) {
+	// Create a deeply nested array structure exceeding maxSchemaDepth (100)
+	var current interface{} = []interface{}{}
+
+	for i := 0; i < 105; i++ {
+		current = []interface{}{current}
+	}
+
+	result := simplifyToolSchema(current)
+
+	// We only care that it doesn't panic.
+	if result == nil {
+		t.Errorf("Expected non-nil result")
+	}
+}

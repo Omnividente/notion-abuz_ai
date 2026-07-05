@@ -4844,7 +4844,7 @@
     },
     {
       "id": "proxy-tools-schema-simplification-recursion-limit",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Prevent panics from unbounded JSON schema recursion during simplification",
@@ -4920,6 +4920,23 @@
       ],
       "acceptance": [
         "A test confirms system_message_dropped_cwd_regex is tracked when matched."
+      ]
+    },
+    {
+      "id": "proxy-tools-schema-simplification-panic-safety",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add bounds check for proxy tools schema parsing length",
+      "description": "In the proxy (internal/proxy/tools.go), add a length bound when logging schema parsing results to avoid potential out-of-memory issues for extremely large auto-generated JSON schemas. Ensure the limit triggers a specific truncated logging metric.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A string length bound is added to schema node parsing or logging steps.",
+        "The tool_schema_parsing_truncated context loss metric is explicitly recorded when the limit is exceeded."
       ]
     }
   ]
