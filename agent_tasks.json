@@ -5237,7 +5237,7 @@
     },
     {
       "id": "proxy-observability-test-truncate-tool-results-length",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate tool_result_truncated metric specific character limits",
@@ -5252,7 +5252,7 @@
     },
     {
       "id": "proxy-tools-test-cleanup-orphan-comments",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Cleanup orphan context loss metric comments in tools_test.go",
@@ -5263,6 +5263,36 @@
       "acceptance": [
         "Orphaned metric reset comments in internal/proxy/tools_test.go are removed.",
         "Tests pass."
+      ]
+    },
+    {
+      "id": "proxy-observability-legacy-fallback-dropped-tool-result-metric-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate legacy_collapse_dropped_tool_result metric in legacy collapse fallback",
+      "description": "In internal/proxy/tools_test.go, add a test to verify that legacy_collapse_dropped_tool_result is correctly reported when tool results from previous turns are dropped during legacy collapse mode.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test asserts that the legacy_collapse_dropped_tool_result metric is correctly populated when tool results from previous rounds are skipped."
+      ]
+    },
+    {
+      "id": "proxy-observability-legacy-fallback-missing-anchor",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate fallback_missing_anchor metric edge cases",
+      "description": "Add tests to verify how fallback_missing_anchor is handled in various edge cases during session continuation.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests assert fallback_missing_anchor behavior in missing anchor scenarios."
       ]
     }
   ]

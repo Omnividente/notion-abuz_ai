@@ -2275,3 +2275,82 @@ func TestSimplifyToolSchemaJSONTruncation_CommaOkAssertion(t *testing.T) {
 		t.Errorf("expected metric tool_schema_json_truncated to be 1 and exist using comma-ok, got %d (exists: %v)", count, exists)
 	}
 }
+func TestLegacyCollapse_ToolResultTruncationBoundaries(t *testing.T) {
+	// Subtest 1: exactly 800 characters (should not truncate)
+	t.Run("Exactly800Chars", func(t *testing.T) {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
+
+		messages := []ChatMessage{
+			{Role: "user", Content: "Query"},
+			{Role: "assistant", Content: "Calling a tool", ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "Glob"}}}},
+			{Role: "tool", Content: strings.Repeat("A", 800), ToolCallID: "1", Name: "Glob"},
+		}
+
+		tools := []Tool{
+			{Type: "function", Function: ToolFunction{Name: "Glob"}},
+		}
+		for i := 0; i < 6; i++ {
+			tools = append(tools, Tool{Type: "function", Function: ToolFunction{Name: "ToolX"}})
+		}
+
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
+
+		injectToolsIntoMessages(messages, tools, "claude-4", nil)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["legacy_collapse_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if exists && val != 0 {
+			t.Errorf("Expected legacy_collapse_truncated to not exist or be 0 for 800 chars, got %d", val)
+		}
+	})
+
+	// Subtest 2: exactly 801 characters (should truncate)
+	t.Run("Exactly801Chars", func(t *testing.T) {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
+
+		messages := []ChatMessage{
+			{Role: "user", Content: "Query"},
+			{Role: "assistant", Content: "Calling a tool", ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "Glob"}}}},
+			{Role: "tool", Content: strings.Repeat("A", 801), ToolCallID: "1", Name: "Glob"},
+		}
+
+		tools := []Tool{
+			{Type: "function", Function: ToolFunction{Name: "Glob"}},
+		}
+		for i := 0; i < 6; i++ {
+			tools = append(tools, Tool{Type: "function", Function: ToolFunction{Name: "ToolX"}})
+		}
+
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
+
+		injectToolsIntoMessages(messages, tools, "claude-4", nil)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["legacy_collapse_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if !exists || val != 1 {
+			t.Errorf("Expected legacy_collapse_truncated to be exactly 1 for 801 chars, got %d", val)
+		}
+	})
+}
