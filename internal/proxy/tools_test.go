@@ -1412,11 +1412,11 @@ func TestSimplifyToolSchema_ComplexArrayFallback(t *testing.T) {
 
 	// Verify metric
 	contextLossMetricsMu.Lock()
-	metricCount := contextLossMetrics["tool_schema_simplification_fallback"]
+	metricCount, exists := contextLossMetrics["tool_schema_simplification_fallback"]
 	contextLossMetricsMu.Unlock()
 
-	if metricCount != 1 {
-		t.Errorf("expected metric 'tool_schema_simplification_fallback' to be 1, got %d", metricCount)
+	if !exists || metricCount != 1 {
+		t.Errorf("expected metric 'tool_schema_simplification_fallback' to be 1 and exist, got %d (exists: %v)", metricCount, exists)
 	}
 
 	// Verify output is {"items": {}} map essentially
@@ -1527,11 +1527,11 @@ func TestSimplifyToolSchema_PropertiesArrayFallback(t *testing.T) {
 
 	// Verify metric
 	contextLossMetricsMu.Lock()
-	metricCount := contextLossMetrics["tool_schema_simplification_fallback"]
+	metricCount, exists := contextLossMetrics["tool_schema_simplification_fallback"]
 	contextLossMetricsMu.Unlock()
 
-	if metricCount != 1 {
-		t.Errorf("expected metric 'tool_schema_simplification_fallback' to be 1, got %d", metricCount)
+	if !exists || metricCount != 1 {
+		t.Errorf("expected metric 'tool_schema_simplification_fallback' to be 1 and exist, got %d (exists: %v)", metricCount, exists)
 	}
 
 	// Verify output is {"type": "array", "items": {}} map essentially

@@ -5097,7 +5097,7 @@
     },
     {
       "id": "proxy-observability-tool-schema-fallback-comma-ok",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate tool_schema_simplification_fallback metrics map using comma-ok idiom in internal/proxy/tools_test.go",
