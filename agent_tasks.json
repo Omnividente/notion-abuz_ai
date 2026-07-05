@@ -4987,7 +4987,7 @@
     },
     {
       "id": "proxy-session-recovery-system-instruction-metrics",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Validate context loss metrics emission for empty system message dropped",
@@ -4999,7 +4999,8 @@
       ],
       "acceptance": [
         "Tests assert that the 'empty_system_prompt_dropped' context loss metric is explicitly recorded when an empty system message is dropped in buildRecoveryMessages."
-      ]
+      ],
+      "blocked_reason": "Task is operational/diagnostic but the PR changed only tests and agent_tasks.json. The required metric emission logic is already present in internal/proxy/session.go. The autonomous PR quality gate rejects marking it as done when only tests are modified. Marking as blocked since no safe runtime changes can be made."
     },
     {
       "id": "proxy-json-extraction-candidate-bounds-check",
