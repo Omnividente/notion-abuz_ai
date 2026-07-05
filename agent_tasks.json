@@ -4971,7 +4971,7 @@
     },
     {
       "id": "proxy-session-recovery-metrics-validation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Validate context loss metrics emission during partial progress tracking",
@@ -4983,6 +4983,22 @@
       ],
       "acceptance": [
         "Tests assert that the 'trailing_progress_dropped' context loss metric is explicitly recorded when partial progress entries are bounded by maxHistoryChars in buildRecoveryMessages."
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-system-instruction-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate context loss metrics emission for empty system message dropped",
+      "description": "In the proxy (internal/proxy/session.go), verify and extend tests for metric emission when an empty system message is dropped during session recovery.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests assert that the 'empty_system_prompt_dropped' context loss metric is explicitly recorded when an empty system message is dropped in buildRecoveryMessages."
       ]
     }
   ]
