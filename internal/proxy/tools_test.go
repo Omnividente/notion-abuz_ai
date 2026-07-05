@@ -1737,10 +1737,10 @@ func TestBuildSessionChainContinuation_EmptyToolList(t *testing.T) {
 	}
 
 	contextLossMetricsMu.Lock()
-	count := contextLossMetrics["empty_tools_fallback"]
+	count, exists := contextLossMetrics["empty_tools_fallback"]
 	contextLossMetricsMu.Unlock()
 
-	if count != 1 {
+	if !exists || count != 1 {
 		t.Errorf("Expected empty_tools_fallback metric count 1, got %d", count)
 	}
 }
@@ -2049,10 +2049,10 @@ func TestBuildSessionChainContinuation_NonEmptyToolList(t *testing.T) {
 	}
 
 	contextLossMetricsMu.Lock()
-	count := contextLossMetrics["empty_tools_fallback"]
+	count, exists := contextLossMetrics["empty_tools_fallback"]
 	contextLossMetricsMu.Unlock()
 
-	if count != 0 {
+	if exists && count != 0 {
 		t.Errorf("Expected empty_tools_fallback metric count 0, got %d", count)
 	}
 }
