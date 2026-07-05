@@ -5142,7 +5142,7 @@
     },
     {
       "id": "proxy-observability-empty-tools-fallback-comma-ok",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate empty_tools_fallback metrics map using comma-ok idiom in internal/proxy/tools_test.go",
@@ -5168,6 +5168,21 @@
       ],
       "acceptance": [
         "The test asserting the `tool_schema_truncated` metric uses the comma-ok idiom correctly."
+      ]
+    },
+    {
+      "id": "proxy-observability-metric-reset-sync",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Ensure metric maps in internal/proxy/tools_test.go are explicitly reset per test",
+      "description": "Update tests in internal/proxy/tools_test.go to explicitly lock and reset metric maps at the start of the tests to prevent state leakage across the suite.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Metric maps are explicitly reset at the start of each relevant test."
       ]
     }
   ]
