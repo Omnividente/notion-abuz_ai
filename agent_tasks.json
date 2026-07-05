@@ -4877,7 +4877,7 @@
     },
     {
       "id": "proxy-observability-retry-loop-detected",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Track potential retry loops during multi-turn session continuation",
@@ -4889,7 +4889,8 @@
       ],
       "acceptance": [
         "The retry_loop_detected context loss metric is explicitly recorded when repeated call->err sequences for the same tool are detected."
-      ]
+      ],
+      "blocked_reason": "Task is diagnostic but requires observability/logging proof, but the diff has no runtime/script change and no direct log-capture assertion"
     },
     {
       "id": "proxy-session-recovery-diagnostics",
