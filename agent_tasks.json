@@ -4893,7 +4893,7 @@
     },
     {
       "id": "proxy-session-recovery-diagnostics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Log explicit diagnostics when clip heuristically truncates context",
@@ -4967,6 +4967,22 @@
       ],
       "acceptance": [
         "A test confirms retry_loop_detected is not incremented on mixed call/err sequences."
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-metrics-validation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Validate context loss metrics emission during partial progress tracking",
+      "description": "In the proxy (internal/proxy/session.go), verify and extend tests for metric emission when partial progress entries (trailing history) are bounded and dropped by maxHistoryChars during session recovery, to ensure visibility of Claude Code context loss.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests assert that the 'trailing_progress_dropped' context loss metric is explicitly recorded when partial progress entries are bounded by maxHistoryChars in buildRecoveryMessages."
       ]
     }
   ]

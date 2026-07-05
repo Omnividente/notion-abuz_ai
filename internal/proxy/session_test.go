@@ -193,6 +193,9 @@ func TestBuildRecoveryMessages_ContextLoss_EmptySystemMessage(t *testing.T) {
 	if !strings.Contains(logOutput, "[metrics] context_loss: empty_system_prompt_dropped") {
 		t.Errorf("Expected context loss metric for empty_system_prompt_dropped, got: %s", logOutput)
 	}
+	if !strings.Contains(logOutput, "[bridge] diagnostic: session recovery dropped empty system instruction") {
+		t.Errorf("Expected diagnostic log for empty system prompt dropped, got: %s", logOutput)
+	}
 }
 
 func TestBuildRecoveryMessages_ContextLoss_EmptyEntry(t *testing.T) {
@@ -211,6 +214,9 @@ func TestBuildRecoveryMessages_ContextLoss_EmptyEntry(t *testing.T) {
 	logOutput := buf.String()
 	if !strings.Contains(logOutput, "[metrics] context_loss: recovery_empty_entry_dropped") {
 		t.Errorf("Expected context loss metric for recovery_empty_entry_dropped, got: %s", logOutput)
+	}
+	if !strings.Contains(logOutput, "[bridge] diagnostic: session recovery dropped empty conversation history entry (role: assistant, name: )") {
+		t.Errorf("Expected diagnostic log for empty conversation history entry dropped, got: %s", logOutput)
 	}
 }
 func TestBuildRecoveryMessages_ContextLoss_LatestUserMessage(t *testing.T) {

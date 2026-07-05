@@ -398,6 +398,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		if m.Role == "system" && strings.TrimSpace(m.Content) != "" {
 			systemParts = append(systemParts, strings.TrimSpace(m.Content))
 		} else if m.Role == "system" && strings.TrimSpace(m.Content) == "" {
+			log.Printf("[bridge] diagnostic: session recovery dropped empty system instruction")
 			recordContextLossMetric("empty_system_prompt_dropped")
 		}
 	}
@@ -424,6 +425,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			if m.Role == "tool" {
 				content = "(empty output)"
 			} else {
+				log.Printf("[bridge] diagnostic: session recovery dropped empty conversation history entry (role: %s, name: %s)", m.Role, m.Name)
 				recordContextLossMetric("recovery_empty_entry_dropped")
 				continue
 			}
@@ -502,6 +504,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			if m.Role == "tool" {
 				content = "(empty output)"
 			} else {
+				log.Printf("[bridge] diagnostic: session recovery dropped empty partial progress entry (role: %s, name: %s)", m.Role, m.Name)
 				recordContextLossMetric("recovery_empty_entry_dropped")
 				continue
 			}
