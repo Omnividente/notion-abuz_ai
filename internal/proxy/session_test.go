@@ -155,6 +155,10 @@ func TestBuildRecoveryMessages_ContextLoss_TrailingDropped(t *testing.T) {
 	log.SetOutput(&buf)
 	defer log.SetOutput(os.Stderr)
 
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
 	messages := []ChatMessage{
 		{Role: "user", Content: "Latest query"},
 		{Role: "assistant", Content: strings.Repeat("A", 800), ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "bash", Arguments: "{}"}}}},
@@ -172,6 +176,14 @@ func TestBuildRecoveryMessages_ContextLoss_TrailingDropped(t *testing.T) {
 	logOutput := buf.String()
 	if !strings.Contains(logOutput, "[metrics] context_loss: trailing_progress_dropped") {
 		t.Errorf("Expected context loss metric for trailing_progress_dropped, got: %s", logOutput)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["trailing_progress_dropped"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count < 1 {
+		t.Errorf("Expected trailing_progress_dropped metric to be explicitly recorded, but exists=%v, count=%d", exists, count)
 	}
 }
 
