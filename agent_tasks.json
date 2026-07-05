@@ -5067,7 +5067,7 @@
     },
     {
       "id": "proxy-json-extraction-valid-candidate-bounds",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Verify unparseable json metric not triggered for valid tool calls",

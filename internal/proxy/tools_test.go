@@ -2189,3 +2189,35 @@ func TestBuildSessionChainContinuation_NoToolsNonEmptySequence(t *testing.T) {
 		t.Errorf("Expected empty_tools_fallback metric count 1, got %d (exists: %t)", count, exists)
 	}
 }
+func TestParseToolCalls_ValidCandidateNotLoggedAsUnparseable(t *testing.T) {
+	// Reset the metrics map
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
+
+	// A valid JSON tool call that will be extracted via the bracket-counting fallback (Method 2)
+	content := `Here is the requested tool call:
+{
+	"name": "ViewFile",
+	"arguments": {
+		"filename": "main.go"
+	}
+}`
+
+	calls, _, ok := parseToolCalls(content)
+	if !ok || len(calls) != 1 {
+		t.Fatalf("Expected successfully parsed tool call, got %d calls, ok=%v", len(calls), ok)
+	}
+
+	toolModeLossMetricsMu.Lock()
+	_, unparseableExists := toolModeLossMetrics["unparseable_json_candidate_blocks"]
+	_, truncatedExists := toolModeLossMetrics["unparseable_json_candidate_truncated"]
+	toolModeLossMetricsMu.Unlock()
+
+	if unparseableExists {
+		t.Errorf("Expected unparseable_json_candidate_blocks to not be incremented for a valid tool call")
+	}
+	if truncatedExists {
+		t.Errorf("Expected unparseable_json_candidate_truncated to not be incremented for a valid tool call")
+	}
+}
