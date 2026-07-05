@@ -5252,7 +5252,7 @@
     },
     {
       "id": "proxy-tools-test-cleanup-orphan-comments",
-      "status": "done",
+      "status": "todo",
       "area": "proxy",
       "risk": "low",
       "title": "Cleanup orphan context loss metric comments in tools_test.go",
@@ -5266,33 +5266,18 @@
       ]
     },
     {
-      "id": "proxy-observability-legacy-fallback-dropped-tool-result-metric-test",
+      "id": "proxy-observability-legacy-collapse-truncated-edge-cases",
       "status": "todo",
       "area": "proxy",
       "risk": "low",
-      "title": "Validate legacy_collapse_dropped_tool_result metric in legacy collapse fallback",
-      "description": "In internal/proxy/tools_test.go, add a test to verify that legacy_collapse_dropped_tool_result is correctly reported when tool results from previous turns are dropped during legacy collapse mode.",
+      "title": "Validate legacy_collapse_truncated boundary limits",
+      "description": "Add explicit boundary checking tests for legacy_collapse_truncated in internal/proxy/tools_test.go, specifically checking truncation logging outputs at exact limit markers to ensure accurate length bounds.",
       "allowed_paths": [
         "internal/proxy/tools_test.go",
         "agent_tasks.json"
       ],
       "acceptance": [
-        "A test asserts that the legacy_collapse_dropped_tool_result metric is correctly populated when tool results from previous rounds are skipped."
-      ]
-    },
-    {
-      "id": "proxy-observability-legacy-fallback-missing-anchor",
-      "status": "todo",
-      "area": "proxy",
-      "risk": "low",
-      "title": "Validate fallback_missing_anchor metric edge cases",
-      "description": "Add tests to verify how fallback_missing_anchor is handled in various edge cases during session continuation.",
-      "allowed_paths": [
-        "internal/proxy/tools_test.go",
-        "agent_tasks.json"
-      ],
-      "acceptance": [
-        "Tests assert fallback_missing_anchor behavior in missing anchor scenarios."
+        "A test confirms boundary limits and output logs for legacy_collapse_truncated correctly report specific sizes."
       ]
     }
   ]
