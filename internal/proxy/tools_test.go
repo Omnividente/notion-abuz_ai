@@ -2108,3 +2108,37 @@ func TestBuildToolList_SchemaTruncation(t *testing.T) {
 		t.Errorf("expected metric tool_schema_json_truncated to be 1, got %d", count)
 	}
 }
+
+func TestParseToolCallsUnparseableMetricTruncated(t *testing.T) {
+	// Reset the metric map
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
+
+	// Parse unparseable block that is longer than 800 chars
+	// The outer array should have over 800 characters to trigger truncation.
+	longStr := strings.Repeat("a", 900)
+	content := `{
+		"unrelated": true,
+		"broken": [
+			"` + longStr + `"
+		]
+	}`
+
+	_, _, ok := parseToolCalls(content)
+	if ok {
+		t.Fatalf("Expected parseToolCalls to fail on unparseable block")
+	}
+
+	toolModeLossMetricsMu.Lock()
+	countUnparseable := toolModeLossMetrics["unparseable_json_candidate_blocks"]
+	countTruncated := toolModeLossMetrics["unparseable_json_candidate_truncated"]
+	toolModeLossMetricsMu.Unlock()
+
+	if countUnparseable != 1 {
+		t.Fatalf("Expected 1 unparseable_json_candidate_blocks, got %d", countUnparseable)
+	}
+	if countTruncated != 1 {
+		t.Fatalf("Expected 1 unparseable_json_candidate_truncated, got %d", countTruncated)
+	}
+}

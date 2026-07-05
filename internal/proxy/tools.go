@@ -1563,6 +1563,7 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 	i := 0
 	foundCalls := 0
 	foundCandidateBlock := false
+	var largestCandidate string
 
 	for i < len(str) {
 		if str[i] == '{' || str[i] == '[' {
@@ -1615,6 +1616,9 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 						// Found a balanced object or array
 						candidate := str[i : j+1]
 						foundCandidateBlock = true
+						if len(candidate) > len(largestCandidate) {
+							largestCandidate = candidate
+						}
 
 						if !isObject {
 							var arrayCall []struct {
@@ -1764,7 +1768,13 @@ func parseToolCalls(content string, toolChoiceMode ...string) ([]ToolCall, strin
 			mode = "_mode_" + toolChoiceMode[0]
 		}
 		recordToolModeLossMetric("unparseable_json_candidate_blocks" + mode)
-		log.Printf("[bridge] diagnostics: fallback extraction found JSON candidates but yielded 0 valid tool calls (unparseable)")
+
+		excerpt := largestCandidate
+		if runes := []rune(largestCandidate); len(runes) > 800 {
+			excerpt = string(runes[:800]) + "... (truncated)"
+			recordToolModeLossMetric("unparseable_json_candidate_truncated" + mode)
+		}
+		log.Printf("[bridge] diagnostics: fallback extraction found JSON candidates but yielded 0 valid tool calls (unparseable). candidate excerpt: %s", excerpt)
 	}
 
 	return nil, content, false
