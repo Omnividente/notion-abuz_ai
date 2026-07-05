@@ -2162,3 +2162,30 @@ func TestParseToolCallsUnparseableMetricTruncated(t *testing.T) {
 		t.Fatalf("Expected 1 unparseable_json_candidate_truncated, got %d", countTruncated)
 	}
 }
+
+func TestBuildSessionChainContinuation_NoToolsNonEmptySequence(t *testing.T) {
+	// Reset the metric counter at the beginning of the test
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "hello"},
+		{Role: "assistant", Content: "hi there"},
+		{Role: "user", Content: "how are you?"},
+	}
+
+	result := buildSessionChainContinuation(messages, "", "/cwd")
+
+	if len(result) == 0 {
+		t.Fatalf("Expected non-empty result")
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["empty_tools_fallback"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected empty_tools_fallback metric count 1, got %d (exists: %t)", count, exists)
+	}
+}

@@ -1115,7 +1115,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 func buildSessionChainContinuation(messages []ChatMessage, compactList string, cwd string) []ChatMessage {
 	if compactList == "" {
 		log.Printf("[bridge] warning: multi-turn session continuation invoked with empty tool list (compactList is empty)")
-		recordContextLossMetric("empty_tools_fallback")
+		recordContextLossMetric("empty_tools_fallback") // explicitly tracked for observability
 	}
 
 	// Build tool call ID → name map
