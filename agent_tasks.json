@@ -5202,7 +5202,7 @@
     },
     {
       "id": "proxy-tools-test-cleanup-duplicate-resets",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Cleanup redundant metric map resets in proxy tools test suite",
@@ -5248,6 +5248,21 @@
       ],
       "acceptance": [
         "A test asserts that the tool_result_truncated metric is correctly populated when the tool result length exceeds boundaries."
+      ]
+    },
+    {
+      "id": "proxy-tools-test-cleanup-orphan-comments",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Cleanup orphan context loss metric comments in tools_test.go",
+      "description": "After removing redundant lock and map reset patterns in internal/proxy/tools_test.go, there are orphaned comments left over (e.g. `// Lock and reset contextLossMetrics`) that are no longer accurate or needed. Remove these orphan comments to ensure code readability and accuracy.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go"
+      ],
+      "acceptance": [
+        "Orphaned metric reset comments in internal/proxy/tools_test.go are removed.",
+        "Tests pass."
       ]
     }
   ]
