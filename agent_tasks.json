@@ -5112,7 +5112,7 @@
     },
     {
       "id": "proxy-observability-search-context-truncated-comma-ok",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate search_context_truncated metrics map using comma-ok idiom in internal/proxy/tools_test.go",
