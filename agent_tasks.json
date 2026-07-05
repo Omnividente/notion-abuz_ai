@@ -5267,7 +5267,7 @@
     },
     {
       "id": "proxy-observability-legacy-collapse-truncated-edge-cases",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate legacy_collapse_truncated boundary limits",
@@ -5293,6 +5293,22 @@
       "acceptance": [
         "Extra empty lines at the top of some functions in internal/proxy/tools_test.go are removed.",
         "Tests pass."
+      ]
+    },
+    {
+      "id": "proxy-observability-search-context-truncated-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add context metrics for search context truncation",
+      "description": "Ensure search_context_truncated metric logs correctly handle Unicode inputs during truncation to prevent rune-splitting bugs in multi-turn contexts.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test validates correct truncation and metric for search context strings containing multi-byte UTF-8 runes."
       ]
     }
   ]
