@@ -1108,7 +1108,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 // response, etc.). The continuation is sent as a partial transcript via CallInference.
 func buildSessionChainContinuation(messages []ChatMessage, compactList string, cwd string) []ChatMessage {
 	if compactList == "" {
-		log.Printf("[bridge] warning: multi-turn session continuation invoked with empty tool list")
+		log.Printf("[bridge] warning: multi-turn session continuation invoked with empty tool list (compactList is empty)")
 		recordContextLossMetric("empty_tools_fallback")
 	}
 
