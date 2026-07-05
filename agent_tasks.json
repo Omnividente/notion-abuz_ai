@@ -5187,7 +5187,7 @@
     },
     {
       "id": "proxy-observability-metric-tool-schema-json-comma-ok",
-      "status": "done",
+      "status": "todo",
       "area": "proxy",
       "risk": "low",
       "title": "Validate tool_schema_json_truncated metric using comma-ok idiom",
