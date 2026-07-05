@@ -5004,7 +5004,7 @@
     },
     {
       "id": "proxy-json-extraction-candidate-bounds-check",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add length bounds check for candidate JSON blocks during robust extraction",
@@ -5033,6 +5033,21 @@
       ],
       "acceptance": [
         "Tests assert that the 'xml_wrapper_fallback' context loss metric is explicitly recorded when an XML array wrapper fallback is used."
+      ]
+    },
+    {
+      "id": "proxy-observability-tool-continuation-no-tools",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate context loss metrics emission when multi-turn session continuation invoked with empty tool list and no fallback",
+      "description": "In the proxy (internal/proxy/tools.go), add an integration test to explicitly check behavior when multi-turn session continuation is invoked with an empty tool list, but it does not fallback.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test asserts the fallback metric logic in buildSessionChainContinuation with no tools and non empty sequence."
       ]
     }
   ]
