@@ -2008,3 +2008,29 @@ func TestSimplifyToolSchema_UnboundedRecursionArray(t *testing.T) {
 		t.Errorf("Expected non-nil result")
 	}
 }
+func TestBuildSessionChainContinuation_NonEmptyToolList(t *testing.T) {
+	// Reset the metric counter at the beginning of the test
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "do it"},
+		{Role: "assistant", Content: "working on it", ToolCalls: []ToolCall{{ID: "tc1", Function: ToolCallFunction{Name: "Bash"}}}},
+		{Role: "tool", Content: "done", ToolCallID: "tc1"},
+	}
+
+	result := buildSessionChainContinuation(messages, "T1", "/cwd")
+
+	if len(result) == 0 {
+		t.Fatalf("Expected non-empty result")
+	}
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["empty_tools_fallback"]
+	contextLossMetricsMu.Unlock()
+
+	if count != 0 {
+		t.Errorf("Expected empty_tools_fallback metric count 0, got %d", count)
+	}
+}

@@ -4861,7 +4861,7 @@
     },
     {
       "id": "proxy-observability-empty-tools-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Track empty tool list in multi-turn fallback",
@@ -4937,6 +4937,21 @@
       "acceptance": [
         "A string length bound is added to schema node parsing or logging steps.",
         "The tool_schema_parsing_truncated context loss metric is explicitly recorded when the limit is exceeded."
+      ]
+    },
+    {
+      "id": "proxy-tools-test-empty-tools-fallback-non-empty",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for empty tools fallback with non-empty tools list",
+      "description": "Add a test in `internal/proxy/tools_test.go` for `buildSessionChainContinuation` to ensure the `empty_tools_fallback` metric is not incremented when `compactList` is non-empty.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A new test is added in `internal/proxy/tools_test.go` that verifies the `empty_tools_fallback` metric is 0 when `compactList` is provided."
       ]
     }
   ]
