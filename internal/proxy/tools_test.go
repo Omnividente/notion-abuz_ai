@@ -2299,6 +2299,11 @@ func TestLegacyCollapse_ToolResultTruncationBoundaries(t *testing.T) {
 		if exists && val != 0 {
 			t.Errorf("Expected legacy_collapse_truncated to not exist or be 0 for 800 chars, got %d", val)
 		}
+
+		// Add direct log-capture assertion
+		if strings.Contains(buf.String(), "legacy collapse truncated") {
+			t.Errorf("Expected no truncation log for 800 chars, but found one: %q", buf.String())
+		}
 	})
 
 	// Subtest 2: exactly 801 characters (should truncate)
@@ -2337,6 +2342,11 @@ func TestLegacyCollapse_ToolResultTruncationBoundaries(t *testing.T) {
 
 		if !exists || val != 1 {
 			t.Errorf("Expected legacy_collapse_truncated to be exactly 1 for 801 chars, got %d", val)
+		}
+
+		// Add direct log-capture assertion
+		if !strings.Contains(buf.String(), "original: 801 chars, limit: 800 chars") {
+			t.Errorf("Expected truncation log to indicate 'original: 801 chars, limit: 800 chars', but got: %q", buf.String())
 		}
 	})
 }
