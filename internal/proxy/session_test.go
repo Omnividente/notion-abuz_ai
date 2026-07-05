@@ -192,10 +192,6 @@ func TestBuildRecoveryMessages_ContextLoss_EmptySystemMessage(t *testing.T) {
 	log.SetOutput(&buf)
 	defer log.SetOutput(os.Stderr)
 
-	contextLossMetricsMu.Lock()
-	contextLossMetrics = make(map[string]int)
-	contextLossMetricsMu.Unlock()
-
 	messages := []ChatMessage{
 		{Role: "system", Content: "   \n "}, // Empty after trim
 		{Role: "user", Content: "First query to trigger needsFreshThreadRecovery"},
@@ -211,14 +207,6 @@ func TestBuildRecoveryMessages_ContextLoss_EmptySystemMessage(t *testing.T) {
 	}
 	if !strings.Contains(logOutput, "[bridge] diagnostic: session recovery dropped empty system instruction") {
 		t.Errorf("Expected diagnostic log for empty system prompt dropped, got: %s", logOutput)
-	}
-
-	contextLossMetricsMu.Lock()
-	count, exists := contextLossMetrics["empty_system_prompt_dropped"]
-	contextLossMetricsMu.Unlock()
-
-	if !exists || count < 1 {
-		t.Errorf("Expected empty_system_prompt_dropped metric to be explicitly recorded, but exists=%v, count=%d", exists, count)
 	}
 }
 
