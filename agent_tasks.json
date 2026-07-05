@@ -4987,7 +4987,7 @@
     },
     {
       "id": "proxy-session-recovery-system-instruction-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate context loss metrics emission for empty system message dropped",
@@ -5016,6 +5016,22 @@
       "acceptance": [
         "Add length limit check on candidate blocks during fallback extraction in tools.go.",
         "Ensure metric tracking of large unparseable json is correctly sized."
+      ]
+    },
+    {
+      "id": "proxy-tools-xml-array-fallback-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate context loss metrics emission for XML array wrapper fallback",
+      "description": "In the proxy (internal/proxy/tools.go), verify and extend tests for metric emission when an XML array wrapper fallback is used for tool extraction.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests assert that the 'xml_wrapper_fallback' context loss metric is explicitly recorded when an XML array wrapper fallback is used."
       ]
     }
   ]
