@@ -279,3 +279,70 @@ func TestBuildRecoveryMessages_ContextLoss_HistoryEntry(t *testing.T) {
 		t.Errorf("Expected context loss metric for history entry truncation, got: %s", logOutput)
 	}
 }
+func TestBuildRecoveryMessages_ContextLoss_ToolResultTruncationBoundaries(t *testing.T) {
+	// Subtest 1: Exactly 900 characters (maxEntryChars) - should not truncate
+	t.Run("Exactly900Chars", func(t *testing.T) {
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
+
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
+
+		messages := []ChatMessage{
+			{Role: "user", Content: "Original query"},
+			{Role: "assistant", Content: "Running tool", ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "bash", Arguments: "{}"}}}},
+			{Role: "tool", ToolCallID: "1", Content: strings.Repeat("A", 900)}, // exactly maxEntryChars
+			{Role: "user", Content: "Latest query"},
+		}
+
+		buildFreshThreadRecoveryMessages(messages)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["tool_result_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if exists && val != 0 {
+			t.Errorf("Expected tool_result_truncated to not exist or be 0 for exactly 900 chars, got %d", val)
+		}
+	})
+
+	// Subtest 2: Exactly 901 characters - should truncate
+	t.Run("Exactly901Chars", func(t *testing.T) {
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
+
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
+
+		messages := []ChatMessage{
+			{Role: "user", Content: "Original query"},
+			{Role: "assistant", Content: "Running tool", ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "bash", Arguments: "{}"}}}},
+			{Role: "tool", ToolCallID: "1", Content: strings.Repeat("A", 901)}, // exceeds maxEntryChars
+			{Role: "user", Content: "Latest query"},
+		}
+
+		buildFreshThreadRecoveryMessages(messages)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["tool_result_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if !exists || val != 1 {
+			t.Errorf("Expected tool_result_truncated to be exactly 1 for 901 chars, got %d", val)
+		}
+	})
+}

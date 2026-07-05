@@ -5237,7 +5237,7 @@
     },
     {
       "id": "proxy-observability-test-truncate-tool-results-length",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate tool_result_truncated metric specific character limits",
@@ -5263,6 +5263,21 @@
       "acceptance": [
         "Orphaned metric reset comments in internal/proxy/tools_test.go are removed.",
         "Tests pass."
+      ]
+    },
+    {
+      "id": "proxy-observability-legacy-collapse-truncated-edge-cases",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate legacy_collapse_truncated boundary limits",
+      "description": "Add explicit boundary checking tests for legacy_collapse_truncated in internal/proxy/tools_test.go, specifically checking truncation logging outputs at exact limit markers to ensure accurate length bounds.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test confirms boundary limits and output logs for legacy_collapse_truncated correctly report specific sizes."
       ]
     }
   ]
