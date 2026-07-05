@@ -5187,7 +5187,7 @@
     },
     {
       "id": "proxy-observability-metric-tool-schema-json-comma-ok",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate tool_schema_json_truncated metric using comma-ok idiom",
@@ -5233,6 +5233,21 @@
         "Evaluate telemetry for deeply nested tool schemas.",
         "Add more granular recursion metric keys if necessary.",
         "Tests pass."
+      ]
+    },
+    {
+      "id": "proxy-observability-test-truncate-tool-results-length",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate tool_result_truncated metric specific character limits",
+      "description": "In internal/proxy/tools_test.go, add a test to verify that tool_result_truncated is correctly reported when tool result size exactly hits the boundary threshold in legacy collapse mode.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test asserts that the tool_result_truncated metric is correctly populated when the tool result length exceeds boundaries."
       ]
     }
   ]

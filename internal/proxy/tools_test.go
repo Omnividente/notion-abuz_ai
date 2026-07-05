@@ -2302,3 +2302,37 @@ func TestParseToolCalls_ValidCandidateNotLoggedAsUnparseable(t *testing.T) {
 		t.Errorf("Expected unparseable_json_candidate_truncated to not be incremented for a valid tool call")
 	}
 }
+
+func TestSimplifyToolSchemaJSONTruncation_CommaOkAssertion(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	longPropName := strings.Repeat("b", 5000)
+	tools := []Tool{
+		{
+			Function: ToolFunction{
+				Name:        "TestFunc2",
+				Description: "A second test function",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						longPropName: map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	buildToolList(tools)
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_json_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("expected metric tool_schema_json_truncated to be 1 and exist using comma-ok, got %d (exists: %v)", count, exists)
+	}
+}
