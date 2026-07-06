@@ -25,7 +25,7 @@ ACTIVE_STATES = {
     "AWAITING_USER_FEEDBACK",
 }
 AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
-STALE_AWAITING_FEEDBACK_MINUTES = 30
+STALE_AWAITING_FEEDBACK_MINUTES = 10
 BLOCKING_LABELS = {"needs-quality-fix", "critic-blocked"}
 TRACKED_LABELS = {"needs-quality-fix", "critic-blocked", "human-review", "no-automerge"}
 MICRO_KEYWORDS = (

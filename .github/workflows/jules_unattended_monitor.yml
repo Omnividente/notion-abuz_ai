@@ -50,7 +50,21 @@ jobs:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
           LOOKBACK_HOURS: ${{ inputs.lookback_hours || '24' }}
           MIN_USER_REPLY_INTERVAL_MINUTES: "2"
+          STALE_AWAITING_FEEDBACK_MINUTES: "10"
+          MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS: "2"
         run: bash .github/scripts/jules-unattended-monitor.sh
+
+      - name: Append Jules monitor summary
+        run: |
+          {
+            echo "## Jules Unattended Monitor"
+            echo
+            echo "- Active sessions: \`${{ steps.jules-monitor.outputs.active_sessions }}\`"
+            echo "- Touched sessions: \`${{ steps.jules-monitor.outputs.touched_sessions }}\`"
+            echo "- Stale waiting sessions: \`${{ steps.jules-monitor.outputs.stale_waiting_count }}\`"
+            echo "- Stale session details: \`${{ steps.jules-monitor.outputs.stale_waiting_sessions }}\`"
+            echo "- Failed recovery action: \`${{ steps.jules-monitor.outputs.failed_recovery_action }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open ready Jules PRs
         env:

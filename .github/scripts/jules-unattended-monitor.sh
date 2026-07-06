@@ -5,8 +5,8 @@ API_BASE="${JULES_API_BASE:-https://jules.googleapis.com/v1alpha}"
 SOURCE="${JULES_SOURCE:-sources/github/${GITHUB_REPOSITORY:-Omnividente/notion-abuz_ai}}"
 LOOKBACK_HOURS="${LOOKBACK_HOURS:-24}"
 MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
-STALE_AWAITING_FEEDBACK_MINUTES="${STALE_AWAITING_FEEDBACK_MINUTES:-30}"
-MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS="${MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS:-3}"
+STALE_AWAITING_FEEDBACK_MINUTES="${STALE_AWAITING_FEEDBACK_MINUTES:-10}"
+MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS="${MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS:-2}"
 
 read -r -d '' CONTINUE_PROMPT <<'EOF' || true
 AUTONOMOUS_CONTINUE_TOKEN
@@ -141,6 +141,7 @@ active_sessions=0
 touched_sessions=0
 api_available=false
 session_ids=()
+stale_waiting_sessions=()
 declare -A seen_sessions=()
 
 jules_get() {
@@ -353,7 +354,8 @@ for i in "${!key_labels[@]}"; do
     if [ "${latest_token_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
       token_age="$((now_epoch - latest_token_epoch))"
       if [ "$token_age" -lt "$stale_feedback_seconds" ]; then
-        echo "Skipped ${session_name}; autonomous continue already answers the latest wait state."
+        echo "Skipped ${session_name}; autonomous continue already answers the latest wait state (${token_age}s old, stale threshold ${stale_feedback_seconds}s, continue tokens ${continue_token_count}/${max_stale_escalations})."
+        stale_waiting_sessions+=("${session_name##*/}:${token_age}s/${stale_feedback_seconds}s:${continue_token_count}/${max_stale_escalations}")
         record_active_task_id "$active_task_id"
         continue
       fi
@@ -378,7 +380,8 @@ for i in "${!key_labels[@]}"; do
         fi
         continue
       fi
-      echo "Previous autonomous continue for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation."
+      echo "Previous autonomous continue for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation ${continue_token_count}/${max_stale_escalations}."
+      stale_waiting_sessions+=("${session_name##*/}:stale:${continue_token_count}/${max_stale_escalations}")
       prompt="$STALE_FEEDBACK_PROMPT"
     elif [ "${last_user_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
       echo "Skipped ${session_name}; a user message already answers the latest wait state."
@@ -431,11 +434,15 @@ python3 .github/scripts/summarize-jules-failures.py decide \
 
 echo "Active recent Jules sessions for ${SOURCE}: ${active_sessions}"
 echo "Touched Jules sessions: ${touched_sessions}"
+echo "Stale waiting Jules sessions: ${#stale_waiting_sessions[@]}"
 session_ids_csv="$(IFS=,; echo "${session_ids[*]}")"
+stale_waiting_csv="$(IFS=,; echo "${stale_waiting_sessions[*]}")"
 
 {
   echo "active_sessions=${active_sessions}"
   echo "touched_sessions=${touched_sessions}"
   echo "api_available=${api_available}"
   echo "session_ids=${session_ids_csv}"
+  echo "stale_waiting_sessions=${stale_waiting_csv}"
+  echo "stale_waiting_count=${#stale_waiting_sessions[@]}"
 } >> "${GITHUB_OUTPUT:-/dev/null}"
