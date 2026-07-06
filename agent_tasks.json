@@ -5484,7 +5484,7 @@
     },
     {
       "id": "proxy-tools-schema-json-truncation-utf8-robustness-check-followup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test to verify truncation with 4-byte unicode emojis",
@@ -5497,6 +5497,22 @@
       "acceptance": [
         "Verify a test checks boundaries with 4-byte emoji runes",
         "Ensure the text uses utf8.ValidString after truncation"
+      ]
+    },
+    {
+      "id": "proxy-tools-schema-json-truncation-robustness-fallback-limit",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test to verify tool schema JSON truncation limits when limit is extremely small",
+      "description": "Ensure metric truncates without panicking when the length limit is very small to avoid boundary edge cases in string slicing.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go"
+      ],
+      "acceptance": [
+        "Verify a test covers JSON truncation limits and edge cases",
+        "Ensure boundary check avoids panics with small limits"
       ]
     }
   ]
