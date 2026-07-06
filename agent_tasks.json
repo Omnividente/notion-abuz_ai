@@ -5955,7 +5955,7 @@
     },
     {
       "id": "proxy-runtime-session-empty-system-prompt-metric",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Track empty system prompts dropped during session recovery",
@@ -5969,7 +5969,8 @@
         "Add context loss metric tracking for empty system prompt drops.",
         "Add explicit test case to verify metric is tracked.",
         "Update manifest to mark this task as done."
-      ]
+      ],
+      "blocked_reason": "The implementation already exists in the codebase but the autonomous PR quality gate rejects operational/diagnostic tasks that only change tests without runtime or script changes. Task must be blocked."
     },
     {
       "id": "proxy-runtime-tool-result-continuation-context-loss",
