@@ -273,6 +273,11 @@ func TestStripClaudeCodeInstructions_PreservesCodingIntent(t *testing.T) {
 			input: "Hello\n\n<system-reminder>\nsome internal logic\n</system-reminder>\n\n\nWorld",
 			want:  "Hello\n\nWorld",
 		},
+		{
+			name:  "cleans up extra newlines at string boundaries",
+			input: "\n\n\n\nStart\n\n\n\nEnd\n\n\n\n",
+			want:  "Start\n\nEnd",
+		},
 	}
 
 	for _, tt := range tests {
