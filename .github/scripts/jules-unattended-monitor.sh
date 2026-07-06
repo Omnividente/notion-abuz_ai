@@ -353,12 +353,6 @@ for i in "${!key_labels[@]}"; do
 
     if [ "${latest_token_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
       token_age="$((now_epoch - latest_token_epoch))"
-      if [ "$token_age" -lt "$stale_feedback_seconds" ]; then
-        echo "Skipped ${session_name}; autonomous continue already answers the latest wait state (${token_age}s old, stale threshold ${stale_feedback_seconds}s, continue tokens ${continue_token_count}/${max_stale_escalations})."
-        stale_waiting_sessions+=("${session_name##*/}:${token_age}s/${stale_feedback_seconds}s:${continue_token_count}/${max_stale_escalations}")
-        record_active_task_id "$active_task_id"
-        continue
-      fi
       if [ "${last_user_epoch:-0}" -gt "${latest_token_epoch:-0}" ]; then
         echo "Skipped ${session_name}; a newer user message already answers the latest wait state."
         record_active_task_id "$active_task_id"
@@ -378,6 +372,12 @@ for i in "${!key_labels[@]}"; do
           echo "::warning::Could not delete stale Jules session ${session_name}."
           record_active_task_id "$active_task_id"
         fi
+        continue
+      fi
+      if [ "$token_age" -lt "$stale_feedback_seconds" ]; then
+        echo "Skipped ${session_name}; autonomous continue already answers the latest wait state (${token_age}s old, stale threshold ${stale_feedback_seconds}s, continue tokens ${continue_token_count}/${max_stale_escalations})."
+        stale_waiting_sessions+=("${session_name##*/}:${token_age}s/${stale_feedback_seconds}s:${continue_token_count}/${max_stale_escalations}")
+        record_active_task_id "$active_task_id"
         continue
       fi
       echo "Previous autonomous continue for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation ${continue_token_count}/${max_stale_escalations}."
