@@ -4942,7 +4942,7 @@
     },
     {
       "id": "proxy-observability-detect-system-message-dropped-regex-match2-followup",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for explicit dropping of Claude Code system messages via regex",
@@ -4953,7 +4953,8 @@
       ],
       "acceptance": [
         "A test confirms system_message_dropped_cwd_regex is tracked when matched."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-tools-schema-simplification-panic-safety",
@@ -4974,7 +4975,7 @@
     },
     {
       "id": "proxy-tools-test-empty-tools-fallback-non-empty",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for empty tools fallback with non-empty tools list",
@@ -4985,11 +4986,12 @@
       ],
       "acceptance": [
         "A new test is added in `internal/proxy/tools_test.go` that verifies the `empty_tools_fallback` metric is 0 when `compactList` is provided."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-observability-retry-loop-detected-followup",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add integration test for retry loop undetected on mixed failures",
@@ -5000,7 +5002,8 @@
       ],
       "acceptance": [
         "A test confirms retry_loop_detected is not incremented on mixed call/err sequences."
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-session-recovery-metrics-validation",
@@ -5659,7 +5662,7 @@
     },
     {
       "id": "proxy-tools-add-build-tool-list-empty-parameters-test",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for buildToolList empty parameters handling",
@@ -5670,11 +5673,12 @@
       ],
       "acceptance": [
         "Add test TestBuildToolList_EmptyParameters that verifies the output when tool.Function.Parameters is nil"
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "proxy-tools-add-build-tool-list-empty-description-test",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for buildToolList empty description handling",
@@ -5685,7 +5689,8 @@
       ],
       "acceptance": [
         "Add test TestBuildToolList_EmptyDescription that verifies the output when tool.Function.Description is empty"
-      ]
+      ],
+      "blocked_reason": "micro/test-only task without concrete live smoke, transcript, CI, or offline reproduction evidence"
     },
     {
       "id": "automation-health-duplicate-open-autonomous-prs-cdeca939",
@@ -5780,7 +5785,7 @@
     },
     {
       "id": "automation-health-no-eligible-autonomous-task-0c7f5df6",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: no_eligible_autonomous_task",
@@ -5822,6 +5827,93 @@
       "health_finding_code": "repeated_followup_generation",
       "health_finding_severity": "degraded",
       "health_report_generated_at": "2026-07-06T13:46:24Z"
+    },
+    {
+      "id": "proxy-runtime-notion-persona-leakage-prevention",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Fix Notion persona leakage in Claude requests",
+      "description": "Investigate and fix offline reproduction of Notion persona leakage when Claude Code instructions are passed through the proxy. Ensure that system prompts do not leak Notion's internal persona guidelines.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause of offline reproduction of Notion persona leakage is identified.",
+        "Implement a runtime fix to prevent leakage.",
+        "Add offline tests demonstrating the persona leakage is fixed."
+      ]
+    },
+    {
+      "id": "proxy-runtime-tool-result-continuation-fix",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Enhance tool result continuation reliability",
+      "description": "Improve tool result continuation in internal/proxy/session.go based on live smoke diagnostic logs, addressing cases where multi-turn tool outputs are improperly concatenated.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnose tool result continuation issue using live smoke diagnostic logs.",
+        "Implement a fix to ensure robust tool output continuation.",
+        "Verify fix with offline reproduction tests."
+      ]
+    },
+    {
+      "id": "proxy-runtime-json-tool-call-mode-retention",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Fix JSON tool-call mode retention during fallback",
+      "description": "Fix an issue observed in offline reproduction where JSON tool-call mode is lost during legacy fallback. Ensure JSON mode is retained across complex multi-turn contexts.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Identify condition where JSON tool-call mode is lost during fallback in offline reproduction.",
+        "Apply runtime fix to retain JSON mode.",
+        "Add an offline test verifying retention."
+      ]
+    },
+    {
+      "id": "proxy-runtime-final-answer-mode-stability",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Improve final-answer mode stability",
+      "description": "Based on live smoke results, final-answer mode occasionally drops early. Implement a robust check in internal/proxy/tools.go to preserve final-answer state.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Identify early drop of final-answer mode from live smoke results.",
+        "Implement robust state preservation.",
+        "Verify with an offline reproduction test."
+      ]
+    },
+    {
+      "id": "proxy-runtime-incomplete-context-handling",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Handle incomplete context from transient API failures",
+      "description": "Investigate incomplete context errors arising from transient API/search failures. Provide robust offline reproduction handling in proxy/session.go to gracefully recover.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Reproduce incomplete context errors from transient API failures using offline reproduction.",
+        "Implement graceful recovery in proxy/session.go.",
+        "Add tests demonstrating correct recovery behavior."
+      ]
     }
   ]
 }
