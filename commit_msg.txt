@@ -1,22 +1,22 @@
-proxy: Добавлен тест на точное отсечение по границе 4000 рун для мультибайтовых символов
+proxy: add test for system instruction truncation in session recovery
 
-Добавлен тест `TestExactly4000ByteMultibyteBoundary` в `internal/proxy/tools_test.go` для проверки того, что отсечение строки JSON схемы инструмента на границе 4000 рун безопасно обрабатывает мультибайтовые символы (например, кириллицу) без паники и нарушения UTF-8.
-
-Также обновлен статус задачи `proxy-tools-schema-json-truncation-unicode-boundary-test` на `done` в `agent_tasks.json` и добавлена задача-наблюдение для выполнения минимального количества (5) `todo` задач в очереди.
+Этап плана: PR
+Что сделано: Заменен базовый тест `TestBuildRecoveryMessages_ContextLoss_SystemInstruction` на две конкретные подпроверки для тестирования границ: 1200 рун (без усечения) и 1201 руна с многобайтовым символом (с усечением). Добавлены строгие проверки карты метрик с использованием блокировки и валидация UTF-8, чтобы убедиться, что усечение не повреждает строку. Обновлен манифест задач (установлен статус done).
+Что дальше: Отправка изменений и завершение задачи `proxy-session-recovery-system-instruction-truncation-test`.
+Зачем: Гарантирует корректную работу логики усечения системных инструкций во время восстановления сессии без потери контекста и повреждения кодировки UTF-8 для многобайтовых символов.
+Почему так: Использование `t.Run` с конкретными границами и валидацией `utf8.ValidString()` - самый надежный способ проверить безопасность работы со строками, содержащими многобайтовые символы, не изменяя саму логику прокси.
+Проверки/риски: Выполнено `go test ./...` и скрипт валидации `agent_tasks.json`. Риски регрессий минимальны, так как изменения касаются только тестов.
 
 <!-- AUTONOMOUS_TASK_EVIDENCE
-task_id: proxy-tools-schema-json-truncation-unicode-boundary-test
+task_id: proxy-session-recovery-system-instruction-truncation-test
 status: done
 acceptance:
-- Verify a test checks 4000 multi-byte boundary explicitly -> internal/proxy/tools_test.go (TestExactly4000ByteMultibyteBoundary)
-- Ensure the string uses comma-ok -> internal/proxy/tools_test.go (count, exists := contextLossMetrics["tool_schema_json_truncated"])
-- Ensure the text uses utf8.ValidString -> internal/proxy/tools_test.go (utf8.ValidString(out))
+- Verify large system instructions are properly truncated and system_instruction_truncated metric is incremented -> tested in internal/proxy/session_test.go by Exactly1200Runes and Exactly1201Runes_MultiByte subtests
 evidence_files:
-- internal/proxy/tools_test.go
+- internal/proxy/session_test.go
 - agent_tasks.json
 checks:
 - go test ./...
-- go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
 - python3 scripts/validate_agent_tasks.py agent_tasks.json
-micro_pr_justification: PR включает тест, закрывающий конкретную задачу по проверке отсечения метрики JSON-схемы на границе рун (что решает проблему мультибайтовых символов) и соответствующее обновление манифеста.
+micro_pr_justification: This PR implements the complete operational theme of verifying system instruction truncation boundaries during proxy session recovery in one self-contained task.
 -->
