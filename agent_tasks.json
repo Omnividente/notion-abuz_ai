@@ -5735,7 +5735,7 @@
     },
     {
       "id": "automation-health-agent-tasks-conflicting-open-pr-1bb636b3",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: agent_tasks_conflicting_open_pr",
