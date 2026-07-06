@@ -66,6 +66,19 @@ PULL_DETAIL_MERGEABILITY_ATTEMPTS = 2
 PULL_DETAIL_MERGEABILITY_DELAY_SECONDS = 1
 GIT_CONFLICT_FALLBACK_DEPTH = "2000"
 SESSION_ID_RE = re.compile(r"(?<!\d)(\d{12,})(?!\d)")
+TASK_ID_RE = re.compile(
+    r"""(?ix)
+    (?:
+        selected \s+ task \s+ id
+        | task_id
+        | "task_id"
+    )
+    \s* [:=] \s*
+    "?
+    ([a-z0-9][a-z0-9_.-]{2,})
+    "?
+    """
+)
 AUTONOMOUS_CONTINUE_TOKEN = jules_recovery_prompt.AUTONOMOUS_CONTINUE_TOKEN
 ACTIVE_JULES_STATES = {
     "QUEUED",
@@ -240,6 +253,10 @@ def load_manifest(manifest_path: Path) -> dict[str, Any]:
 
 def load_task_ids(manifest_path: Path) -> list[str]:
     manifest = load_manifest(manifest_path)
+    return task_ids_from_manifest(manifest)
+
+
+def task_ids_from_manifest(manifest: dict[str, Any]) -> list[str]:
     return [
         str(task.get("id", ""))
         for task in manifest.get("tasks", [])
@@ -313,6 +330,36 @@ def comments_contain(pr: dict[str, Any], marker: str) -> bool:
 
 def has_autonomous_stop_label(pr: dict[str, Any]) -> bool:
     return bool(labels_of(pr) & AUTONOMOUS_PR_STOP_LABELS)
+
+
+def task_id_from_pr(pr: dict[str, Any], task_ids: list[str]) -> str:
+    fields = [
+        str(pr.get("body") or ""),
+        str(pr.get("title") or ""),
+        str((pr.get("head") or {}).get("ref") or ""),
+    ]
+    for field in fields:
+        match = TASK_ID_RE.search(field)
+        if match:
+            return match.group(1)
+    for task_id in task_ids:
+        if any(task_id and task_id in field for field in fields):
+            return task_id
+    return ""
+
+
+def stopped_task_ids_from_prs(open_pulls: list[dict[str, Any]], task_ids: list[str]) -> list[str]:
+    excluded: list[str] = []
+    seen: set[str] = set()
+    for pr in open_pulls:
+        if not has_autonomous_stop_label(pr):
+            continue
+        task_id = task_id_from_pr(pr, task_ids)
+        if not task_id or task_id in seen:
+            continue
+        seen.add(task_id)
+        excluded.append(task_id)
+    return excluded
 
 
 def has_computed_mergeability(pr: dict[str, Any]) -> bool:
@@ -1679,7 +1726,13 @@ def execute_action(
     raise ValueError(f"unsupported action type: {action.type}")
 
 
-def run_selector(manifest: Path, *, focus: str, risk_ceiling: str) -> dict[str, Any]:
+def run_selector(
+    manifest: Path,
+    *,
+    focus: str,
+    risk_ceiling: str,
+    exclude_task_ids: list[str] | None = None,
+) -> dict[str, Any]:
     cmd = [
         sys.executable,
         "scripts/select_agent_task.py",
@@ -1691,6 +1744,8 @@ def run_selector(manifest: Path, *, focus: str, risk_ceiling: str) -> dict[str, 
         focus,
         "--json",
     ]
+    for task_id in exclude_task_ids or []:
+        cmd.extend(["--exclude-task-id", task_id])
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True)
     except OSError as exc:
@@ -1717,6 +1772,7 @@ def collect_live_state(
     jules_lookback_hours: int,
 ) -> dict[str, Any]:
     manifest_data = load_manifest(manifest)
+    task_ids = task_ids_from_manifest(manifest_data)
     open_pulls = client.request("GET", f"/repos/{client.repo}/pulls?state=open&per_page=100") or []
     enrich_open_pull_details(client, open_pulls)
     enrich_open_pull_git_conflicts(open_pulls, repo=client.repo)
@@ -1752,7 +1808,12 @@ def collect_live_state(
     return {
         "open_pulls": open_pulls,
         "workflow_runs": workflow_runs,
-        "selector": run_selector(manifest, focus=focus, risk_ceiling=risk_ceiling),
+        "selector": run_selector(
+            manifest,
+            focus=focus,
+            risk_ceiling=risk_ceiling,
+            exclude_task_ids=stopped_task_ids_from_prs(open_pulls, task_ids),
+        ),
         "task_statuses": task_statuses_from_manifest(manifest_data),
         "task_details": task_details_from_manifest(manifest_data),
         "jules": collect_jules_sessions(

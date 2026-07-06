@@ -79,6 +79,64 @@ class SelectAgentTaskTest(unittest.TestCase):
         self.assertEqual(selected.eligible_count, 2)
         self.assertEqual(selected.rejected_count, 0)
 
+    def test_excluded_task_id_selects_next_candidate(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "runtime",
+                    title="Implement runtime fix from live smoke failure",
+                    description="Use local live smoke artifact to fix reproduced runtime failure.",
+                    risk="medium",
+                    allowed_paths=[
+                        "internal/proxy/anthropic.go",
+                        "internal/proxy/anthropic_test.go",
+                        "agent_tasks.json",
+                    ],
+                ),
+                task(
+                    "fallback",
+                    title="Implement fallback fix from CI failure",
+                    description="CI failure reproduced in PR #789.",
+                    risk="medium",
+                    allowed_paths=["internal/proxy/openai.go", "agent_tasks.json"],
+                ),
+            ]
+        }
+
+        selected = select_agent_task.select_task(
+            data,
+            risk_ceiling="medium",
+            focus="proxy",
+            exclude_task_ids={"runtime"},
+        )
+
+        self.assertTrue(selected.selected)
+        self.assertEqual(selected.task_id, "fallback")
+        self.assertEqual(selected.rejected[0]["task_id"], "runtime")
+        self.assertIn("stopped autonomous PR", selected.rejected[0]["reason"])
+
+    def test_exact_task_id_respects_exclusion(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "runtime",
+                    title="Implement runtime fix from live smoke failure",
+                    description="Use local live smoke artifact to fix reproduced runtime failure.",
+                    risk="medium",
+                    allowed_paths=["internal/proxy/anthropic.go", "agent_tasks.json"],
+                )
+            ]
+        }
+
+        with self.assertRaisesRegex(ValueError, "is excluded"):
+            select_agent_task.select_task(
+                data,
+                risk_ceiling="medium",
+                focus="proxy",
+                task_id="runtime",
+                exclude_task_ids={"runtime"},
+            )
+
     def test_test_only_without_evidence_is_rejected(self) -> None:
         data = {
             "tasks": [

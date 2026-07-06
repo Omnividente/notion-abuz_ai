@@ -202,6 +202,14 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("- 4. Advisory Critic Review", text)
         self.assertIn("- completed", text)
 
+    def test_pull_request_router_concurrency_is_pr_scoped(self) -> None:
+        text = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("jules-recovery-router-${{", text)
+        self.assertIn("github.event_name == 'pull_request_target'", text)
+        self.assertIn("github.event.pull_request.number", text)
+        self.assertIn("|| 'global'", text)
+
     def test_burst_monitor_dispatches_next_after_touching_last_session(self) -> None:
         text = BURST_WORKFLOW_PATH.read_text(encoding="utf-8")
 
@@ -650,6 +658,22 @@ Previous router prompt:
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].type, "dispatch_workflow")
         self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
+
+    def test_stopped_task_ids_are_extracted_for_selector_exclusion(self) -> None:
+        stopped = pr(
+            labels=["jules", "stop-loop"],
+            body="<!-- AUTONOMOUS_TASK_EVIDENCE\ntask_id: proxy-runtime-fix\n-->",
+            head_ref="jules/proxy-runtime-fix-1234567890123456789",
+        )
+        active = pr(
+            labels=["jules"],
+            body="task_id: automation-health-failed-session-86122315",
+        )
+
+        self.assertEqual(
+            router.stopped_task_ids_from_prs([stopped, active], TASK_IDS),
+            ["proxy-runtime-fix"],
+        )
 
     def test_conflicting_jules_pr_sends_conflict_recovery(self) -> None:
         actions = plan(

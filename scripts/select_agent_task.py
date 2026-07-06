@@ -42,6 +42,7 @@ BLOCK_REASON = (
     "micro/test-only task without concrete live smoke, transcript, CI, "
     "or offline reproduction evidence"
 )
+EXCLUDED_TASK_REASON = "task is already represented by a stopped autonomous PR awaiting review"
 
 
 @dataclass(frozen=True)
@@ -193,8 +194,10 @@ def select_task(
     risk_ceiling: str,
     focus: str,
     task_id: str | None = None,
+    exclude_task_ids: set[str] | None = None,
 ) -> Selection:
     risks = allowed_risks(risk_ceiling)
+    excluded = exclude_task_ids or set()
     tasks = [task for task in data.get("tasks", []) if isinstance(task, dict)]
     todo_tasks = [task for task in tasks if task.get("status") == "todo"]
     todo_count = len(todo_tasks)
@@ -204,6 +207,8 @@ def select_task(
         for task in tasks:
             if task.get("id") != task_id:
                 continue
+            if task_id in excluded:
+                raise ValueError(f"task {task_id!r} is excluded: {EXCLUDED_TASK_REASON}")
             if task.get("status") != "todo":
                 raise ValueError(f"task {task_id!r} has status {task.get('status')!r}, expected 'todo'")
             if task.get("risk") not in risks:
@@ -227,8 +232,12 @@ def select_task(
     for index, task in enumerate(tasks):
         if task.get("status") != "todo" or task.get("risk") not in risks:
             continue
+        current_task_id = str(task.get("id", ""))
+        if current_task_id in excluded:
+            rejected.append({"task_id": current_task_id, "reason": EXCLUDED_TASK_REASON})
+            continue
         if is_micro_test_only(task):
-            rejected.append({"task_id": str(task.get("id", "")), "reason": BLOCK_REASON})
+            rejected.append({"task_id": current_task_id, "reason": BLOCK_REASON})
             continue
 
         score, reason = score_task(task, focus)
@@ -297,6 +306,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--risk-ceiling", choices=["low", "medium"], default="medium")
     parser.add_argument("--focus", default="proxy")
     parser.add_argument("--task-id", default="")
+    parser.add_argument(
+        "--exclude-task-id",
+        action="append",
+        default=[],
+        help="task id to skip because an existing stopped autonomous PR already represents it",
+    )
     parser.add_argument("--json", action="store_true", help="print machine-readable selection JSON")
     args = parser.parse_args(argv)
 
@@ -307,6 +322,7 @@ def main(argv: list[str] | None = None) -> int:
             risk_ceiling=args.risk_ceiling,
             focus=args.focus,
             task_id=args.task_id.strip() or None,
+            exclude_task_ids={item.strip() for item in args.exclude_task_id if item.strip()},
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         if args.json:

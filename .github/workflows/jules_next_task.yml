@@ -77,18 +77,95 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Detect stopped autonomous task ids
+        id: stopped-task-ids
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
+        run: |
+          set -euo pipefail
+
+          curl -fsS \
+            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
+            -o /tmp/open-prs-for-selector.json
+
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          manifest = json.loads(Path("agent_tasks.json").read_text(encoding="utf-8"))
+          task_ids = [
+              str(task.get("id", ""))
+              for task in manifest.get("tasks", [])
+              if isinstance(task, dict) and task.get("id")
+          ]
+          pulls = json.loads(Path("/tmp/open-prs-for-selector.json").read_text(encoding="utf-8"))
+          stop_labels = {"human-review", "no-automerge", "stop-loop"}
+          task_re = re.compile(r'(?i)(?:selected\s+task\s+id|task_id|\"task_id\")\s*[:=]\s*\"?([a-z0-9][a-z0-9_.-]{2,})\"?')
+          excluded = []
+          seen = set()
+
+          def pr_task_id(pr):
+              fields = [
+                  str(pr.get("body") or ""),
+                  str(pr.get("title") or ""),
+                  str((pr.get("head") or {}).get("ref") or ""),
+              ]
+              for field in fields:
+                  match = task_re.search(field)
+                  if match:
+                      return match.group(1)
+              for task_id in task_ids:
+                  if task_id and any(task_id in field for field in fields):
+                      return task_id
+              return ""
+
+          for pr in pulls:
+              labels = {
+                  str(label.get("name", ""))
+                  for label in pr.get("labels", [])
+                  if isinstance(label, dict)
+              }
+              if not labels.intersection(stop_labels):
+                  continue
+              task_id = pr_task_id(pr)
+              if task_id and task_id not in seen:
+                  seen.add(task_id)
+                  excluded.append(task_id)
+
+          output_path = Path(os.environ["GITHUB_OUTPUT"])
+          with output_path.open("a", encoding="utf-8") as output:
+              output.write(f"task_ids={','.join(excluded)}\n")
+              output.write(f"count={len(excluded)}\n")
+
+          print(f"Stopped autonomous task ids excluded from selector: {', '.join(excluded) or 'none'}")
+          PY
+
       - name: Select autonomous task
         id: select-task
         env:
           TASK_ID: ${{ inputs.task_id || '' }}
           FOCUS: ${{ inputs.focus || 'proxy' }}
           RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
+          EXCLUDED_TASK_IDS: ${{ steps.stopped-task-ids.outputs.task_ids || '' }}
         run: |
           set -euo pipefail
 
           args=(--manifest agent_tasks.json --risk-ceiling "${RISK_CEILING}" --focus "${FOCUS}" --json)
           if [ -n "${TASK_ID}" ]; then
             args+=(--task-id "${TASK_ID}")
+          fi
+          if [ -n "${EXCLUDED_TASK_IDS}" ]; then
+            IFS=',' read -r -a excluded_task_ids <<< "${EXCLUDED_TASK_IDS}"
+            for excluded_task_id in "${excluded_task_ids[@]}"; do
+              if [ -n "${excluded_task_id}" ]; then
+                args+=(--exclude-task-id "${excluded_task_id}")
+              fi
+            done
           fi
 
           selector_status=0
