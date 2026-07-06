@@ -5920,7 +5920,7 @@
     },
     {
       "id": "proxy-runtime-incomplete-context-handling",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Handle incomplete context from transient API failures",
@@ -6074,6 +6074,24 @@
       ],
       "acceptance": [
         "Dummy criterion"
+      ]
+    },
+    {
+      "id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate system prompt truncation metrics for Unicode",
+      "description": "The system prompt truncation in proxy/session.go (1200 chars) uses rune indices but byte strings internally, creating a potential divergence for multi-byte Unicode chars. Add boundary tests to explicitly ensure UTF-8 strings remain valid when system_instruction_truncated metric is emitted.",
+      "allowed_paths": [
+        "internal/proxy/session_test.go",
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add a test with a >1200 rune system prompt containing 4-byte Unicode characters (e.g., emojis).",
+        "Verify the emitted truncated string is valid UTF-8 via utf8.ValidString.",
+        "Verify the system_instruction_truncated metric is explicitly triggered."
       ]
     }
   ]

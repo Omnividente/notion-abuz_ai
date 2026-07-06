@@ -404,8 +404,9 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 	}
 
 	type historyEntry struct {
-		label   string
-		content string
+		label            string
+		content          string
+		isTransientError bool
 	}
 
 	var reversed []historyEntry
@@ -552,7 +553,24 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			break
 		}
 		usedChars += entryCost
-		trailingReversed = append(trailingReversed, historyEntry{label: label, content: content})
+
+		isTransientError := false
+		if m.Role == "tool" {
+			toolName := m.Name
+			if toolName == "" && m.ToolCallID != "" {
+				if n, ok := tcMap[m.ToolCallID]; ok {
+					toolName = n
+				}
+			}
+			lowerContent := strings.ToLower(content)
+			isTransientError = strings.Contains(lowerContent, "502 bad gateway") ||
+				strings.Contains(lowerContent, "timeout") ||
+				strings.Contains(lowerContent, "connection refused") ||
+				strings.Contains(lowerContent, "internal server error") ||
+				(strings.HasPrefix(lowerContent, "error:") && (toolName == "Search" || toolName == "Glob" || toolName == "LS" || toolName == "Find"))
+		}
+
+		trailingReversed = append(trailingReversed, historyEntry{label: label, content: content, isTransientError: isTransientError})
 	}
 
 	var history strings.Builder
@@ -594,6 +612,18 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 			if i > 0 {
 				prompt.WriteString("\n\n")
 			}
+		}
+
+		hasTransientFailure := false
+		for _, entry := range trailingReversed {
+			if entry.isTransientError {
+				hasTransientFailure = true
+				break
+			}
+		}
+
+		if hasTransientFailure {
+			prompt.WriteString("\nWarning: A recent tool call encountered a transient API or search failure. Do NOT finalize your answer based on partial context. Please retry the failed tool or use a different search method to ensure you have complete project context.\n")
 		}
 		prompt.WriteString("\n\nContinue from the partial progress above and provide the next step or final answer.")
 	}
