@@ -2700,6 +2700,61 @@ func TestToolSchemaJSONTruncatedMultiByteCombos(t *testing.T) {
 	}
 }
 
+func TestToolSchemaJSONTruncatedEmojiBoundary(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	emojiStr := "🚀🔥😃👨‍👩‍👧‍👦" // Emojis with zero-width joiners
+	base := `{"properties":{"prop":"`
+	end := `"},"type":"object"}`
+	target := 4010
+
+	baseRunes := len([]rune(base))
+	endRunes := len([]rune(end))
+	remainingRunes := target - baseRunes - endRunes
+
+	repeats := remainingRunes / len([]rune(emojiStr))
+	s := strings.Repeat(emojiStr, repeats)
+	leftover := remainingRunes % len([]rune(emojiStr))
+	s += string([]rune(emojiStr)[:leftover])
+
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"prop": s,
+		},
+	}
+
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:       "test_tool_emoji",
+				Parameters: schema,
+			},
+		},
+	}
+
+	out := buildToolList(tools)
+
+	if !strings.Contains(out, "...") {
+		t.Errorf("Expected truncated string with '...', got: %s", out)
+	}
+
+	if !utf8.ValidString(out) {
+		t.Errorf("Truncated string is not valid UTF-8: %s", out)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_json_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected tool_schema_json_truncated metric to be 1, got %d (exists: %v)", count, exists)
+	}
+}
+
 func TestIsSuggestionMode(t *testing.T) {
 	tests := []struct {
 		name     string
