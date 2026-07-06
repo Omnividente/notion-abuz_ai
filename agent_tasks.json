@@ -5396,7 +5396,7 @@
     },
     {
       "id": "proxy-tools-strip-claude-code-newlines-edge-case-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add an edge-case test for Claude Code stripping extra newlines at start and end of strings",
@@ -5408,6 +5408,24 @@
       ],
       "acceptance": [
         "Verify an edge-case test for newline cleanup is added at string boundaries"
+      ]
+    },
+    {
+      "id": "proxy-tools-is-suggestion-mode-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for isSuggestionMode function",
+      "description": "Ensure there are tests checking that the isSuggestionMode correctly identifies suggestion strings and ignores regular strings.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify tests check for suggestion strings with [SUGGESTION MODE: prefix",
+        "Verify tests check that strings without the prefix return false",
+        "Verify that whitespaces before the prefix do not affect the result"
       ]
     }
   ]
