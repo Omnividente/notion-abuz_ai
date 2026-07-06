@@ -429,6 +429,27 @@ func TestParseToolCalls_RobustJSONExtraction(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("Exactly801RunesUnicode", func(t *testing.T) {
+		toolModeLossMetricsMu.Lock()
+		toolModeLossMetrics = make(map[string]int)
+		toolModeLossMetricsMu.Unlock()
+
+		// "абвгд" is 5 runes. Repeat 159 times (795 runes) + "абвг" (4 runes) = 799 runes.
+		// Enclose in "{...}" -> 799 + 2 = 801 runes.
+		innerStr := strings.Repeat("абвгд", 159) + "абвг"
+		content := "{" + innerStr + "}"
+
+		parseToolCalls(content)
+
+		toolModeLossMetricsMu.Lock()
+		count, exists := toolModeLossMetrics["unparseable_json_candidate_truncated"]
+		toolModeLossMetricsMu.Unlock()
+
+		if !exists || count != 1 {
+			t.Fatalf("Expected metric unparseable_json_candidate_truncated to be 1 and exist, got %d (exists: %v)", count, exists)
+		}
+	})
 }
 
 func TestParseToolCalls_JSON_Array_AdvancedEdgeCases(t *testing.T) {

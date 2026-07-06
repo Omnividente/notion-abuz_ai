@@ -5330,7 +5330,7 @@
     },
     {
       "id": "proxy-observability-unparseable-json-candidate-truncated-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add unicode safety tests for unparseable_json_candidate_truncated metric",
@@ -5343,6 +5343,23 @@
       "acceptance": [
         "Verify a new test Exactly801RunesUnicode is appended to TestRobustJSONExtraction.",
         "Verify the test passes and metric unparseable_json_candidate_truncated is incremented to 1."
+      ]
+    },
+    {
+      "id": "proxy-observability-tool-schema-simplification-json-arrays-truncation-metrics-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add unicode safety tests for tool_schema_json_truncated metric in simplification",
+      "description": "Ensure tool_schema_json_truncated metric logic in buildToolList robustly truncates unicode inputs via rune safety boundaries.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify a new test Exactly801RunesUnicode is added for tool_schema_json_truncated.",
+        "Verify the test passes and metric tool_schema_json_truncated is incremented correctly."
       ]
     }
   ]
