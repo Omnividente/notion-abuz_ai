@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestBuildRecoveryMessages_InstructionPreservation_Short(t *testing.T) {
@@ -28,23 +29,80 @@ func TestBuildRecoveryMessages_InstructionPreservation_Short(t *testing.T) {
 }
 
 func TestBuildRecoveryMessages_ContextLoss_SystemInstruction(t *testing.T) {
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer log.SetOutput(os.Stderr)
+	// Subtest 1: Exactly 1200 runes - should not truncate
+	t.Run("Exactly1200Runes", func(t *testing.T) {
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
 
-	messages := []ChatMessage{
-		{Role: "system", Content: strings.Repeat("a", 1500)}, // Exceeds maxSystemChars (1200)
-		{Role: "user", Content: "First query to trigger needsFreshThreadRecovery"},
-		{Role: "assistant", Content: "ack"},
-		{Role: "user", Content: "Latest query"},
-	}
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
 
-	buildFreshThreadRecoveryMessages(messages)
+		messages := []ChatMessage{
+			{Role: "system", Content: strings.Repeat("a", 1200)}, // exactly maxSystemChars
+			{Role: "user", Content: "First query to trigger needsFreshThreadRecovery"},
+			{Role: "assistant", Content: "ack"},
+			{Role: "user", Content: "Latest query"},
+		}
 
-	logOutput := buf.String()
-	if !strings.Contains(logOutput, "[metrics] context_loss: system_instruction_truncated") {
-		t.Errorf("Expected context loss metric for system instruction truncation, got: %s", logOutput)
-	}
+		out := buildFreshThreadRecoveryMessages(messages)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["system_instruction_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if exists && val != 0 {
+			t.Errorf("Expected system_instruction_truncated to not exist or be 0 for exactly 1200 runes, got %d", val)
+		}
+
+		if !utf8.ValidString(out[0].Content) {
+			t.Errorf("Expected valid UTF-8 string, but output was corrupted")
+		}
+	})
+
+	// Subtest 2: Exactly 1201 runes with multi-byte characters - should truncate
+	t.Run("Exactly1201Runes_MultiByte", func(t *testing.T) {
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
+
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
+
+		// 1200 'a's + 1 multi-byte rune ('🚀') = 1201 runes
+		messages := []ChatMessage{
+			{Role: "system", Content: strings.Repeat("a", 1200) + "🚀"},
+			{Role: "user", Content: "First query to trigger needsFreshThreadRecovery"},
+			{Role: "assistant", Content: "ack"},
+			{Role: "user", Content: "Latest query"},
+		}
+
+		out := buildFreshThreadRecoveryMessages(messages)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["system_instruction_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if !exists || val != 1 {
+			t.Errorf("Expected system_instruction_truncated to be exactly 1 for 1201 runes, got %d", val)
+		}
+
+		if !utf8.ValidString(out[0].Content) {
+			t.Errorf("Expected valid UTF-8 string after truncation, but output was corrupted")
+		}
+	})
 }
 
 func TestBuildRecoveryMessages_ContextLoss_ToolResult(t *testing.T) {
