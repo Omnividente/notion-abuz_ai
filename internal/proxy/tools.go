@@ -1238,6 +1238,8 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 			}
 
 			if i <= lastAssistantIdx {
+				log.Printf("[bridge] diagnostic: multi-turn session continuation dropped early round tool result: %s (len=%d chars)", name, len([]rune(content)))
+				recordContextLossMetric("session_continuation_dropped_tool_result")
 				continue
 			}
 
