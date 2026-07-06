@@ -474,3 +474,40 @@ func TestBuildRecoveryMessages_DroppedToolResult(t *testing.T) {
 		t.Errorf("Expected early round tool result diagnostic, got: %s", logOutput)
 	}
 }
+
+func TestBuildRecoveryMessages_ContextLoss_FirstUserMessageDroppedMetric(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "This is the original user query."},
+	}
+
+	longContent := strings.Repeat("a", 500)
+	for i := 0; i < 10; i++ {
+		messages = append(messages, ChatMessage{Role: "assistant", Content: longContent})
+		messages = append(messages, ChatMessage{Role: "user", Content: "Continue workspace reframing"})
+	}
+
+	messages = append(messages, ChatMessage{Role: "user", Content: "Latest query"})
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["first_user_message_dropped"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected first_user_message_dropped metric to be exactly 1, got %d (exists=%v)", count, exists)
+	}
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[bridge] diagnostic: instruction preservation during handoff - first user message included: false") {
+		t.Errorf("Expected diagnostic log indicating first user message was lost, got: %s", logOutput)
+	}
+}
