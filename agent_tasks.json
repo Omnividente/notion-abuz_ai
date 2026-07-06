@@ -5753,21 +5753,6 @@
       "health_finding_code": "agent_tasks_conflicting_open_pr",
       "health_finding_severity": "degraded",
       "health_report_generated_at": "2026-07-06T09:03:26Z"
-    },
-    {
-      "id": "automation-health-quality-failures-spike-followup",
-      "status": "todo",
-      "area": "automation",
-      "risk": "medium",
-      "title": "Fix tracking of quality_failures_spike in automation health report",
-      "description": "Fix the review reporting script to correctly reflect ignored quality fixes when computing quality failures.",
-      "allowed_paths": [
-        ".github/scripts/automation-health-report.py",
-        "agent_tasks.json"
-      ],
-      "acceptance": [
-        "Suspended PRs are excluded from being counted towards quality failures."
-      ]
     }
   ]
 }
