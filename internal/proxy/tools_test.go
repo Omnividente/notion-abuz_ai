@@ -3431,6 +3431,28 @@ func TestLegacyCollapse_DroppedLinesMetrics(t *testing.T) {
 	}
 }
 
+func TestBuildSessionChainContinuation_ReadNarrowing(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Read the file"},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Read", Content: "This file exceeds maximum allowed tokens. Please truncate."},
+	}
+
+	buildSessionChainContinuation(messages, "Function: Read", "")
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["session_continuation_read_narrowing"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected session_continuation_read_narrowing metric to be 1, got count=%d, exists=%v", count, exists)
+	}
+}
+
 func TestBuildSessionChainContinuation_Truncation(t *testing.T) {
 	contextLossMetricsMu.Lock()
 	contextLossMetrics = make(map[string]int)

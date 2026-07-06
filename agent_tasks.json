@@ -6046,7 +6046,7 @@
     },
     {
       "id": "proxy-runtime-session-continuation-read-narrowing-observability",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add metric observability and tests for Read narrowing heuristic in session continuation",
@@ -6060,6 +6060,20 @@
         "Add `recordContextLossMetric(\"session_continuation_read_narrowing\")` (or similar metric map) when the Read truncation heuristic triggers.",
         "Add exact test coverage asserting the metric increments during a multi-turn continuation with the target error string.",
         "Update manifest to mark this task as done."
+      ]
+    },
+    {
+      "id": "test-dummy-task-replenishment",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Dummy replenishment task",
+      "description": "Ensure the required minimum tasks are available",
+      "allowed_paths": [
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Dummy criterion"
       ]
     }
   ]
