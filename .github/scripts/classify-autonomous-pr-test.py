@@ -58,6 +58,17 @@ class ClassifyAutonomousPRTest(unittest.TestCase):
             )
         )
 
+    def test_circuit_breaker_followup_marker_is_control_plane(self) -> None:
+        self.assertFalse(
+            self.classify(
+                PR_HEAD_REF="automation-circuit-breaker-followup-362-abc12345",
+                PR_BODY=(
+                    "AUTONOMOUS_CIRCUIT_BREAKER_FOLLOWUP_TASK\n"
+                    "Follow-up task: `automation-quality-loop-pr-362-abc12345`"
+                ),
+            )
+        )
+
     def test_task_id_branch_is_autonomous(self) -> None:
         self.assertTrue(
             self.classify(

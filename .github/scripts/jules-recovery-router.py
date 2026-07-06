@@ -38,6 +38,7 @@ MONITOR_COOLDOWN_MINUTES = 7
 QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES = 30
 QUALITY_FIX_CIRCUIT_BREAKER_ATTEMPTS = 3
 QUALITY_FIX_CIRCUIT_BREAKER_TTL_MINUTES = 7 * 24 * 60
+QUALITY_FIX_FOLLOWUP_TTL_MINUTES = 7 * 24 * 60
 QUALITY_FIX_CIRCUIT_BREAKER_LABELS = ("human-review", "no-automerge", "stop-loop")
 AUTONOMOUS_PR_STOP_LABELS = set(QUALITY_FIX_CIRCUIT_BREAKER_LABELS)
 RECOVERY_LABEL_DEFINITIONS = {
@@ -656,6 +657,29 @@ def quality_fix_circuit_breaker_marker(pr: dict[str, Any]) -> str:
     return f"{ROUTER_MARKER} action=quality-fix-circuit-breaker sha={sha}"
 
 
+def has_quality_fix_circuit_breaker_marker(pr: dict[str, Any]) -> bool:
+    return comments_contain(pr, f"{ROUTER_MARKER} action=quality-fix-circuit-breaker")
+
+
+def quality_fix_followup_hash(pr: dict[str, Any], task_ids: list[str]) -> str:
+    payload = {
+        "pr_number": int(pr.get("number") or 0),
+        "source_sha": str((pr.get("head") or {}).get("sha") or ""),
+        "source_task_id": task_id_from_pr(pr, task_ids),
+    }
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+
+
+def quality_fix_followup_task_id(pr: dict[str, Any], task_ids: list[str]) -> str:
+    number = int(pr.get("number") or 0)
+    return f"automation-quality-loop-pr-{number}-{quality_fix_followup_hash(pr, task_ids)[:8]}"
+
+
+def quality_fix_followup_exists(state: dict[str, Any], task_id: str) -> bool:
+    return task_id in (state.get("task_details") or {})
+
+
 def quality_fix_circuit_breaker_comment(
     pr: dict[str, Any],
     *,
@@ -1227,6 +1251,44 @@ def plan_recovery_actions(
     ):
         return actions
 
+    stopped_prs = [
+        pr for pr in state.get("open_pulls", [])
+        if is_autonomous_pr(pr, repo=repo, task_ids=task_ids)
+        and has_autonomous_stop_label(pr)
+        and has_quality_fix_circuit_breaker_marker(pr)
+    ]
+    stopped_prs.sort(key=lambda item: int(item.get("number") or 0))
+    for pr in stopped_prs:
+        number = int(pr.get("number") or 0)
+        sha = str((pr.get("head") or {}).get("sha") or "")
+        source_task_id = task_id_from_pr(pr, task_ids)
+        followup_task_id = quality_fix_followup_task_id(pr, task_ids)
+        if quality_fix_followup_exists(state, followup_task_id):
+            continue
+        dedupe_key = f"quality-fix-followup-task:{number}:{sha}:{followup_task_id}"
+        if not action_recently_done(
+            ledger,
+            dedupe_key,
+            now=now,
+            ttl_minutes=QUALITY_FIX_FOLLOWUP_TTL_MINUTES,
+        ):
+            actions.append(
+                RecoveryAction(
+                    type="quality_fix_followup_task",
+                    dedupe_key=dedupe_key,
+                    reason=f"Create diagnostic task for stopped quality-fix loop on PR #{number}",
+                    ttl_minutes=QUALITY_FIX_FOLLOWUP_TTL_MINUTES,
+                    payload={
+                        "pr_number": number,
+                        "source_sha": sha,
+                        "source_task_id": source_task_id,
+                        "task_id": followup_task_id,
+                        "reason": latest_quality_fix_details(pr),
+                    },
+                )
+            )
+        return actions
+
     selector = state.get("selector") or {}
     selector_selected = bool(selector.get("selected"))
     selector_task_id = str(selector.get("task_id") or "")
@@ -1719,6 +1781,25 @@ def execute_action(
                 str(payload["task_id"]),
                 "--failed-sessions",
                 str(payload["failed_sessions"]),
+            ],
+            check=True,
+        )
+        return
+    if action.type == "quality_fix_followup_task":
+        subprocess.run(
+            [
+                sys.executable,
+                ".github/scripts/create-circuit-breaker-followup-task-pr.py",
+                "--manifest",
+                "agent_tasks.json",
+                "--pr-number",
+                str(payload["pr_number"]),
+                "--source-sha",
+                str(payload["source_sha"]),
+                "--source-task-id",
+                str(payload.get("source_task_id") or ""),
+                "--reason",
+                str(payload.get("reason") or ""),
             ],
             check=True,
         )

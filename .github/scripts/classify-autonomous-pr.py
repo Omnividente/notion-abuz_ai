@@ -14,6 +14,25 @@ body = os.environ.get("PR_BODY", "")
 jules_body_markers = (
     "PR created automatically by Jules",
     "jules.google.com/task",
+    "jules.google.com/session",
+)
+control_plane_body_markers = (
+    "AUTOMATION_HEALTH_META_TASK",
+    "AUTOMATION_RECOVERY_FAILED_SESSION_BLOCK",
+    "AUTONOMOUS_CIRCUIT_BREAKER_FOLLOWUP_TASK",
+)
+control_plane_branch_prefixes = (
+    "automation-health-meta-",
+    "automation-recovery-failed-session-block-",
+    "automation-circuit-breaker-followup-",
+)
+
+is_control_plane_pr = (
+    head_repo == repo
+    and (
+        head_ref.startswith(control_plane_branch_prefixes)
+        or any(marker in body for marker in control_plane_body_markers)
+    )
 )
 
 user_lower = user.lower()
@@ -34,9 +53,12 @@ has_jules_head = (
 )
 
 is_autonomous = (
-    is_jules_user
-    or has_jules_body_marker
-    or has_jules_head
+    not is_control_plane_pr
+    and (
+        is_jules_user
+        or has_jules_body_marker
+        or has_jules_head
+    )
 )
 
 print("true" if is_autonomous else "false")
