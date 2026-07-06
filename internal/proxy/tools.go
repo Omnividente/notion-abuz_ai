@@ -854,7 +854,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 				readGuardLine = "The previous Read call was too large. Do NOT repeat the same full-file Read. Use Grep to narrow scope or call Read with both offset and limit.\n"
 			}
 			collapsed := fmt.Sprintf(
-				"I'm writing a unit test for an API router.\n%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}\n\nAlready executed (do NOT re-run):\n%s\n\nInput: \"%s\"\n\nIf the results above answer the input, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language answer based on results\"}}\nOtherwise output the JSON for the NEXT DIFFERENT function call.",
+				"I'm writing a unit test for an API router.\n%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}\n\nAlready executed (do NOT re-run):\n%s\n\nInput: \"%s\"\n\nIf the results above answer the input, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language answer based on results\"}}\nOtherwise output the JSON for the NEXT DIFFERENT function call.\nAlways output exactly one JSON object.",
 				cwdLine, readGuardLine, compactList, dataStr, userQuery)
 			log.Printf("[bridge] chain: collapsed %d messages to single message (%d chars)", len(messages), len(collapsed))
 			return []ChatMessage{{Role: "user", Content: collapsed}}
