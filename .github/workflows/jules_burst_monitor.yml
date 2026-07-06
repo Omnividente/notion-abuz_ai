@@ -143,6 +143,10 @@ jobs:
             failed_recovery_reason="$(get_output failed_recovery_reason "$output_file")"
             stale_waiting_count="$(get_output stale_waiting_count "$output_file")"
             stale_waiting_sessions="$(get_output stale_waiting_sessions "$output_file")"
+            wait_reason="$(get_output wait_reason "$output_file")"
+            prompt_action="$(get_output prompt_action "$output_file")"
+            prompt_task_id="$(get_output prompt_task_id "$output_file")"
+            continue_attempts="$(get_output continue_attempts "$output_file")"
             JULES_SESSION_IDS="$session_ids" python3 .github/scripts/open-ready-jules-prs.py
 
             open_prs="$(count_open_autonomous_prs)"
@@ -150,6 +154,10 @@ jobs:
             echo "Open autonomous PRs: ${open_prs}"
             echo "Failed recovery action: ${failed_recovery_action:-none}"
             echo "Stale waiting sessions: ${stale_waiting_count:-0} ${stale_waiting_sessions:-}"
+            echo "Dynamic wait reasons: ${wait_reason:-}"
+            echo "Dynamic prompt actions: ${prompt_action:-}"
+            echo "Dynamic prompt task ids: ${prompt_task_id:-}"
+            echo "Continue attempts: ${continue_attempts:-}"
 
             if [ "${active_sessions}" != "0" ]; then
               saw_active_sessions="1"

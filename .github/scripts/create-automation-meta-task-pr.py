@@ -60,12 +60,14 @@ CODE_ALLOWED_PATHS = {
     ],
     "failed_session": [
         ".github/scripts/summarize-jules-failures.py",
+        ".github/scripts/jules_recovery_prompt.py",
         ".github/workflows/jules_unattended_monitor.yml",
         "agent_tasks.json",
     ],
     "failed_session_without_task_id": [
         ".github/scripts/summarize-jules-failures.py",
         ".github/scripts/summarize-jules-activities.py",
+        ".github/scripts/jules_recovery_prompt.py",
         ".github/workflows/jules_unattended_monitor.yml",
         "agent_tasks.json",
     ],

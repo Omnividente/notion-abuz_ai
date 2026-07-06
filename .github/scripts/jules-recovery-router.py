@@ -19,6 +19,13 @@ from pathlib import Path
 from typing import Any
 
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+import jules_recovery_prompt
+
+
 LEDGER_VARIABLE = "JULES_RECOVERY_ROUTER_LEDGER"
 ROUTER_MARKER = "AUTONOMOUS_RECOVERY_ROUTER"
 QUALITY_FIX_MARKER = "AUTONOMOUS_QUALITY_FIX_REQUEST"
@@ -57,7 +64,7 @@ PULL_DETAIL_MERGEABILITY_ATTEMPTS = 2
 PULL_DETAIL_MERGEABILITY_DELAY_SECONDS = 1
 GIT_CONFLICT_FALLBACK_DEPTH = "2000"
 SESSION_ID_RE = re.compile(r"(?<!\d)(\d{12,})(?!\d)")
-AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
+AUTONOMOUS_CONTINUE_TOKEN = jules_recovery_prompt.AUTONOMOUS_CONTINUE_TOKEN
 ACTIVE_JULES_STATES = {
     "QUEUED",
     "PLANNING",
@@ -73,61 +80,6 @@ def selector_requires_health_recovery(selector: dict[str, Any]) -> bool:
     return reason_code in {"no_todo_tasks", "no_eligible_autonomous_task"} or "no eligible" in reason
 
 
-FINALIZE_MARKERS = (
-    "before i wrap up",
-    "wrap up my work",
-    "ready for review",
-    "ready to finalize",
-    "ready for submission",
-    "all plan steps completed",
-    "open a new pull request",
-    "open the pull request",
-    "open/finalize the pr",
-    "anything else you'd like me to review",
-    "anything else you would like me to review",
-)
-TASK_ID_RE = re.compile(
-    r"""(?ix)
-    (?:
-        selected \s+ task \s+ id
-        | task_id
-        | "task_id"
-    )
-    \s* [:=] \s*
-    "?
-    ([a-z0-9][a-z0-9_.-]{2,})
-    "?
-    """
-)
-CONTINUE_PROMPT = """AUTONOMOUS_CONTINUE_TOKEN
-
-Продолжай без ожидания ответа пользователя.
-
-Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг и продолжай.
-Если последнее сообщение спрашивает, нужно ли запустить локальный сервер, локальные тесты, offline reproduction или изучить логи/artifacts, ответ: да, сделай это сам, если действие безопасно, недеструктивно, остается внутри scope/allowed_paths и не требует секретов.
-Если нужны live secrets, реальные credentials, production-доступ, high/critical risk или destructive action, не жди пользователя: зафиксируй concrete blocked_reason в agent_tasks.json и открой manifest-only PR.
-Оставайся внутри scope выбранной задачи и allowed_paths.
-Не создавай micro-PR/follow-up без live smoke, transcript, CI или offline reproduction evidence.
-Когда задача готова, открой один PR с label `jules` и корректным AUTONOMOUS_TASK_EVIDENCE.
-"""
-FINALIZE_PROMPT = """AUTONOMOUS_CONTINUE_TOKEN
-
-Дополнительное ревью не требуется. Финализируй эту задачу сейчас.
-
-Синхронизируй ветку с последним master, запусти нужную валидацию, отметь выбранную задачу в agent_tasks.json и открой один PR с label `jules`.
-В PR body добавь корректный AUTONOMOUS_TASK_EVIDENCE. Для blocked task обязательно добавь concrete blocked_reason.
-Не задавай новый вопрос-подтверждение.
-"""
-STALE_FEEDBACK_PROMPT = """AUTONOMOUS_CONTINUE_TOKEN
-
-Предыдущий autonomous continue уже был отправлен, но сессия всё ещё ждёт пользователя.
-
-Не жди дополнительного подтверждения. Выбери один безопасный исход:
-- если задачу можно завершить внутри scope/allowed_paths, синхронизируйся с master, запусти нужную валидацию и открой один PR с label `jules` и корректным AUTONOMOUS_TASK_EVIDENCE;
-- если продолжение требует missing secrets, production-доступ, high/critical risk или destructive action, отметь задачу `blocked` в agent_tasks.json, добавь concrete blocked_reason и открой manifest-only PR.
-
-Не задавай новый вопрос-подтверждение и не оставляй сессию в ожидании пользователя.
-"""
 
 
 @dataclass(frozen=True)
@@ -301,68 +253,17 @@ def task_statuses_from_manifest(manifest: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def extract_task_id_from_blob(data: Any) -> str:
-    text = json.dumps(data, ensure_ascii=False)
-    for match in TASK_ID_RE.finditer(text):
-        task_id = match.group(1).strip().strip('"')
-        if task_id and task_id.lower() not in {"null", "none", "task_id"}:
-            return task_id
-    return ""
+def task_details_from_manifest(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return jules_recovery_prompt.task_details_from_manifest(manifest)
 
 
 def summarize_activities(activities: list[dict[str, Any]]) -> dict[str, Any]:
-    latest_agent_epoch = 0
-    latest_user_epoch = 0
-    latest_token_epoch = 0
-    latest_agent_blob = ""
-
-    for activity in activities:
-        if not isinstance(activity, dict):
-            continue
-        originator = str(activity.get("originator", "")).lower()
-        epoch = parse_epoch(activity.get("createTime"))
-        blob = json.dumps(activity, ensure_ascii=False)
-        if "user" in originator:
-            latest_user_epoch = max(latest_user_epoch, epoch)
-            if AUTONOMOUS_CONTINUE_TOKEN in blob:
-                latest_token_epoch = max(latest_token_epoch, epoch)
-            continue
-        if epoch >= latest_agent_epoch:
-            latest_agent_epoch = epoch
-            latest_agent_blob = blob
-
-    latest_agent_lower = latest_agent_blob.lower()
-    wait_kind = "finalize" if any(marker in latest_agent_lower for marker in FINALIZE_MARKERS) else "continue"
-    failure_kind = ""
-    routine_markers = (
-        "пожалуйста, подскажите",
-        "подскажите",
-        "нужно ли",
-        "нужен ли",
-        "стоит ли",
-        "запустить локальный сервер",
-        "запустить сервер",
-        "запустить модульные тесты",
-        "воспроизвести",
-        "should i",
-        "do you want me",
-        "would you like me",
-        "need me to",
-        "run the local server",
-        "run local",
-        "reproduce",
-    )
-    if "?" in latest_agent_lower and any(marker in latest_agent_lower for marker in routine_markers):
-        failure_kind = "routine_question"
-
-    return {
-        "latest_agent_epoch": latest_agent_epoch,
-        "latest_user_epoch": latest_user_epoch,
-        "latest_token_epoch": latest_token_epoch,
-        "wait_kind": wait_kind,
-        "failure_kind": failure_kind,
-        "task_id": extract_task_id_from_blob({"activities": activities}),
-    }
+    summary = jules_recovery_prompt.summarize_activities(activities)
+    if summary.get("wait_reason") == "routine_question":
+        summary["failure_kind"] = "routine_question"
+    else:
+        summary["failure_kind"] = ""
+    return summary
 
 
 def is_autonomous_pr(pr: dict[str, Any], *, repo: str, task_ids: list[str]) -> bool:
@@ -811,8 +712,29 @@ def stale_after_recorded_continue(
     return now - timestamp >= timedelta(minutes=STALE_AWAITING_FEEDBACK_MINUTES)
 
 
+def recovery_prompt_payload_for_session(
+    session: dict[str, Any],
+    state: dict[str, Any],
+    *,
+    mode: str,
+    stale_reason: str = "",
+) -> dict[str, Any]:
+    summary = dict(session.get("activity_summary") or {})
+    task_id = str(session.get("task_id") or summary.get("task_id") or "")
+    task = (state.get("task_details") or {}).get(task_id)
+    return jules_recovery_prompt.build_prompt_payload(
+        summary=summary,
+        task=task,
+        task_id=task_id,
+        mode=mode,
+        stale_reason=stale_reason,
+        max_continue_attempts=MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS,
+    )
+
+
 def plan_stale_feedback_action(
     session: dict[str, Any],
+    state: dict[str, Any],
     ledger: dict[str, Any],
     *,
     now: datetime,
@@ -843,12 +765,24 @@ def plan_stale_feedback_action(
         )
 
     attempt = len(previous) + 1
+    prompt_payload = recovery_prompt_payload_for_session(
+        session,
+        state,
+        mode="stale",
+        stale_reason=reason,
+    )
     return RecoveryAction(
         type="jules_send_message",
         dedupe_key=f"{prefix}attempt-{attempt}",
         reason=f"Jules session {session_id} is still awaiting user feedback after autonomous continue: {reason}",
         ttl_minutes=24 * 60,
-        payload={"session": session_name, "prompt": STALE_FEEDBACK_PROMPT},
+        payload={
+            "session": session_name,
+            "prompt": prompt_payload["prompt"],
+            "wait_reason": prompt_payload["wait_reason"],
+            "prompt_action": prompt_payload["prompt_action"],
+            "task_id": prompt_payload["task_id"],
+        },
     )
 
 
@@ -1043,8 +977,12 @@ def plan_recovery_actions(
             return actions
         if session_state == "AWAITING_USER_FEEDBACK" and should_continue_session(session):
             summary = session.get("activity_summary") or {}
-            wait_kind = str(summary.get("wait_kind") or "continue")
-            prompt = FINALIZE_PROMPT if wait_kind == "finalize" else CONTINUE_PROMPT
+            prompt_payload = recovery_prompt_payload_for_session(
+                session,
+                state,
+                mode="continue",
+            )
+            prompt = prompt_payload["prompt"]
             dedupe_key = f"continue:{session_id}:{summary.get('latest_agent_epoch') or update_marker}"
             if not action_recently_done(ledger, dedupe_key, now=now, ttl_minutes=24 * 60):
                 actions.append(
@@ -1053,12 +991,19 @@ def plan_recovery_actions(
                         dedupe_key=dedupe_key,
                         reason=f"Jules session {session_id} is awaiting user feedback",
                         ttl_minutes=24 * 60,
-                        payload={"session": session_name, "prompt": prompt},
+                        payload={
+                            "session": session_name,
+                            "prompt": prompt,
+                            "wait_reason": prompt_payload["wait_reason"],
+                            "prompt_action": prompt_payload["prompt_action"],
+                            "task_id": prompt_payload["task_id"],
+                        },
                     )
                 )
             elif stale_after_recorded_continue(ledger, dedupe_key, now=now):
                 action = plan_stale_feedback_action(
                     session,
+                    state,
                     ledger,
                     now=now,
                     reason="recorded continue did not produce new agent activity",
@@ -1069,6 +1014,7 @@ def plan_recovery_actions(
         if session_state == "AWAITING_USER_FEEDBACK" and stale_after_autonomous_continue(session, now=now):
             action = plan_stale_feedback_action(
                 session,
+                state,
                 ledger,
                 now=now,
                 reason="latest autonomous continue token is stale",
@@ -1715,6 +1661,7 @@ def collect_live_state(
         "workflow_runs": workflow_runs,
         "selector": run_selector(manifest, focus=focus, risk_ceiling=risk_ceiling),
         "task_statuses": task_statuses_from_manifest(manifest_data),
+        "task_details": task_details_from_manifest(manifest_data),
         "jules": collect_jules_sessions(
             jules_clients,
             source=jules_source,

@@ -39,6 +39,7 @@ args = sys.argv[1:]
 method = "GET"
 out = ""
 url = ""
+body = ""
 i = 0
 while i < len(args):
     arg = args[i]
@@ -46,7 +47,11 @@ while i < len(args):
         method = args[i + 1]
         i += 2
         continue
-    if arg in {"-H", "-d"}:
+    if arg == "-H":
+        i += 2
+        continue
+    if arg == "-d":
+        body = args[i + 1]
         i += 2
         continue
     if arg == "-o":
@@ -62,7 +67,8 @@ if not out:
     raise SystemExit(2)
 
 now = int(os.environ["FAKE_NOW_EPOCH"])
-session_name = "sessions/test-repeat-feedback"
+scenario = os.environ.get("FAKE_SCENARIO", "repeat_feedback")
+session_name = "sessions/test-routine" if scenario == "routine_question" else "sessions/test-repeat-feedback"
 task_id = "proxy-runtime-final-answer-mode-stability"
 
 if method == "GET" and url.endswith("/sessions?pageSize=100"):
@@ -74,6 +80,22 @@ if method == "GET" and url.endswith("/sessions?pageSize=100"):
                 "sourceContext": {"source": "sources/github/Omnividente/notion-abuz_ai"},
                 "createTime": iso(now - 900),
                 "updateTime": iso(now - 60),
+            }
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "routine_question":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 300),
+                "message": {
+                    "text": (
+                        f"selected task id: {task_id}\n"
+                        "Should I run local tests before opening the PR? "
+                        "ghp_abcdef1234567890"
+                    )
+                },
             }
         ]
     }
@@ -104,11 +126,12 @@ elif method == "GET" and f"/{session_name}/activities?" in url:
             },
         ]
     }
+elif method == "POST" and url.endswith(f"/{session_name}:sendMessage"):
+    Path(os.environ["FAKE_CURL_LOG"]).write_text(f"POST {session_name}\n", encoding="utf-8")
+    Path(os.environ["FAKE_SEND_BODY"]).write_text(body, encoding="utf-8")
+    payload = {}
 elif method == "DELETE" and url.endswith(f"/{session_name}"):
-    Path(os.environ["FAKE_CURL_LOG"]).write_text(
-        f"DELETE {session_name}\n",
-        encoding="utf-8",
-    )
+    Path(os.environ["FAKE_CURL_LOG"]).write_text(f"DELETE {session_name}\n", encoding="utf-8")
     payload = {}
 else:
     print(f"unexpected fake curl call: method={method} url={url}", file=sys.stderr)
@@ -120,50 +143,90 @@ PY
 
 
 class JulesUnattendedMonitorTest(unittest.TestCase):
-    def test_repeated_autonomous_continue_limit_deletes_without_waiting_for_stale_age(self) -> None:
+    def run_monitor(self, tmp_path: Path, *, scenario: str) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
         if not shutil.which("bash"):
             self.skipTest("bash is required for jules-unattended-monitor.sh")
         if not shutil.which("jq"):
             self.skipTest("jq is required for jules-unattended-monitor.sh")
 
+        fake_bin = tmp_path / "bin"
+        fake_bin.mkdir()
+        fake_curl = fake_bin / "curl"
+        fake_curl.write_text(FAKE_CURL, encoding="utf-8", newline="\n")
+        fake_curl.chmod(0o755)
+
+        output_path = tmp_path / "github-output.txt"
+        curl_log = tmp_path / "curl.log"
+        send_body = tmp_path / "send-body.json"
+        env = os.environ.copy()
+        env.update(
+            {
+                "PATH": str(fake_bin) + os.pathsep + env.get("PATH", ""),
+                "PYTHON_FOR_FAKE_CURL": sys.executable,
+                "FAKE_NOW_EPOCH": str(int(time.time())),
+                "FAKE_SCENARIO": scenario,
+                "FAKE_CURL_LOG": str(curl_log),
+                "FAKE_SEND_BODY": str(send_body),
+                "GITHUB_OUTPUT": str(output_path),
+                "GITHUB_REPOSITORY": "Omnividente/notion-abuz_ai",
+                "JULES_API_KEY": "fake-key",
+                "LOOKBACK_HOURS": "24",
+                "MIN_USER_REPLY_INTERVAL_MINUTES": "0",
+                "STALE_AWAITING_FEEDBACK_MINUTES": "10",
+                "MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS": "2",
+            }
+        )
+        for name in ("JULES_API_KEY_BACKUP", "GITHUB_API_TOKEN", "GITHUB_API_URL"):
+            env.pop(name, None)
+
+        result = subprocess.run(
+            ["bash", str(SCRIPT)],
+            cwd=ROOT,
+            env=env,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
+        )
+        return result, output_path, send_body
+
+    def test_dynamic_prompt_answers_routine_question_with_task_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            fake_bin = tmp_path / "bin"
-            fake_bin.mkdir()
-            fake_curl = fake_bin / "curl"
-            fake_curl.write_text(FAKE_CURL, encoding="utf-8", newline="\n")
-            fake_curl.chmod(0o755)
+            result, output_path, send_body = self.run_monitor(tmp_path, scenario="routine_question")
 
-            output_path = tmp_path / "github-output.txt"
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("Sent dynamic autonomous continue recovery message", result.stdout)
+            body = json.loads(send_body.read_text(encoding="utf-8"))
+            prompt = body["prompt"]
+            self.assertIn("task_id: proxy-runtime-final-answer-mode-stability", prompt)
+            self.assertIn("wait_reason: routine_question", prompt)
+            self.assertIn("prompt_action: choose_safe_next_step", prompt)
+            self.assertIn("allowed_paths:", prompt)
+            self.assertIn("[REDACTED]", prompt)
+            self.assertNotIn("ghp_abcdef1234567890", prompt)
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "1")
+            self.assertIn("routine_question", outputs["wait_reason"])
+            self.assertIn("choose_safe_next_step", outputs["prompt_action"])
+            self.assertIn(TASK_ID, outputs["prompt_task_id"])
+            self.assertIn("0/2", outputs["continue_attempts"])
+
+    def test_repeated_autonomous_continue_limit_deletes_without_waiting_for_stale_age(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, _send_body = self.run_monitor(tmp_path, scenario="repeat_feedback")
             curl_log = tmp_path / "curl.log"
-            env = os.environ.copy()
-            env.update(
-                {
-                    "PATH": str(fake_bin) + os.pathsep + env.get("PATH", ""),
-                    "PYTHON_FOR_FAKE_CURL": sys.executable,
-                    "FAKE_NOW_EPOCH": str(int(time.time())),
-                    "FAKE_CURL_LOG": str(curl_log),
-                    "GITHUB_OUTPUT": str(output_path),
-                    "GITHUB_REPOSITORY": "Omnividente/notion-abuz_ai",
-                    "JULES_API_KEY": "fake-key",
-                    "LOOKBACK_HOURS": "24",
-                    "MIN_USER_REPLY_INTERVAL_MINUTES": "0",
-                    "STALE_AWAITING_FEEDBACK_MINUTES": "10",
-                    "MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS": "2",
-                }
-            )
-            for name in ("JULES_API_KEY_BACKUP", "GITHUB_API_TOKEN", "GITHUB_API_URL"):
-                env.pop(name, None)
-
-            result = subprocess.run(
-                ["bash", str(SCRIPT)],
-                cwd=ROOT,
-                env=env,
-                text=True,
-                encoding="utf-8",
-                capture_output=True,
-                check=False,
-            )
 
             self.assertEqual(
                 result.returncode,

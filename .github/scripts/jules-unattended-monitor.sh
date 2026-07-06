@@ -8,92 +8,6 @@ MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
 STALE_AWAITING_FEEDBACK_MINUTES="${STALE_AWAITING_FEEDBACK_MINUTES:-10}"
 MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS="${MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS:-2}"
 
-read -r -d '' CONTINUE_PROMPT <<'EOF' || true
-AUTONOMOUS_CONTINUE_TOKEN
-
-Продолжай без ожидания ответа пользователя.
-
-Пиши все пользовательские сообщения, объяснения плана, PR title/body и финальные summary на русском. Оставляй file paths, task ids, команды, API names, code identifiers и quoted errors на языке оригинала.
-
-Если последнее сообщение просит выбрать между безопасными вариантами, выбери сам самый маленький обратимый low/medium-risk шаг и продолжай.
-Если последнее сообщение спрашивает, нужно ли запустить локальный сервер, локальные тесты, offline reproduction или изучить логи/artifacts, ответ: да, сделай это сам, если действие безопасно, недеструктивно, остается внутри scope/allowed_paths и не требует секретов.
-Если для воспроизведения нужны live secrets, реальные credentials или production-доступ, не спрашивай пользователя в этой сессии. Вместо этого зафиксируй точный blocker в agent_tasks.json и открой manifest-only PR.
-Оставайся внутри scope выбранной задачи и allowed_paths.
-Не дроби работу на отдельные micro-PR: если связанный тест, лог, doc или artifact-capture проверяет тот же failure mode и остается в allowed_paths, заверши это в текущем PR. Не создавай новую Jules-сессию, PR или follow-up задачу ради одного маленького edge-case теста без live smoke, transcript, CI или offline reproduction evidence.
-Перед открытием PR синхронизируйся с последним master/default branch. Если master изменился во время сессии, rebase/merge latest master перед PR. При конфликте в agent_tasks.json сохрани актуальную очередь из master и наложи только статус выбранной задачи и конкретные follow-up задачи этой сессии.
-Не открывай PR, если он заведомо dirty/conflicting с master.
-Запусти нужную валидацию.
-Когда задача готова, открой один PR с русским title/body и label `jules`.
-В PR body обязательно добавь ровно один блок:
-<!-- AUTONOMOUS_TASK_EVIDENCE
-task_id: <selected task id>
-status: done|blocked
-acceptance:
-- <acceptance criterion> -> <changed file/test/artifact evidence>
-evidence_files:
-- <repo-relative changed file path>
-checks:
-- <validation command that was run>
-micro_pr_justification: <why this is one complete task theme, not a micro PR>
--->
-Если status: blocked, добавь строку `blocked_reason: <concrete blocker>`.
-Все `evidence_files` должны быть файлами, измененными этим PR.
-Не задавай новый вопрос-подтверждение, если нет блокера из-за missing permissions, missing secrets, high/critical risk или неизбежного destructive action.
-
-В следующем сообщении обязательно кратко укажи:
-- Этап плана
-- Что сделано
-- Что дальше
-- Зачем
-- Почему так
-- Проверки/риски
-EOF
-
-read -r -d '' FINALIZE_PROMPT <<'EOF' || true
-AUTONOMOUS_CONTINUE_TOKEN
-
-Дополнительное ревью не требуется.
-
-Финализируй эту задачу сейчас:
-- Отметь выбранную задачу как завершенную в agent_tasks.json.
-- Не добавляй новую follow-up задачу ради одного маленького теста/лога/doc-строки, если нет конкретного live smoke, transcript, CI или offline reproduction evidence.
-- Синхронизируй ветку с последним master/default branch перед PR.
-- Если master изменился во время сессии, rebase/merge latest master. При конфликте в agent_tasks.json сохрани актуальную очередь из master и наложи только статус выбранной задачи и конкретные follow-up задачи этой сессии.
-- Открой один pull request для готовых изменений.
-- Дай PR русский title/body.
-- Поставь label `jules`.
-- В PR body добавь ровно один блок `AUTONOMOUS_TASK_EVIDENCE` с `task_id`, `status`, mapping всех acceptance criteria к evidence, измененными `evidence_files`, выполненными `checks` и `micro_pr_justification`. Для blocked добавь `blocked_reason`.
-- Не задавай новый вопрос-подтверждение.
-
-В финальном сообщении на русском укажи:
-- Этап плана
-- Что сделано
-- Что дальше
-- Зачем
-- Почему так
-- Проверки/риски
-EOF
-
-read -r -d '' STALE_FEEDBACK_PROMPT <<'EOF' || true
-AUTONOMOUS_CONTINUE_TOKEN
-
-Предыдущий autonomous continue уже был отправлен, но сессия всё ещё ждёт пользователя.
-
-Не жди дополнительного подтверждения. Выбери один безопасный исход:
-- если задачу можно завершить внутри scope/allowed_paths, синхронизируйся с master, запусти нужную валидацию и открой один PR с label `jules` и корректным AUTONOMOUS_TASK_EVIDENCE;
-- если продолжение требует missing secrets, production-доступ, high/critical risk или destructive action, отметь задачу `blocked` в agent_tasks.json, добавь concrete blocked_reason и открой manifest-only PR.
-
-Не задавай новый вопрос-подтверждение и не оставляй сессию в ожидании пользователя.
-
-В финальном сообщении на русском укажи:
-- Этап плана
-- Что сделано
-- Что дальше
-- Зачем
-- Почему так
-- Проверки/риски
-EOF
-
 if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
   echo "::warning::No Jules API keys configured; unattended monitor cannot inspect sessions."
   {
@@ -142,6 +56,10 @@ touched_sessions=0
 api_available=false
 session_ids=()
 stale_waiting_sessions=()
+wait_reason_details=()
+prompt_action_details=()
+prompt_task_id_details=()
+continue_attempt_details=()
 declare -A seen_sessions=()
 
 jules_get() {
@@ -243,6 +161,44 @@ record_active_task_id() {
   fi
 }
 
+build_recovery_prompt() {
+  local activities_file="$1"
+  local task_id="$2"
+  local mode="$3"
+  local stale_reason="$4"
+  local out="$5"
+
+  python3 .github/scripts/jules_recovery_prompt.py \
+    --activities "$activities_file" \
+    --manifest agent_tasks.json \
+    --task-id "$task_id" \
+    --mode "$mode" \
+    --stale-reason "$stale_reason" \
+    --max-continue-attempts "$max_stale_escalations" \
+    > "$out"
+}
+
+record_prompt_detail() {
+  local session_id="$1"
+  local prompt_json="$2"
+  local wait_reason
+  local prompt_action
+  local prompt_task_id
+  local continue_attempts
+
+  wait_reason="$(jq -r '.wait_reason // "unknown_continue"' "$prompt_json")"
+  prompt_action="$(jq -r '.prompt_action // "continue_safely"' "$prompt_json")"
+  prompt_task_id="$(jq -r '.task_id // ""' "$prompt_json")"
+  continue_attempts="$(jq -r '.continue_attempts // 0' "$prompt_json")"
+
+  wait_reason_details+=("${session_id}:${wait_reason}")
+  prompt_action_details+=("${session_id}:${prompt_action}")
+  if [ -n "$prompt_task_id" ]; then
+    prompt_task_id_details+=("${session_id}:${prompt_task_id}")
+  fi
+  continue_attempt_details+=("${session_id}:${continue_attempts}/${max_stale_escalations}")
+}
+
 session_epoch_filter='
   def ts:
     ((.updateTime // .createTime // "1970-01-01T00:00:00Z")
@@ -333,22 +289,31 @@ for i in "${!key_labels[@]}"; do
     if ! jules_get "$key" "${session_name}/activities?pageSize=30" "$activities_file"; then
       echo "::warning::Could not list activities for ${session_name}; skipping auto-continue to avoid duplicate prompts."
       continue
-    else
-      activity_summary="$(python3 .github/scripts/summarize-jules-activities.py "$activities_file")"
     fi
 
-    IFS=$'\t' read -r latest_agent_epoch last_user_epoch latest_token_epoch wait_kind continue_token_count <<<"$activity_summary"
+    prompt_json="${tmpdir}/prompt-${session_name//\//-}.json"
+    if ! build_recovery_prompt "$activities_file" "$active_task_id" "continue" "" "$prompt_json"; then
+      echo "::warning::Could not build recovery prompt for ${session_name}; skipping auto-continue."
+      record_active_task_id "$active_task_id"
+      continue
+    fi
+
+    latest_agent_epoch="$(jq -r '.summary.latest_agent_epoch // 0' "$prompt_json")"
+    last_user_epoch="$(jq -r '.summary.latest_user_epoch // 0' "$prompt_json")"
+    latest_token_epoch="$(jq -r '.summary.latest_token_epoch // 0' "$prompt_json")"
+    wait_kind="$(jq -r '.summary.wait_kind // "continue"' "$prompt_json")"
+    continue_token_count="$(jq -r '.summary.continue_token_count // 0' "$prompt_json")"
     continue_token_count="${continue_token_count:-0}"
+    prompt_task_id="$(jq -r '.task_id // ""' "$prompt_json")"
+    if [ -z "$active_task_id" ] && [ -n "$prompt_task_id" ]; then
+      active_task_id="$prompt_task_id"
+    fi
+    prompt="$(jq -r '.prompt // ""' "$prompt_json")"
 
     if [ "${latest_agent_epoch:-0}" -eq 0 ]; then
       echo "Skipped ${session_name}; no agent activity found to answer."
       record_active_task_id "$active_task_id"
       continue
-    fi
-
-    prompt="$CONTINUE_PROMPT"
-    if [ "${wait_kind:-continue}" = "finalize" ]; then
-      prompt="$FINALIZE_PROMPT"
     fi
 
     if [ "${latest_token_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
@@ -360,6 +325,7 @@ for i in "${!key_labels[@]}"; do
       fi
       if [ "$continue_token_count" -ge "$max_stale_escalations" ]; then
         echo "Autonomous continue limit reached for ${session_name}; deleting stale session and blocking task."
+        record_prompt_detail "${session_name##*/}" "$prompt_json"
         if [ -n "$active_task_id" ]; then
           printf '%s\t%s\t%s\n' "${session_name##*/}" "$active_task_id" "repeated_stale_feedback" >> "$failed_sessions_file"
         fi
@@ -376,13 +342,19 @@ for i in "${!key_labels[@]}"; do
       fi
       if [ "$token_age" -lt "$stale_feedback_seconds" ]; then
         echo "Skipped ${session_name}; autonomous continue already answers the latest wait state (${token_age}s old, stale threshold ${stale_feedback_seconds}s, continue tokens ${continue_token_count}/${max_stale_escalations})."
+        record_prompt_detail "${session_name##*/}" "$prompt_json"
         stale_waiting_sessions+=("${session_name##*/}:${token_age}s/${stale_feedback_seconds}s:${continue_token_count}/${max_stale_escalations}")
         record_active_task_id "$active_task_id"
         continue
       fi
       echo "Previous autonomous continue for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation ${continue_token_count}/${max_stale_escalations}."
       stale_waiting_sessions+=("${session_name##*/}:stale:${continue_token_count}/${max_stale_escalations}")
-      prompt="$STALE_FEEDBACK_PROMPT"
+      if ! build_recovery_prompt "$activities_file" "$active_task_id" "stale" "latest autonomous continue token is stale" "$prompt_json"; then
+        echo "::warning::Could not build stale recovery prompt for ${session_name}; skipping auto-continue."
+        record_active_task_id "$active_task_id"
+        continue
+      fi
+      prompt="$(jq -r '.prompt // ""' "$prompt_json")"
     elif [ "${last_user_epoch:-0}" -ge "${latest_agent_epoch:-0}" ]; then
       echo "Skipped ${session_name}; a user message already answers the latest wait state."
       record_active_task_id "$active_task_id"
@@ -391,6 +363,7 @@ for i in "${!key_labels[@]}"; do
 
     if [ "$continue_token_count" -ge "$max_stale_escalations" ]; then
       echo "Autonomous continue limit reached for ${session_name}; deleting repeated feedback session and blocking task."
+      record_prompt_detail "${session_name##*/}" "$prompt_json"
       if [ -n "$active_task_id" ]; then
         printf '%s\t%s\t%s\n' "${session_name##*/}" "$active_task_id" "repeated_stale_feedback" >> "$failed_sessions_file"
       fi
@@ -413,10 +386,11 @@ for i in "${!key_labels[@]}"; do
     fi
 
     record_active_task_id "$active_task_id"
+    record_prompt_detail "${session_name##*/}" "$prompt_json"
     body="$(jq -n --arg prompt "$prompt" '{prompt: $prompt}')"
     out="${tmpdir}/send-${session_name//\//-}.json"
     if jules_post "$key" "${session_name}:sendMessage" "$body" "$out"; then
-      echo "Sent autonomous ${wait_kind:-continue} message to ${session_name}."
+      echo "Sent dynamic autonomous ${wait_kind:-continue} recovery message to ${session_name}."
       touched_sessions=$((touched_sessions + 1))
     else
       echo "::warning::Could not send autonomous continue message to ${session_name}."
@@ -437,6 +411,10 @@ echo "Touched Jules sessions: ${touched_sessions}"
 echo "Stale waiting Jules sessions: ${#stale_waiting_sessions[@]}"
 session_ids_csv="$(IFS=,; echo "${session_ids[*]}")"
 stale_waiting_csv="$(IFS=,; echo "${stale_waiting_sessions[*]}")"
+wait_reason_csv="$(IFS=,; echo "${wait_reason_details[*]}")"
+prompt_action_csv="$(IFS=,; echo "${prompt_action_details[*]}")"
+prompt_task_id_csv="$(IFS=,; echo "${prompt_task_id_details[*]}")"
+continue_attempt_csv="$(IFS=,; echo "${continue_attempt_details[*]}")"
 
 {
   echo "active_sessions=${active_sessions}"
@@ -445,4 +423,8 @@ stale_waiting_csv="$(IFS=,; echo "${stale_waiting_sessions[*]}")"
   echo "session_ids=${session_ids_csv}"
   echo "stale_waiting_sessions=${stale_waiting_csv}"
   echo "stale_waiting_count=${#stale_waiting_sessions[@]}"
+  echo "wait_reason=${wait_reason_csv}"
+  echo "prompt_action=${prompt_action_csv}"
+  echo "prompt_task_id=${prompt_task_id_csv}"
+  echo "continue_attempts=${continue_attempt_csv}"
 } >> "${GITHUB_OUTPUT:-/dev/null}"

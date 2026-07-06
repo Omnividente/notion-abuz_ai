@@ -63,6 +63,10 @@ jobs:
             echo "- Touched sessions: \`${{ steps.jules-monitor.outputs.touched_sessions }}\`"
             echo "- Stale waiting sessions: \`${{ steps.jules-monitor.outputs.stale_waiting_count }}\`"
             echo "- Stale session details: \`${{ steps.jules-monitor.outputs.stale_waiting_sessions }}\`"
+            echo "- Wait reasons: \`${{ steps.jules-monitor.outputs.wait_reason }}\`"
+            echo "- Prompt actions: \`${{ steps.jules-monitor.outputs.prompt_action }}\`"
+            echo "- Prompt task ids: \`${{ steps.jules-monitor.outputs.prompt_task_id }}\`"
+            echo "- Continue attempts: \`${{ steps.jules-monitor.outputs.continue_attempts }}\`"
             echo "- Failed recovery action: \`${{ steps.jules-monitor.outputs.failed_recovery_action }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
