@@ -5577,7 +5577,7 @@
     },
     {
       "id": "proxy-session-recovery-latest-user-message-truncation-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for latest user message truncation in session recovery",
