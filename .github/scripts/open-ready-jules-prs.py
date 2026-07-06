@@ -62,6 +62,8 @@ pulls = request("GET", f"/repos/{repo}/pulls?state=all&per_page=100") or []
 
 def is_autonomous_pr(pr):
     labels = {label["name"] for label in pr.get("labels", [])}
+    if labels & {"human-review", "no-automerge", "stop-loop"}:
+        return False
     head_ref = (pr.get("head") or {}).get("ref", "")
     return "jules" in labels or is_jules_branch(head_ref)
 

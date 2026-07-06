@@ -5689,7 +5689,7 @@
     },
     {
       "id": "automation-health-duplicate-open-autonomous-prs-cdeca939",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "medium",
       "title": "Fix automation health finding: duplicate_open_autonomous_prs",
