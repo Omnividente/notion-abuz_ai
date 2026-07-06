@@ -5867,7 +5867,7 @@
     },
     {
       "id": "proxy-runtime-json-tool-call-mode-retention",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Fix JSON tool-call mode retention during fallback",
@@ -5915,6 +5915,60 @@
         "Reproduce incomplete context errors from transient API failures using offline reproduction.",
         "Implement graceful recovery in proxy/session.go.",
         "Add tests demonstrating correct recovery behavior."
+      ]
+    },
+    {
+      "id": "proxy-runtime-legacy-collapse-truncation-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add metric tracking for legacy collapse truncation events",
+      "description": "The legacy collapse logic currently truncates tool outputs that exceed 800 characters, but lacks robust metric assertions in tests to ensure we don't regress. Add explicit test coverage for the contextLossMetrics map when legacy collapse truncation occurs.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add test coverage that asserts contextLossMetrics[\"legacy_collapse_truncated\"] is incremented.",
+        "Ensure the test intercepts log output to verify exact diagnostic logging.",
+        "Update manifest to mark this task as done."
+      ]
+    },
+    {
+      "id": "proxy-runtime-session-empty-system-prompt-metric",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Track empty system prompts dropped during session recovery",
+      "description": "Session recovery explicitly drops empty system messages and logs it, but we should also track this context loss metric to monitor Claude Code bridge stability over time.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add context loss metric tracking for empty system prompt drops.",
+        "Add explicit test case to verify metric is tracked.",
+        "Update manifest to mark this task as done."
+      ]
+    },
+    {
+      "id": "proxy-runtime-tool-result-continuation-context-loss",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Improve diagnostic logging for dropped context during multi-turn continuation",
+      "description": "When multi-turn session continuation occurs, verify that diagnostic logs accurately capture context loss if early round tool results are dropped.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Enhance diagnostic logging in session continuation.",
+        "Add test coverage for the enhanced logging.",
+        "Update manifest to mark this task as done."
       ]
     }
   ]

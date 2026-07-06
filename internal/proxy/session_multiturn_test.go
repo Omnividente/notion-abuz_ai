@@ -460,6 +460,9 @@ func TestInjectToolsSessionVsLegacy(t *testing.T) {
 	if !strings.Contains(resultNoSession[0].Content, "list all go files") {
 		t.Error("legacy path: expected original query in collapsed message")
 	}
+	if !strings.Contains(resultNoSession[0].Content, "Always output exactly one JSON object.") {
+		t.Error("legacy path: expected JSON object instruction in collapsed message")
+	}
 }
 
 // TestClaudeCodeAgentLoop_MultiTurnReadEditTest verifies that a multi-turn
