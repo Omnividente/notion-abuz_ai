@@ -69,7 +69,12 @@ jobs:
           bash -n .github/scripts/rdsh-local-live-smoke.sh
 
       - name: Check Go formatting
-        run: test -z "$(gofmt -l .)"
+        run: |
+          files="$(gofmt -l .)"
+          if [ -n "$files" ]; then
+            printf 'gofmt required for:\n%s\n' "$files"
+            exit 1
+          fi
 
       - name: Build dashboard
         working-directory: web
