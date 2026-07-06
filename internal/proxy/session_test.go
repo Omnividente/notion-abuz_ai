@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 	"strings"
-	"unicode/utf8"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestBuildRecoveryMessages_InstructionPreservation_Short(t *testing.T) {
