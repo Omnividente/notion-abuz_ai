@@ -5466,7 +5466,7 @@
     },
     {
       "id": "proxy-tools-schema-json-truncation-unicode-boundary-test-followup-4001",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add bounds testing for exact 4001 byte multibyte character truncation",
@@ -5480,6 +5480,23 @@
         "Verify a test checks 4001 multi-byte boundary explicitly",
         "Ensure the string uses comma-ok",
         "Ensure the text uses utf8.ValidString"
+      ]
+    },
+    {
+      "id": "proxy-tools-schema-json-truncation-utf8-robustness-check-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test to verify truncation with 4-byte unicode emojis",
+      "description": "Ensure metric truncates exactly correctly with complex 4-byte runes without panicking.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify a test checks boundaries with 4-byte emoji runes",
+        "Ensure the text uses utf8.ValidString after truncation"
       ]
     }
   ]
