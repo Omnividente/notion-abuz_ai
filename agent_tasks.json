@@ -5609,7 +5609,7 @@
     },
     {
       "id": "proxy-tools-test-clean-up-extra-newlines-followup-newline-validation-2",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test to validate tool schema JSON truncation limit edge cases with negative values and unicode strings",
@@ -5638,6 +5638,23 @@
       ],
       "acceptance": [
         "Test is added that validates output format of tool list matching the old fallback standard format"
+      ]
+    },
+    {
+      "id": "proxy-tools-test-compact-tool-list-unicode-truncation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for buildCompactToolList description unicode truncation",
+      "description": "Ensure metric truncates without corrupting multi-byte unicode strings when tool descriptions exceed 80 runes in compact tool lists.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify a test validates buildCompactToolList truncation limits with unicode tool descriptions.",
+        "Ensure the test explicitly asserts unicode validity on the truncated result."
       ]
     }
   ]
