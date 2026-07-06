@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"os"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -3348,5 +3349,37 @@ func TestBuildCompactToolList_UnicodeTruncation(t *testing.T) {
 
 	if !exists || count != 1 {
 		t.Errorf("Expected compact_tool_list_truncated metric to be 1, got %d (exists: %v)", count, exists)
+	}
+}
+
+func TestBuildSessionChainContinuation_DroppedToolResult(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	var buf strings.Builder
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Start"},
+		{Role: "assistant", Content: "Plan", ToolCalls: []ToolCall{{ID: "call_1", Function: ToolCallFunction{Name: "Bash", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "Old result"},
+		{Role: "assistant", Content: "Plan", ToolCalls: []ToolCall{{ID: "call_2", Function: ToolCallFunction{Name: "Read", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "call_2", Name: "Read", Content: "New result"},
+	}
+
+	buildSessionChainContinuation(messages, "Bash, Read", "")
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "multi-turn session continuation dropped early round tool result") {
+		t.Errorf("Expected dropped tool result diagnostic, got: %s", logOutput)
+	}
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["session_continuation_dropped_tool_result"]
+	contextLossMetricsMu.Unlock()
+	if count != 1 {
+		t.Errorf("Expected session_continuation_dropped_tool_result metric to be 1, got %d", count)
 	}
 }

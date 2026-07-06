@@ -404,3 +404,37 @@ func TestBuildRecoveryMessages_ContextLoss_ToolResultTruncationBoundaries(t *tes
 		}
 	})
 }
+
+func TestBuildRecoveryMessages_DroppedToolResult(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+	var buf strings.Builder
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Run command"},
+		{Role: "assistant", Content: "Running"},
+		{Role: "tool", Name: "Bash", Content: "Success"},
+		{Role: "assistant", Content: "Done"},
+		{Role: "user", Content: "Next command"},
+	}
+
+	// Make history large enough to trigger dropping
+
+	messages = []ChatMessage{
+		{Role: "user", Content: "Start"},
+	}
+	for i := 0; i < 10; i++ {
+		messages = append(messages, ChatMessage{Role: "tool", Name: "Read", Content: strings.Repeat("A", 1000)})
+		messages = append(messages, ChatMessage{Role: "assistant", Content: "Progress"})
+	}
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "early round tool results") {
+		t.Errorf("Expected early round tool result diagnostic, got: %s", logOutput)
+	}
+}

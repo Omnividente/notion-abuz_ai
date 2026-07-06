@@ -5955,7 +5955,7 @@
     },
     {
       "id": "proxy-runtime-tool-result-continuation-context-loss",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Improve diagnostic logging for dropped context during multi-turn continuation",
@@ -5968,6 +5968,24 @@
       "acceptance": [
         "Enhance diagnostic logging in session continuation.",
         "Add test coverage for the enhanced logging.",
+        "Update manifest to mark this task as done."
+      ]
+    },
+    {
+      "id": "proxy-observability-search-context-truncation-metrics-followup2",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Add tracking for legacy collapse search context truncation boundary edge case",
+      "description": "Add a test to ensure that when a search context in legacy collapse is exactly 800 characters (the truncation boundary), it is not truncated and no context loss metric is emitted.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A test asserts that a search context of exactly 800 characters is not truncated in legacy collapse.",
+        "The test asserts no context loss metric is recorded for this boundary.",
         "Update manifest to mark this task as done."
       ]
     }
