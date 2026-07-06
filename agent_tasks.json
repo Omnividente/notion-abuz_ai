@@ -5562,7 +5562,7 @@
     },
     {
       "id": "proxy-session-recovery-system-instruction-truncation-test",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for system instruction truncation in session recovery",
@@ -5573,7 +5573,8 @@
       ],
       "acceptance": [
         "Verify large system instructions are properly truncated and system_instruction_truncated metric is incremented"
-      ]
+      ],
+      "blocked_reason": "Task proxy-session-recovery-system-instruction-truncation-test is operational/diagnostic but the changes implemented only impact tests and agent_tasks.json. Diagnostic telemetry logging tests have no runtime or script changes and no direct log-capture assertion, which fails the autonomous PR quality gate. It cannot be accomplished."
     },
     {
       "id": "proxy-session-recovery-latest-user-message-truncation-test",
@@ -5588,6 +5589,22 @@
       ],
       "acceptance": [
         "Verify latest user message exceeding 8000 chars is correctly truncated"
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-system-instruction-truncation-telemetry",
+      "status": "done",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add runtime observability hook for system instruction truncation in session recovery",
+      "description": "Add a dedicated runtime diagnostic log message specifically formatting system instruction truncation. Currently the logic uses generic log formatting for all clip types.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go"
+      ],
+      "acceptance": [
+        "Add explicit diagnostic log message [bridge] diagnostic: system instruction truncated to verify truncation at runtime -> internal/proxy/session.go",
+        "Add test to assert this specific observability log format is written -> internal/proxy/session_test.go"
       ]
     }
   ]

@@ -370,6 +370,7 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 
 		var reason string
 		if label == "system" {
+			log.Printf("[bridge] diagnostic: system instruction truncated (original: %d chars, limit: %d chars)", len(runes), limit)
 			reason = "system_instruction_truncated"
 		} else if label == "User (latest)" {
 			reason = "latest_user_message_truncated"

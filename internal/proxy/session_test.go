@@ -462,3 +462,28 @@ func TestBuildRecoveryMessages_ContextLoss_SystemInstructionBoundaries(t *testin
 		}
 	})
 }
+
+func TestBuildRecoveryMessages_ContextLoss_SystemInstructionTelemetryHook(t *testing.T) {
+	var buf bytes.Buffer
+	originalLogOutput := log.Writer()
+	log.SetOutput(&buf)
+	globalLogWriter.out = &buf
+	defer func() {
+		log.SetOutput(originalLogOutput)
+		globalLogWriter.out = originalLogOutput
+	}()
+
+	messages := []ChatMessage{
+		{Role: "system", Content: strings.Repeat("A", 1500)}, // Exceeds maxSystemChars (1200)
+		{Role: "user", Content: "Original query"},
+		{Role: "assistant", Content: "ack"},
+		{Role: "user", Content: "Latest query"},
+	}
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[bridge] diagnostic: system instruction truncated") {
+		t.Errorf("Expected specific diagnostic log for system instruction truncation, got: %s", logOutput)
+	}
+}
