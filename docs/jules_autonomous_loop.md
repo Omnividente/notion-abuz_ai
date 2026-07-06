@@ -41,6 +41,11 @@ If Jules pushes a ready `jules-*` or `jules/*` branch but does not open a PR, th
 monitor opens the PR and labels it `jules`.
 If Jules says the work is ready for review/finalization, the monitor replies
 with an autonomous continuation instruction instead of waiting for a human.
+If Jules stays in `AWAITING_USER_FEEDBACK` after an autonomous continuation,
+the monitor treats that reply as stale after 10 minutes. It sends at most two
+autonomous stale-feedback continuations; after that the session is deleted and
+the selected task is blocked or retried by recovery automation instead of
+leaving the loop parked on "waiting for your input".
 
 Set repository variable `JULES_LOOP_ENABLED=false` to stop both new Jules task
 dispatches and unattended monitor continuations. If the variable is absent or

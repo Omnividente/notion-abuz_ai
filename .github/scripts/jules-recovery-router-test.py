@@ -739,6 +739,37 @@ Blocking reasons:
 
         self.assertEqual(actions, [])
 
+    def test_awaiting_user_feedback_token_becomes_stale_after_ten_minutes(self) -> None:
+        fresh_actions = plan(
+            state(
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        latest_agent_epoch=epoch(20),
+                        latest_user_epoch=epoch(9),
+                        latest_token_epoch=epoch(9),
+                    )
+                ]
+            )
+        )
+        self.assertEqual(fresh_actions, [])
+
+        stale_actions = plan(
+            state(
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        latest_agent_epoch=epoch(20),
+                        latest_user_epoch=epoch(11),
+                        latest_token_epoch=epoch(11),
+                    )
+                ]
+            )
+        )
+        self.assertEqual(len(stale_actions), 1)
+        self.assertEqual(stale_actions[0].type, "jules_send_message")
+        self.assertIn("continue уже был отправлен", stale_actions[0].payload["prompt"])
+
     def test_stale_awaiting_user_feedback_after_continue_escalates(self) -> None:
         actions = plan(
             state(
@@ -818,10 +849,10 @@ Blocking reasons:
             "version": 1,
             "actions": {
                 f"{prefix}attempt-{attempt}": {
-                    "time": (NOW - timedelta(minutes=35 + attempt)).isoformat().replace("+00:00", "Z"),
+                    "time": (NOW - timedelta(minutes=15 + attempt)).isoformat().replace("+00:00", "Z"),
                     "type": "jules_send_message",
                 }
-                for attempt in range(1, 4)
+                for attempt in range(1, 3)
             },
         }
         actions = plan(
