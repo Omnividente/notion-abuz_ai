@@ -606,6 +606,34 @@ Previous router prompt:
             ],
         )
 
+    def test_quality_fix_followup_task_execution_calls_helper(self) -> None:
+        action = router.RecoveryAction(
+            type="quality_fix_followup_task",
+            dedupe_key="quality-fix-followup-task:10:abc123:followup",
+            reason="stopped quality loop",
+            ttl_minutes=router.QUALITY_FIX_FOLLOWUP_TTL_MINUTES,
+            payload={
+                "pr_number": 10,
+                "source_sha": "abc123",
+                "source_task_id": "proxy-runtime-fix",
+                "reason": "quality gate did not converge",
+            },
+        )
+        client = FakeGitHubClient([])
+
+        with patch.object(router.subprocess, "run") as run:
+            router.execute_action(client, action)
+
+        args = run.call_args.args[0]
+        self.assertIn(".github/scripts/create-circuit-breaker-followup-task-pr.py", args)
+        self.assertIn("--pr-number", args)
+        self.assertIn("10", args)
+        self.assertIn("--source-sha", args)
+        self.assertIn("abc123", args)
+        self.assertIn("--source-task-id", args)
+        self.assertIn("proxy-runtime-fix", args)
+        self.assertTrue(run.call_args.kwargs["check"])
+
     def test_failed_check_recovery_execution_comments_and_messages_jules(self) -> None:
         action = router.RecoveryAction(
             type="failed_check_recovery",
@@ -652,6 +680,53 @@ Previous router prompt:
             state(
                 open_pulls=[pr(labels=["jules", "human-review"])],
                 selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "dispatch_workflow")
+        self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
+
+    def test_stopped_circuit_breaker_pr_creates_followup_task(self) -> None:
+        stopped = pr(
+            labels=["jules", "human-review", "no-automerge", "stop-loop"],
+            sha="ddd444",
+            body="<!-- AUTONOMOUS_TASK_EVIDENCE\ntask_id: proxy-runtime-fix\n-->",
+            comments=[
+                "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix-circuit-breaker sha=ddd444 -->",
+                "<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->\nBlocking reasons:\n- repeated evidence mismatch",
+            ],
+        )
+
+        actions = plan(
+            state(
+                open_pulls=[stopped],
+                selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_followup_task")
+        self.assertEqual(actions[0].payload["pr_number"], 10)
+        self.assertEqual(actions[0].payload["source_sha"], "ddd444")
+        self.assertEqual(actions[0].payload["source_task_id"], "proxy-runtime-fix")
+        self.assertTrue(actions[0].payload["task_id"].startswith("automation-quality-loop-pr-10-"))
+        self.assertIn("repeated evidence mismatch", actions[0].payload["reason"])
+
+    def test_existing_circuit_breaker_followup_task_is_not_recreated(self) -> None:
+        stopped = pr(
+            labels=["jules", "human-review", "no-automerge", "stop-loop"],
+            sha="ddd444",
+            body="<!-- AUTONOMOUS_TASK_EVIDENCE\ntask_id: proxy-runtime-fix\n-->",
+            comments=["<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix-circuit-breaker sha=ddd444 -->"],
+        )
+        followup_task_id = router.quality_fix_followup_task_id(stopped, TASK_IDS)
+
+        actions = plan(
+            state(
+                open_pulls=[stopped],
+                selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+                task_details={followup_task_id: {"id": followup_task_id, "status": "todo"}},
             )
         )
 

@@ -72,7 +72,9 @@ jobs:
         (startsWith(github.event.pull_request.head.ref, 'automation-health-meta-') &&
          contains(github.event.pull_request.body || '', 'AUTOMATION_HEALTH_META_TASK')) ||
         (startsWith(github.event.pull_request.head.ref, 'automation-recovery-failed-session-block-') &&
-         contains(github.event.pull_request.body || '', 'AUTOMATION_RECOVERY_FAILED_SESSION_BLOCK')))))
+         contains(github.event.pull_request.body || '', 'AUTOMATION_RECOVERY_FAILED_SESSION_BLOCK')) ||
+        (startsWith(github.event.pull_request.head.ref, 'automation-circuit-breaker-followup-') &&
+         contains(github.event.pull_request.body || '', 'AUTONOMOUS_CIRCUIT_BREAKER_FOLLOWUP_TASK')))))
 
     steps:
       - uses: actions/checkout@v5
