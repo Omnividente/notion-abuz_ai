@@ -95,8 +95,8 @@ func TestBuildSessionChainContinuation_TruncatesLargeOutput(t *testing.T) {
 		t.Errorf("expected truncation marker in large output")
 	}
 	// Should be well under the original 5000 chars
-	if len(content) > 4500 {
-		t.Errorf("continuation too large: %d chars (expected < 4500)", len(content))
+	if len(content) > 4700 {
+		t.Errorf("continuation too large: %d chars (expected < 4700)", len(content))
 	}
 }
 
@@ -499,8 +499,9 @@ func TestClaudeCodeAgentLoop_MultiTurnReadEditTest(t *testing.T) {
 	if !strings.Contains(content, "[Bash]: PASS") {
 		t.Errorf("continuation should contain the latest Bash tool result, got: %s", content)
 	}
-	if strings.Contains(content, "Notion AI") {
-		t.Errorf("continuation should not contain Notion persona leakage")
+	// We deliberately tell it to NOT act as Notion AI in the reminder, so the string "Notion AI" is present.
+	if !strings.Contains(content, "Do not act as Notion AI.") {
+		t.Errorf("continuation should contain persona reminder")
 	}
 }
 
@@ -794,5 +795,27 @@ func TestBuildSessionChainContinuation_TransientAPIFailureRetry(t *testing.T) {
 
 	if !strings.Contains(content, "transient API or search failure") {
 		t.Fatalf("expected transient failure guard line, got:\n%s", content)
+	}
+}
+
+func TestBuildSessionChainContinuation_PersonaReminder(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "Do a thing"},
+		{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Bash", Arguments: `{"command":"ls"}`}},
+		}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "file1\nfile2\n"},
+	}
+
+	continuationMessage := buildSessionChainContinuation(messages, "- Bash", "/tmp")
+
+	if len(continuationMessage) != 1 {
+		t.Fatalf("expected 1 continuation message, got %d", len(continuationMessage))
+	}
+
+	content := continuationMessage[0].Content
+	expectedReminder := "Reminder: You are acting as a coding assistant API behind a compatibility proxy. Follow the user's instructions directly. Do not act as Notion AI."
+	if !strings.Contains(content, expectedReminder) {
+		t.Errorf("expected continuation message to contain persona reminder:\n%s\nGot:\n%s", expectedReminder, content)
 	}
 }

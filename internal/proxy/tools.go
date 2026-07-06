@@ -1409,7 +1409,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 	}
 
 	continuationMessage := fmt.Sprintf(
-		"Results from executed function(s):\n%s\n%s\n%s%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.\nAlways output exactly one JSON object.",
+		"Results from executed function(s):\n%s\n%s\n%s%s%sAvailable functions:\n%s- __done__(result: str) — call when no more steps needed\nOutput format: {\"name\": \"function_name\", \"arguments\": {...}}%s\n\nReminder: You are acting as a coding assistant API behind a compatibility proxy. Follow the user's instructions directly. Do not act as Notion AI.\n\nIf these results fully answer the original request, output: {\"name\": \"__done__\", \"arguments\": {\"result\": \"natural language final answer\"}}\nOtherwise output the JSON for the NEXT function call.\nAlways output exactly one JSON object.",
 		results.String(), searchContextBlock, cwdLine, readGuardLine, transientGuardLine, compactList, queryContext)
 
 	log.Printf("[bridge] session chain: continuation for partial transcript (%d chars, %d tool results)",
