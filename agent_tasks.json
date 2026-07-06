@@ -5626,7 +5626,7 @@
     },
     {
       "id": "proxy-tools-validate-tool-list-format",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate tool list string format output",
@@ -5655,6 +5655,21 @@
       "acceptance": [
         "Verify a test validates buildCompactToolList truncation limits with unicode tool descriptions.",
         "Ensure the test explicitly asserts unicode validity on the truncated result."
+      ]
+    },
+    {
+      "id": "proxy-tools-add-build-tool-list-empty-parameters-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for buildToolList empty parameters handling",
+      "description": "Ensure buildToolList formats correctly when tool has no parameters field, to prevent token waste and incorrect schema errors.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add test TestBuildToolList_EmptyParameters that verifies the output when tool.Function.Parameters is nil"
       ]
     }
   ]

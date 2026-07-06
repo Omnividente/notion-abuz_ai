@@ -112,6 +112,98 @@ func TestParseToolCalls_NestedObjects(t *testing.T) {
 	}
 }
 
+func TestBuildToolList_Format(t *testing.T) {
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:        "deep_nested_tool",
+				Description: "A tool with deep properties",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"level1": map[string]interface{}{
+							"type": "object",
+							"properties": map[string]interface{}{
+								"level2": map[string]interface{}{
+									"type": "object",
+									"properties": map[string]interface{}{
+										"level3": map[string]interface{}{
+											"type": "object",
+											"properties": map[string]interface{}{
+												"target_prop": map[string]interface{}{
+													"type": "string",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					"required": []interface{}{"level1"},
+				},
+			},
+		},
+	}
+
+	result := buildToolList(tools)
+
+	expectedPrefix := "Function: deep_nested_tool - A tool with deep properties\nParameters: "
+	if !strings.HasPrefix(result, expectedPrefix) {
+		t.Errorf("Expected prefix %q, got output %q", expectedPrefix, result)
+	}
+	if !strings.HasSuffix(result, "\n") {
+		t.Errorf("Expected suffix '\\n', got output %q", result)
+	}
+
+	// Extract json payload and verify it can be unmarshaled
+	jsonStr := strings.TrimSpace(strings.TrimPrefix(result, expectedPrefix))
+
+	var unmarshaled map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonStr), &unmarshaled); err != nil {
+		t.Fatalf("Failed to unmarshal JSON from buildToolList output: %v, string: %s", err, jsonStr)
+	}
+
+	props, ok := unmarshaled["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Missing properties object")
+	}
+	l1, ok := props["level1"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Missing level1")
+	}
+	p1, ok := l1["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Missing properties in level1")
+	}
+	l2, ok := p1["level2"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Missing level2")
+	}
+	p2, ok := l2["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Missing properties in level2")
+	}
+	l3, ok := p2["level3"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Missing level3")
+	}
+	p3, ok := l3["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Missing properties in level3")
+	}
+	target, ok := p3["target_prop"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Missing target_prop")
+	}
+
+	typ, ok := target["type"].(string)
+	if !ok || typ != "string" {
+		t.Errorf("Expected type string, got %v", target["type"])
+	}
+}
+
 func TestIsCodingAssistantRequest(t *testing.T) {
 	tests := []struct {
 		name     string
