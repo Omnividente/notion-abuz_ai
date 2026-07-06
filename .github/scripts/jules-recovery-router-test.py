@@ -202,6 +202,14 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("- 4. Advisory Critic Review", text)
         self.assertIn("- completed", text)
 
+    def test_workflow_can_push_manifest_only_recovery_prs(self) -> None:
+        text = WORKFLOW_PATH.read_text(encoding="utf-8")
+        script_text = SCRIPT_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("contents: write", text)
+        self.assertIn("pull-requests: write", text)
+        self.assertIn("create-circuit-breaker-followup-task-pr.py", script_text)
+
     def test_pull_request_router_concurrency_is_pr_scoped(self) -> None:
         text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
