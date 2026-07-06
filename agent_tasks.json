@@ -45,7 +45,7 @@
   "tasks": [
     {
       "id": "proxy-runtime-session-recovery-first-user-message-dropped",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Track first user message dropped during session recovery",
