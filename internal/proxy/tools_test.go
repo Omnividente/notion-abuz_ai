@@ -2959,3 +2959,75 @@ func TestToolSchemaJSONTruncatedNegativeLimit(t *testing.T) {
 		t.Errorf("Expected context loss metric tool_schema_json_truncated to be 2, got %d (exists=%v)", count, exists)
 	}
 }
+
+func TestToolSchemaJSONTruncatedNegativeLimit_MultipleToolsFallback(t *testing.T) {
+	// Reset the metric exactly once at the beginning of the test
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	schema1 := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"prop": "🚀🔥😃👨‍👩‍👧‍👦",
+		},
+	}
+	schema2 := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"prop2": "👩🏽‍💻🌍",
+		},
+	}
+
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:       "test_tool_negative_limit_1",
+				Parameters: schema1,
+			},
+		},
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:       "test_tool_negative_limit_2",
+				Parameters: schema2,
+			},
+		},
+	}
+
+	// Override limit for test to zero to get baseline output
+	originalLimit := toolSchemaTruncationLimit
+	toolSchemaTruncationLimit = 0
+	defer func() {
+		toolSchemaTruncationLimit = originalLimit
+	}()
+
+	zeroLimitOut := buildToolList(tools)
+
+	// Override limit to negative
+	toolSchemaTruncationLimit = -10
+
+	negativeLimitOut := buildToolList(tools)
+
+	if negativeLimitOut != zeroLimitOut {
+		t.Errorf("Expected output with negative limit to identically match output with zero limit. \nZero limit output: %s\nNegative limit output: %s", zeroLimitOut, negativeLimitOut)
+	}
+
+	if !strings.Contains(negativeLimitOut, "...") {
+		t.Errorf("Expected truncated string with '...', got: %s", negativeLimitOut)
+	}
+
+	if !utf8.ValidString(negativeLimitOut) {
+		t.Errorf("Truncated string is not valid UTF-8: %s", negativeLimitOut)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_json_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	// 4 because it's called 4 times: 2 tools * 2 test cases (0 and -10 limit)
+	if !exists || count != 4 {
+		t.Errorf("Expected context loss metric tool_schema_json_truncated to be 4, got %d (exists=%v)", count, exists)
+	}
+}

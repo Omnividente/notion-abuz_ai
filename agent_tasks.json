@@ -5547,7 +5547,7 @@
     },
     {
       "id": "proxy-tools-schema-negative-limit-test-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add negative boundary test for tool schema limit fallback",
@@ -5558,6 +5558,36 @@
       ],
       "acceptance": [
         "Verify negative limit behaves identically to zero limit"
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-system-instruction-truncation-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for system instruction truncation in session recovery",
+      "description": "Add a test validating that session recovery correctly truncates large system instructions.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go"
+      ],
+      "acceptance": [
+        "Verify large system instructions are properly truncated and system_instruction_truncated metric is incremented"
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-latest-user-message-truncation-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for latest user message truncation in session recovery",
+      "description": "Add a test validating that session recovery correctly truncates the latest user message to 8000 chars.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go"
+      ],
+      "acceptance": [
+        "Verify latest user message exceeding 8000 chars is correctly truncated"
       ]
     }
   ]
