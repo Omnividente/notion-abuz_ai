@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestBuildRecoveryMessages_InstructionPreservation_Short(t *testing.T) {
@@ -343,6 +344,121 @@ func TestBuildRecoveryMessages_ContextLoss_ToolResultTruncationBoundaries(t *tes
 
 		if !exists || val != 1 {
 			t.Errorf("Expected tool_result_truncated to be exactly 1 for 901 chars, got %d", val)
+		}
+	})
+}
+
+func TestBuildRecoveryMessages_ContextLoss_SystemInstructionBoundaries(t *testing.T) {
+	// Subtest 1: Exactly 1200 characters (maxSystemChars) - should not truncate
+	t.Run("Exactly1200Chars", func(t *testing.T) {
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
+
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
+
+		messages := []ChatMessage{
+			{Role: "system", Content: strings.Repeat("A", 1200)}, // exactly maxSystemChars
+			{Role: "user", Content: "Original query"},
+			{Role: "assistant", Content: "ack"},
+			{Role: "user", Content: "Latest query"},
+		}
+
+		buildFreshThreadRecoveryMessages(messages)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["system_instruction_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if exists && val != 0 {
+			t.Errorf("Expected system_instruction_truncated to not exist or be 0 for exactly 1200 chars, got %d", val)
+		}
+	})
+
+	// Subtest 2: Exactly 1201 characters - should truncate
+	t.Run("Exactly1201Chars", func(t *testing.T) {
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
+
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
+
+		messages := []ChatMessage{
+			{Role: "system", Content: strings.Repeat("A", 1201)}, // exceeds maxSystemChars
+			{Role: "user", Content: "Original query"},
+			{Role: "assistant", Content: "ack"},
+			{Role: "user", Content: "Latest query"},
+		}
+
+		buildFreshThreadRecoveryMessages(messages)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["system_instruction_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if !exists || val != 1 {
+			t.Errorf("Expected system_instruction_truncated to be exactly 1 for 1201 chars, got %d", val)
+		}
+	})
+
+	// Subtest 3: Multi-byte Runes - should safely truncate and produce valid UTF-8
+	t.Run("MultiByteRunes", func(t *testing.T) {
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
+
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
+
+		// 1 emoji = 1 rune. We need 1201 runes to trigger truncation.
+		// A multi-byte character like 🚀 is 4 bytes.
+		content := strings.Repeat("🚀", 1201)
+
+		messages := []ChatMessage{
+			{Role: "system", Content: content}, // exceeds maxSystemChars in runes
+			{Role: "user", Content: "Original query"},
+			{Role: "assistant", Content: "ack"},
+			{Role: "user", Content: "Latest query"},
+		}
+
+		resultMsgs := buildFreshThreadRecoveryMessages(messages)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["system_instruction_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if !exists || val != 1 {
+			t.Errorf("Expected system_instruction_truncated to be exactly 1 for 1201 multi-byte runes, got %d", val)
+		}
+
+		// The prompt logic builds the result into the first message's content. We need to parse it out or rely on log output for utf8 checking, or just check the output prompt.
+		if len(resultMsgs) != 1 {
+			t.Fatalf("Expected exactly 1 result message, got %d", len(resultMsgs))
+		}
+
+		outputContent := resultMsgs[0].Content
+		if !utf8.ValidString(outputContent) {
+			t.Errorf("Result message content is not valid UTF-8 after truncation")
 		}
 	})
 }
