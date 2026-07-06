@@ -713,6 +713,35 @@ Previous router prompt:
         self.assertTrue(actions[0].payload["task_id"].startswith("automation-quality-loop-pr-10-"))
         self.assertIn("repeated evidence mismatch", actions[0].payload["reason"])
 
+    def test_stopped_circuit_breaker_pr_creates_followup_despite_unrelated_active_session(self) -> None:
+        stopped = pr(
+            labels=["jules", "human-review", "no-automerge", "stop-loop"],
+            sha="ddd444",
+            body="<!-- AUTONOMOUS_TASK_EVIDENCE\ntask_id: proxy-runtime-fix\n-->",
+            comments=[
+                "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix-circuit-breaker sha=ddd444 -->",
+                "<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->\nBlocking reasons:\n- repeated evidence mismatch",
+            ],
+        )
+
+        actions = plan(
+            state(
+                open_pulls=[stopped],
+                jules_sessions=[
+                    session(
+                        state="IN_PROGRESS",
+                        task_id="automation-health-failed-session-86122315",
+                    )
+                ],
+                selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_followup_task")
+        self.assertEqual(actions[0].payload["pr_number"], 10)
+        self.assertEqual(actions[0].payload["source_task_id"], "proxy-runtime-fix")
+
     def test_existing_circuit_breaker_followup_task_is_not_recreated(self) -> None:
         stopped = pr(
             labels=["jules", "human-review", "no-automerge", "stop-loop"],

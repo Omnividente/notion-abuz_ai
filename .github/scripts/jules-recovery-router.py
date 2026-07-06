@@ -1241,16 +1241,6 @@ def plan_recovery_actions(
             )
         return actions
 
-    if active_jules_sessions(state):
-        return actions
-
-    if (
-        workflow_in_progress(state, "jules_burst_monitor.yml")
-        or workflow_in_progress(state, "jules_unattended_monitor.yml")
-        or workflow_in_progress(state, "jules_next_task.yml")
-    ):
-        return actions
-
     stopped_prs = [
         pr for pr in state.get("open_pulls", [])
         if is_autonomous_pr(pr, repo=repo, task_ids=task_ids)
@@ -1287,6 +1277,16 @@ def plan_recovery_actions(
                     },
                 )
             )
+        return actions
+
+    if active_jules_sessions(state):
+        return actions
+
+    if (
+        workflow_in_progress(state, "jules_burst_monitor.yml")
+        or workflow_in_progress(state, "jules_unattended_monitor.yml")
+        or workflow_in_progress(state, "jules_next_task.yml")
+    ):
         return actions
 
     selector = state.get("selector") or {}
