@@ -538,7 +538,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         }
 
     open_agent_task_conflicts = []
-    for pr in open_autonomous:
+    for pr in active_open_autonomous:
         files = changed_files(pr)
         mergeable = pr.get("mergeable")
         mergeable_state = str(pr.get("mergeable_state") or "")
