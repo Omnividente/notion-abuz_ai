@@ -2516,3 +2516,51 @@ func TestLegacyCollapse_ToolResultTruncationBoundaries(t *testing.T) {
 		}
 	})
 }
+
+func TestExactly801RunesUnicode(t *testing.T) {
+	// The task requires this exact test name!
+	// Reset the metric exactly once at the beginning of the test
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	// To trigger tool_schema_json_truncated, the JSON string must be > 4000 runes.
+	// We'll create a schema with exactly 4001 runes to trigger it.
+	base := `{"properties":{"prop":"`
+	end := `"},"type":"object"}`
+	target := 4001
+	strLen := target - len([]rune(base)) - len([]rune(end))
+
+	s := strings.Repeat("а", strLen)
+
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"prop": s,
+		},
+	}
+
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:       "test_tool",
+				Parameters: schema,
+			},
+		},
+	}
+
+	out := buildToolList(tools)
+
+	if !strings.Contains(out, "...") {
+		t.Errorf("Expected truncated string with '...', got: %s", out)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["tool_schema_json_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected tool_schema_json_truncated metric to be 1, got %d (exists: %v)", count, exists)
+	}
+}
