@@ -136,6 +136,11 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["status"], "critical")
         self.assert_has_finding(report, "duplicate_open_autonomous_prs")
 
+    def test_tolerated_duplicate_open_autonomous_prs(self) -> None:
+        report = run_fixture("tolerated-duplicate-open-autonomous-prs")
+
+        self.assertEqual(report["status"], "healthy")
+
     def test_failed_sessions_for_same_task(self) -> None:
         report = run_fixture("failed-sessions-same-task")
 

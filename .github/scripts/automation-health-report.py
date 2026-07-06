@@ -429,14 +429,18 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         for pr in autonomous_pulls
         if str((pr.get("head") if isinstance(pr.get("head"), dict) else {}).get("ref") or pr.get("head_ref") or "")
     }
-    if len(open_autonomous) > 1:
+    active_open_autonomous = [
+        pr for pr in open_autonomous
+        if not (labels_of(pr) & {"human-review", "no-automerge", "stop-loop"})
+    ]
+    if len(active_open_autonomous) > 1:
         add_finding_once(
             findings,
             Finding(
                 code="duplicate_open_autonomous_prs",
                 severity="critical",
-                message="More than one autonomous PR is open.",
-                evidence={"pr_numbers": [pr.get("number") for pr in open_autonomous]},
+                message="More than one active autonomous PR is open.",
+                evidence={"pr_numbers": [pr.get("number") for pr in active_open_autonomous]},
             ),
         )
 
