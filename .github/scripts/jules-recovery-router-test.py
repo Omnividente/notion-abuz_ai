@@ -210,6 +210,14 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("github.event.pull_request.number", text)
         self.assertIn("|| 'global'", text)
 
+    def test_pull_request_target_router_runs_in_plan_mode(self) -> None:
+        text = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("RECOVERY_ROUTER_MODE: ${{ github.event_name == 'pull_request_target' && 'plan' || inputs.mode || 'act' }}", text)
+        self.assertIn('--mode "${RECOVERY_ROUTER_MODE}"', text)
+        self.assertIn('echo "- Mode:', text)
+        self.assertIn("github.event_name == 'pull_request_target' && 'plan' || inputs.mode || 'act'", text)
+
     def test_burst_monitor_dispatches_next_after_touching_last_session(self) -> None:
         text = BURST_WORKFLOW_PATH.read_text(encoding="utf-8")
 
@@ -741,6 +749,48 @@ Previous router prompt:
         self.assertEqual(actions[0].type, "quality_fix_followup_task")
         self.assertEqual(actions[0].payload["pr_number"], 10)
         self.assertEqual(actions[0].payload["source_task_id"], "proxy-runtime-fix")
+
+    def test_stopped_circuit_breaker_followup_is_not_masked_by_fresh_waiting_continue(self) -> None:
+        latest_agent = epoch(5)
+        stopped = pr(
+            labels=["jules", "human-review", "no-automerge", "stop-loop"],
+            sha="ddd444",
+            body="<!-- AUTONOMOUS_TASK_EVIDENCE\ntask_id: proxy-runtime-fix\n-->",
+            comments=[
+                "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix-circuit-breaker sha=ddd444 -->",
+                "<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->\nBlocking reasons:\n- repeated evidence mismatch",
+            ],
+        )
+        ledger = {
+            "version": 1,
+            "actions": {
+                f"continue:1234567890123456789:{latest_agent}": {
+                    "time": (NOW - timedelta(minutes=5)).isoformat().replace("+00:00", "Z"),
+                    "type": "jules_send_message",
+                }
+            },
+        }
+
+        actions = plan(
+            state(
+                open_pulls=[stopped],
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        task_id="automation-health-failed-session-86122315",
+                        latest_agent_epoch=latest_agent,
+                        latest_user_epoch=0,
+                        latest_token_epoch=0,
+                    )
+                ],
+                selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_followup_task")
+        self.assertEqual(actions[0].payload["pr_number"], 10)
 
     def test_existing_circuit_breaker_followup_task_is_not_recreated(self) -> None:
         stopped = pr(

@@ -1138,7 +1138,8 @@ def plan_recovery_actions(
                         payload={"session": session_name},
                     )
                 )
-            return actions
+                return actions
+            continue
         if session_state == "AWAITING_USER_FEEDBACK" and should_continue_session(session):
             summary = session.get("activity_summary") or {}
             prompt_payload = recovery_prompt_payload_for_session(
@@ -1164,6 +1165,7 @@ def plan_recovery_actions(
                         },
                     )
                 )
+                return actions
             elif stale_after_recorded_continue(ledger, dedupe_key, now=now):
                 action = plan_stale_feedback_action(
                     session,
@@ -1174,7 +1176,8 @@ def plan_recovery_actions(
                 )
                 if action:
                     actions.append(action)
-            return actions
+                    return actions
+            continue
         if session_state == "AWAITING_USER_FEEDBACK" and stale_after_autonomous_continue(session, now=now):
             action = plan_stale_feedback_action(
                 session,
@@ -1185,7 +1188,8 @@ def plan_recovery_actions(
             )
             if action:
                 actions.append(action)
-            return actions
+                return actions
+            continue
 
     task_statuses = state.get("task_statuses") or {}
     active_ids = active_task_ids(state)
