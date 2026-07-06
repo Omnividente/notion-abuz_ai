@@ -5313,7 +5313,7 @@
     },
     {
       "id": "proxy-observability-legacy-collapse-truncated-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for legacy collapse truncation metric",
@@ -5325,6 +5325,23 @@
       ],
       "acceptance": [
         "A test validates correct truncation and metric for legacy collapse strings containing multi-byte UTF-8 runes."
+      ]
+    },
+    {
+      "id": "proxy-observability-unparseable-json-candidate-truncated-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add unicode safety tests for unparseable_json_candidate_truncated metric",
+      "description": "Ensure unparseable_json_candidate_truncated metric logic in extractJSONCandidate robustly truncates unicode inputs via rune safety boundaries.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify a new test Exactly801RunesUnicode is appended to TestRobustJSONExtraction.",
+        "Verify the test passes and metric unparseable_json_candidate_truncated is incremented to 1."
       ]
     }
   ]
