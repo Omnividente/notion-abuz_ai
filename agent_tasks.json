@@ -5725,7 +5725,7 @@
       "acceptance": [
         "Root cause for Automation Health finding `quality_failures_spike` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
         "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
-        "A follow-up Automation Health run no longer reports `quality_failures_spike`, or the PR body explains why the finding is intentionally tolerated."
+        "A subsequent Automation Health run no longer reports `quality_failures_spike`, or the PR body explains why the finding is intentionally tolerated."
       ],
       "health_finding_hash": "6e14b562858e",
       "health_finding_code": "quality_failures_spike",
