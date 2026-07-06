@@ -16,6 +16,9 @@ SCRIPT_PATH = Path(__file__).with_name("jules-recovery-router.py")
 WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_recovery_router.yml"
 BURST_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_burst_monitor.yml"
 UNATTENDED_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_unattended_monitor.yml"
+CI_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "ci.yml"
+AUTOMERGE_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_automerge.yml"
+NEXT_TASK_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_next_task.yml"
 SPEC = importlib.util.spec_from_file_location("jules_recovery_router", SCRIPT_PATH)
 router = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -226,6 +229,17 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("STALE_IN_PROGRESS_MINUTES", text)
         self.assertIn("stale_in_progress_count", text)
         self.assertIn("stale_in_progress_sessions", text)
+
+    def test_go_formatting_failures_report_actionable_file_list(self) -> None:
+        for path in (CI_WORKFLOW_PATH, AUTOMERGE_WORKFLOW_PATH):
+            text = path.read_text(encoding="utf-8")
+            self.assertIn('files="$(gofmt -l .)"', text)
+            self.assertIn("gofmt required for:", text)
+            self.assertNotIn('run: test -z "$(gofmt -l .)"', text)
+
+        next_task_text = NEXT_TASK_WORKFLOW_PATH.read_text(encoding="utf-8")
+        self.assertIn('files="\\$(gofmt -l .)"', next_task_text)
+        self.assertIn("gofmt required for:", next_task_text)
 
     def test_github_get_retries_transient_503(self) -> None:
         client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")
