@@ -44,6 +44,24 @@
   },
   "tasks": [
     {
+      "id": "proxy-tools-schema-json-truncation-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add tests for tool schema JSON truncation metric",
+      "description": "Ensure that context loss telemetry metric tool_schema_json_truncated is correctly recorded when tool schema exceeds 4000 runes.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify tests check that strings with >4000 runes in JSON parameters trigger context loss metric",
+        "Verify tests assert that metric presence is explicitly checked using comma-ok idiom",
+        "Verify the generated truncated string is valid UTF-8 via utf8.ValidString"
+      ]
+    },
+    {
       "id": "proxy-observability-fallback-missing-anchor-comma-ok",
       "status": "done",
       "area": "proxy",
@@ -5412,7 +5430,7 @@
     },
     {
       "id": "proxy-tools-is-suggestion-mode-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for isSuggestionMode function",
