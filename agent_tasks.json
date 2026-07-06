@@ -5517,7 +5517,7 @@
     },
     {
       "id": "proxy-tools-schema-negative-limit-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add negative boundary test for tool schema limit",
@@ -5528,6 +5528,21 @@
       ],
       "acceptance": [
         "Verify negative limit produces valid truncated string"
+      ]
+    },
+    {
+      "id": "proxy-tools-schema-zero-limit-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add zero boundary test for tool schema limit",
+      "description": "Add a test validating that zero tool schema truncation limit truncates string correctly.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go"
+      ],
+      "acceptance": [
+        "Verify zero limit produces valid truncated string"
       ]
     }
   ]
