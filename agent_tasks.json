@@ -5831,7 +5831,7 @@
     },
     {
       "id": "proxy-runtime-notion-persona-leakage-prevention",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Fix Notion persona leakage in Claude requests",
