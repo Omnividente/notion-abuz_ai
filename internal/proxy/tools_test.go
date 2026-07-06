@@ -3088,11 +3088,6 @@ func TestBuildToolList_SchemaTruncation_SmallLimits(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestBuildToolList_SchemaTruncation_ExactBoundaries(t *testing.T) {
 	schema := map[string]interface{}{"a": 1}
 	tests := []struct {
