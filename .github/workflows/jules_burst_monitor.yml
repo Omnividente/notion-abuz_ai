@@ -136,6 +136,7 @@ jobs:
 
             session_ids="$(grep '^session_ids=' "$output_file" | tail -n1 | cut -d= -f2- || true)"
             active_sessions="$(grep '^active_sessions=' "$output_file" | tail -n1 | cut -d= -f2- || echo 0)"
+            touched_sessions="$(get_output touched_sessions "$output_file")"
             failed_recovery_action="$(get_output failed_recovery_action "$output_file")"
             failed_task_id="$(get_output failed_task_id "$output_file")"
             failed_session_id="$(get_output failed_session_id "$output_file")"
@@ -151,6 +152,7 @@ jobs:
 
             open_prs="$(count_open_autonomous_prs)"
             echo "Active Jules sessions: ${active_sessions}"
+            echo "Touched Jules sessions: ${touched_sessions:-0}"
             echo "Open autonomous PRs: ${open_prs}"
             echo "Failed recovery action: ${failed_recovery_action:-none}"
             echo "Stale waiting sessions: ${stale_waiting_count:-0} ${stale_waiting_sessions:-}"
@@ -160,6 +162,9 @@ jobs:
             echo "Continue attempts: ${continue_attempts:-}"
 
             if [ "${active_sessions}" != "0" ]; then
+              saw_active_sessions="1"
+            fi
+            if [ "${touched_sessions:-0}" != "0" ]; then
               saw_active_sessions="1"
             fi
 

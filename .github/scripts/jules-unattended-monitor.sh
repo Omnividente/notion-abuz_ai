@@ -241,6 +241,9 @@ for i in "${!key_labels[@]}"; do
       QUEUED|PLANNING|IN_PROGRESS|AWAITING_PLAN_APPROVAL|AWAITING_USER_FEEDBACK)
         active_sessions=$((active_sessions + 1))
         active_task_id="$(extract_session_task_id "$key" "$session_name" "active")"
+        if [ -z "$active_task_id" ]; then
+          active_task_id="$(resolve_session_task_id_from_recent_map "$session_name")"
+        fi
         ;;
     esac
 
