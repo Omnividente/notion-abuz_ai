@@ -5300,7 +5300,7 @@
     },
     {
       "id": "proxy-tools-test-clean-up-extra-newlines",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Clean up extra newlines in tools_test.go",
@@ -5588,6 +5588,40 @@
       ],
       "acceptance": [
         "Verify latest user message exceeding 8000 chars is correctly truncated"
+      ]
+    },
+    {
+      "id": "proxy-tools-test-clean-up-extra-newlines-followup-newline-validation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test to validate tool schema JSON truncation limit edge cases",
+      "description": "Ensure metric truncates without panicking when the length limit is very small (e.g. 1, 2) to avoid boundary edge cases in string slicing for edge case validation.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify a test covers JSON truncation limits and edge cases for limit 1 and 2.",
+        "Ensure boundary check avoids panics with small limits."
+      ]
+    },
+    {
+      "id": "proxy-tools-test-clean-up-extra-newlines-followup-newline-validation-2",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test to validate tool schema JSON truncation limit edge cases with negative values and unicode strings",
+      "description": "Ensure metric truncates without panicking when the length limit is negative and the string contains unicode characters.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify a test covers JSON truncation limits and edge cases for negative limits with unicode strings.",
+        "Ensure boundary check avoids panics with negative limits."
       ]
     }
   ]
