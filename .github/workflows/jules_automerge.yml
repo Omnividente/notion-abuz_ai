@@ -73,6 +73,7 @@ jobs:
       github.event.pull_request.draft == false &&
       !contains(github.event.pull_request.labels.*.name, 'no-automerge') &&
       !contains(github.event.pull_request.labels.*.name, 'human-review') &&
+      !contains(github.event.pull_request.labels.*.name, 'stop-loop') &&
       needs.classify-pr.outputs.autonomous == 'true'
     env:
       LIVE_NOTION_ACCOUNTS_B64: ${{ secrets.LIVE_NOTION_ACCOUNTS_B64 }}
@@ -165,7 +166,7 @@ jobs:
           echo "Persisted synthesized AUTONOMOUS_TASK_EVIDENCE in PR body."
 
       - name: Stop weak autonomous PR before merge
-        if: steps.quality.outputs.passed != 'true'
+        if: steps.quality.outputs.passed != 'true' && !contains(github.event.pull_request.labels.*.name, 'human-review') && !contains(github.event.pull_request.labels.*.name, 'no-automerge') && !contains(github.event.pull_request.labels.*.name, 'stop-loop')
         env:
           GH_TOKEN: ${{ secrets.PAT || github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
