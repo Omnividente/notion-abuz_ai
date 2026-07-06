@@ -2444,4 +2444,54 @@ func TestLegacyCollapse_ToolResultTruncationBoundaries(t *testing.T) {
 			t.Errorf("Expected truncation log to indicate 'original: 801 chars, limit: 800 chars', but got: %q", buf.String())
 		}
 	})
+
+	// Subtest 3: exactly 801 runes with multi-byte characters
+	t.Run("Exactly801RunesUnicode", func(t *testing.T) {
+		contextLossMetricsMu.Lock()
+		contextLossMetrics = make(map[string]int)
+		contextLossMetricsMu.Unlock()
+
+		// "абвгд" is 5 runes. Repeat it 160 times to get 800 runes, then add one more rune ("а") for 801 total runes.
+		multiByteStr := strings.Repeat("абвгд", 160) + "а"
+		if len([]rune(multiByteStr)) != 801 {
+			t.Fatalf("Expected exactly 801 runes, got %d", len([]rune(multiByteStr)))
+		}
+
+		messages := []ChatMessage{
+			{Role: "user", Content: "Query"},
+			{Role: "assistant", Content: "Calling a tool", ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "Glob"}}}},
+			{Role: "tool", Content: multiByteStr, ToolCallID: "1", Name: "Glob"},
+		}
+
+		tools := []Tool{
+			{Type: "function", Function: ToolFunction{Name: "Glob"}},
+		}
+		for i := 0; i < 6; i++ {
+			tools = append(tools, Tool{Type: "function", Function: ToolFunction{Name: "ToolX"}})
+		}
+
+		var buf bytes.Buffer
+		originalLogOutput := log.Writer()
+		log.SetOutput(&buf)
+		globalLogWriter.out = &buf
+		defer func() {
+			log.SetOutput(originalLogOutput)
+			globalLogWriter.out = originalLogOutput
+		}()
+
+		injectToolsIntoMessages(messages, tools, "claude-4", nil)
+
+		contextLossMetricsMu.Lock()
+		val, exists := contextLossMetrics["legacy_collapse_truncated"]
+		contextLossMetricsMu.Unlock()
+
+		if !exists || val != 1 {
+			t.Errorf("Expected legacy_collapse_truncated to be exactly 1 for 801 runes, got %d", val)
+		}
+
+		// Add direct log-capture assertion
+		if !strings.Contains(buf.String(), "original: 801 chars, limit: 800 chars") {
+			t.Errorf("Expected truncation log to indicate 'original: 801 chars, limit: 800 chars', but got: %q", buf.String())
+		}
+	})
 }
