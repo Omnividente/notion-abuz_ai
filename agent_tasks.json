@@ -5347,7 +5347,7 @@
     },
     {
       "id": "proxy-observability-tool-schema-simplification-json-arrays-truncation-metrics-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add unicode safety tests for tool_schema_json_truncated metric in simplification",
@@ -5360,6 +5360,22 @@
       "acceptance": [
         "Verify a new test Exactly801RunesUnicode is added for tool_schema_json_truncated.",
         "Verify the test passes and metric tool_schema_json_truncated is incremented correctly."
+      ]
+    },
+    {
+      "id": "proxy-tool-schema-simplification-json-arrays-truncation-metrics-test-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Investigate additional unicode safety boundaries for tool_schema_json_truncated",
+      "description": "Ensure metric tool_schema_json_truncated logic correctly handles multi-byte combinations",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Verify a new test is added for multi-byte combos."
       ]
     }
   ]
