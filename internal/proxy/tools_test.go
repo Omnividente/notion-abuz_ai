@@ -2960,6 +2960,75 @@ func TestToolSchemaJSONTruncatedNegativeLimit(t *testing.T) {
 	}
 }
 
+func TestToolSchemaJSONTruncated_NegativeLimitsTable(t *testing.T) {
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"prop": "🚀🔥😃👨‍👩‍👧‍👦_unicode_test",
+		},
+	}
+
+	tools := []Tool{
+		{
+			Type: "function",
+			Function: ToolFunction{
+				Name:       "test_tool_negative_limit_table",
+				Parameters: schema,
+			},
+		},
+	}
+
+	// Override limit to zero to get baseline output
+	originalLimit := toolSchemaTruncationLimit
+	toolSchemaTruncationLimit = 0
+	zeroLimitOut := buildToolList(tools)
+	toolSchemaTruncationLimit = originalLimit
+
+	tests := []struct {
+		name  string
+		limit int
+	}{
+		{"minus one", -1},
+		{"minus ten", -10},
+		{"minus one hundred", -100},
+		{"large negative", -999999},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			contextLossMetricsMu.Lock()
+			contextLossMetrics = make(map[string]int)
+			contextLossMetricsMu.Unlock()
+
+			origLimit := toolSchemaTruncationLimit
+			toolSchemaTruncationLimit = tt.limit
+			defer func() { toolSchemaTruncationLimit = origLimit }()
+
+			negativeLimitOut := buildToolList(tools)
+
+			if negativeLimitOut != zeroLimitOut {
+				t.Errorf("Expected output with negative limit to identically match output with zero limit. \nZero limit output: %s\nNegative limit output: %s", zeroLimitOut, negativeLimitOut)
+			}
+
+			if !strings.Contains(negativeLimitOut, "...") {
+				t.Errorf("Expected truncated string with '...', got: %s", negativeLimitOut)
+			}
+
+			if !utf8.ValidString(negativeLimitOut) {
+				t.Errorf("Truncated string is not valid UTF-8: %s", negativeLimitOut)
+			}
+
+			contextLossMetricsMu.Lock()
+			count, exists := contextLossMetrics["tool_schema_json_truncated"]
+			contextLossMetricsMu.Unlock()
+
+			if !exists || count != 1 {
+				t.Errorf("Expected context loss metric tool_schema_json_truncated to be 1, got %d (exists=%v)", count, exists)
+			}
+		})
+	}
+}
+
 func TestToolSchemaJSONTruncatedNegativeLimit_MultipleToolsFallback(t *testing.T) {
 	// Reset the metric exactly once at the beginning of the test
 	contextLossMetricsMu.Lock()
