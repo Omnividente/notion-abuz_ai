@@ -2634,3 +2634,51 @@ func TestToolSchemaJSONTruncatedMultiByteCombos(t *testing.T) {
 		t.Errorf("Expected tool_schema_json_truncated metric to be 1, got %d (exists: %v)", count, exists)
 	}
 }
+
+func TestIsSuggestionMode(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		expected bool
+	}{
+		{
+			name:     "suggestion mode string",
+			content:  "[SUGGESTION MODE: I found a bug...]",
+			expected: true,
+		},
+		{
+			name:     "suggestion mode with leading whitespace",
+			content:  "   \n\t [SUGGESTION MODE: testing whitespace",
+			expected: true,
+		},
+		{
+			name:     "suggestion mode with trailing whitespace only",
+			content:  "[SUGGESTION MODE: x \n",
+			expected: true,
+		},
+		{
+			name:     "regular string without prefix",
+			content:  "I found a bug...",
+			expected: false,
+		},
+		{
+			name:     "prefix somewhere inside string",
+			content:  "Here is [SUGGESTION MODE: something",
+			expected: false,
+		},
+		{
+			name:     "empty string",
+			content:  "",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isSuggestionMode(tt.content)
+			if result != tt.expected {
+				t.Errorf("isSuggestionMode(%q) = %v; want %v", tt.content, result, tt.expected)
+			}
+		})
+	}
+}
