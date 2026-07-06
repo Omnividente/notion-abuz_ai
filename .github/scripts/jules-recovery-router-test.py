@@ -206,6 +206,16 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn('if [ "${touched_sessions:-0}" != "0" ]; then', text)
         self.assertIn('saw_active_sessions="1"', text)
 
+    def test_burst_monitor_runtime_is_bounded(self) -> None:
+        text = BURST_WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn('default: "6"', text)
+        self.assertIn('default: "30"', text)
+        self.assertIn("cancel-in-progress: true", text)
+        self.assertIn("timeout-minutes: 10", text)
+        self.assertIn("vars.JULES_BURST_MONITOR_CYCLES || '6'", text)
+        self.assertIn("vars.JULES_BURST_MONITOR_INTERVAL_SECONDS || '30'", text)
+
     def test_github_get_retries_transient_503(self) -> None:
         client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")
         transient = router.urllib.error.HTTPError(
