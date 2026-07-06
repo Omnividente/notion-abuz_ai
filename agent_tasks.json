@@ -5577,7 +5577,7 @@
     },
     {
       "id": "proxy-session-recovery-latest-user-message-truncation-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test for latest user message truncation in session recovery",
@@ -5588,6 +5588,21 @@
       ],
       "acceptance": [
         "Verify latest user message exceeding 8000 chars is correctly truncated"
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-history-entry-truncation-boundaries-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for history entry truncation boundaries in session recovery",
+      "description": "Add boundary tests for history entry truncation to maxEntryChars (900).",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go"
+      ],
+      "acceptance": [
+        "Verify history entry truncation boundary correctly truncates to maxEntryChars and handles UTF-8 characters properly."
       ]
     }
   ]
