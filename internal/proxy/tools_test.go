@@ -3383,3 +3383,50 @@ func TestBuildSessionChainContinuation_DroppedToolResult(t *testing.T) {
 		t.Errorf("Expected session_continuation_dropped_tool_result metric to be 1, got %d", count)
 	}
 }
+
+func TestLegacyCollapse_DroppedLinesMetrics(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	baseLines := strings.Repeat("a\n", 400)
+	extraLines := "b\nc\nd\n"
+	content := baseLines + extraLines
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Query"},
+		{Role: "assistant", Content: "Calling a tool", ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "Glob"}}}},
+		{Role: "tool", Content: content, ToolCallID: "1", Name: "Glob"},
+	}
+
+	tools := []Tool{
+		{Type: "function", Function: ToolFunction{Name: "Glob"}},
+	}
+	for i := 0; i < 6; i++ {
+		tools = append(tools, Tool{Type: "function", Function: ToolFunction{Name: "ToolX"}})
+	}
+
+	var buf bytes.Buffer
+	originalLogOutput := log.Writer()
+	log.SetOutput(&buf)
+	globalLogWriter.out = &buf
+	defer func() {
+		log.SetOutput(originalLogOutput)
+		globalLogWriter.out = originalLogOutput
+	}()
+
+	injectToolsIntoMessages(messages, tools, "claude-4", nil)
+
+	contextLossMetricsMu.Lock()
+	val, exists := contextLossMetrics["legacy_collapse_truncated"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || val != 1 {
+		t.Errorf("Expected legacy_collapse_truncated to be exactly 1, got %d", val)
+	}
+
+	expectedLog := "original: 805 chars, limit: 800 chars, dropped 2 lines"
+	if !strings.Contains(buf.String(), expectedLog) {
+		t.Errorf("Expected truncation log to indicate %q, but got: %q", expectedLog, buf.String())
+	}
+}

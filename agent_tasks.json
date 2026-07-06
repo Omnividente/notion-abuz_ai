@@ -5919,7 +5919,7 @@
     },
     {
       "id": "proxy-runtime-legacy-collapse-truncation-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add metric tracking for legacy collapse truncation events",
@@ -5986,6 +5986,24 @@
       "acceptance": [
         "A test asserts that a search context of exactly 800 characters is not truncated in legacy collapse.",
         "The test asserts no context loss metric is recorded for this boundary.",
+        "Update manifest to mark this task as done."
+      ]
+    },
+    {
+      "id": "proxy-runtime-tool-continuation-truncation-metrics",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for multi-turn continuation truncation events",
+      "description": "Multi-turn continuation logic currently truncates tool outputs exceeding 4000 characters and logs the dropped lines. Add exact diagnostic logging and metric tests for `tool_continuation_truncated`.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add test coverage that asserts contextLossMetrics[\"tool_continuation_truncated\"] is incremented accurately.",
+        "Ensure the test intercepts log output to verify exact diagnostic logging for dropped lines.",
         "Update manifest to mark this task as done."
       ]
     }
