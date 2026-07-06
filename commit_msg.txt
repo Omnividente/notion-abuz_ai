@@ -1,0 +1,22 @@
+proxy: Добавлен тест на точное отсечение по границе 4000 рун для мультибайтовых символов
+
+Добавлен тест `TestExactly4000ByteMultibyteBoundary` в `internal/proxy/tools_test.go` для проверки того, что отсечение строки JSON схемы инструмента на границе 4000 рун безопасно обрабатывает мультибайтовые символы (например, кириллицу) без паники и нарушения UTF-8.
+
+Также обновлен статус задачи `proxy-tools-schema-json-truncation-unicode-boundary-test` на `done` в `agent_tasks.json` и добавлена задача-наблюдение для выполнения минимального количества (5) `todo` задач в очереди.
+
+<!-- AUTONOMOUS_TASK_EVIDENCE
+task_id: proxy-tools-schema-json-truncation-unicode-boundary-test
+status: done
+acceptance:
+- Verify a test checks 4000 multi-byte boundary explicitly -> internal/proxy/tools_test.go (TestExactly4000ByteMultibyteBoundary)
+- Ensure the string uses comma-ok -> internal/proxy/tools_test.go (count, exists := contextLossMetrics["tool_schema_json_truncated"])
+- Ensure the text uses utf8.ValidString -> internal/proxy/tools_test.go (utf8.ValidString(out))
+evidence_files:
+- internal/proxy/tools_test.go
+- agent_tasks.json
+checks:
+- go test ./...
+- go build -ldflags="-s -w" -o notion-manager ./cmd/notion-manager
+- python3 scripts/validate_agent_tasks.py agent_tasks.json
+micro_pr_justification: PR включает тест, закрывающий конкретную задачу по проверке отсечения метрики JSON-схемы на границе рун (что решает проблему мультибайтовых символов) и соответствующее обновление манифеста.
+-->
