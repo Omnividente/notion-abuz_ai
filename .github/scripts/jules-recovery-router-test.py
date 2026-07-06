@@ -101,6 +101,7 @@ def state(
     selector: dict | None = None,
     jules_sessions: list[dict] | None = None,
     task_statuses: dict[str, str] | None = None,
+    task_details: dict[str, dict] | None = None,
     recent_unattended: bool = True,
     recent_next: bool = False,
     burst_in_progress: bool = False,
@@ -135,6 +136,7 @@ def state(
         "selector": selector if selector is not None else {"selected": False, "reason": "none"},
         "jules": {"api_available": True, "sessions": jules_sessions or []},
         "task_statuses": task_statuses or {},
+        "task_details": task_details or {},
     }
 
 
@@ -147,6 +149,10 @@ def session(
     latest_user_epoch: int = 0,
     latest_token_epoch: int = 0,
     wait_kind: str = "continue",
+    wait_reason: str = "unknown_continue",
+    prompt_action: str = "continue_safely",
+    latest_agent_excerpt: str = "",
+    continue_token_count: int = 0,
 ) -> dict:
     return {
         "name": f"sessions/{session_id}",
@@ -159,7 +165,11 @@ def session(
             "latest_agent_epoch": latest_agent_epoch,
             "latest_user_epoch": latest_user_epoch,
             "latest_token_epoch": latest_token_epoch,
+            "continue_token_count": continue_token_count,
             "wait_kind": wait_kind,
+            "wait_reason": wait_reason,
+            "prompt_action": prompt_action,
+            "latest_agent_excerpt": latest_agent_excerpt,
             "task_id": task_id,
         },
     }
@@ -722,6 +732,42 @@ Blocking reasons:
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].type, "jules_send_message")
         self.assertIn("AUTONOMOUS_CONTINUE_TOKEN", actions[0].payload["prompt"])
+
+    def test_awaiting_user_feedback_prompt_includes_dynamic_task_context(self) -> None:
+        task_id = "automation-health-failed-session-86122315"
+        actions = plan(
+            state(
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        task_id=task_id,
+                        wait_reason="transient_api_or_partial_context",
+                        prompt_action="repeat_targeted_context_collection",
+                        latest_agent_excerpt="API error left partial context. password=[REDACTED]",
+                    )
+                ],
+                task_details={
+                    task_id: {
+                        "status": "todo",
+                        "area": "automation",
+                        "risk": "medium",
+                        "title": "Recover failed session",
+                        "allowed_paths": [".github/scripts/jules-recovery-router.py"],
+                        "acceptance": ["Prompt repeats targeted context collection"],
+                    }
+                },
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "jules_send_message")
+        self.assertEqual(actions[0].payload["wait_reason"], "transient_api_or_partial_context")
+        self.assertEqual(actions[0].payload["prompt_action"], "repeat_targeted_context_collection")
+        prompt = actions[0].payload["prompt"]
+        self.assertIn(f"task_id: {task_id}", prompt)
+        self.assertIn("wait_reason: transient_api_or_partial_context", prompt)
+        self.assertIn("allowed_paths: .github/scripts/jules-recovery-router.py", prompt)
+        self.assertIn("Повтори targeted search/read", prompt)
 
     def test_awaiting_user_feedback_token_prevents_duplicate_continue(self) -> None:
         actions = plan(

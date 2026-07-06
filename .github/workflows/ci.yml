@@ -45,12 +45,15 @@ jobs:
       - name: Validate Jules recovery scripts
         run: |
           python3 .github/scripts/count-autonomous-prs-test.py
+          python3 .github/scripts/jules_recovery_prompt_test.py
+          python3 .github/scripts/jules-unattended-monitor-test.py
           python3 .github/scripts/summarize-jules-activities-test.py
           python3 .github/scripts/summarize-jules-failures-test.py
           python3 .github/scripts/block-failed-agent-task-test.py
           python3 .github/scripts/jules-recovery-router-test.py
           python3 .github/scripts/update-quality-fix-comment-test.py
-          python3 -m py_compile .github/scripts/count-autonomous-prs.py .github/scripts/summarize-jules-activities.py .github/scripts/summarize-jules-failures.py .github/scripts/block-failed-agent-task.py .github/scripts/jules-recovery-router.py .github/scripts/update-quality-fix-comment.py
+          python3 -m py_compile .github/scripts/count-autonomous-prs.py .github/scripts/jules_recovery_prompt.py .github/scripts/summarize-jules-activities.py .github/scripts/summarize-jules-failures.py .github/scripts/block-failed-agent-task.py .github/scripts/jules-recovery-router.py .github/scripts/update-quality-fix-comment.py
+          bash -n .github/scripts/jules-unattended-monitor.sh
 
       - name: Validate automation health report
         run: |
