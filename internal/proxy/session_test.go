@@ -256,7 +256,7 @@ func TestBuildRecoveryMessages_ContextLoss_MultipleEmptySystemMessages(t *testin
 
 	messages := []ChatMessage{
 		{Role: "system", Content: "   \n "}, // Empty after trim
-		{Role: "system", Content: ""},      // Empty
+		{Role: "system", Content: ""},       // Empty
 		{Role: "user", Content: "First query to trigger needsFreshThreadRecovery"},
 		{Role: "assistant", Content: "ack"},
 		{Role: "user", Content: "Latest query"},
