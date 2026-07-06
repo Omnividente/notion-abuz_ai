@@ -5884,7 +5884,7 @@
     },
     {
       "id": "proxy-runtime-final-answer-mode-stability",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Improve final-answer mode stability",
@@ -5897,7 +5897,8 @@
         "Identify early drop of final-answer mode from live smoke results.",
         "Implement robust state preservation.",
         "Verify with an offline reproduction test."
-      ]
+      ],
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 17012290620064630944. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
     },
     {
       "id": "proxy-runtime-incomplete-context-handling",
