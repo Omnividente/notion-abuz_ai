@@ -1,0 +1,21 @@
+--- internal/proxy/tools_test.go
++++ internal/proxy/tools_test.go
+@@ -2930,15 +2930,13 @@
+	// Override limit for test to zero to get baseline output
+	originalLimit := toolSchemaTruncationLimit
+	toolSchemaTruncationLimit = 0
++	defer func() {
++		toolSchemaTruncationLimit = originalLimit
++	}()
+
+	zeroLimitOut := buildToolList(tools)
+
+	// Override limit to negative
+	toolSchemaTruncationLimit = -10
+
+	negativeLimitOut := buildToolList(tools)
+-
+-	// Restore original limit
+-	toolSchemaTruncationLimit = originalLimit
+
+	if negativeLimitOut != zeroLimitOut {
