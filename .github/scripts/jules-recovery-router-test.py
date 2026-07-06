@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 SCRIPT_PATH = Path(__file__).with_name("jules-recovery-router.py")
 WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_recovery_router.yml"
+BURST_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_burst_monitor.yml"
 SPEC = importlib.util.spec_from_file_location("jules_recovery_router", SCRIPT_PATH)
 router = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -196,6 +197,14 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("- 1. Auto-Validate and Merge Jules PRs", text)
         self.assertIn("- 4. Advisory Critic Review", text)
         self.assertIn("- completed", text)
+
+    def test_burst_monitor_dispatches_next_after_touching_last_session(self) -> None:
+        text = BURST_WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn('touched_sessions="$(get_output touched_sessions "$output_file")"', text)
+        self.assertIn('echo "Touched Jules sessions: ${touched_sessions:-0}"', text)
+        self.assertIn('if [ "${touched_sessions:-0}" != "0" ]; then', text)
+        self.assertIn('saw_active_sessions="1"', text)
 
     def test_github_get_retries_transient_503(self) -> None:
         client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")
