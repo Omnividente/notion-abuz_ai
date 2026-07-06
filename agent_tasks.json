@@ -5313,7 +5313,7 @@
     },
     {
       "id": "proxy-observability-legacy-collapse-truncated-tests",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add tests for legacy collapse truncation metric",
@@ -5325,7 +5325,8 @@
       ],
       "acceptance": [
         "A test validates correct truncation and metric for legacy collapse strings containing multi-byte UTF-8 runes."
-      ]
+      ],
+      "blocked_reason": "Task asks for metric logs testing but is marked operational/diagnostic due to keywords in description, but PR only modified tests/docs/manifest"
     },
     {
       "id": "proxy-observability-unparseable-json-candidate-truncated-tests",
