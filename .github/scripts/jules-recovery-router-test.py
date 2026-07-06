@@ -435,6 +435,40 @@ New task ids:
         self.assertIn("PR body repeatedly mentions follow-up tasks", body)
         self.assertIn("proxy-observability-json-tool-call-mode-loss-test-more", body)
 
+    def test_quality_fix_prompt_ignores_nested_marker_inside_recovery_comments(self) -> None:
+        quality_comment = """<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->
+
+# Autonomous PR quality gate
+
+Blocking reasons:
+- real quality gate reason
+"""
+        recovery_comment = """<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=old -->
+
+Previous router prompt:
+
+```text
+<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->
+- stale quoted reason
+```
+"""
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules", "needs-quality-fix"],
+                        comments=[quality_comment, recovery_comment],
+                        sha="newsha",
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        body = actions[0].payload["body"]
+        self.assertIn("real quality gate reason", body)
+        self.assertNotIn("stale quoted reason", body)
+
     def test_quality_fix_comment_marker_prevents_duplicate(self) -> None:
         marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"
         ledger = {

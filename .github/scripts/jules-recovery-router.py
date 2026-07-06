@@ -557,7 +557,7 @@ def is_conflicting_pr(pr: dict[str, Any]) -> bool:
 def latest_quality_fix_details(pr: dict[str, Any]) -> str:
     for comment in reversed(pr.get("comments", [])):
         body = str(comment.get("body") or "")
-        if QUALITY_FIX_MARKER not in body:
+        if not body.lstrip().startswith(f"<!-- {QUALITY_FIX_MARKER}"):
             continue
 
         starts = [
