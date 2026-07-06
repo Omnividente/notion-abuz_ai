@@ -813,6 +813,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 					content := m.Content
 					if name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens") {
 						needsReadNarrowing = true
+						recordContextLossMetric("session_continuation_read_narrowing")
 					}
 					runes := []rune(content)
 					if len(runes) > 800 {
@@ -1245,6 +1246,7 @@ func buildSessionChainContinuation(messages []ChatMessage, compactList string, c
 
 			if name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens") {
 				needsReadNarrowing = true
+				recordContextLossMetric("session_continuation_read_narrowing")
 			}
 			runes := []rune(content)
 			if len(runes) > 4000 {
