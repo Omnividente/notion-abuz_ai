@@ -9,7 +9,7 @@ on:
       cycles:
         description: "How many monitor passes to run"
         required: false
-        default: "6"
+        default: "10"
         type: string
       interval_seconds:
         description: "Delay between monitor passes"
@@ -52,7 +52,7 @@ jobs:
           NO_AGENT_IN_PROGRESS_MINUTES: ${{ vars.JULES_BURST_NO_AGENT_IN_PROGRESS_MINUTES || '4' }}
           NO_AGENT_STALE_IN_PROGRESS_MINUTES: ${{ vars.JULES_BURST_NO_AGENT_STALE_IN_PROGRESS_MINUTES || '5' }}
           MAX_STALE_IN_PROGRESS_ESCALATIONS: "2"
-          CYCLES: ${{ inputs.cycles || vars.JULES_BURST_MONITOR_CYCLES || '6' }}
+          CYCLES: ${{ inputs.cycles || vars.JULES_BURST_MONITOR_CYCLES || '10' }}
           INTERVAL_SECONDS: ${{ inputs.interval_seconds || vars.JULES_BURST_MONITOR_INTERVAL_SECONDS || '30' }}
         run: |
           set -euo pipefail
@@ -211,3 +211,7 @@ jobs:
               sleep "$interval"
             fi
           done
+
+          if [ "${active_sessions:-0}" != "0" ]; then
+            echo "Active Jules sessions remain after ${cycles} burst passes; scheduled monitor and recovery router will continue with the recorded dynamic recovery state."
+          fi
