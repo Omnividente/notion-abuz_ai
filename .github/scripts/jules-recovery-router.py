@@ -44,6 +44,7 @@ QUALITY_FIX_CIRCUIT_BREAKER_TTL_MINUTES = 7 * 24 * 60
 QUALITY_FIX_FOLLOWUP_TTL_MINUTES = 7 * 24 * 60
 QUALITY_FIX_CIRCUIT_BREAKER_LABELS = ("human-review", "no-automerge", "stop-loop")
 AUTONOMOUS_PR_STOP_LABELS = set(QUALITY_FIX_CIRCUIT_BREAKER_LABELS)
+NON_EXECUTABLE_ACTION_TYPES = {"quality_fix_recovery_cooldown"}
 DEFERRED_TASK_MARKER_RE = re.compile(r"\bfollow-?up\b", re.IGNORECASE)
 RECOVERY_LABEL_DEFINITIONS = {
     "human-review": {
@@ -189,6 +190,10 @@ class RecoveryAction:
             "ttl_minutes": self.ttl_minutes,
             "payload": self.payload,
         }
+
+
+def is_executable_action(action: RecoveryAction) -> bool:
+    return action.type not in NON_EXECUTABLE_ACTION_TYPES
 
 
 class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
@@ -1624,14 +1629,14 @@ def plan_recovery_actions(
             dedupe_key = f"quality-fix:{number}:{sha}"
             marker = f"{ROUTER_MARKER} action=quality-fix sha={sha}"
             has_marker = comments_contain(pr, marker)
-            if not action_recently_done(
+            recovery_recently_done = action_recently_done(
                 ledger,
                 dedupe_key,
                 now=now,
                 ttl_minutes=QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES,
-            ) and (
-                not has_marker or extract_session_id_from_pr(pr)
-            ):
+            )
+            session_id = extract_session_id_from_pr(pr)
+            if not recovery_recently_done and (not has_marker or session_id):
                 prompt = quality_fix_prompt(pr)
                 actions.append(
                     RecoveryAction(
@@ -1643,7 +1648,38 @@ def plan_recovery_actions(
                             "pr_number": number,
                             "body": prompt,
                             "comment_needed": not has_marker,
-                            "session_id": extract_session_id_from_pr(pr),
+                            "session_id": session_id,
+                        },
+                    )
+                )
+            else:
+                if recovery_recently_done:
+                    wait_reason = (
+                        "quality-fix recovery already ran for this PR head within "
+                        f"{QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES} minutes"
+                    )
+                elif has_marker and not session_id:
+                    wait_reason = (
+                        "quality-fix recovery marker already exists and no Jules session "
+                        "id could be extracted from the PR branch"
+                    )
+                else:
+                    wait_reason = "quality-fix recovery is deferred"
+                actions.append(
+                    RecoveryAction(
+                        type="quality_fix_recovery_cooldown",
+                        dedupe_key=f"quality-fix-cooldown:{number}:{sha}",
+                        reason=f"PR #{number} still has needs-quality-fix but recovery is deferred",
+                        ttl_minutes=0,
+                        payload={
+                            "pr_number": number,
+                            "sha": sha,
+                            "label": "needs-quality-fix",
+                            "marker_present": has_marker,
+                            "recovery_recently_done": recovery_recently_done,
+                            "cooldown_minutes": QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES,
+                            "session_id": session_id,
+                            "wait_reason": wait_reason,
                         },
                     )
                 )
@@ -2719,6 +2755,8 @@ def main(argv: list[str] | None = None) -> int:
             print("ERROR: --mode act is only supported in live mode", file=sys.stderr)
             return 2
         for action in actions:
+            if not is_executable_action(action):
+                continue
             if action_recently_done(
                 ledger,
                 action.dedupe_key,
