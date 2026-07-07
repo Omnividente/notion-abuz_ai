@@ -6399,6 +6399,33 @@
       "health_finding_code": "repeated_followup_generation",
       "health_finding_severity": "degraded",
       "health_report_generated_at": "2026-07-07T07:58:29Z"
+    },
+    {
+      "id": "automation-conflict-loop-pr-421-62c229f1",
+      "title": "Diagnose stopped conflict recovery for autonomous PR #421",
+      "area": "automation",
+      "risk": "low",
+      "status": "todo",
+      "description": "Autonomous recovery circuit breaker stopped PR #421 at SHA `ad486c96925f0c410b59f77b8ede42f20d23088a` for `automation-quality-loop-pr-351-8773a0a1`. Diagnose why repeated conflict-recovery prompts did not converge. Sanitized reason: conflict-recovery circuit breaker stopped repeated dirty PR recovery",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_automerge.yml",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for stopped autonomous PR #421 is identified from PR comments, PR comments, merge conflict state, recovery-router ledger evidence, or CI artifacts.",
+        "The automation or manifest state is improved so the same deterministic recovery loop is not repeated, or this diagnostic task is blocked with a concrete missing-evidence reason.",
+        "If code changes are made, targeted script/workflow tests are run; no secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_finding_id": "conflict_recovery_circuit_breaker",
+      "source_document": "jules-recovery-router",
+      "source_reference": "pull/421@ad486c96925f0c410b59f77b8ede42f20d23088a",
+      "source_task_id": "automation-quality-loop-pr-351-8773a0a1",
+      "circuit_breaker_followup_hash": "62c229f12f62"
     }
   ]
 }
