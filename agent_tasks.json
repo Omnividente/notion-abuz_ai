@@ -6849,7 +6849,7 @@
     },
     {
       "id": "consolidate-tool-mode-loss-xml-arrays",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Consolidate tool mode loss metrics for XML array fallbacks",
@@ -6863,7 +6863,30 @@
         "recordToolModeLossMetric is called during XML array and wrapper array fallback extraction.",
         "A corresponding test validates the metric count."
       ],
-      "source_reference": "code inspection during add-tool-call-loss-metrics-proxy investigation"
+      "source_reference": "code inspection during add-tool-call-loss-metrics-proxy investigation",
+      "evidence": {
+        "files": [
+          "internal/proxy/tools.go",
+          "internal/proxy/tools_test.go"
+        ]
+      }
+    },
+    {
+      "id": "automation-health-add-metric-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add supplementary metric tests",
+      "description": "Ensure metric tests exist for other fallback extraction branches",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A new metric test exists for robust extraction fallback"
+      ],
+      "source_reference": "observation during metric consolidation for consolidate-tool-mode-loss-xml-arrays"
     }
   ]
 }
