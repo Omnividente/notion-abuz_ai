@@ -28,6 +28,8 @@ AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
 STALE_AWAITING_FEEDBACK_MINUTES = 10
 BLOCKING_LABELS = {"needs-quality-fix", "critic-blocked"}
 TRACKED_LABELS = {"needs-quality-fix", "critic-blocked", "human-review", "no-automerge"}
+STOPPED_AUTONOMOUS_LABELS = {"human-review", "no-automerge", "stop-loop"}
+CONTROL_PLANE_TASK_PREFIXES = ("automation-",)
 MICRO_KEYWORDS = (
     "add test",
     "add tests",
@@ -142,6 +144,34 @@ def labels_of(pr: dict[str, Any]) -> set[str]:
     return result
 
 
+def is_stopped_autonomous_pr(pr: dict[str, Any]) -> bool:
+    return bool(labels_of(pr) & STOPPED_AUTONOMOUS_LABELS)
+
+
+def pr_head_ref(pr: dict[str, Any]) -> str:
+    head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+    return str(head.get("ref") or pr.get("head_ref") or "")
+
+
+def referenced_task_ids(pr: dict[str, Any], known_task_ids: list[str]) -> set[str]:
+    task_ids: set[str] = set()
+    head_ref = pr_head_ref(pr)
+    for task_id in known_task_ids:
+        if head_ref == task_id or head_ref.startswith(f"{task_id}-"):
+            task_ids.add(task_id)
+
+    body = str(pr.get("body") or "")
+    task_ids.update(
+        match.group(1)
+        for match in re.finditer(r"(?im)\btask_id:\s*([a-z0-9][a-z0-9_.-]{2,})", body)
+    )
+    return task_ids
+
+
+def is_control_plane_task_id(task_id: str) -> bool:
+    return task_id.startswith(CONTROL_PLANE_TASK_PREFIXES)
+
+
 def normalize_path(path: str) -> str:
     return path.replace("\\", "/").lower()
 
@@ -209,10 +239,14 @@ def is_merged_pr(pr: dict[str, Any]) -> bool:
 
 
 def has_unresolved_blocking_label(pr: dict[str, Any]) -> bool:
+    if is_stopped_autonomous_pr(pr):
+        return False
     return bool(labels_of(pr).intersection(BLOCKING_LABELS)) and not is_merged_pr(pr)
 
 
 def has_unresolved_quality_label(pr: dict[str, Any]) -> bool:
+    if is_stopped_autonomous_pr(pr):
+        return False
     return "needs-quality-fix" in labels_of(pr) and not is_merged_pr(pr)
 
 
@@ -439,15 +473,17 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
 
     autonomous_pulls = [pr for pr in pulls if isinstance(pr, dict) and is_autonomous_pr(pr, task_ids, repo)]
     open_autonomous = [pr for pr in autonomous_pulls if pr.get("state") == "open"]
-    autonomous_head_refs = {
-        str((pr.get("head") if isinstance(pr.get("head"), dict) else {}).get("ref") or pr.get("head_ref") or "")
-        for pr in autonomous_pulls
-        if str((pr.get("head") if isinstance(pr.get("head"), dict) else {}).get("ref") or pr.get("head_ref") or "")
-    }
+    autonomous_head_refs = {pr_head_ref(pr) for pr in autonomous_pulls if pr_head_ref(pr)}
     active_open_autonomous = [
         pr for pr in open_autonomous
-        if not (labels_of(pr) & {"human-review", "no-automerge", "stop-loop"})
+        if not is_stopped_autonomous_pr(pr)
     ]
+    stopped_task_ids = {
+        task_id
+        for pr in open_autonomous
+        if is_stopped_autonomous_pr(pr)
+        for task_id in referenced_task_ids(pr, task_ids)
+    }
     if len(active_open_autonomous) > 1:
         add_finding_once(
             findings,
@@ -583,7 +619,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
 
     followup_prs = [
         pr.get("number")
-        for pr in autonomous_pulls
+        for pr in active_open_autonomous
         if repeated_followup_mentions(str(pr.get("body") or ""))
     ]
     if followup_prs:
@@ -645,7 +681,12 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         kind = session_kind(session)
         sid = session_id(session)
         task_id = session_task_id(session, session_task_map)
-        if kind == "product" and state in ACTIVE_STATES:
+        if (
+            kind == "product"
+            and state in ACTIVE_STATES
+            and not is_control_plane_task_id(task_id)
+            and task_id not in stopped_task_ids
+        ):
             active_product_sessions.append(sid)
         if state == "AWAITING_USER_FEEDBACK" and stale_after_autonomous_continue(session, now=now):
             stale_waiting_after_continue.append(sid)
