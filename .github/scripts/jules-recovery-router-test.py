@@ -211,6 +211,33 @@ def plan(input_state: dict, ledger: dict | None = None, health_mode: str = "enfo
 
 
 class RecoveryRouterTest(unittest.TestCase):
+    def test_action_limit_keeps_diagnostic_and_first_executable(self) -> None:
+        diagnostic = router.RecoveryAction(
+            type="quality_fix_recovery_cooldown",
+            dedupe_key="diagnostic",
+            reason="diagnostic",
+            ttl_minutes=0,
+            payload={},
+        )
+        first = router.RecoveryAction(
+            type="dispatch_workflow",
+            dedupe_key="first",
+            reason="first",
+            ttl_minutes=10,
+            payload={"workflow": "automation_health.yml"},
+        )
+        second = router.RecoveryAction(
+            type="dispatch_workflow",
+            dedupe_key="second",
+            reason="second",
+            ttl_minutes=10,
+            payload={"workflow": "jules_next_task.yml"},
+        )
+
+        actions = router.limit_planned_actions([diagnostic, first, second])
+
+        self.assertEqual([action.dedupe_key for action in actions], ["diagnostic", "first"])
+
     def test_workflow_reruns_router_after_pr_checks_finish(self) -> None:
         text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
@@ -659,6 +686,41 @@ Previous router prompt:
         self.assertTrue(actions[0].payload["recovery_recently_done"])
         self.assertEqual(actions[0].payload["cooldown_minutes"], 30)
         self.assertIn("already ran", actions[0].payload["wait_reason"])
+
+    def test_quality_fix_cooldown_allows_low_todo_health_dispatch(self) -> None:
+        marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"
+        ledger = {
+            "version": 1,
+            "actions": {
+                "quality-fix:10:abc123": {
+                    "time": (NOW - timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
+                    "type": "quality_fix_recovery",
+                }
+            },
+        }
+        actions = plan(
+            state(
+                open_pulls=[pr(labels=["jules", "needs-quality-fix"], comments=[marker])],
+                selector={
+                    "selected": True,
+                    "task_id": "proxy-runtime-fix",
+                    "todo_count": 4,
+                    "eligible_count": 1,
+                    "reason_code": "selected",
+                },
+                task_metrics={"todo_count": 4, "minimum_todo_tasks": 5},
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 2)
+        self.assertEqual(actions[0].type, "quality_fix_recovery_cooldown")
+        self.assertFalse(router.is_executable_action(actions[0]))
+        self.assertEqual(actions[1].type, "dispatch_workflow")
+        self.assertTrue(router.is_executable_action(actions[1]))
+        self.assertEqual(actions[1].payload["workflow"], "automation_health.yml")
+        self.assertEqual(actions[1].payload["inputs"]["mode"], "enforce")
+        self.assertIn("4/5", actions[1].reason)
 
     def test_quality_fix_marker_without_ledger_still_sends_session_message(self) -> None:
         marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"

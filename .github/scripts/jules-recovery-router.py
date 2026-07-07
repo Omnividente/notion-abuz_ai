@@ -196,6 +196,21 @@ def is_executable_action(action: RecoveryAction) -> bool:
     return action.type not in NON_EXECUTABLE_ACTION_TYPES
 
 
+def limit_planned_actions(actions: list[RecoveryAction]) -> list[RecoveryAction]:
+    """Keep diagnostics visible without letting them consume the one mutation slot."""
+    limited: list[RecoveryAction] = []
+    executable_included = False
+    for action in actions:
+        if not is_executable_action(action):
+            limited.append(action)
+            continue
+        if executable_included:
+            continue
+        limited.append(action)
+        executable_included = True
+    return limited
+
+
 class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(
         self,
@@ -1683,6 +1698,24 @@ def plan_recovery_actions(
                         },
                     )
                 )
+                below_minimum, todo_count, minimum = selector_below_replenishment_minimum(state)
+                if below_minimum:
+                    action = maybe_health_recovery_action(
+                        state,
+                        ledger,
+                        now=now,
+                        health_mode=health_mode,
+                        reason=(
+                            "Todo queue below replenishment minimum while quality-fix recovery "
+                            f"is deferred for PR #{number}: {todo_count}/{minimum}"
+                        ),
+                        dedupe_suffix=(
+                            f"quality-fix-deferred-todo-below-minimum:{number}:{sha}:"
+                            f"{todo_count}:{minimum}"
+                        ),
+                    )
+                    if action:
+                        actions.append(action)
             return actions
 
         if "jules" not in labels:
@@ -2748,7 +2781,7 @@ def main(argv: list[str] | None = None) -> int:
         health_mode=args.health_mode,
     )
 
-    actions = actions[:1]
+    actions = limit_planned_actions(actions)
     executed = 0
     if args.mode == "act":
         if client is None:
