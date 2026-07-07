@@ -671,6 +671,7 @@ def evaluate_quality(
                 reasons.append(
                     "AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: "
                     + ", ".join(sorted(missing_evidence_files))
+                    + " (Hint: Only list files actually changed in this PR. For blocked tasks, this is often only agent_tasks.json)"
                 )
             if not evidence.evidence_files:
                 reasons.append(

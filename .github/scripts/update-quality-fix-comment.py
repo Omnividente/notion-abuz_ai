@@ -72,6 +72,7 @@ def build_body(
         "- исправь deterministic autonomous quality gate failure ниже;",
         "- синхронизируй AUTONOMOUS_TASK_EVIDENCE с фактическим статусом задачи в agent_tasks.json;",
         "- если задача в manifest имеет status blocked, evidence тоже должен иметь status: blocked и concrete blocked_reason;",
+        "- для blocked задачи, указывай в evidence_files только те файлы, которые реально изменены (чаще всего только agent_tasks.json);",
         "- если задача реально выполнена, manifest должен быть status done и evidence status done с changed evidence files;",
         "- убери временные scratch-файлы из PR, если они не являются частью acceptance/evidence;",
         "- push исправление в эту же PR ветку и дождись повторных checks.",
