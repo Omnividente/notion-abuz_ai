@@ -1,0 +1,73 @@
+{
+  "now": "2026-06-28T12:00:00Z",
+  "repository": "Omnividente/notion-abuz_ai",
+  "manifest": {
+    "replenishment_policy": {
+      "minimum_todo_tasks": 1
+    },
+    "tasks": [
+      {
+        "id": "runtime-task",
+        "status": "todo",
+        "area": "proxy",
+        "risk": "medium",
+        "title": "Fix runtime proxy behavior from live smoke evidence",
+        "description": "Use local live smoke artifact to fix reproduced runtime failure.",
+        "allowed_paths": ["internal/proxy/anthropic.go", "agent_tasks.json"],
+        "acceptance": ["Runtime proxy behavior is fixed."]
+      }
+    ]
+  },
+  "pulls": [
+    {
+      "number": 421,
+      "title": "automation-quality-loop-pr-351-8773a0a1",
+      "body": "<!-- AUTONOMOUS_TASK_EVIDENCE\ntask_id: automation-quality-loop-pr-351-8773a0a1\nstatus: done\nacceptance:\n- Generated follow-up task for the related failure.\n- Another follow-up note explains why this PR is stopped.\n-->\n\n---\n*PR created automatically by Jules for task [15933738671138716627](https://jules.google.com/task/15933738671138716627)*",
+      "state": "open",
+      "labels": [
+        {"name": "jules"},
+        {"name": "needs-quality-fix"},
+        {"name": "human-review"},
+        {"name": "no-automerge"},
+        {"name": "stop-loop"}
+      ],
+      "updated_at": "2026-06-28T11:30:00Z",
+      "head": {
+        "ref": "automation-quality-loop-pr-351-8773a0a1-15933738671138716627",
+        "repo": {
+          "full_name": "Omnividente/notion-abuz_ai"
+        }
+      }
+    }
+  ],
+  "workflow_runs": [
+    {
+      "id": 1001,
+      "name": "CI",
+      "head_branch": "master",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-06-28T11:30:00Z"
+    }
+  ],
+  "session_task_map": {
+    "17866769548017050850": {
+      "task_id": "automation-health-duplicate-active-product-sessions-01eb811a",
+      "updateTime": "2026-06-28T11:45:00Z"
+    },
+    "15933738671138716627": {
+      "task_id": "automation-quality-loop-pr-351-8773a0a1",
+      "updateTime": "2026-06-28T11:40:00Z"
+    }
+  },
+  "jules_sessions": [
+    {
+      "id": "17866769548017050850",
+      "state": "IN_PROGRESS"
+    },
+    {
+      "id": "15933738671138716627",
+      "state": "AWAITING_USER_FEEDBACK"
+    }
+  ]
+}

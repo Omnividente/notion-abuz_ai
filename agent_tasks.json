@@ -6456,7 +6456,7 @@
     },
     {
       "id": "automation-health-quality-failure-2b3efb1a",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: quality_failure",
@@ -6474,11 +6474,15 @@
       "health_finding_hash": "2b3efb1a1ffe",
       "health_finding_code": "quality_failure",
       "health_finding_severity": "degraded",
-      "health_report_generated_at": "2026-07-07T11:53:01Z"
+      "health_report_generated_at": "2026-07-07T11:53:01Z",
+      "completion_evidence": [
+        ".github/scripts/automation-health-report.py no longer treats stopped human-review/no-automerge/stop-loop PRs as unresolved quality failures.",
+        ".github/fixtures/automation-health/stopped-control-plane-sessions keeps the needs-quality-fix label visible in metrics without producing quality_failure."
+      ]
     },
     {
       "id": "automation-health-duplicate-active-product-sessions-01eb811a",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "medium",
       "title": "Fix automation health finding: duplicate_active_product_sessions",
@@ -6497,7 +6501,81 @@
       "health_finding_hash": "01eb811aff7c",
       "health_finding_code": "duplicate_active_product_sessions",
       "health_finding_severity": "critical",
-      "health_report_generated_at": "2026-07-07T12:37:11Z"
+      "health_report_generated_at": "2026-07-07T12:37:11Z",
+      "completion_evidence": [
+        ".github/scripts/automation-health-report.py excludes automation-* control-plane task sessions and sessions tied to stopped PR task_ids from active_product_count.",
+        ".github/fixtures/automation-health/stopped-control-plane-sessions models the live 17866769548017050850 + 15933738671138716627 false-positive shape."
+      ]
+    },
+    {
+      "id": "automation-stopped-pr-313-safe-resolution",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Resolve stopped autonomous PR #313 safely",
+      "description": "PR #313 is still open with jules/needs-quality-fix/human-review/no-automerge/stop-loop labels even though its diagnostic task is already marked done. Determine whether the PR is superseded by master, still contains unique useful work, or should remain stopped with a concrete reason.",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "PR #313 is classified as superseded, still-needed, or intentionally stopped using PR metadata, CI/check evidence, or manifest history.",
+        "The manifest or automation state is updated so PR #313 no longer causes repeated recovery/quality work; if no code change is safe, the task is blocked with a concrete blocked_reason.",
+        "No product runtime files, secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_reference": "pull/313",
+      "source_task_id": "proxy-session-recovery-system-instruction-metrics"
+    },
+    {
+      "id": "automation-stopped-pr-400-safe-resolution",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Resolve stopped autonomous PR #400 safely",
+      "description": "PR #400 is still open with human-review/no-automerge/stop-loop labels even though its conflict diagnostic task is already marked done. Determine whether the PR is superseded by master, still contains unique useful work, or should remain stopped with a concrete reason.",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "PR #400 is classified as superseded, still-needed, or intentionally stopped using PR metadata, CI/check evidence, or manifest history.",
+        "The manifest or automation state is updated so PR #400 no longer causes repeated recovery/quality work; if no code change is safe, the task is blocked with a concrete blocked_reason.",
+        "No product runtime files, secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_reference": "pull/400",
+      "source_task_id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics"
+    },
+    {
+      "id": "automation-stopped-pr-446-safe-resolution",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Resolve stopped autonomous PR #446 safely",
+      "description": "PR #446 is still open with human-review/no-automerge/stop-loop labels after attempting to handle repeated_followup_generation. Determine whether it is superseded by the current automation-health-report.py fix, still contains unique useful manifest work, or should remain stopped with a concrete reason.",
+      "allowed_paths": [
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "PR #446 is classified as superseded, still-needed, or intentionally stopped using PR metadata, CI/check evidence, automation-health evidence, or manifest history.",
+        "The manifest or automation state is updated so PR #446 no longer causes repeated recovery/quality work; if no code change is safe, the task is blocked with a concrete blocked_reason.",
+        "No product runtime files, secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_reference": "pull/446",
+      "source_task_id": "automation-health-repeated-followup-generation-6dc5c3e5"
     },
     {
       "id": "automation-fix-health-report-followup-33a0f3b7",
