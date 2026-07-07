@@ -633,7 +633,7 @@ Previous router prompt:
         self.assertIn("real quality gate reason", body)
         self.assertNotIn("stale quoted reason", body)
 
-    def test_quality_fix_comment_marker_prevents_duplicate(self) -> None:
+    def test_quality_fix_comment_marker_reports_recovery_cooldown(self) -> None:
         marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"
         ledger = {
             "version": 1,
@@ -649,7 +649,16 @@ Previous router prompt:
             ledger=ledger,
         )
 
-        self.assertEqual(actions, [])
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_recovery_cooldown")
+        self.assertFalse(router.is_executable_action(actions[0]))
+        self.assertEqual(actions[0].payload["pr_number"], 10)
+        self.assertEqual(actions[0].payload["sha"], "abc123")
+        self.assertEqual(actions[0].payload["label"], "needs-quality-fix")
+        self.assertTrue(actions[0].payload["marker_present"])
+        self.assertTrue(actions[0].payload["recovery_recently_done"])
+        self.assertEqual(actions[0].payload["cooldown_minutes"], 30)
+        self.assertIn("already ran", actions[0].payload["wait_reason"])
 
     def test_quality_fix_marker_without_ledger_still_sends_session_message(self) -> None:
         marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=quality-fix sha=abc123 -->"
