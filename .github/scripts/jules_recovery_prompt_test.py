@@ -106,6 +106,39 @@ class JulesRecoveryPromptTest(unittest.TestCase):
         self.assertIn("[REDACTED]", prompt)
         self.assertNotIn("ghp_abcdef1234567890", prompt)
 
+    def test_prompt_includes_sanitized_pr_failed_check_context(self) -> None:
+        payload = module.build_prompt_payload(
+            summary={
+                "wait_reason": "unknown_continue",
+                "prompt_action": "continue_safely",
+                "latest_agent_excerpt": "Waiting for input.",
+                "continue_token_count": 1,
+            },
+            task={"id": "task-one", "status": "todo", "risk": "low", "area": "automation"},
+            task_id="task-one",
+            pr_context={
+                "repo": "Omnividente/notion-abuz_ai",
+                "pr_number": "#401",
+                "head_sha": "abc123",
+                "failed_checks": [
+                    {
+                        "name": "CI / validate",
+                        "conclusion": "failure",
+                        "run_id": "12345",
+                        "details_url": "https://github.com/o/r/actions/runs/12345/job/9?token=ghp_abcdef1234567890",
+                    }
+                ],
+            },
+        )
+
+        prompt = payload["prompt"]
+        self.assertIn("pr_context: available", prompt)
+        self.assertIn("pr_number: #401", prompt)
+        self.assertIn("CI / validate: failure", prompt)
+        self.assertIn("открой/read linked job logs", prompt)
+        self.assertIn("[REDACTED]", prompt)
+        self.assertNotIn("ghp_abcdef1234567890", prompt)
+
     def test_sanitizes_password_like_values(self) -> None:
         self.assertEqual(
             module.sanitize_text("password=super-secret"),
