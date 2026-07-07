@@ -650,6 +650,40 @@ func TestParseToolCalls_JSON_Array_AdvancedEdgeCases(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("MetricXMLArrayFallbackDirect", func(t *testing.T) {
+		toolModeLossMetricsMu.Lock()
+		toolModeLossMetrics = make(map[string]int)
+		toolModeLossMetricsMu.Unlock()
+
+		content := "[\n  {\"name\": \"Edit\", \"arguments\": {\"path\": \"main.go\", \"diff\": \"\"}}\n]"
+		parseToolCallJSONList(content, 0)
+
+		toolModeLossMetricsMu.Lock()
+		count, exists := toolModeLossMetrics["xml_array_fallback_direct"]
+		toolModeLossMetricsMu.Unlock()
+
+		if !exists || count != 1 {
+			t.Fatalf("Expected metric xml_array_fallback_direct to be 1 and exist, got %d (exists: %v)", count, exists)
+		}
+	})
+
+	t.Run("MetricXMLArrayFallbackWrapper", func(t *testing.T) {
+		toolModeLossMetricsMu.Lock()
+		toolModeLossMetrics = make(map[string]int)
+		toolModeLossMetricsMu.Unlock()
+
+		content := "{\"tool_calls\": [{\"name\": \"Edit\", \"arguments\": {\"path\": \"main.go\", \"diff\": \"\"}}]}"
+		parseToolCallJSONList(content, 0)
+
+		toolModeLossMetricsMu.Lock()
+		count, exists := toolModeLossMetrics["xml_array_fallback_wrapper"]
+		toolModeLossMetricsMu.Unlock()
+
+		if !exists || count != 1 {
+			t.Fatalf("Expected metric xml_array_fallback_wrapper to be 1 and exist, got %d (exists: %v)", count, exists)
+		}
+	})
 }
 
 // We want to test parseToolCallJSON which is an internal function in package proxy
