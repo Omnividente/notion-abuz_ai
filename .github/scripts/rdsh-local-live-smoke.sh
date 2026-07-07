@@ -11,10 +11,12 @@ OPENAI_EXPECTED_TOKEN="not_run"
 OPENAI_PERSONA_LEAK="not_run"
 OPENAI_WORKSPACE_REFRAMING="not_run"
 OPENAI_TOOL_REFUSAL="not_run"
+OPENAI_TOOL_CALL_MODE="not_run"
 ANTHROPIC_EXPECTED_TOKEN="not_run"
 ANTHROPIC_PERSONA_LEAK="not_run"
 ANTHROPIC_WORKSPACE_REFRAMING="not_run"
 ANTHROPIC_TOOL_REFUSAL="not_run"
+ANTHROPIC_TOOL_CALL_MODE="not_run"
 
 write_summary() {
   mkdir -p "$(dirname "$SMOKE_SUMMARY_PATH")"
@@ -27,10 +29,12 @@ write_summary() {
   OPENAI_PERSONA_LEAK="$OPENAI_PERSONA_LEAK" \
   OPENAI_WORKSPACE_REFRAMING="$OPENAI_WORKSPACE_REFRAMING" \
   OPENAI_TOOL_REFUSAL="$OPENAI_TOOL_REFUSAL" \
+  OPENAI_TOOL_CALL_MODE="$OPENAI_TOOL_CALL_MODE" \
   ANTHROPIC_EXPECTED_TOKEN="$ANTHROPIC_EXPECTED_TOKEN" \
   ANTHROPIC_PERSONA_LEAK="$ANTHROPIC_PERSONA_LEAK" \
   ANTHROPIC_WORKSPACE_REFRAMING="$ANTHROPIC_WORKSPACE_REFRAMING" \
   ANTHROPIC_TOOL_REFUSAL="$ANTHROPIC_TOOL_REFUSAL" \
+  ANTHROPIC_TOOL_CALL_MODE="$ANTHROPIC_TOOL_CALL_MODE" \
   python3 - <<'PY' > "$SMOKE_SUMMARY_PATH"
 import json
 import os
@@ -56,6 +60,7 @@ summary = {
             "expected_token": os.environ["OPENAI_EXPECTED_TOKEN"],
             "workspace_reframing": os.environ["OPENAI_WORKSPACE_REFRAMING"],
             "tool_refusal": os.environ["OPENAI_TOOL_REFUSAL"],
+            "tool_call_mode": os.environ["OPENAI_TOOL_CALL_MODE"],
             "persona_leak": os.environ["OPENAI_PERSONA_LEAK"],
         },
         "anthropic": {
@@ -63,6 +68,7 @@ summary = {
             "workspace_reframing": os.environ["ANTHROPIC_WORKSPACE_REFRAMING"],
             "tool_refusal": os.environ["ANTHROPIC_TOOL_REFUSAL"],
             "persona_leak": os.environ["ANTHROPIC_PERSONA_LEAK"],
+            "tool_call_mode": os.environ["ANTHROPIC_TOOL_CALL_MODE"],
         },
     },
 }
@@ -212,6 +218,59 @@ if ! curl -fsS "http://127.0.0.1:${SMOKE_PORT}/health" > /tmp/health.json; then
   exit 1
 fi
 
+SMOKE_STAGE="openai_tool_request"
+openai_tool_body="$(jq -n \
+  --arg model "$SMOKE_MODEL" \
+  '{
+    model: $model,
+    stream: false,
+    max_tokens: 64,
+    messages: [
+      {
+        role: "user",
+        content: "What is the weather in Tokyo?"
+      }
+    ],
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "get_weather",
+          description: "Get the current weather in a given location",
+          parameters: {
+            type: "object",
+            properties: {
+              location: {
+                type: "string",
+                description: "The city and state, e.g. San Francisco, CA"
+              }
+            },
+            required: ["location"]
+          }
+        }
+      }
+    ],
+    tool_choice: "required"
+  }')"
+
+openai_tool_response="$(curl -fsS --max-time 180 \
+  -X POST "http://127.0.0.1:${SMOKE_PORT}/v1/chat/completions" \
+  -H "Authorization: Bearer ${SMOKE_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d "$openai_tool_body")"
+
+openai_tool_calls="$(echo "$openai_tool_response" | jq -c '.choices[0].message.tool_calls // []')"
+echo "OpenAI-compatible tool calls: $openai_tool_calls"
+
+if [ "$openai_tool_calls" = "[]" ] || [ "$openai_tool_calls" = "null" ]; then
+  OPENAI_TOOL_CALL_MODE="failed"
+  echo "::error::OpenAI-compatible local smoke lost JSON tool-call mode."
+  echo "Diagnostic (full response): $openai_tool_response"
+  grep -E '\\[bridge\\] decision:|\\[session\\] decision:' /tmp/notion-manager.stderr.log || true
+  exit 1
+fi
+OPENAI_TOOL_CALL_MODE="passed"
+
 SMOKE_STAGE="openai_request"
 openai_body="$(jq -n \
   --arg model "$SMOKE_MODEL" \
@@ -272,6 +331,56 @@ if grep -Eiq 'notion|workspace|page|document' <<<"$openai_content"; then
   exit 1
 fi
 OPENAI_PERSONA_LEAK="passed"
+
+SMOKE_STAGE="anthropic_tool_request"
+anthropic_tool_body="$(jq -n \
+  --arg model "$SMOKE_MODEL" \
+  '{
+    model: $model,
+    stream: false,
+    max_tokens: 64,
+    messages: [
+      {
+        role: "user",
+        content: "What is the weather in Tokyo?"
+      }
+    ],
+    tools: [
+      {
+        name: "get_weather",
+        description: "Get the current weather in a given location",
+        input_schema: {
+          type: "object",
+          properties: {
+            location: {
+              type: "string",
+              description: "The city and state, e.g. San Francisco, CA"
+            }
+          },
+          required: ["location"]
+        }
+      }
+    ],
+    tool_choice: {"type": "any"}
+  }')"
+
+anthropic_tool_response="$(curl -fsS --max-time 180 \
+  -X POST "http://127.0.0.1:${SMOKE_PORT}/v1/messages" \
+  -H "Authorization: Bearer ${SMOKE_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d "$anthropic_tool_body")"
+
+anthropic_tool_use="$(echo "$anthropic_tool_response" | jq -c '[.content[]? | select(.type == "tool_use")]')"
+echo "Anthropic tool use: $anthropic_tool_use"
+
+if [ "$anthropic_tool_use" = "[]" ] || [ "$anthropic_tool_use" = "null" ]; then
+  ANTHROPIC_TOOL_CALL_MODE="failed"
+  echo "::error::Anthropic local smoke lost JSON tool-call mode."
+  echo "Diagnostic (full response): $anthropic_tool_response"
+  grep -E '\\[bridge\\] decision:|\\[session\\] decision:' /tmp/notion-manager.stderr.log || true
+  exit 1
+fi
+ANTHROPIC_TOOL_CALL_MODE="passed"
 
 SMOKE_STAGE="anthropic_request"
 anthropic_body="$(jq -n \
