@@ -142,6 +142,11 @@ SCRATCH_FILE_RE = re.compile(
     r"pr[-_]?body[a-z0-9_-]*|pull[-_]?request[-_]?body[a-z0-9_-]*)\.(?:md|txt)$",
     re.IGNORECASE,
 )
+GENERATED_ARTIFACT_FILE_RE = re.compile(
+    r"(^|/)(__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache)(/|$)|"
+    r"\.(?:py[cod]|coverage)$",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -271,6 +276,10 @@ def is_scratch_file(path: str) -> bool:
     return bool(SCRATCH_FILE_RE.match(normalize_path(path)))
 
 
+def is_generated_artifact_file(path: str) -> bool:
+    return bool(GENERATED_ARTIFACT_FILE_RE.search(normalize_path(path)))
+
+
 def is_runtime_or_script_path(path: str) -> bool:
     normalized = normalize_path(path)
     if is_manifest_path(normalized) or is_test_path(normalized) or is_doc_path(normalized):
@@ -388,7 +397,8 @@ def strip_markdown_code(text: str) -> str:
 
 
 def repeated_followup_mentions(pr_body: str) -> bool:
-    prose_body = strip_markdown_code(pr_body)
+    evidence_free_body = EVIDENCE_BLOCK_RE.sub(" ", pr_body or "")
+    prose_body = strip_markdown_code(evidence_free_body)
     prose_body = FOLLOWUP_IDENTIFIER_RE.sub(" ", prose_body)
     return len(FOLLOWUP_WORD_RE.findall(prose_body)) >= 2
 
@@ -611,12 +621,18 @@ def evaluate_quality(
     changed_lines = changed_line_count(numstat, changed_files)
     evidence = parse_evidence_block(pr_body)
     scratch_files = [path for path in changed_files if is_scratch_file(path)]
+    generated_artifact_files = [path for path in changed_files if is_generated_artifact_file(path)]
     autofill_evidence_block = ""
 
     if scratch_files:
         reasons.append(
             "Autonomous PR contains temporary scratch/planning files: "
             + ", ".join(sorted(scratch_files))
+        )
+    if generated_artifact_files:
+        reasons.append(
+            "Autonomous PR contains generated cache/bytecode artifacts: "
+            + ", ".join(sorted(generated_artifact_files))
         )
 
     lower_body = pr_body.lower()

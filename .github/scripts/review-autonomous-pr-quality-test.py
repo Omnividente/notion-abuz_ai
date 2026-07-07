@@ -220,6 +220,79 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
         self.assertTrue(decision.passed)
         self.assertFalse(any("follow-up tasks" in reason for reason in decision.reasons))
 
+    def test_followup_terms_inside_evidence_acceptance_do_not_trigger_repeated_followup_failure(self) -> None:
+        task_id = "automation-replenishment-after-recovery-block"
+        acceptance = [
+            "Blocking a failed Jules task cannot leave todo_count below the manifest replenishment minimum without a concrete follow-up path.",
+            "A focused offline test covers a block operation when todo_count would fall below minimum.",
+            "Generated follow-up tasks must be evidence-backed and must not be placeholder tasks.",
+        ]
+        before = manifest(
+            [
+                task(
+                    task_id,
+                    status="todo",
+                    title="Replenish safe work after recovery block PRs",
+                    description="Keep the autonomous task queue replenished after failed session block PRs.",
+                    allowed_paths=[
+                        ".github/scripts/block-failed-agent-task.py",
+                        ".github/scripts/block-failed-agent-task-test.py",
+                        "agent_tasks.json",
+                    ],
+                    acceptance=acceptance,
+                )
+            ]
+        )
+        after = manifest(
+            [
+                task(
+                    task_id,
+                    status="done",
+                    title="Replenish safe work after recovery block PRs",
+                    description="Keep the autonomous task queue replenished after failed session block PRs.",
+                    allowed_paths=[
+                        ".github/scripts/block-failed-agent-task.py",
+                        ".github/scripts/block-failed-agent-task-test.py",
+                        "agent_tasks.json",
+                    ],
+                    acceptance=acceptance,
+                )
+            ]
+        )
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                ".github/scripts/block-failed-agent-task.py",
+                ".github/scripts/block-failed-agent-task-test.py",
+                "agent_tasks.json",
+            ],
+            pr_body=evidence_body(
+                task_id,
+                acceptance=[
+                    f"{item} -> .github/scripts/block-failed-agent-task.py"
+                    for item in acceptance
+                ],
+                evidence_files=[
+                    ".github/scripts/block-failed-agent-task.py",
+                    ".github/scripts/block-failed-agent-task-test.py",
+                    "agent_tasks.json",
+                ],
+                checks=[
+                    "pytest .github/scripts/block-failed-agent-task-test.py",
+                    "python3 scripts/validate_agent_tasks.py agent_tasks.json",
+                ],
+                micro_pr_justification=(
+                    "The PR provides a complete functional solution solving the "
+                    "blocked PR missing task generation issue."
+                ),
+            ),
+        )
+
+        self.assertTrue(decision.passed)
+        self.assertFalse(any("follow-up tasks" in reason for reason in decision.reasons))
+
     def test_repeated_followup_prose_still_fails(self) -> None:
         before = manifest([task("runtime-fix", status="todo")])
         after = manifest([task("runtime-fix", status="done")])
@@ -315,6 +388,34 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
 
         self.assertFalse(decision.passed)
         self.assertTrue(any("scratch/planning files" in reason for reason in decision.reasons))
+
+    def test_generated_python_bytecode_file_fails(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+                ".github/scripts/__pycache__/filter-active-jules-sessions.cpython-312.pyc",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body(
+                "runtime-fix",
+                evidence_files=[
+                    "internal/proxy/anthropic.go",
+                    "internal/proxy/anthropic_bridge_test.go",
+                    "agent_tasks.json",
+                    ".github/scripts/__pycache__/filter-active-jules-sessions.cpython-312.pyc",
+                ],
+            ),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("generated cache/bytecode" in reason for reason in decision.reasons))
 
     def test_pr_body_scratch_artifact_fails(self) -> None:
         before = manifest([task("runtime-fix", status="todo")])
