@@ -6333,6 +6333,50 @@
       "source_reference": "pull/400@a92f0b62da5ecba86bd1d7a520ab3e8cbfb85f78",
       "source_task_id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics",
       "circuit_breaker_followup_hash": "415994604de5"
+    },
+    {
+      "id": "automation-health-quality-failure-d9d2cacc",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: quality_failure",
+      "description": "Automation Health reported degraded finding `quality_failure` in window `24h`. Message: At least one autonomous PR was marked needs-quality-fix. Evidence: {\"pr_numbers\": [362, 353]}",
+      "allowed_paths": [
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/workflows/jules_automerge.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `quality_failure` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `quality_failure`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "d9d2cacc4253",
+      "health_finding_code": "quality_failure",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-07T06:43:34Z"
+    },
+    {
+      "id": "automation-health-todo-below-minimum-c4763a56",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: todo_below_minimum",
+      "description": "Automation Health reported degraded finding `todo_below_minimum` in window `current`. Message: Todo task count is below replenishment minimum. Evidence: {\"minimum\": 5, \"todo_count\": 3}",
+      "allowed_paths": [
+        "scripts/validate_agent_tasks.py",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `todo_below_minimum` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `todo_below_minimum`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "c4763a566875",
+      "health_finding_code": "todo_below_minimum",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-07T06:43:34Z"
     }
   ]
 }
