@@ -422,6 +422,21 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("Stale in-progress sessions", text)
         self.assertIn("Active Jules sessions remain after ${cycles} burst passes", text)
 
+    def test_burst_monitor_reports_actionable_final_status(self) -> None:
+        text = BURST_WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("classify_burst_status()", text)
+        self.assertIn("explain_final_burst_status()", text)
+        self.assertIn('skipped_stopped_count="$(get_output skipped_stopped_count "$output_file")"', text)
+        self.assertIn('skipped_stopped_sessions="$(get_output skipped_stopped_sessions "$output_file")"', text)
+        self.assertIn('echo "Skipped stopped sessions: ${skipped_stopped_count:-0} ${skipped_stopped_sessions:-}"', text)
+        self.assertIn('echo "Burst status: ${burst_status}"', text)
+        self.assertIn("recovery_prompted", text)
+        self.assertIn("recovery_signal_pending", text)
+        self.assertIn("fresh_active_with_stopped_sessions_skipped", text)
+        self.assertIn("fresh_active_no_recovery_signal", text)
+        self.assertIn("latest activity is still fresh and no recovery prompt was needed", text)
+
     def test_unattended_monitor_summarizes_stale_in_progress_sessions(self) -> None:
         text = UNATTENDED_WORKFLOW_PATH.read_text(encoding="utf-8")
 
@@ -430,6 +445,8 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("vars.JULES_NO_AGENT_STALE_IN_PROGRESS_MINUTES || '5'", text)
         self.assertIn("stale_in_progress_count", text)
         self.assertIn("stale_in_progress_sessions", text)
+        self.assertIn("skipped_stopped_count", text)
+        self.assertIn("skipped_stopped_sessions", text)
 
     def test_go_formatting_failures_report_actionable_file_list(self) -> None:
         for path in (CI_WORKFLOW_PATH, AUTOMERGE_WORKFLOW_PATH):
