@@ -456,7 +456,17 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		content = clip(content, maxEntryChars, label)
 		entryCost := len(label) + len(content) + 4
 		if usedChars > 0 && usedChars+entryCost > maxHistoryChars {
-			log.Printf("[bridge] diagnostic: session recovery truncated conversation history (used %d chars, dropping oldest entries)", usedChars)
+			droppedToolCount := 0
+			for j := i; j >= 0; j-- {
+				if messages[j].Role == "tool" {
+					droppedToolCount++
+				}
+			}
+			if droppedToolCount > 0 {
+				log.Printf("[bridge] diagnostic: session recovery truncated conversation history (used %d chars, dropping oldest entries including %d early round tool results)", usedChars, droppedToolCount)
+			} else {
+				log.Printf("[bridge] diagnostic: session recovery truncated conversation history (used %d chars, dropping oldest entries)", usedChars)
+			}
 			recordContextLossMetric("conversation_history_dropped")
 			break
 		}
