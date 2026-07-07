@@ -3,6 +3,7 @@ set -euo pipefail
 
 API_BASE="${JULES_API_BASE:-https://jules.googleapis.com/v1alpha}"
 SOURCE="${JULES_SOURCE:-sources/github/${GITHUB_REPOSITORY:-Omnividente/notion-abuz_ai}}"
+AGENT_TASKS_MANIFEST="${AGENT_TASKS_MANIFEST:-agent_tasks.json}"
 LOOKBACK_HOURS="${LOOKBACK_HOURS:-24}"
 MIN_USER_REPLY_INTERVAL_MINUTES="${MIN_USER_REPLY_INTERVAL_MINUTES:-2}"
 STALE_AWAITING_FEEDBACK_MINUTES="${STALE_AWAITING_FEEDBACK_MINUTES:-10}"
@@ -26,6 +27,8 @@ if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
     echo "failed_count_for_task=0"
     echo "failed_recovery_action=none"
     echo "failed_recovery_reason=no Jules API keys configured"
+    echo "skipped_inactive_sessions="
+    echo "skipped_inactive_count=0"
   } >> "${GITHUB_OUTPUT:-/dev/null}"
   exit 0
 fi
@@ -70,6 +73,7 @@ session_ids=()
 stale_waiting_sessions=()
 stale_in_progress_sessions=()
 skipped_stopped_sessions=()
+skipped_inactive_sessions=()
 wait_reason_details=()
 prompt_action_details=()
 prompt_task_id_details=()
@@ -191,7 +195,7 @@ load_stopped_task_ids() {
     return 0
   fi
 
-  if ! python3 - "$pulls_file" agent_tasks.json > "$stopped_task_ids_file" <<'PY'
+  if ! python3 - "$pulls_file" "$AGENT_TASKS_MANIFEST" > "$stopped_task_ids_file" <<'PY'
 from __future__ import annotations
 
 import json
@@ -293,6 +297,35 @@ task_is_stopped() {
   grep -Fxq -- "$task_id" "$stopped_task_ids_file"
 }
 
+task_manifest_status() {
+  local task_id="$1"
+  if [ -z "$task_id" ]; then
+    return 0
+  fi
+
+  jq -r --arg task_id "$task_id" '
+    first(.tasks[]? | select(.id == $task_id) | (.status // "")) // ""
+  ' "$AGENT_TASKS_MANIFEST" 2>/dev/null || true
+}
+
+skip_inactive_manifest_session() {
+  local session_name="$1"
+  local task_id="$2"
+  local status
+
+  status="$(task_manifest_status "$task_id")"
+  if [ "$status" != "done" ] && [ "$status" != "blocked" ]; then
+    return 1
+  fi
+
+  echo "Skipped ${session_name}; task ${task_id} is ${status} in ${AGENT_TASKS_MANIFEST}."
+  skipped_inactive_sessions+=("${session_name##*/}:${task_id}:${status}")
+  if [ "$active_sessions" -gt 0 ]; then
+    active_sessions=$((active_sessions - 1))
+  fi
+  return 0
+}
+
 skip_stopped_active_session() {
   local session_name="$1"
   local task_id="$2"
@@ -341,7 +374,7 @@ build_recovery_prompt() {
 
   python3 .github/scripts/jules_recovery_prompt.py \
     --activities "$activities_file" \
-    --manifest agent_tasks.json \
+    --manifest "$AGENT_TASKS_MANIFEST" \
     --task-id "$task_id" \
     --repo "${GITHUB_REPOSITORY:-}" \
     --session-id "$session_id" \
@@ -427,6 +460,9 @@ for i in "${!key_labels[@]}"; do
         if [ -z "$active_task_id" ]; then
           active_task_id="$(resolve_session_task_id_from_recent_map "$session_name")"
         fi
+        if skip_inactive_manifest_session "$session_name" "$active_task_id"; then
+          continue
+        fi
         if skip_stopped_active_session "$session_name" "$active_task_id"; then
           continue
         fi
@@ -501,6 +537,9 @@ for i in "${!key_labels[@]}"; do
         prompt_task_id="$(jq -r '.task_id // ""' "$prompt_json")"
         if [ -z "$active_task_id" ] && [ -n "$prompt_task_id" ]; then
           active_task_id="$prompt_task_id"
+        fi
+        if skip_inactive_manifest_session "$session_name" "$active_task_id"; then
+          continue
         fi
         if skip_stopped_active_session "$session_name" "$active_task_id"; then
           continue
@@ -708,6 +747,9 @@ for i in "${!key_labels[@]}"; do
     if [ -z "$active_task_id" ] && [ -n "$prompt_task_id" ]; then
       active_task_id="$prompt_task_id"
     fi
+    if skip_inactive_manifest_session "$session_name" "$active_task_id"; then
+      continue
+    fi
     if skip_stopped_active_session "$session_name" "$active_task_id"; then
       continue
     fi
@@ -803,7 +845,7 @@ done
 
 echo "Failed Jules recovery decision:"
 python3 .github/scripts/summarize-jules-failures.py decide \
-  --manifest agent_tasks.json \
+  --manifest "$AGENT_TASKS_MANIFEST" \
   --failed-sessions "$failed_sessions_file" \
   --active-task-ids "$active_task_ids_file" \
   --github-output "${GITHUB_OUTPUT:-/dev/null}" \
@@ -814,10 +856,12 @@ echo "Touched Jules sessions: ${touched_sessions}"
 echo "Stale waiting Jules sessions: ${#stale_waiting_sessions[@]}"
 echo "Stale in-progress Jules sessions: ${#stale_in_progress_sessions[@]}"
 echo "Skipped stopped Jules sessions: ${#skipped_stopped_sessions[@]}"
+echo "Skipped inactive manifest Jules sessions: ${#skipped_inactive_sessions[@]}"
 session_ids_csv="$(IFS=,; echo "${session_ids[*]}")"
 stale_waiting_csv="$(IFS=,; echo "${stale_waiting_sessions[*]}")"
 stale_in_progress_csv="$(IFS=,; echo "${stale_in_progress_sessions[*]}")"
 skipped_stopped_csv="$(IFS=,; echo "${skipped_stopped_sessions[*]}")"
+skipped_inactive_csv="$(IFS=,; echo "${skipped_inactive_sessions[*]}")"
 wait_reason_csv="$(IFS=,; echo "${wait_reason_details[*]}")"
 prompt_action_csv="$(IFS=,; echo "${prompt_action_details[*]}")"
 prompt_task_id_csv="$(IFS=,; echo "${prompt_task_id_details[*]}")"
@@ -834,6 +878,8 @@ continue_attempt_csv="$(IFS=,; echo "${continue_attempt_details[*]}")"
   echo "stale_in_progress_count=${#stale_in_progress_sessions[@]}"
   echo "skipped_stopped_sessions=${skipped_stopped_csv}"
   echo "skipped_stopped_count=${#skipped_stopped_sessions[@]}"
+  echo "skipped_inactive_sessions=${skipped_inactive_csv}"
+  echo "skipped_inactive_count=${#skipped_inactive_sessions[@]}"
   echo "wait_reason=${wait_reason_csv}"
   echo "prompt_action=${prompt_action_csv}"
   echo "prompt_task_id=${prompt_task_id_csv}"

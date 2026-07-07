@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / ".github" / "scripts" / "jules-unattended-monitor.sh"
 TASK_ID = "proxy-runtime-final-answer-mode-stability"
+INACTIVE_TASK_ID = "proxy-runtime-final-answer-mode-stability-blocked"
 
 
 FAKE_CURL = r"""#!/usr/bin/env bash
@@ -85,6 +86,8 @@ elif scenario == "in_progress_no_agent_short_burst":
     session_name = "sessions/test-in-progress-no-agent-short"
 elif scenario == "in_progress_no_agent_token_stale":
     session_name = "sessions/test-in-progress-no-agent-token-stale"
+elif scenario == "in_progress_inactive_manifest":
+    session_name = "sessions/test-in-progress-inactive"
 elif scenario == "in_progress_no_agent_repeat":
     session_name = "sessions/test-in-progress-no-agent-repeat"
 elif scenario == "in_progress_repeat":
@@ -93,7 +96,9 @@ elif scenario == "stopped_in_progress":
     session_name = "sessions/test-stopped-in-progress"
 else:
     session_name = "sessions/test-repeat-feedback"
-task_id = "proxy-runtime-final-answer-mode-stability"
+task_id = os.environ.get("FAKE_TASK_ID", "proxy-runtime-final-answer-mode-stability")
+if scenario == "in_progress_inactive_manifest":
+    task_id = os.environ.get("FAKE_INACTIVE_TASK_ID", "proxy-runtime-final-answer-mode-stability-blocked")
 
 if method == "GET" and url.endswith("/sessions?pageSize=100"):
     state = "IN_PROGRESS" if scenario.startswith("in_progress_") or scenario == "stopped_in_progress" else "AWAITING_USER_FEEDBACK"
@@ -179,6 +184,21 @@ elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "
                     "text": (
                         f"selected task id: {task_id}\n"
                         "API error left me with partial context from the previous search."
+                    )
+                },
+            }
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_inactive_manifest":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 3900),
+                "message": {
+                    "text": (
+                        f"selected task id: {task_id}\n"
+                        "Old inactive task session should not receive another recovery prompt."
                     )
                 },
             }
@@ -317,16 +337,50 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
         send_body = tmp_path / "send-body.json"
         empty_pr_context = tmp_path / "empty-pr-context.json"
         empty_pr_context.write_text("{}", encoding="utf-8")
+        manifest_path = tmp_path / "agent_tasks.json"
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "tasks": [
+                        {
+                            "id": TASK_ID,
+                            "status": "todo",
+                            "area": "proxy",
+                            "risk": "medium",
+                            "title": "Exercise active monitor task",
+                            "description": "Runtime failure evidence from a transcript.",
+                            "allowed_paths": [".github/scripts/jules-unattended-monitor.sh"],
+                            "acceptance": ["Recovery prompt behavior is verified."],
+                        },
+                        {
+                            "id": INACTIVE_TASK_ID,
+                            "status": "blocked",
+                            "blocked_reason": "Superseded inactive monitor test fixture task.",
+                            "area": "proxy",
+                            "risk": "medium",
+                            "title": "Inactive monitor task",
+                            "description": "Blocked task must not receive recovery prompts.",
+                            "allowed_paths": [".github/scripts/jules-unattended-monitor.sh"],
+                            "acceptance": ["Inactive task session is skipped."],
+                        },
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
         env = os.environ.copy()
         env.update(
             {
                 "PATH": str(fake_bin) + os.pathsep + env.get("PATH", ""),
                 "PYTHON_FOR_FAKE_CURL": sys.executable,
+                "FAKE_TASK_ID": TASK_ID,
+                "FAKE_INACTIVE_TASK_ID": INACTIVE_TASK_ID,
                 "FAKE_NOW_EPOCH": str(int(time.time())),
                 "FAKE_SCENARIO": scenario,
                 "FAKE_CURL_LOG": str(curl_log),
                 "FAKE_SEND_BODY": str(send_body),
                 "JULES_FAILED_PR_CONTEXT_FIXTURE": str(empty_pr_context),
+                "AGENT_TASKS_MANIFEST": str(manifest_path),
                 "GITHUB_OUTPUT": str(output_path),
                 "GITHUB_REPOSITORY": "Omnividente/notion-abuz_ai",
                 "JULES_API_KEY": "fake-key",
@@ -540,6 +594,37 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertEqual(outputs["stale_in_progress_count"], "0")
             self.assertEqual(outputs["skipped_stopped_count"], "1")
             self.assertIn(f"test-stopped-in-progress:{TASK_ID}", outputs["skipped_stopped_sessions"])
+
+    def test_inactive_manifest_task_session_does_not_receive_recovery_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_inactive_manifest",
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("Skipped sessions/test-in-progress-inactive", result.stdout)
+            self.assertIn(f"task {INACTIVE_TASK_ID} is blocked", result.stdout)
+            self.assertFalse(send_body.exists())
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "0")
+            self.assertEqual(outputs["touched_sessions"], "0")
+            self.assertEqual(outputs["stale_in_progress_count"], "0")
+            self.assertEqual(outputs["skipped_inactive_count"], "1")
+            self.assertIn(
+                f"test-in-progress-inactive:{INACTIVE_TASK_ID}:blocked",
+                outputs["skipped_inactive_sessions"],
+            )
 
     def test_long_running_in_progress_session_gets_recovery_prompt_even_with_fresh_activity(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
