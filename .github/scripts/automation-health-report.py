@@ -407,7 +407,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             Finding(
                 code="no_eligible_autonomous_task",
                 severity="degraded",
-                message="Todo tasks exist, but none are eligible under risk ceiling and micro-task policy.",
+                message="Todo tasks exist, but none are eligible under risk ceiling, placeholder, and micro-task policy.",
                 evidence={
                     "todo_count": selector.get("todo_count"),
                     "eligible_count": selector.get("eligible_count"),

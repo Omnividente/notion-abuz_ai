@@ -42,6 +42,21 @@ BLOCK_REASON = (
     "micro/test-only task without concrete live smoke, transcript, CI, "
     "or offline reproduction evidence"
 )
+PLACEHOLDER_KEYWORDS = (
+    "dummy",
+    "placeholder",
+    "quota filler",
+    "quota-filler",
+    "filler task",
+    "test replenishment",
+    "minimum tasks are available",
+    "required minimum tasks",
+    "dummy criterion",
+)
+PLACEHOLDER_BLOCK_REASON = (
+    "placeholder/quota-filler task without concrete live smoke, transcript, CI, "
+    "or offline reproduction evidence"
+)
 EXCLUDED_TASK_REASON = "task is already represented by a stopped autonomous PR awaiting review"
 
 
@@ -140,6 +155,19 @@ def is_micro_test_only(task: dict[str, Any]) -> bool:
     return not is_evidence_backed(text)
 
 
+def is_placeholder_replenishment_task(task: dict[str, Any]) -> bool:
+    text = task_text(task)
+    if not any(keyword in text for keyword in PLACEHOLDER_KEYWORDS):
+        return False
+    if is_evidence_backed(text):
+        return False
+
+    paths = [str(path) for path in task.get("allowed_paths", [])]
+    manifest_only = bool(paths) and all(path.replace("\\", "/") == "agent_tasks.json" for path in paths)
+    non_runtime = not any(is_runtime_proxy_path(path) for path in paths)
+    return manifest_only or non_runtime
+
+
 def score_task(task: dict[str, Any], focus: str) -> tuple[int, str]:
     text = task_text(task)
     paths = [str(path) for path in task.get("allowed_paths", [])]
@@ -213,6 +241,8 @@ def select_task(
                 raise ValueError(f"task {task_id!r} has status {task.get('status')!r}, expected 'todo'")
             if task.get("risk") not in risks:
                 raise ValueError(f"task {task_id!r} risk {task.get('risk')!r} exceeds ceiling {risk_ceiling!r}")
+            if is_placeholder_replenishment_task(task):
+                raise ValueError(f"task {task_id!r} is a placeholder replenishment task without evidence")
             return Selection(
                 selected=True,
                 task_id=str(task.get("id", "")),
@@ -236,6 +266,9 @@ def select_task(
         if current_task_id in excluded:
             rejected.append({"task_id": current_task_id, "reason": EXCLUDED_TASK_REASON})
             continue
+        if is_placeholder_replenishment_task(task):
+            rejected.append({"task_id": current_task_id, "reason": PLACEHOLDER_BLOCK_REASON})
+            continue
         if is_micro_test_only(task):
             rejected.append({"task_id": current_task_id, "reason": BLOCK_REASON})
             continue
@@ -251,7 +284,7 @@ def select_task(
             reason = "no todo tasks are available"
             reason_code = "no_todo_tasks"
         elif eligible_count == 0:
-            reason = "no eligible todo task matched the risk ceiling and micro-task policy"
+            reason = "no eligible todo task matched the risk ceiling, placeholder, and micro-task policy"
             reason_code = "no_eligible_autonomous_task"
         else:
             reason = "no eligible todo task selected"
