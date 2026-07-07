@@ -6258,7 +6258,7 @@
       "title": "Diagnose stopped quality loop for autonomous PR #351",
       "area": "automation",
       "risk": "low",
-      "status": "todo",
+      "status": "done",
       "description": "Autonomous recovery circuit breaker stopped PR #351 at SHA `98f4cbc7831448fad6528d4da56bcd30953e4da7` for `proxy-session-recovery-system-instruction-truncation-test`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `493f5e32c4c65f6d4beb5617ba267b4bc86f169f`: AUTONOMOUS_TASK_EVIDENCE task_id proxy-session-recovery-system-instruction-truncation-test does not match changed task proxy-session-recovery-system-instruction-truncation-telemetry.; AUTONOMOUS_TASK_EVIDENCE maps 1 acceptance items, but task proxy-session-recovery-system-instruction-truncation-telemetry has 2 acceptance criteria.\n- `c77a786a5f101a14ac64c2259c162e01afcdea08`: AUTONOMOUS_TASK_EVIDENCE task_id prox",
       "allowed_paths": [
         ".github/scripts/jules-recovery-router.py",
@@ -6278,7 +6278,11 @@
       "source_document": "jules-recovery-router",
       "source_reference": "pull/351@98f4cbc7831448fad6528d4da56bcd30953e4da7",
       "source_task_id": "proxy-session-recovery-system-instruction-truncation-test",
-      "circuit_breaker_followup_hash": "8773a0a17643"
+      "circuit_breaker_followup_hash": "8773a0a17643",
+      "completion_evidence": [
+        "PR #351 was closed as superseded/stopped after master already contained focused system_instruction_truncated coverage and the source task was done.",
+        "The recovery loop no longer needs to retry this dirty stop-loop PR."
+      ]
     },
     {
       "id": "automation-quality-loop-pr-362-d971dacd",
@@ -6411,7 +6415,7 @@
       "title": "Diagnose stopped conflict recovery for autonomous PR #421",
       "area": "automation",
       "risk": "low",
-      "status": "todo",
+      "status": "done",
       "description": "Autonomous recovery circuit breaker stopped PR #421 at SHA `ad486c96925f0c410b59f77b8ede42f20d23088a` for `automation-quality-loop-pr-351-8773a0a1`. Diagnose why repeated conflict-recovery prompts did not converge. Sanitized reason: conflict-recovery circuit breaker stopped repeated dirty PR recovery",
       "allowed_paths": [
         ".github/scripts/jules-recovery-router.py",
@@ -6431,7 +6435,11 @@
       "source_document": "jules-recovery-router",
       "source_reference": "pull/421@ad486c96925f0c410b59f77b8ede42f20d23088a",
       "source_task_id": "automation-quality-loop-pr-351-8773a0a1",
-      "circuit_breaker_followup_hash": "62c229f12f62"
+      "circuit_breaker_followup_hash": "62c229f12f62",
+      "completion_evidence": [
+        "PR #421 was closed as superseded/stopped after PR #351 was closed and the recovery PR was confirmed dirty with generated __pycache__ artifacts.",
+        "Automation Health remains healthy after stopped/manual PRs are excluded from active product-session findings."
+      ]
     },
     {
       "id": "automation-health-duplicate-active-product-sessions-d212def2",
@@ -6536,7 +6544,7 @@
     },
     {
       "id": "automation-stopped-pr-400-safe-resolution",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Resolve stopped autonomous PR #400 safely",
@@ -6555,11 +6563,15 @@
         "No product runtime files, secrets, raw transcripts, production URLs, or destructive actions are introduced."
       ],
       "source_reference": "pull/400",
-      "source_task_id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics"
+      "source_task_id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics",
+      "completion_evidence": [
+        "PR #400 was closed as superseded/stopped after master already contained UTF-8/system_instruction_truncated coverage and the source task was blocked with an evidence reason.",
+        "The PR was dirty and carried a broad stale control-plane diff, so keeping it open only preserved stop-loop/no-automerge state."
+      ]
     },
     {
       "id": "automation-stopped-pr-446-safe-resolution",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Resolve stopped autonomous PR #446 safely",
@@ -6579,7 +6591,117 @@
         "No product runtime files, secrets, raw transcripts, production URLs, or destructive actions are introduced."
       ],
       "source_reference": "pull/446",
-      "source_task_id": "automation-health-repeated-followup-generation-6dc5c3e5"
+      "source_task_id": "automation-health-repeated-followup-generation-6dc5c3e5",
+      "completion_evidence": [
+        "PR #446 was closed as superseded by the merged Automation Health fix for repeated_followup_generation.",
+        "Live Automation Health runs after the fix reported healthy with no findings."
+      ]
+    },
+    {
+      "id": "automation-closed-stopped-pr-reconciliation",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Reconcile manifest tasks after stopped PRs are closed",
+      "description": "Several stop-loop PRs were manually closed as superseded, while their manifest follow-up tasks needed separate cleanup. Add or improve automation so closing a stopped/superseded PR is reflected in agent_tasks.json without leaving stale todo tasks.",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/create-circuit-breaker-followup-task-pr.py",
+        ".github/scripts/create-circuit-breaker-followup-task-pr-test.py",
+        "scripts/select_agent_task.py",
+        "scripts/select_agent_task_test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Closed stopped/superseded PRs can be mapped back to their manifest follow-up task without requiring manual repeated cleanup.",
+        "A focused offline test covers the mapping from PR number/source_reference to task status or blocked_reason.",
+        "No secrets, raw transcripts, production URLs, or product runtime files are introduced."
+      ],
+      "source_reference": "closed PR cleanup after #313/#351/#400/#421/#446"
+    },
+    {
+      "id": "automation-open-ready-stale-branch-summary",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Make stale ready Jules branch handling actionable",
+      "description": "Monitor logs repeatedly report ready Jules branches that are hundreds of commits behind master and skip them. Improve the summary/diagnostic path so these stale ready branches are grouped with branch name, age/behind count, and safe next action instead of becoming noisy repeated log lines.",
+      "allowed_paths": [
+        ".github/scripts/open-ready-jules-prs.py",
+        ".github/scripts/open-ready-jules-prs-test.py",
+        ".github/workflows/jules_unattended_monitor.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Stale ready Jules branches skipped by open-ready-jules-prs are summarized in a stable, actionable format.",
+        "A focused offline test covers at least one stale branch behind master and verifies the summary output.",
+        "The change does not open PRs for stale branches and does not delete branches automatically."
+      ],
+      "source_reference": "monitor logs from run 28880625112"
+    },
+    {
+      "id": "automation-closed-session-blocking-filter",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Ignore active Jules sessions tied only to closed stopped PRs",
+      "description": "After PR #446 was closed, a stale Jules session for its task still received recovery prompts until the session completed. Improve session filtering so sessions tied only to closed stopped/superseded PRs do not block new work or receive repeated recovery prompts when the manifest task is already done or blocked.",
+      "allowed_paths": [
+        ".github/scripts/filter-active-jules-sessions.py",
+        ".github/scripts/filter-active-jules-sessions-test.py",
+        ".github/scripts/jules-unattended-monitor.sh",
+        ".github/scripts/jules-unattended-monitor-test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A session mapped to a done/blocked task with a closed stopped PR is ignored for duplicate active-session blocking.",
+        "A focused offline test covers the closed/superseded PR session case.",
+        "Active sessions for live todo tasks are still counted and protected from duplicate dispatch."
+      ],
+      "source_reference": "burst monitor run 28879989522"
+    },
+    {
+      "id": "automation-health-closed-pr-label-metrics",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Separate historical stopped labels from unresolved health metrics",
+      "description": "Automation Health can remain healthy while unresolved label counters include closed non-merged stopped PRs. Make the metrics distinguish historical closed stopped labels from currently actionable unresolved labels so summaries do not look contradictory.",
+      "allowed_paths": [
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/automation-health-report-test.py",
+        ".github/fixtures/automation-health",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Closed stopped PR labels are reported as historical rather than current unresolved blockers.",
+        "A fixture test covers closed non-merged PRs with human-review/no-automerge/needs-quality-fix labels.",
+        "Current open active quality failures are still reported as degraded or critical when appropriate."
+      ],
+      "source_reference": "Automation Health reports after stopped PR cleanup"
+    },
+    {
+      "id": "automation-replenishment-after-recovery-block",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Replenish safe work after recovery block PRs",
+      "description": "The automatic recovery block PR #448 correctly blocked a failed task, but the manifest todo count dropped below the replenishment minimum. Improve the recovery/block flow so blocking a task also creates or preserves enough evidence-backed low-risk work to keep the loop healthy.",
+      "allowed_paths": [
+        ".github/scripts/block-failed-agent-task.py",
+        ".github/scripts/block-failed-agent-task-test.py",
+        ".github/scripts/create-automation-meta-task-pr.py",
+        ".github/scripts/create-automation-meta-task-pr-test.py",
+        "scripts/select_agent_task.py",
+        "scripts/select_agent_task_test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Blocking a failed Jules task cannot leave todo_count below the manifest replenishment minimum without a concrete follow-up path.",
+        "A focused offline test covers a block operation when todo_count would fall below minimum.",
+        "Generated follow-up tasks must be evidence-backed and must not be placeholder tasks."
+      ],
+      "source_reference": "merged recovery block PR #448"
     }
   ]
 }
