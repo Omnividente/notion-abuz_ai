@@ -397,7 +397,8 @@ def strip_markdown_code(text: str) -> str:
 
 
 def repeated_followup_mentions(pr_body: str) -> bool:
-    prose_body = strip_markdown_code(pr_body)
+    evidence_free_body = EVIDENCE_BLOCK_RE.sub(" ", pr_body or "")
+    prose_body = strip_markdown_code(evidence_free_body)
     prose_body = FOLLOWUP_IDENTIFIER_RE.sub(" ", prose_body)
     return len(FOLLOWUP_WORD_RE.findall(prose_body)) >= 2
 
