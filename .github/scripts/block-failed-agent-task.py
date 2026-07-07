@@ -114,11 +114,14 @@ def open_block_pr(
 
     manifest = load_manifest(manifest_path)
     tasks = manifest.get("tasks", [])
+    todo_count = 0
     target = None
     for task in tasks:
-        if isinstance(task, dict) and task.get("id") == task_id:
-            target = task
-            break
+        if isinstance(task, dict):
+            if task.get("id") == task_id:
+                target = task
+            elif task.get("status") == "todo":
+                todo_count += 1
 
     if target is None:
         print(f"Task {task_id!r} not found; cannot open block PR.")
@@ -130,6 +133,36 @@ def open_block_pr(
     sessions_text = ", ".join(failed_sessions)
     target["status"] = "blocked"
     target["blocked_reason"] = BLOCK_REASON_TEMPLATE.format(sessions=sessions_text)
+
+    minimum_todo_tasks = manifest.get("replenishment_policy", {}).get("minimum_todo_tasks", 5)
+
+    if todo_count < minimum_todo_tasks:
+        import hashlib
+        import datetime
+
+    while todo_count < minimum_todo_tasks:
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        h = hashlib.sha256(f"{task_id}-{todo_count}-{now}".encode("utf-8")).hexdigest()[:8]
+        new_task_id = f"automation-recovery-followup-{h}"
+        new_task = {
+            "id": new_task_id,
+            "status": "todo",
+            "area": "automation",
+            "risk": "low",
+            "title": f"Investigate root cause of Jules failure for {task_id}",
+            "description": f"The task {task_id} repeatedly failed and was blocked. We need an offline reproduction and concrete CI artifacts to unblock it or fix the underlying bridge issue.",
+            "allowed_paths": [
+                "agent_tasks.json"
+            ],
+            "acceptance": [
+                "Concrete offline reproduction evidence is collected.",
+                "The root cause is identified using CI logs, local live smoke, or captured Claude Code transcripts.",
+                "A fix is proposed or the task is closed if obsolete."
+            ],
+            "source_reference": f"Blocked task {task_id}"
+        }
+        tasks.append(new_task)
+        todo_count += 1
     write_manifest(manifest_path, manifest)
 
     run(["git", "config", "user.name", "github-actions[bot]"])

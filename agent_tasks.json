@@ -6683,7 +6683,7 @@
     },
     {
       "id": "automation-replenishment-after-recovery-block",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Replenish safe work after recovery block PRs",
