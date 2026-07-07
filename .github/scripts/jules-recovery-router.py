@@ -114,6 +114,59 @@ def selector_requires_health_recovery(selector: dict[str, Any]) -> bool:
     return reason_code in {"no_todo_tasks", "no_eligible_autonomous_task"} or "no eligible" in reason
 
 
+def selector_below_replenishment_minimum(state: dict[str, Any]) -> tuple[bool, int, int]:
+    selector = state.get("selector") or {}
+    metrics = state.get("task_metrics") or {}
+    minimum = metrics.get("minimum_todo_tasks")
+    if not isinstance(minimum, int) or minimum <= 0:
+        return False, 0, 0
+    raw_todo = selector.get("todo_count", metrics.get("todo_count"))
+    try:
+        todo_count = int(raw_todo)
+    except (TypeError, ValueError):
+        todo_count = int(metrics.get("todo_count") or 0)
+    return todo_count < minimum, todo_count, minimum
+
+
+def maybe_health_recovery_action(
+    state: dict[str, Any],
+    ledger: dict[str, Any],
+    *,
+    now: datetime,
+    health_mode: str,
+    reason: str,
+    dedupe_suffix: str,
+) -> RecoveryAction | None:
+    if health_mode == "disabled" or workflow_recently_created(
+        state,
+        "automation_health.yml",
+        now=now,
+        minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
+    ):
+        return None
+
+    workflow_mode = "enforce" if health_mode == "enforce" else "shadow"
+    dedupe_key = f"automation-health-{workflow_mode}:{slug(dedupe_suffix)[:48]}"
+    if action_recently_done(
+        ledger,
+        dedupe_key,
+        now=now,
+        ttl_minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
+    ):
+        return None
+    return RecoveryAction(
+        type="dispatch_workflow",
+        dedupe_key=dedupe_key,
+        reason=reason,
+        ttl_minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
+        payload={
+            "workflow": "automation_health.yml",
+            "ref": "master",
+            "inputs": {"mode": workflow_mode},
+        },
+    )
+
+
 
 
 @dataclass(frozen=True)
@@ -354,6 +407,19 @@ def task_statuses_from_manifest(manifest: dict[str, Any]) -> dict[str, str]:
         str(task.get("id", "")): str(task.get("status", ""))
         for task in manifest.get("tasks", [])
         if isinstance(task, dict) and task.get("id")
+    }
+
+
+def task_metrics_from_manifest(manifest: dict[str, Any]) -> dict[str, int]:
+    tasks = [task for task in manifest.get("tasks", []) if isinstance(task, dict)]
+    todo_count = sum(1 for task in tasks if task.get("status") == "todo")
+    policy = manifest.get("replenishment_policy") or {}
+    minimum = policy.get("minimum_todo_tasks")
+    max_todo = policy.get("max_todo_tasks")
+    return {
+        "todo_count": todo_count,
+        "minimum_todo_tasks": minimum if isinstance(minimum, int) else 0,
+        "max_todo_tasks": max_todo if isinstance(max_todo, int) else 0,
     }
 
 
@@ -1837,6 +1903,23 @@ def plan_recovery_actions(
     selector_task_id = str(selector.get("task_id") or "")
 
     if selector_selected:
+        below_minimum, todo_count, minimum = selector_below_replenishment_minimum(state)
+        if below_minimum:
+            action = maybe_health_recovery_action(
+                state,
+                ledger,
+                now=now,
+                health_mode=health_mode,
+                reason=(
+                    "Todo queue below replenishment minimum while selector still has an eligible task: "
+                    f"{todo_count}/{minimum}"
+                ),
+                dedupe_suffix=f"todo-below-minimum:{todo_count}:{minimum}",
+            )
+            if action:
+                actions.append(action)
+                return actions
+
         if workflow_recently_created(
             state,
             "jules_next_task.yml",
@@ -1871,36 +1954,20 @@ def plan_recovery_actions(
         return actions
 
     if selector_requires_health_recovery(selector):
-        if health_mode == "disabled" or workflow_recently_created(
-            state,
-            "automation_health.yml",
-            now=now,
-            minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
-        ):
+        if health_mode == "disabled":
             return actions
 
         reason = str(selector.get("reason") or selector.get("error") or "selector found no eligible task")
-        workflow_mode = "enforce" if health_mode == "enforce" else "shadow"
-        dedupe_key = f"automation-health-{workflow_mode}:{slug(reason)[:48]}"
-        if not action_recently_done(
+        action = maybe_health_recovery_action(
+            state,
             ledger,
-            dedupe_key,
             now=now,
-            ttl_minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
-        ):
-            actions.append(
-                RecoveryAction(
-                    type="dispatch_workflow",
-                    dedupe_key=dedupe_key,
-                    reason=f"No eligible autonomous task: {reason}",
-                    ttl_minutes=HEALTH_ENFORCE_COOLDOWN_MINUTES,
-                    payload={
-                        "workflow": "automation_health.yml",
-                        "ref": "master",
-                        "inputs": {"mode": workflow_mode},
-                    },
-                )
-            )
+            health_mode=health_mode,
+            reason=f"No eligible autonomous task: {reason}",
+            dedupe_suffix=reason,
+        )
+        if action:
+            actions.append(action)
         return actions
 
     if not workflow_in_progress(state, "jules_burst_monitor.yml") and not workflow_recently_created(
@@ -2448,6 +2515,7 @@ def collect_live_state(
             exclude_task_ids=stopped_task_ids_from_prs(open_pulls, task_ids),
         ),
         "task_statuses": task_statuses_from_manifest(manifest_data),
+        "task_metrics": task_metrics_from_manifest(manifest_data),
         "task_details": task_details_from_manifest(manifest_data),
         "jules": collect_jules_sessions(
             jules_clients,

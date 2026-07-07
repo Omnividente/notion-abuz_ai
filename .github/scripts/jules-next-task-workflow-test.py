@@ -29,6 +29,12 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("Ignored ${ignored} inactive Jules session", self.text)
         self.assertIn("blocking active Jules session", self.text)
 
+    def test_thin_queue_dispatches_automation_health_even_when_task_selected(self) -> None:
+        self.assertIn('write_output("minimum_todo_tasks", minimum_todo_tasks)', self.text)
+        self.assertIn('write_output("below_minimum", str(below_minimum).lower())', self.text)
+        self.assertIn("steps.select-task.outputs.below_minimum == 'true'", self.text)
+        self.assertIn("Minimum todo tasks: ${{ steps.select-task.outputs.minimum_todo_tasks }}", self.text)
+
 
 if __name__ == "__main__":
     unittest.main()
