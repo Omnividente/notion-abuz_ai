@@ -537,3 +537,27 @@ func TestBuildRecoveryMessages_ContextLoss_FirstUserMessageDroppedMetric(t *test
 		t.Errorf("Expected diagnostic log indicating first user message was lost, got: %s", logOutput)
 	}
 }
+
+func TestBuildToolBridgeRecoveryMessagesDiagnosticLog(t *testing.T) {
+	var buf bytes.Buffer
+	originalLogOutput := log.Writer()
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(originalLogOutput)
+	}()
+
+	messages := []ChatMessage{
+		{Role: "system", Content: "Answer in Chinese."},
+		{Role: "user", Content: "修改 internal/web/dist/assets/index-DlVudHMF.js"},
+		{Role: "assistant", Content: "我是 Notion AI，无法访问你的本地文件系统。把下面这段话直接发给你的编码助手（Cursor / Claude Code）。"},
+		{Role: "tool", Name: "Grep", Content: "Found 1 file\ninternal/web/dist/assets/index-DlVudHMF.js"},
+		{Role: "user", Content: "你来动手"},
+	}
+
+	buildToolBridgeRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[bridge] diagnostic: Notion persona leakage explicitly tracked (dropped from context during session recovery)") {
+		t.Errorf("Expected diagnostic log for Notion persona leakage, got: %q", logOutput)
+	}
+}

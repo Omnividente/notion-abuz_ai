@@ -6787,7 +6787,7 @@
     },
     {
       "id": "proxy-session-recovery-persona-leakage-diagnostic",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add session recovery diagnostics for Notion persona leakage",
@@ -6801,7 +6801,15 @@
         "Diagnostic logging is added in session.go for persona leakage during fallback.",
         "A test confirms the log is emitted correctly."
       ],
-      "source_reference": "captured Claude Code transcripts"
+      "source_reference": "captured Claude Code transcripts",
+      "evidence_files": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "checks": [
+        "go test -run TestBuildToolBridgeRecoveryMessagesDiagnosticLog ./internal/proxy -v"
+      ]
     }
   ]
 }
