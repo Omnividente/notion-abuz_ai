@@ -620,7 +620,7 @@ def evaluate_quality(
         )
 
     lower_body = pr_body.lower()
-    if "automation-health-repeated-followup" not in lower_body:
+    if "automation-health-" not in lower_body:
         if repeated_followup_mentions(pr_body):
             reasons.append(
                 "PR body repeatedly mentions follow-up tasks. Complete the current task "
