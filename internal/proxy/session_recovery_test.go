@@ -256,6 +256,33 @@ func TestBuildRecoveryMessages_TransientFailureRecovery(t *testing.T) {
 	}
 }
 
+func TestBuildRecoveryMessages_TransientFailureRecoveryWithPartialContext(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "Read the file and search for login"},
+		{Role: "assistant", Content: "Ok.", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Search", Arguments: `{"query":"login endpoint"}`}},
+			{ID: "call_2", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: `{"filepath":"main.go"}`}},
+		}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Search", Content: "error: 502 bad gateway"},
+		{Role: "tool", ToolCallID: "call_2", Name: "Read", Content: "package main\n\nfunc main() {}"},
+	}
+
+	recovered := buildFreshThreadRecoveryMessages(messages)
+
+	if len(recovered) != 1 {
+		t.Fatalf("expected 1 recovery message, got %d", len(recovered))
+	}
+
+	content := recovered[0].Content
+	expectedWarning := "Warning: A recent tool call encountered a transient API or search failure."
+	if !strings.Contains(content, expectedWarning) {
+		t.Errorf("expected recovery prompt to contain transient failure warning when there is partial context, got:\n%s", content)
+	}
+	if !strings.Contains(content, "package main") {
+		t.Errorf("expected partial context to be present, got:\n%s", content)
+	}
+}
+
 func TestBuildRecoveryMessages_TransientFailureRecovery_OtherTool(t *testing.T) {
 	messages := []ChatMessage{
 		{Role: "user", Content: "Read the file"},
