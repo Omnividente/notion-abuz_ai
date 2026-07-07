@@ -925,6 +925,75 @@ Blocking reasons:
         self.assertFalse(actions[0].payload["comment_needed"])
         self.assertEqual(actions[0].ttl_minutes, 30)
 
+    def test_conflict_recovery_circuit_breaker_stops_repeated_prompt_loop(self) -> None:
+        comments = [
+            "<!-- AUTONOMOUS_RECOVERY_ROUTER action=conflict-recovery sha=aaa111 -->",
+            "<!-- AUTONOMOUS_RECOVERY_ROUTER action=conflict-recovery sha=bbb222 -->",
+        ]
+        ledger = {
+            "version": 1,
+            "actions": {
+                "conflict-recovery:10:ccc333": {
+                    "time": (NOW - timedelta(minutes=31)).isoformat().replace("+00:00", "Z"),
+                    "type": "conflict_recovery",
+                }
+            },
+        }
+
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules"],
+                        sha="ddd444",
+                        comments=comments,
+                        mergeable=False,
+                        mergeable_state="dirty",
+                    )
+                ]
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "conflict_recovery_circuit_breaker")
+        self.assertEqual(
+            actions[0].payload["labels"],
+            ["human-review", "no-automerge", "stop-loop"],
+        )
+        self.assertIn("conflict recovery", actions[0].payload["body"])
+        self.assertIn("pull_request", actions[0].payload["body"])
+        self.assertIn("aaa111, bbb222, ccc333", actions[0].payload["body"])
+
+    def test_conflict_recovery_circuit_breaker_execution_adds_labels_and_comment(self) -> None:
+        action = router.RecoveryAction(
+            type="conflict_recovery_circuit_breaker",
+            dedupe_key="conflict-recovery-circuit-breaker:10:abc123",
+            reason="too many conflict prompts",
+            ttl_minutes=router.CONFLICT_RECOVERY_CIRCUIT_BREAKER_TTL_MINUTES,
+            payload={
+                "pr_number": 10,
+                "labels": ["human-review", "no-automerge", "stop-loop"],
+                "body": "stop conflict loop",
+            },
+        )
+        client = FakeGitHubClient([{}, {}])
+
+        with patch.object(router, "ensure_repository_labels") as ensure_labels:
+            router.execute_action(client, action)
+
+        ensure_labels.assert_called_once_with(
+            client,
+            ["human-review", "no-automerge", "stop-loop"],
+        )
+        self.assertEqual(
+            client.calls,
+            [
+                ("POST", f"/repos/{REPO}/issues/10/comments"),
+                ("POST", f"/repos/{REPO}/issues/10/labels"),
+            ],
+        )
+
     def test_missing_jules_label_is_repaired(self) -> None:
         actions = plan(
             state(
