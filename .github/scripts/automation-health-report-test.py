@@ -88,6 +88,16 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertFalse(report["pause_loop"])
         self.assert_has_finding(report, "duplicate_active_product_sessions")
 
+    def test_stopped_control_plane_sessions_are_not_active_product(self) -> None:
+        report = run_fixture("stopped-control-plane-sessions")
+
+        self.assertEqual(report["status"], "healthy")
+        self.assertEqual(report["metrics"]["jules_sessions"]["active_product_count"], 0)
+        self.assertEqual(report["metrics"]["autonomous_prs"]["unresolved_labels"]["needs-quality-fix"], 1)
+        self.assertNotIn("duplicate_active_product_sessions", finding_codes(report))
+        self.assertNotIn("quality_failure", finding_codes(report))
+        self.assertNotIn("repeated_followup_generation", finding_codes(report))
+
     def test_blocked_task_without_reason(self) -> None:
         report = run_fixture("blocked-without-reason")
 
