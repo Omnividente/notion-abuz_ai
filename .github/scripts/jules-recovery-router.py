@@ -45,7 +45,7 @@ QUALITY_FIX_CIRCUIT_BREAKER_TTL_MINUTES = 7 * 24 * 60
 QUALITY_FIX_FOLLOWUP_TTL_MINUTES = 7 * 24 * 60
 QUALITY_FIX_CIRCUIT_BREAKER_LABELS = ("human-review", "no-automerge", "stop-loop")
 AUTONOMOUS_PR_STOP_LABELS = set(QUALITY_FIX_CIRCUIT_BREAKER_LABELS)
-NON_EXECUTABLE_ACTION_TYPES = {"quality_fix_recovery_cooldown"}
+NON_EXECUTABLE_ACTION_TYPES = {"quality_fix_recovery_cooldown", "conflict_recovery_cooldown"}
 DEFERRED_TASK_MARKER_RE = re.compile(r"\bfollow-?up\b", re.IGNORECASE)
 RECOVERY_LABEL_DEFINITIONS = {
     "human-review": {
@@ -1019,16 +1019,43 @@ def quality_fix_recovery_attempt_shas(pr: dict[str, Any], ledger: dict[str, Any]
 
 
 def conflict_recovery_attempt_shas(pr: dict[str, Any], ledger: dict[str, Any]) -> list[str]:
-    number = str(pr.get("number") or "")
+    return unique_recovery_attempt_shas(conflict_recovery_attempt_records(pr, ledger))
+
+
+def unique_recovery_attempt_shas(records: list[str]) -> list[str]:
     shas: list[str] = []
     seen: set[str] = set()
-
-    def add_sha(value: str) -> None:
+    for value in records:
         sha = value.strip()
         if not sha or sha in seen:
-            return
+            continue
         seen.add(sha)
         shas.append(sha)
+    return shas
+
+
+def conflict_recovery_attempt_records(pr: dict[str, Any], ledger: dict[str, Any]) -> list[str]:
+    number = str(pr.get("number") or "")
+    records: list[str] = []
+    comment_shas: set[str] = set()
+    ledger_counts: dict[str, int] = {}
+    ledger_order: list[str] = []
+
+    def add_comment_sha(value: str) -> None:
+        sha = value.strip()
+        if not sha:
+            return
+        comment_shas.add(sha)
+        records.append(sha)
+
+    def add_ledger_sha(value: str) -> None:
+        sha = value.strip()
+        if not sha:
+            return
+        if sha not in ledger_counts:
+            ledger_counts[sha] = 0
+            ledger_order.append(sha)
+        ledger_counts[sha] += 1
 
     marker_pattern = re.compile(
         rf"{re.escape(ROUTER_MARKER)}\s+action=conflict-recovery\s+sha=([a-zA-Z0-9._/-]+)"
@@ -1036,7 +1063,7 @@ def conflict_recovery_attempt_shas(pr: dict[str, Any], ledger: dict[str, Any]) -
     for comment in pr.get("comments", []):
         body = str(comment.get("body") or "")
         for match in marker_pattern.finditer(body):
-            add_sha(match.group(1))
+            add_comment_sha(match.group(1))
 
     prefix = f"conflict-recovery:{number}:"
     for key, entry in (ledger.get("actions") or {}).items():
@@ -1044,9 +1071,48 @@ def conflict_recovery_attempt_shas(pr: dict[str, Any], ledger: dict[str, Any]) -
             continue
         key_text = str(key)
         if key_text.startswith(prefix):
-            add_sha(key_text.removeprefix(prefix))
+            suffix = key_text.removeprefix(prefix)
+            add_ledger_sha(suffix.split(":attempt-", 1)[0])
 
-    return shas
+    for sha in ledger_order:
+        repeat_count = ledger_counts[sha]
+        if sha in comment_shas:
+            repeat_count = max(0, repeat_count - 1)
+        records.extend([sha] * repeat_count)
+
+    return records
+
+
+def conflict_recovery_attempt_dedupe_key(pr: dict[str, Any], ledger: dict[str, Any]) -> str:
+    number = pr.get("number")
+    sha = str((pr.get("head") or {}).get("sha") or "")
+    records = conflict_recovery_attempt_records(pr, ledger)
+    if not records:
+        return f"conflict-recovery:{number}:{sha}"
+    return f"conflict-recovery:{number}:{sha}:attempt-{len(records) + 1}"
+
+
+def conflict_recovery_recently_done(
+    pr: dict[str, Any],
+    ledger: dict[str, Any],
+    *,
+    now: datetime,
+) -> bool:
+    number = pr.get("number")
+    sha = str((pr.get("head") or {}).get("sha") or "")
+    prefix = f"conflict-recovery:{number}:{sha}"
+    times: list[datetime] = []
+    for key, entry in (ledger.get("actions") or {}).items():
+        if not isinstance(entry, dict) or entry.get("type") != "conflict_recovery":
+            continue
+        key_text = str(key)
+        if key_text != prefix and not key_text.startswith(f"{prefix}:"):
+            continue
+        timestamp = parse_time(str(entry.get("time") or ""))
+        if timestamp and now - timestamp <= timedelta(minutes=CONFLICT_RECOVERY_COOLDOWN_MINUTES):
+            times.append(timestamp)
+    times.sort()
+    return bool(times and now - times[-1] < timedelta(minutes=CONFLICT_RECOVERY_COOLDOWN_MINUTES))
 
 
 def quality_fix_circuit_breaker_marker(pr: dict[str, Any]) -> str:
@@ -1610,8 +1676,9 @@ def plan_recovery_actions(
         sha = str((pr.get("head") or {}).get("sha") or "")
 
         if is_conflicting_pr(pr):
-            attempt_shas = conflict_recovery_attempt_shas(pr, ledger)
-            if len(attempt_shas) >= CONFLICT_RECOVERY_CIRCUIT_BREAKER_ATTEMPTS:
+            attempt_records = conflict_recovery_attempt_records(pr, ledger)
+            attempt_shas = unique_recovery_attempt_shas(attempt_records)
+            if len(attempt_records) >= CONFLICT_RECOVERY_CIRCUIT_BREAKER_ATTEMPTS:
                 dedupe_key = f"conflict-recovery-circuit-breaker:{number}:{sha}"
                 marker = conflict_recovery_circuit_breaker_marker(pr)
                 has_marker = comments_contain(pr, marker)
@@ -1642,17 +1709,16 @@ def plan_recovery_actions(
                         )
                     )
                 return actions
-            dedupe_key = f"conflict-recovery:{number}:{sha}"
+            dedupe_key = conflict_recovery_attempt_dedupe_key(pr, ledger)
             marker = f"{ROUTER_MARKER} action=conflict-recovery sha={sha}"
             has_marker = comments_contain(pr, marker)
-            if not action_recently_done(
+            recovery_recently_done = conflict_recovery_recently_done(
+                pr,
                 ledger,
-                dedupe_key,
                 now=now,
-                ttl_minutes=CONFLICT_RECOVERY_COOLDOWN_MINUTES,
-            ) and (
-                not has_marker or extract_session_id_from_pr(pr)
-            ):
+            )
+            session_id = extract_session_id_from_pr(pr)
+            if not recovery_recently_done and (not has_marker or session_id):
                 prompt = conflict_recovery_prompt(pr)
                 actions.append(
                     RecoveryAction(
@@ -1664,7 +1730,38 @@ def plan_recovery_actions(
                             "pr_number": number,
                             "body": prompt,
                             "comment_needed": not has_marker,
-                            "session_id": extract_session_id_from_pr(pr),
+                            "session_id": session_id,
+                        },
+                    )
+                )
+            else:
+                if recovery_recently_done:
+                    wait_reason = (
+                        "conflict recovery already ran for this PR head within "
+                        f"{CONFLICT_RECOVERY_COOLDOWN_MINUTES} minutes"
+                    )
+                elif has_marker and not session_id:
+                    wait_reason = (
+                        "conflict recovery marker already exists and no Jules session "
+                        "id could be extracted from the PR branch"
+                    )
+                else:
+                    wait_reason = "conflict recovery is deferred"
+                actions.append(
+                    RecoveryAction(
+                        type="conflict_recovery_cooldown",
+                        dedupe_key=f"conflict-recovery-cooldown:{number}:{sha}",
+                        reason=f"PR #{number} is still conflicting but recovery is deferred",
+                        ttl_minutes=0,
+                        payload={
+                            "pr_number": number,
+                            "sha": sha,
+                            "marker_present": has_marker,
+                            "recovery_recently_done": recovery_recently_done,
+                            "cooldown_minutes": CONFLICT_RECOVERY_COOLDOWN_MINUTES,
+                            "session_id": session_id,
+                            "attempt_count": len(attempt_records),
+                            "wait_reason": wait_reason,
                         },
                     )
                 )
