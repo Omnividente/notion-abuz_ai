@@ -18,13 +18,12 @@ for line in lines:
         continue
     elif line.startswith(">>>>>>> origin/master"):
         state = "normal"
-        # Since HEAD contains our newly added follow-up task, and master contains upstream changes
-        # We need to merge them. The easiest way is to append them correctly with comma.
+        # Combine them properly
         head_str = "".join(conflict_head).strip()
         master_str = "".join(conflict_master).strip()
 
         # Determine if head needs a comma
-        if not head_str.endswith(","):
+        if not head_str.endswith(",") and head_str != "" and master_str != "":
             head_str += ","
 
         out.append(head_str + "\n")

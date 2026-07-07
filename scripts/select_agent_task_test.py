@@ -79,6 +79,42 @@ class SelectAgentTaskTest(unittest.TestCase):
         self.assertEqual(selected.eligible_count, 2)
         self.assertEqual(selected.rejected_count, 0)
 
+    def test_focus_area_can_beat_generic_runtime_task(self) -> None:
+        automation_task = task(
+            "failed-check-context",
+            title="Include failed check job log context in recovery router",
+            description="Use failed check artifacts and job log details URL to recover a stuck Jules session.",
+            risk="low",
+            allowed_paths=[
+                ".github/scripts/jules-recovery-router.py",
+                ".github/scripts/jules-recovery-router-test.py",
+                "agent_tasks.json",
+            ],
+        )
+        automation_task["area"] = "automation"
+        data = {
+            "tasks": [
+                task(
+                    "runtime",
+                    title="Implement runtime fix from reproduced failure",
+                    description="Use offline reproduction to fix a runtime bridge failure.",
+                    risk="medium",
+                    allowed_paths=[
+                        "internal/proxy/anthropic.go",
+                        "internal/proxy/anthropic_test.go",
+                        "agent_tasks.json",
+                    ],
+                ),
+                automation_task,
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="automation")
+
+        self.assertTrue(selected.selected)
+        self.assertEqual(selected.task_id, "failed-check-context")
+        self.assertIn("focus area match", selected.reason)
+
     def test_excluded_task_id_selects_next_candidate(self) -> None:
         data = {
             "tasks": [
@@ -229,6 +265,34 @@ class SelectAgentTaskTest(unittest.TestCase):
         self.assertEqual(selected.eligible_count, 0)
         self.assertEqual(selected.rejected_count, 1)
 
+    def test_narrow_runtime_metric_boundary_without_evidence_is_rejected(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "runtime-boundary",
+                    title="Validate system prompt truncation metrics for Unicode",
+                    description=(
+                        "Add boundary tests for exactly 1200 runes and verify the metric is emitted."
+                    ),
+                    risk="medium",
+                    allowed_paths=[
+                        "internal/proxy/session.go",
+                        "internal/proxy/session_test.go",
+                        "agent_tasks.json",
+                    ],
+                )
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+
+        self.assertFalse(selected.selected)
+        self.assertEqual(selected.rejected[0]["task_id"], "runtime-boundary")
+        self.assertEqual(selected.reason_code, "no_eligible_autonomous_task")
+        self.assertEqual(selected.todo_count, 1)
+        self.assertEqual(selected.eligible_count, 0)
+        self.assertEqual(selected.rejected_count, 1)
+
     def test_test_only_with_evidence_is_allowed(self) -> None:
         data = {
             "tasks": [
@@ -246,6 +310,28 @@ class SelectAgentTaskTest(unittest.TestCase):
 
         self.assertTrue(selected.selected)
         self.assertEqual(selected.task_id, "evidence-test")
+
+    def test_narrow_runtime_metric_boundary_with_evidence_is_allowed(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "runtime-boundary",
+                    title="Fix truncation metric boundary from CI failure",
+                    description="Reproduced CI failure in PR #456 for Unicode truncation metrics.",
+                    risk="medium",
+                    allowed_paths=[
+                        "internal/proxy/session.go",
+                        "internal/proxy/session_test.go",
+                        "agent_tasks.json",
+                    ],
+                )
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+
+        self.assertTrue(selected.selected)
+        self.assertEqual(selected.task_id, "runtime-boundary")
 
     def test_no_eligible_task_returns_empty_selection(self) -> None:
         data = {
