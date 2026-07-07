@@ -6427,6 +6427,51 @@
       "source_reference": "pull/421@ad486c96925f0c410b59f77b8ede42f20d23088a",
       "source_task_id": "automation-quality-loop-pr-351-8773a0a1",
       "circuit_breaker_followup_hash": "62c229f12f62"
+    },
+    {
+      "id": "automation-health-duplicate-active-product-sessions-d212def2",
+      "status": "todo",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Fix automation health finding: duplicate_active_product_sessions",
+      "description": "Automation Health reported critical finding `duplicate_active_product_sessions` in window `current`. Message: More than one active product Jules session exists. Evidence: {\"session_ids\": [\"2191630921890936779\", \"15933738671138716627\"]}",
+      "allowed_paths": [
+        ".github/scripts/jules-unattended-monitor.sh",
+        ".github/workflows/jules_next_task.yml",
+        ".github/workflows/jules_unattended_monitor.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `duplicate_active_product_sessions` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `duplicate_active_product_sessions`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "d212def2baac",
+      "health_finding_code": "duplicate_active_product_sessions",
+      "health_finding_severity": "critical",
+      "health_report_generated_at": "2026-07-07T11:53:01Z"
+    },
+    {
+      "id": "automation-health-quality-failure-2b3efb1a",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix automation health finding: quality_failure",
+      "description": "Automation Health reported degraded finding `quality_failure` in window `24h`. Message: At least one autonomous PR was marked needs-quality-fix. Evidence: {\"pr_numbers\": [421, 362]}",
+      "allowed_paths": [
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/workflows/jules_automerge.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for Automation Health finding `quality_failure` is identified using automation-health artifacts, CI checks, Jules session data, or manifest evidence.",
+        "The implementation fixes the automation issue or blocks this task with a concrete blocked_reason naming missing evidence, permissions, or external API instability.",
+        "A follow-up Automation Health run no longer reports `quality_failure`, or the PR body explains why the finding is intentionally tolerated."
+      ],
+      "health_finding_hash": "2b3efb1a1ffe",
+      "health_finding_code": "quality_failure",
+      "health_finding_severity": "degraded",
+      "health_report_generated_at": "2026-07-07T11:53:01Z"
     }
   ]
 }
