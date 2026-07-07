@@ -6512,7 +6512,7 @@
     },
     {
       "id": "automation-stopped-pr-313-safe-resolution",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Resolve stopped autonomous PR #313 safely",
@@ -6531,7 +6531,8 @@
         "No product runtime files, secrets, raw transcripts, production URLs, or destructive actions are introduced."
       ],
       "source_reference": "pull/313",
-      "source_task_id": "proxy-session-recovery-system-instruction-metrics"
+      "source_task_id": "proxy-session-recovery-system-instruction-metrics",
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 5026425374712032140. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
     },
     {
       "id": "automation-stopped-pr-400-safe-resolution",
