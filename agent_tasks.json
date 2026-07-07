@@ -2,6 +2,11 @@
   "schema_version": 1,
   "project": "notion-abuz_ai",
   "task_source_priority": [
+    "local live smoke artifacts",
+    "captured Claude Code transcripts",
+    "CI failures",
+    "Automation Health findings",
+    "Jules recovery/router failure summaries",
     "agent_tasks.json",
     "AGENTS.md",
     "docs/jules_autonomous_loop.md",
@@ -30,7 +35,59 @@
       "low",
       "medium"
     ],
-    "instruction": "When the todo queue is low, add Claude Code bridge investigation tasks that start from live smoke results, captured transcripts, CI failures, or a clearly reproduced runtime behavior. Do not keep generating one-case test-only robustness tasks such as another malformed JSON, HandleFrame, trimCitationContext, missing field, empty payload, or event-type-only test unless it is tied to a reproduced Claude Code bridge failure. Never create placeholder, dummy, quota filler, or test replenishment tasks whose acceptance criteria do not name a concrete runtime failure, transcript, CI/smoke artifact, or offline reproduction. Prefer runtime bridge fixes, live-smoke transcript analysis, observability needed for diagnosis, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode retention, session recovery, final-answer mode, instruction preservation, transient API/search failure retry or incomplete-context handling, production-router/harness coverage, and realistic read/edit/test/finalize transcript coverage. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, workflow, or micro edge-case test tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "instruction": "When the todo queue is low, add Claude Code bridge investigation tasks that start from live smoke results, captured transcripts, CI failures, Automation Health findings, Jules recovery/router summaries, or a clearly reproduced runtime behavior. Keep the queue balanced across coverage_requirements so Jules does not loop on one stale metric/test theme. Do not keep generating one-case test-only robustness tasks such as another malformed JSON, HandleFrame, trimCitationContext, missing field, empty payload, event-type-only test, truncation boundary test, or metric-only Unicode boundary test unless it is tied to a reproduced Claude Code bridge failure. Never create placeholder, dummy, quota filler, or test replenishment tasks whose acceptance criteria do not name a concrete runtime failure, transcript, CI/smoke artifact, recovery artifact, or offline reproduction. Prefer runtime bridge fixes, live-smoke transcript analysis, observability needed for diagnosis, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode retention, session recovery, final-answer mode, instruction preservation, transient API/search failure retry or incomplete-context handling, production-router/harness coverage, and realistic read/edit/test/finalize transcript coverage. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, workflow, or micro edge-case test tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "coverage_requirements": [
+      {
+        "id": "live-smoke-transcript-evidence",
+        "title": "Live smoke and transcript evidence coverage",
+        "minimum_todo_tasks": 1,
+        "match_any": [
+          "live smoke",
+          "local live smoke",
+          "transcript",
+          "captured response",
+          "persona leakage",
+          "tool-call mode"
+        ]
+      },
+      {
+        "id": "recovery-and-failed-check-context",
+        "title": "Recovery and failed-check context coverage",
+        "minimum_todo_tasks": 1,
+        "match_any": [
+          "failed check",
+          "job log",
+          "recovery router",
+          "awaiting user feedback",
+          "stuck Jules",
+          "quality loop"
+        ]
+      },
+      {
+        "id": "runtime-partial-context-retry",
+        "title": "Runtime retry and partial-context recovery coverage",
+        "minimum_todo_tasks": 1,
+        "match_any": [
+          "transient API",
+          "partial context",
+          "retry",
+          "targeted search",
+          "incomplete file list"
+        ]
+      },
+      {
+        "id": "production-router-harness",
+        "title": "Production router and realistic harness coverage",
+        "minimum_todo_tasks": 1,
+        "match_any": [
+          "production router",
+          "newMux",
+          "httptest",
+          "read/edit/test/finalize",
+          "realistic transcript"
+        ]
+      }
+    ],
     "max_todo_tasks": 40
   },
   "autonomous_loop_policy": {
@@ -5992,7 +6049,7 @@
     },
     {
       "id": "proxy-observability-search-context-truncation-metrics-followup2",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Add tracking for legacy collapse search context truncation boundary edge case",
@@ -6006,7 +6063,8 @@
         "A test asserts that a search context of exactly 800 characters is not truncated in legacy collapse.",
         "The test asserts no context loss metric is recorded for this boundary.",
         "Update manifest to mark this task as done."
-      ]
+      ],
+      "blocked_reason": "Paused as a narrow metric boundary test without concrete live smoke, transcript, CI failure, recovery artifact, or offline reproduction evidence. Resume only if that evidence shows this exact boundary caused a Claude Code bridge failure."
     },
     {
       "id": "proxy-runtime-tool-continuation-truncation-metrics",
@@ -6080,7 +6138,7 @@
     },
     {
       "id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Validate system prompt truncation metrics for Unicode",
@@ -6094,7 +6152,77 @@
         "Add a test with a >1200 rune system prompt containing 4-byte Unicode characters (e.g., emojis).",
         "Verify the emitted truncated string is valid UTF-8 via utf8.ValidString.",
         "Verify the system_instruction_truncated metric is explicitly triggered."
-      ]
+      ],
+      "blocked_reason": "Paused as a narrow Unicode/metric boundary test without concrete live smoke, transcript, CI failure, recovery artifact, or offline reproduction evidence. Resume only if that evidence shows this exact truncation behavior caused a Claude Code bridge failure."
+    },
+    {
+      "id": "automation-stuck-session-failed-check-context",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Include failed-check context in stuck Jules recovery prompts",
+      "description": "Stuck AWAITING_USER_FEEDBACK Jules sessions already receive dynamic task/wait context, but they may not receive associated PR failed-check names, conclusions, run ids, or details URLs. Add sanitized failed-check context so Jules can read the relevant job logs/artifacts and fix the same PR instead of receiving another generic continue instruction.",
+      "allowed_paths": [
+        ".github/scripts/jules_recovery_prompt.py",
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/jules_recovery_prompt_test.py",
+        ".github/scripts/jules-recovery-router-test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Dynamic recovery prompts for stuck sessions include sanitized associated PR/check context when available: PR number, head SHA, failed check display names, conclusions, run ids, and details URLs.",
+        "The prompt instructs Jules to inspect failed check logs/artifacts first and update the same PR when the fix is within the selected task allowed_paths.",
+        "Tests cover a stuck session associated with a PR that has failed checks, and prove secret-like values are redacted."
+      ],
+      "source_finding_id": "stuck-session-missing-failed-check-context",
+      "source_document": "jules-recovery-router",
+      "source_reference": "AWAITING_USER_FEEDBACK dynamic prompt audit"
+    },
+    {
+      "id": "proxy-runtime-transient-api-partial-context-retry",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Retry targeted context collection after transient API or search failure",
+      "description": "A user-observed Claude Code bridge session had a one-time API/search failure, then continued from the partial file/search data it already had instead of retrying targeted search/read to complete the context. Add bounded runtime recovery or prompt-level handling so transient tool/API failures do not make the bridge confidently continue with incomplete context.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add or update offline regression coverage for a transient API/search failure followed by partial context, proving the bridge retries targeted context collection or clearly asks for the missing context instead of proceeding as complete.",
+        "Runtime or prompt-handling changes remain bounded to Claude Code bridge behavior and do not require live network calls, secrets, production account data, or deployment changes.",
+        "The PR evidence identifies the reproduced partial-context failure class and explains why the fix is broader than a single parser/boundary test."
+      ],
+      "source_finding_id": "transient-api-partial-context-continued",
+      "source_document": "user-observed Claude Code bridge session",
+      "source_reference": "one-time API/search failure followed by partial file/search context"
+    },
+    {
+      "id": "automation-selector-reject-narrow-runtime-metric-tests",
+      "status": "done",
+      "area": "automation",
+      "risk": "low",
+      "title": "Reject narrow runtime metric boundary tasks without evidence",
+      "description": "The selector rejects test-only micro tasks, but narrow metric/boundary tasks can still score highly when allowed_paths include a runtime proxy file. Tighten selection so tasks like truncation boundary or Unicode metric tests require live-smoke, transcript, CI, recovery artifact, or offline reproduction evidence.",
+      "allowed_paths": [
+        "scripts/select_agent_task.py",
+        "scripts/select_agent_task_test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Selector tests prove a runtime+test metric boundary task without evidence is rejected even when risk is medium and a runtime proxy file is in allowed_paths.",
+        "Selector tests prove the same class of task is still allowed when it names concrete CI, live-smoke, transcript, recovery, or offline reproduction evidence.",
+        "`python scripts/select_agent_task_test.py`, `python scripts/validate_agent_tasks.py agent_tasks.json`, and the selector JSON command pass."
+      ],
+      "source_finding_id": "selector-runtime-metric-micro-task-gap",
+      "source_document": "agent_tasks.json",
+      "source_reference": "proxy-runtime-session-recovery-system-prompt-truncation-metrics",
+      "completion_notes": "Selector now rejects narrow runtime+test metric boundary tasks without concrete evidence, and tests cover both rejected no-evidence and allowed evidence-backed cases."
     },
     {
       "id": "automation-quality-loop-pr-313-d1249fde",

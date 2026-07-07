@@ -17,6 +17,10 @@ MICRO_KEYWORDS = (
     "add tests",
     "test coverage",
     "edge case",
+    "boundary test",
+    "boundary tests",
+    "metric test",
+    "metric tests",
     "handleframe",
     "missing metadata",
     "missing field",
@@ -25,6 +29,15 @@ MICRO_KEYWORDS = (
     "malformed json",
     "follow-up",
     "followup",
+)
+NARROW_RUNTIME_TEST_KEYWORDS = (
+    "boundary",
+    "exactly",
+    "unicode",
+    "utf-8",
+    "metric",
+    "metrics",
+    "truncation",
 )
 EVIDENCE_TOKENS = (
     "live smoke",
@@ -155,6 +168,26 @@ def is_micro_test_only(task: dict[str, Any]) -> bool:
     return not is_evidence_backed(text)
 
 
+def is_narrow_runtime_metric_test(task: dict[str, Any]) -> bool:
+    if task.get("risk") not in SAFE_RISKS:
+        return False
+
+    paths = [str(path) for path in task.get("allowed_paths", [])]
+    if not paths:
+        return False
+    has_runtime = any(is_runtime_proxy_path(path) for path in paths)
+    has_test = any(is_low_impact_path(path) and "test" in path.lower() for path in paths)
+    if not has_runtime or not has_test:
+        return False
+
+    text = task_text(task)
+    if is_evidence_backed(text):
+        return False
+    if not any(keyword in text for keyword in MICRO_KEYWORDS):
+        return False
+    return any(keyword in text for keyword in NARROW_RUNTIME_TEST_KEYWORDS)
+
+
 def is_placeholder_replenishment_task(task: dict[str, Any]) -> bool:
     text = task_text(task)
     if not any(keyword in text for keyword in PLACEHOLDER_KEYWORDS):
@@ -182,7 +215,7 @@ def score_task(task: dict[str, Any], focus: str) -> tuple[int, str]:
     reasons: list[str] = []
 
     if task.get("area") == focus:
-        score += 20
+        score += 60
         reasons.append("focus area match")
     elif focus == "proxy" and task.get("area") == "proxy":
         score += 20
@@ -269,7 +302,7 @@ def select_task(
         if is_placeholder_replenishment_task(task):
             rejected.append({"task_id": current_task_id, "reason": PLACEHOLDER_BLOCK_REASON})
             continue
-        if is_micro_test_only(task):
+        if is_micro_test_only(task) or is_narrow_runtime_metric_test(task):
             rejected.append({"task_id": current_task_id, "reason": BLOCK_REASON})
             continue
 
