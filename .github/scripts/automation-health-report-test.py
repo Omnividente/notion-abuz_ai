@@ -98,6 +98,13 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertNotIn("quality_failure", finding_codes(report))
         self.assertNotIn("repeated_followup_generation", finding_codes(report))
 
+    def test_inactive_manifest_task_sessions_are_not_active_product(self) -> None:
+        report = run_fixture("inactive-task-sessions")
+
+        self.assertEqual(report["status"], "healthy")
+        self.assertEqual(report["metrics"]["jules_sessions"]["active_product_count"], 0)
+        self.assertNotIn("duplicate_active_product_sessions", finding_codes(report))
+
     def test_blocked_task_without_reason(self) -> None:
         report = run_fixture("blocked-without-reason")
 
