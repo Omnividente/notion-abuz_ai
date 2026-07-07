@@ -72,6 +72,8 @@ jobs:
             echo "- Skipped stopped details: \`${{ steps.jules-monitor.outputs.skipped_stopped_sessions }}\`"
             echo "- Skipped inactive manifest sessions: \`${{ steps.jules-monitor.outputs.skipped_inactive_count }}\`"
             echo "- Skipped inactive manifest details: \`${{ steps.jules-monitor.outputs.skipped_inactive_sessions }}\`"
+            echo "- Skipped unknown in-progress sessions: \`${{ steps.jules-monitor.outputs.skipped_unknown_in_progress_count }}\`"
+            echo "- Skipped unknown in-progress details: \`${{ steps.jules-monitor.outputs.skipped_unknown_in_progress_sessions }}\`"
             echo "- Wait reasons: \`${{ steps.jules-monitor.outputs.wait_reason }}\`"
             echo "- Prompt actions: \`${{ steps.jules-monitor.outputs.prompt_action }}\`"
             echo "- Prompt task ids: \`${{ steps.jules-monitor.outputs.prompt_task_id }}\`"
