@@ -18,6 +18,7 @@ from typing import Any
 
 RECOVERY_MARKER = "AUTONOMOUS_CIRCUIT_BREAKER_FOLLOWUP_TASK"
 RECOVERY_BRANCH_PREFIX = "automation-circuit-breaker-followup"
+MAX_PENDING_FOLLOWUP_TASKS = 1
 RECOVERY_LABELS = {
     "automation-recovery": {
         "color": "5319e7",
@@ -94,6 +95,21 @@ def existing_followup_task(manifest: dict[str, Any], *, task_id: str, digest: st
         if task.get("id") == task_id or task.get("circuit_breaker_followup_hash") == digest:
             return True
     return False
+
+
+def pending_followup_task_ids(manifest: dict[str, Any]) -> list[str]:
+    task_ids: list[str] = []
+    for task in manifest.get("tasks", []):
+        if not isinstance(task, dict):
+            continue
+        if task.get("status") not in {"todo", "in_progress"}:
+            continue
+        if task.get("source_finding_id") != "quality_fix_circuit_breaker":
+            continue
+        task_id = str(task.get("id") or "")
+        if task_id:
+            task_ids.append(task_id)
+    return task_ids
 
 
 def make_followup_task(
@@ -203,6 +219,14 @@ def open_followup_pr(
     manifest = load_manifest(manifest_path)
     if existing_followup_task(manifest, task_id=task_id, digest=digest):
         print(f"Circuit-breaker follow-up task already exists: {task_id}.")
+        return 0
+    pending_followups = pending_followup_task_ids(manifest)
+    if len(pending_followups) >= MAX_PENDING_FOLLOWUP_TASKS:
+        print(
+            "Circuit-breaker follow-up task already pending: "
+            + ", ".join(pending_followups[:MAX_PENDING_FOLLOWUP_TASKS])
+            + ". Resolve or block it before adding another quality-loop diagnostic."
+        )
         return 0
 
     tasks = manifest.get("tasks")
