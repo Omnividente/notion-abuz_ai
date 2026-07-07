@@ -1,0 +1,73 @@
+{
+  "now": "2026-06-28T12:00:00Z",
+  "repository": "Omnividente/notion-abuz_ai",
+  "manifest": {
+    "replenishment_policy": {
+      "minimum_todo_tasks": 1
+    },
+    "tasks": [
+      {
+        "id": "runtime-task",
+        "status": "todo",
+        "area": "proxy",
+        "risk": "medium",
+        "title": "Fix runtime proxy behavior from live smoke evidence",
+        "description": "Use local live smoke artifact to fix reproduced runtime failure.",
+        "allowed_paths": ["internal/proxy/anthropic.go", "agent_tasks.json"],
+        "acceptance": ["Runtime proxy behavior is fixed."]
+      },
+      {
+        "id": "completed-runtime-task",
+        "status": "done",
+        "area": "proxy",
+        "risk": "medium",
+        "title": "Completed runtime proxy recovery from transcript evidence",
+        "description": "Completed task that still has an old Jules session in ACTIVE state.",
+        "allowed_paths": ["internal/proxy/anthropic.go", "agent_tasks.json"],
+        "acceptance": ["Runtime proxy recovery was completed."]
+      },
+      {
+        "id": "blocked-runtime-task",
+        "status": "blocked",
+        "blocked_reason": "Requires unavailable production secret; kept as blocked evidence instead of active work.",
+        "area": "proxy",
+        "risk": "medium",
+        "title": "Blocked runtime proxy recovery from transcript evidence",
+        "description": "Blocked task that still has an old Jules session in ACTIVE state.",
+        "allowed_paths": ["internal/proxy/anthropic.go", "agent_tasks.json"],
+        "acceptance": ["Blocked reason is recorded."]
+      }
+    ]
+  },
+  "pulls": [],
+  "workflow_runs": [
+    {
+      "id": 1001,
+      "name": "CI",
+      "head_branch": "master",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-06-28T11:30:00Z"
+    }
+  ],
+  "session_task_map": {
+    "done-session": {
+      "task_id": "completed-runtime-task",
+      "updateTime": "2026-06-28T11:45:00Z"
+    },
+    "blocked-session": {
+      "task_id": "blocked-runtime-task",
+      "updateTime": "2026-06-28T11:46:00Z"
+    }
+  },
+  "jules_sessions": [
+    {
+      "id": "done-session",
+      "state": "IN_PROGRESS"
+    },
+    {
+      "id": "blocked-session",
+      "state": "PLANNING"
+    }
+  ]
+}

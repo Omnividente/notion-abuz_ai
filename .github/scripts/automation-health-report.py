@@ -24,6 +24,7 @@ ACTIVE_STATES = {
     "AWAITING_PLAN_APPROVAL",
     "AWAITING_USER_FEEDBACK",
 }
+INACTIVE_TASK_STATUSES = {"blocked", "done"}
 AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
 STALE_AWAITING_FEEDBACK_MINUTES = 10
 BLOCKING_LABELS = {"needs-quality-fix", "critic-blocked"}
@@ -203,6 +204,10 @@ def task_statuses(manifest: dict[str, Any]) -> dict[str, str]:
         for task in manifest.get("tasks", [])
         if isinstance(task, dict) and isinstance(task.get("id"), str)
     }
+
+
+def is_inactive_manifest_task(task_id: str, statuses: dict[str, str]) -> bool:
+    return bool(task_id) and statuses.get(task_id, "").lower() in INACTIVE_TASK_STATUSES
 
 
 def is_autonomous_pr(pr: dict[str, Any], task_ids: list[str], repo: str) -> bool:
@@ -686,6 +691,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             and state in ACTIVE_STATES
             and not is_control_plane_task_id(task_id)
             and task_id not in stopped_task_ids
+            and not is_inactive_manifest_task(task_id, statuses)
         ):
             active_product_sessions.append(sid)
         if state == "AWAITING_USER_FEEDBACK" and stale_after_autonomous_continue(session, now=now):
