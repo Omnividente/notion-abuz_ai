@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -30,6 +31,8 @@ import jules_recovery_prompt
 LEDGER_VARIABLE = "JULES_RECOVERY_ROUTER_LEDGER"
 ROUTER_MARKER = "AUTONOMOUS_RECOVERY_ROUTER"
 QUALITY_FIX_MARKER = "AUTONOMOUS_QUALITY_FIX_REQUEST"
+TASK_EVIDENCE_MARKER = "AUTONOMOUS_TASK_EVIDENCE"
+PR_BODY_FILE_PATH = "pr_body.txt"
 ACTIVE_NEXT_TASK_COOLDOWN_MINUTES = 10
 HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
 RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
@@ -925,6 +928,10 @@ def sanitize_quality_fix_text(value: str) -> str:
     return DEFERRED_TASK_MARKER_RE.sub("[deferred-task marker]", value)
 
 
+def has_task_evidence(body: str) -> bool:
+    return TASK_EVIDENCE_MARKER in body
+
+
 def quality_fix_recovery_attempt_shas(pr: dict[str, Any], ledger: dict[str, Any]) -> list[str]:
     number = str(pr.get("number") or "")
     shas: list[str] = []
@@ -1105,6 +1112,10 @@ def quality_fix_prompt(pr: dict[str, Any]) -> str:
     return (
         f"{marker}\n\n"
         f"Jules, исправь этот же PR #{number}; не открывай новый PR и не создавай отдельную задачу на потом.\n\n"
+        "Важно:\n"
+        "- quality gate читает реальное GitHub PR description/body, а не локальный файл pr-body.md, commit message или пустой commit;\n"
+        "- если исправление требует только evidence, обнови именно GitHub PR description/body;\n"
+        "- если high-risk/evidence фактически нет, не помечай задачу done: переведи manifest и evidence в blocked.\n\n"
         "Что нужно сделать:\n"
         "- исправь deterministic autonomous quality gate failure;\n"
         "- синхронизируй AUTONOMOUS_TASK_EVIDENCE с фактическим статусом задачи в agent_tasks.json;\n"
@@ -1549,6 +1560,34 @@ def plan_recovery_actions(
 
         if "needs-quality-fix" in labels:
             if has_pending_checks(pr):
+                return actions
+            candidate_body = str(pr.get("pr_body_file") or "")
+            current_body = str(pr.get("body") or "")
+            if (
+                has_task_evidence(candidate_body)
+                and candidate_body.strip()
+                and candidate_body.strip() != current_body.strip()
+            ):
+                body_hash = hashlib.sha256(candidate_body.encode("utf-8")).hexdigest()[:12]
+                dedupe_key = f"sync-pr-body:{number}:{sha}:{body_hash}"
+                if not action_recently_done(ledger, dedupe_key, now=now, ttl_minutes=24 * 60):
+                    actions.append(
+                        RecoveryAction(
+                            type="sync_pr_body_from_file",
+                            dedupe_key=dedupe_key,
+                            reason=(
+                                f"PR #{number} has evidence in {PR_BODY_FILE_PATH} "
+                                "that differs from the GitHub PR body"
+                            ),
+                            ttl_minutes=24 * 60,
+                            payload={
+                                "pr_number": number,
+                                "body": candidate_body,
+                                "source_path": PR_BODY_FILE_PATH,
+                                "retry_label": "needs-quality-fix",
+                            },
+                        )
+                    )
                 return actions
             attempt_shas = quality_fix_recovery_attempt_shas(pr, ledger)
             if len(attempt_shas) >= QUALITY_FIX_CIRCUIT_BREAKER_ATTEMPTS:
@@ -2280,6 +2319,25 @@ def ensure_repository_labels(client: GitHubClient, labels: list[str]) -> None:
         )
 
 
+def fetch_repo_file_text(client: GitHubClient, *, path: str, ref: str) -> str:
+    encoded_path = urllib.parse.quote(path, safe="/")
+    encoded_ref = urllib.parse.quote(ref, safe="")
+    data = client.request(
+        "GET",
+        f"/repos/{client.repo}/contents/{encoded_path}?ref={encoded_ref}",
+        ok=(200,),
+    )
+    if not isinstance(data, dict):
+        raise RuntimeError(f"{path} at {ref} did not return a file object")
+    content = str(data.get("content") or "")
+    if str(data.get("encoding") or "") != "base64" or not content:
+        raise RuntimeError(f"{path} at {ref} is not base64 encoded file content")
+    try:
+        return base64.b64decode(content).decode("utf-8")
+    except Exception as exc:  # noqa: BLE001 - keep router recovery robust.
+        raise RuntimeError(f"{path} at {ref} could not be decoded") from exc
+
+
 def execute_action(
     client: GitHubClient,
     action: RecoveryAction,
@@ -2288,6 +2346,32 @@ def execute_action(
 ) -> None:
     payload = action.payload
     jules_clients = jules_clients or []
+    if action.type == "sync_pr_body_from_file":
+        pr_number = payload["pr_number"]
+        retry_label = str(payload.get("retry_label") or "needs-quality-fix")
+        client.request(
+            "PATCH",
+            f"/repos/{client.repo}/pulls/{pr_number}",
+            {"body": payload["body"]},
+            ok=(200,),
+        )
+        encoded_label = urllib.parse.quote(retry_label, safe="")
+        try:
+            client.request(
+                "DELETE",
+                f"/repos/{client.repo}/issues/{pr_number}/labels/{encoded_label}",
+                ok=(200,),
+            )
+        except RuntimeError as exc:
+            if "HTTP 404" not in str(exc):
+                raise
+        client.request(
+            "POST",
+            f"/repos/{client.repo}/issues/{pr_number}/labels",
+            {"labels": [retry_label]},
+            ok=(200, 201),
+        )
+        return
     if action.type in {"quality_fix_recovery", "conflict_recovery", "failed_check_recovery"}:
         if payload.get("comment_needed", True):
             client.request(
@@ -2495,6 +2579,17 @@ def collect_live_state(
             pr["check_runs"] = checks.get("check_runs", [])
         if number and failed_check_runs(pr):
             enrich_failed_check_evidence(client, pr)
+        if "needs-quality-fix" in labels_of(pr):
+            ref = str((pr.get("head") or {}).get("sha") or (pr.get("head") or {}).get("ref") or "")
+            if ref:
+                try:
+                    pr["pr_body_file"] = fetch_repo_file_text(
+                        client,
+                        path=PR_BODY_FILE_PATH,
+                        ref=ref,
+                    )
+                except RuntimeError as exc:
+                    pr["pr_body_file_error"] = str(exc)
 
     workflow_runs: dict[str, Any] = {}
     for workflow in (

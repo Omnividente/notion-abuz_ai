@@ -94,8 +94,9 @@ def pr(
     check_runs: list[dict] | None = None,
     mergeable: bool | None = True,
     mergeable_state: str = "clean",
+    pr_body_file: str = "",
 ) -> dict:
-    return {
+    data = {
         "number": number,
         "title": "Autonomous PR",
         "body": body,
@@ -111,6 +112,9 @@ def pr(
         "comments": [{"body": comment} for comment in comments or []],
         "check_runs": check_runs or [],
     }
+    if pr_body_file:
+        data["pr_body_file"] = pr_body_file
+    return data
 
 
 def state(
@@ -458,7 +462,118 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertTrue(actions[0].payload["comment_needed"])
         self.assertIn("исправь этот же PR #10", actions[0].payload["body"])
         self.assertNotIn("follow-up", actions[0].payload["body"].lower())
+        self.assertIn("GitHub PR description/body", actions[0].payload["body"])
+        self.assertIn("pr-body.md", actions[0].payload["body"])
         self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
+
+    def test_quality_fix_syncs_pr_body_from_file_before_prompting_jules(self) -> None:
+        body_file = (
+            "Summary\n\n"
+            "<!-- AUTONOMOUS_TASK_EVIDENCE\n"
+            "task_id: task-one\n"
+            "status: done\n"
+            "-->\n"
+        )
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules", "needs-quality-fix"],
+                        body="Summary without evidence",
+                        pr_body_file=body_file,
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "sync_pr_body_from_file")
+        self.assertEqual(actions[0].payload["pr_number"], 10)
+        self.assertEqual(actions[0].payload["body"], body_file)
+        self.assertEqual(actions[0].payload["retry_label"], "needs-quality-fix")
+
+    def test_quality_fix_syncs_pr_body_from_file_when_evidence_differs(self) -> None:
+        current_body = (
+            "<!-- AUTONOMOUS_TASK_EVIDENCE\n"
+            "task_id: task-one\n"
+            "status: done\n"
+            "acceptance:\n"
+            "- stale evidence\n"
+            "-->\n"
+        )
+        body_file = current_body.replace("stale evidence", "corrected evidence")
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules", "needs-quality-fix"],
+                        body=current_body,
+                        pr_body_file=body_file,
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "sync_pr_body_from_file")
+        self.assertEqual(actions[0].payload["body"], body_file)
+
+    def test_quality_fix_does_not_sync_when_pr_body_file_matches(self) -> None:
+        evidence_body = (
+            "<!-- AUTONOMOUS_TASK_EVIDENCE\n"
+            "task_id: task-one\n"
+            "status: done\n"
+            "-->\n"
+        )
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules", "needs-quality-fix"],
+                        body=evidence_body,
+                        pr_body_file=evidence_body,
+                    )
+                ]
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_recovery")
+
+    def test_execute_sync_pr_body_updates_body_and_relabels_for_retry(self) -> None:
+        class FakeClient:
+            repo = REPO
+
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, str, dict | None]] = []
+
+            def request(self, method, path, body=None, ok=(200, 201, 204)):
+                self.calls.append((method, path, body))
+                return {}
+
+        client = FakeClient()
+        action = router.RecoveryAction(
+            type="sync_pr_body_from_file",
+            dedupe_key="sync-pr-body:10:abc123:deadbeef",
+            reason="sync body",
+            ttl_minutes=24 * 60,
+            payload={
+                "pr_number": 10,
+                "body": "new body",
+                "retry_label": "needs-quality-fix",
+            },
+        )
+
+        router.execute_action(client, action)
+
+        self.assertEqual(
+            client.calls,
+            [
+                ("PATCH", f"/repos/{REPO}/pulls/10", {"body": "new body"}),
+                ("DELETE", f"/repos/{REPO}/issues/10/labels/needs-quality-fix", None),
+                ("POST", f"/repos/{REPO}/issues/10/labels", {"labels": ["needs-quality-fix"]}),
+            ],
+        )
 
     def test_quality_fix_prompt_includes_latest_quality_gate_details(self) -> None:
         quality_comment = """<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->
