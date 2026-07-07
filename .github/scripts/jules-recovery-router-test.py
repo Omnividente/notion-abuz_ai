@@ -78,6 +78,25 @@ class FakeGitHubClient:
         return self.text_responses.pop(0)
 
 
+class FakeJulesClient:
+    def __init__(self, responses: list[dict], *, label: str = "primary") -> None:
+        self.label = label
+        self.responses = list(responses)
+        self.calls: list[tuple[str, str]] = []
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        body: dict | None = None,
+        ok: tuple[int, ...] = (200,),
+    ) -> dict:
+        self.calls.append((method, path))
+        if not self.responses:
+            raise AssertionError(f"unexpected Jules request: {method} {path}")
+        return self.responses.pop(0)
+
+
 def epoch(minutes_ago: int) -> int:
     return int((NOW - timedelta(minutes=minutes_ago)).timestamp())
 
@@ -237,6 +256,101 @@ class RecoveryRouterTest(unittest.TestCase):
         actions = router.limit_planned_actions([diagnostic, first, second])
 
         self.assertEqual([action.dedupe_key for action in actions], ["diagnostic", "first"])
+
+    def test_collect_jules_sessions_uses_fresh_recent_task_mapping(self) -> None:
+        source = f"sources/github/{REPO}"
+        session_update = (NOW - timedelta(minutes=10)).isoformat().replace("+00:00", "Z")
+        map_update = (NOW - timedelta(minutes=5)).isoformat().replace("+00:00", "Z")
+        jules = FakeJulesClient(
+            [
+                {
+                    "sessions": [
+                        {
+                            "name": "sessions/1111111111111",
+                            "state": "IN_PROGRESS",
+                            "sourceContext": {"source": source},
+                            "updateTime": session_update,
+                        }
+                    ]
+                },
+                {"activities": []},
+            ]
+        )
+
+        result = router.collect_jules_sessions(
+            [jules],
+            source=source,
+            lookback_hours=24,
+            recent_session_tasks={
+                "1111111111111": {
+                    "task_id": "proxy-runtime-fix",
+                    "updateTime": map_update,
+                }
+            },
+            now=NOW,
+        )
+
+        self.assertEqual(result["sessions"][0]["task_id"], "proxy-runtime-fix")
+        self.assertEqual(result["sessions"][0]["task_id_source"], "recent_session_tasks")
+        self.assertEqual(result["sessions"][0]["recent_task_mapping_updateTime"], map_update)
+        self.assertEqual(len(router.active_jules_sessions(state(
+            jules_sessions=result["sessions"],
+            task_statuses={"proxy-runtime-fix": "todo"},
+            task_details={"proxy-runtime-fix": {"id": "proxy-runtime-fix", "status": "todo"}},
+        ))), 1)
+
+    def test_collect_jules_sessions_ignores_stale_recent_task_mapping_for_in_progress(self) -> None:
+        source = f"sources/github/{REPO}"
+        session_update = (NOW - timedelta(minutes=10)).isoformat().replace("+00:00", "Z")
+        map_update = (NOW - timedelta(minutes=61)).isoformat().replace("+00:00", "Z")
+        jules = FakeJulesClient(
+            [
+                {
+                    "sessions": [
+                        {
+                            "name": "sessions/1111111111111",
+                            "state": "IN_PROGRESS",
+                            "sourceContext": {"source": source},
+                            "updateTime": session_update,
+                        }
+                    ]
+                },
+                {"activities": []},
+            ]
+        )
+
+        result = router.collect_jules_sessions(
+            [jules],
+            source=source,
+            lookback_hours=24,
+            recent_session_tasks={
+                "1111111111111": {
+                    "task_id": "proxy-runtime-fix",
+                    "updateTime": map_update,
+                }
+            },
+            now=NOW,
+        )
+
+        collected = result["sessions"][0]
+        self.assertEqual(collected["task_id"], "")
+        self.assertTrue(collected["recent_task_mapping_stale"])
+        self.assertEqual(collected["recent_task_id"], "proxy-runtime-fix")
+        self.assertEqual(router.active_jules_sessions(state(jules_sessions=result["sessions"])), [])
+
+        actions = plan(
+            state(
+                selector={
+                    "selected": True,
+                    "task_id": "automation-health-failed-session-86122315",
+                },
+                jules_sessions=result["sessions"],
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "dispatch_workflow")
+        self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
 
     def test_workflow_reruns_router_after_pr_checks_finish(self) -> None:
         text = WORKFLOW_PATH.read_text(encoding="utf-8")
@@ -1569,15 +1683,34 @@ Blocking reasons:
 
         self.assertEqual(actions, [])
 
-    def test_active_jules_session_prevents_next_task_noise(self) -> None:
+    def test_known_active_jules_session_prevents_next_task_noise(self) -> None:
         actions = plan(
             state(
                 jules_sessions=[session(state="IN_PROGRESS")],
                 selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+                task_statuses={"automation-health-failed-session-86122315": "todo"},
+                task_details={
+                    "automation-health-failed-session-86122315": {
+                        "id": "automation-health-failed-session-86122315",
+                        "status": "todo",
+                    }
+                },
             )
         )
 
         self.assertEqual(actions, [])
+
+    def test_no_task_in_progress_session_does_not_block_next_task_dispatch(self) -> None:
+        actions = plan(
+            state(
+                jules_sessions=[session(state="IN_PROGRESS", task_id="")],
+                selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "dispatch_workflow")
+        self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
 
     def test_awaiting_plan_approval_is_approved_directly(self) -> None:
         actions = plan(state(jules_sessions=[session(state="AWAITING_PLAN_APPROVAL")]))
