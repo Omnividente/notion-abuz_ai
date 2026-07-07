@@ -72,7 +72,7 @@ jobs:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
           JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
           RECOVERY_ROUTER_HEALTH_MODE: ${{ inputs.health_mode || vars.RECOVERY_ROUTER_HEALTH_MODE || 'enforce' }}
-          RECOVERY_ROUTER_MODE: ${{ github.event_name == 'pull_request_target' && 'plan' || inputs.mode || 'act' }}
+          RECOVERY_ROUTER_MODE: ${{ inputs.mode || 'act' }}
         run: |
           set -euo pipefail
           python3 .github/scripts/jules-recovery-router.py \
@@ -97,5 +97,5 @@ jobs:
             echo "- Planned actions: \`${{ steps.router.outputs.actions_planned }}\`"
             echo "- Executed actions: \`${{ steps.router.outputs.actions_executed }}\`"
             echo "- First action: \`${{ steps.router.outputs.first_action }}\`"
-            echo "- Mode: \`${{ github.event_name == 'pull_request_target' && 'plan' || inputs.mode || 'act' }}\`"
+            echo "- Mode: \`${{ inputs.mode || 'act' }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
