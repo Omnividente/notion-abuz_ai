@@ -86,6 +86,12 @@ CODE_ALLOWED_PATHS = {
         ".github/scripts/create-automation-meta-task-pr.py",
         "agent_tasks.json",
     ],
+    "legacy_queue_starvation": [
+        "scripts/select_agent_task.py",
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/create-automation-meta-task-pr.py",
+        "agent_tasks.json",
+    ],
     "suspicious_micro_test_pr": [
         "scripts/select_agent_task.py",
         ".github/scripts/review-autonomous-pr-quality.py",
