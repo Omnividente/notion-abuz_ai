@@ -6382,7 +6382,7 @@
     },
     {
       "id": "automation-health-repeated-followup-generation-6dc5c3e5",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: repeated_followup_generation",
@@ -6400,7 +6400,8 @@
       "health_finding_hash": "6dc5c3e58cf7",
       "health_finding_code": "repeated_followup_generation",
       "health_finding_severity": "degraded",
-      "health_report_generated_at": "2026-07-07T07:58:29Z"
+      "health_report_generated_at": "2026-07-07T07:58:29Z",
+      "blocked_reason": "The root cause for the `repeated_followup_generation` finding false positive is in `.github/scripts/automation-health-report.py`, which is missing the `FOLLOWUP_IDENTIFIER_RE` mask and `automation-health-` exemption to ignore task IDs, but `.github/scripts/automation-health-report.py` is outside the allowed_paths."
     },
     {
       "id": "automation-conflict-loop-pr-421-62c229f1",
@@ -6474,6 +6475,24 @@
       "health_finding_code": "quality_failure",
       "health_finding_severity": "degraded",
       "health_report_generated_at": "2026-07-07T11:53:01Z"
+    },
+    {
+      "id": "automation-fix-health-report-followup-33a0f3b7",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Fix repeated_followup_generation false positives in automation-health-report",
+      "description": "The Automation Health report (`.github/scripts/automation-health-report.py`) raises `repeated_followup_generation` false positives because it does not mask follow-up task identifiers. Update `repeated_followup_mentions` in `automation-health-report.py` to match the behavior in `review-autonomous-pr-quality.py`, ignoring `automation-health-` IDs and applying the `FOLLOWUP_IDENTIFIER_RE` mask.",
+      "allowed_paths": [
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/automation-health-report-test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "`FOLLOWUP_IDENTIFIER_RE` mask is applied to the PR body in `.github/scripts/automation-health-report.py`.",
+        "`automation-health-` PR body exemption is applied in `.github/scripts/automation-health-report.py`.",
+        "Tests are added in `.github/scripts/automation-health-report-test.py` proving task IDs containing 'followup' are ignored and do not trigger the finding."
+      ]
     }
   ]
 }
