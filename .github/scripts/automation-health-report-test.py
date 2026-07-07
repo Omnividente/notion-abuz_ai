@@ -112,6 +112,19 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertIn("placeholder", report["findings"][0]["message"])
         self.assertIn("Eligible autonomous tasks", report["_markdown"])
 
+    def test_high_risk_only_queue_reports_legacy_starvation(self) -> None:
+        report = run_fixture("legacy-queue-starvation")
+
+        self.assertEqual(report["status"], "degraded")
+        self.assert_has_finding(report, "legacy_queue_starvation")
+        self.assertNotIn("no_eligible_autonomous_task", finding_codes(report))
+        finding = report["findings"][0]
+        self.assertIn("Only high-risk tasks remain", finding["message"])
+        self.assertEqual(finding["evidence"]["risk_ceiling"], "medium")
+        self.assertEqual(report["metrics"]["tasks"]["todo_count"], 2)
+        self.assertEqual(report["metrics"]["tasks"]["eligible_count"], 0)
+        self.assertEqual(report["metrics"]["tasks"]["selector_reason_code"], "no_eligible_autonomous_task")
+
     def test_missing_jules_api_key_is_not_a_failure(self) -> None:
         report = run_fixture("missing-jules-api-key")
 

@@ -88,6 +88,20 @@ class AutomationMetaTaskTest(unittest.TestCase):
         self.assertIn(".github/scripts/automation-health-report.py", plan.tasks[0]["allowed_paths"])
         self.assertIn("agent_tasks.json", plan.tasks[0]["allowed_paths"])
 
+    def test_legacy_queue_starvation_uses_selector_scope(self) -> None:
+        plan = meta.plan_meta_tasks(
+            health_report(finding("legacy_queue_starvation")),
+            manifest(),
+            max_tasks=3,
+        )
+
+        self.assertEqual(len(plan.tasks), 1)
+        self.assertTrue(plan.tasks[0]["id"].startswith("automation-health-legacy-queue-starvation-"))
+        self.assertIn("scripts/select_agent_task.py", plan.tasks[0]["allowed_paths"])
+        self.assertIn(".github/scripts/automation-health-report.py", plan.tasks[0]["allowed_paths"])
+        self.assertIn(".github/scripts/create-automation-meta-task-pr.py", plan.tasks[0]["allowed_paths"])
+        self.assertIn("agent_tasks.json", plan.tasks[0]["allowed_paths"])
+
     def test_todo_below_minimum_creates_actionable_manifest_task(self) -> None:
         plan = meta.plan_meta_tasks(
             health_report(finding("todo_below_minimum")),

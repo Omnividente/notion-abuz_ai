@@ -306,9 +306,11 @@ def selector_diagnostics(manifest: dict[str, Any]) -> dict[str, Any]:
         module = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = module
         spec.loader.exec_module(module)
-        selection = module.select_task(manifest, risk_ceiling="medium", focus="proxy")
+        risk_ceiling = os.environ.get("AUTONOMOUS_RISK_CEILING", "medium")
+        selection = module.select_task(manifest, risk_ceiling=risk_ceiling, focus="proxy")
         data = selection.to_dict()
         data["available"] = True
+        data["risk_ceiling"] = risk_ceiling
         return data
     except Exception as exc:  # pragma: no cover - defensive live-report path
         return {"available": False, "error": str(exc)[:300]}
@@ -402,16 +404,29 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         and selector.get("reason_code") == "no_eligible_autonomous_task"
         and int(selector.get("todo_count") or 0) > 0
     ):
+        todo_tasks = [
+            task
+            for task in manifest.get("tasks", [])
+            if isinstance(task, dict) and task.get("status") == "todo"
+        ]
+        high_risk_only = bool(todo_tasks) and all(task.get("risk") == "high" for task in todo_tasks)
+        code = "legacy_queue_starvation" if high_risk_only else "no_eligible_autonomous_task"
+        message = (
+            "Only high-risk tasks remain, but none satisfies the guarded legacy/offline smoke evidence policy."
+            if high_risk_only
+            else "Todo tasks exist, but none are eligible under risk ceiling, high-risk guard, placeholder, and micro-task policy."
+        )
         add_finding_once(
             findings,
             Finding(
-                code="no_eligible_autonomous_task",
+                code=code,
                 severity="degraded",
-                message="Todo tasks exist, but none are eligible under risk ceiling, placeholder, and micro-task policy.",
+                message=message,
                 evidence={
                     "todo_count": selector.get("todo_count"),
                     "eligible_count": selector.get("eligible_count"),
                     "rejected_count": selector.get("rejected_count"),
+                    "risk_ceiling": selector.get("risk_ceiling"),
                     "reason": selector.get("reason"),
                     "rejected_task_ids": [
                         item.get("task_id")
