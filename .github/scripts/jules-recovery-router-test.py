@@ -378,13 +378,15 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("github.event.pull_request.number", text)
         self.assertIn("|| 'global'", text)
 
-    def test_pull_request_target_router_runs_in_plan_mode(self) -> None:
+    def test_pull_request_target_router_executes_trusted_base_workflow(self) -> None:
         text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
-        self.assertIn("RECOVERY_ROUTER_MODE: ${{ github.event_name == 'pull_request_target' && 'plan' || inputs.mode || 'act' }}", text)
+        self.assertIn("RECOVERY_ROUTER_MODE: ${{ inputs.mode || 'act' }}", text)
         self.assertIn('--mode "${RECOVERY_ROUTER_MODE}"', text)
         self.assertIn('echo "- Mode:', text)
-        self.assertIn("github.event_name == 'pull_request_target' && 'plan' || inputs.mode || 'act'", text)
+        self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", text)
+        self.assertNotIn("github.event.pull_request.head.sha", text)
+        self.assertNotIn("github.event.pull_request.head.ref", text)
 
     def test_next_task_dispatches_health_for_no_todo_and_no_eligible_queues(self) -> None:
         text = NEXT_TASK_WORKFLOW_PATH.read_text(encoding="utf-8")
