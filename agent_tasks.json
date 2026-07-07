@@ -6305,6 +6305,33 @@
       "source_reference": "pull/362@8f678dcb9d687fd5cea728943e0739e28377c2b9",
       "source_task_id": "automation-health-quality-failures-spike-6e14b562",
       "circuit_breaker_followup_hash": "d971dacd1822"
+    },
+    {
+      "id": "automation-conflict-loop-pr-400-41599460",
+      "title": "Diagnose stopped conflict recovery for autonomous PR #400",
+      "area": "automation",
+      "risk": "low",
+      "status": "todo",
+      "description": "Autonomous recovery circuit breaker stopped PR #400 at SHA `a92f0b62da5ecba86bd1d7a520ab3e8cbfb85f78` for `proxy-runtime-session-recovery-system-prompt-truncation-metrics`. Diagnose why repeated conflict-recovery prompts did not converge. Sanitized reason: conflict-recovery circuit breaker stopped repeated dirty PR recovery",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_automerge.yml",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for stopped autonomous PR #400 is identified from PR comments, PR comments, merge conflict state, recovery-router ledger evidence, or CI artifacts.",
+        "The automation or manifest state is improved so the same deterministic recovery loop is not repeated, or this diagnostic task is blocked with a concrete missing-evidence reason.",
+        "If code changes are made, targeted script/workflow tests are run; no secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_finding_id": "conflict_recovery_circuit_breaker",
+      "source_document": "jules-recovery-router",
+      "source_reference": "pull/400@a92f0b62da5ecba86bd1d7a520ab3e8cbfb85f78",
+      "source_task_id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics",
+      "circuit_breaker_followup_hash": "415994604de5"
     }
   ]
 }
