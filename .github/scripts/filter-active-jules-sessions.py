@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 
+DEFAULT_RECENT_MAP_TTL_MINUTES = 60
 DEFAULT_ACTIVE_STATES = {
     "QUEUED",
     "PLANNING",
@@ -16,6 +18,19 @@ DEFAULT_ACTIVE_STATES = {
     "AWAITING_PLAN_APPROVAL",
     "AWAITING_USER_FEEDBACK",
 }
+
+
+def parse_time(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def now_utc() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def load_json(path: Path) -> Any:
@@ -76,15 +91,31 @@ def session_name(session: dict[str, Any]) -> str:
     return ""
 
 
-def task_id_for_session(session: dict[str, Any], recent_map: dict[str, Any]) -> str:
+def recent_task_for_session(
+    session: dict[str, Any],
+    recent_map: dict[str, Any],
+    *,
+    now: datetime,
+    ttl_minutes: int,
+) -> tuple[str, bool, str]:
     sid = session_id(session)
     entry = recent_map.get(sid)
     if isinstance(entry, dict):
         value = entry.get("task_id")
-        return str(value or "")
+        task_id = str(value or "")
+        if not task_id:
+            return "", False, ""
+        update_time = str(entry.get("updateTime") or "")
+        updated_at = parse_time(update_time)
+        if not updated_at:
+            return "", True, update_time
+        if updated_at < now - timedelta(minutes=ttl_minutes):
+            return "", True, update_time
+        return task_id, False, update_time
     if isinstance(entry, str):
-        return entry
-    return ""
+        task_id = entry.strip()
+        return ("", True, "") if task_id else ("", False, "")
+    return "", False, ""
 
 
 def stopped_task_ids(raw: str) -> set[str]:
@@ -99,10 +130,13 @@ def filter_sessions(
     task_statuses: dict[str, str],
     recent_map: dict[str, Any],
     stopped_tasks: set[str],
+    now: datetime | None = None,
+    recent_map_ttl_minutes: int = DEFAULT_RECENT_MAP_TTL_MINUTES,
 ) -> dict[str, Any]:
     blocking: list[dict[str, str]] = []
     ignored: list[dict[str, str]] = []
     active_total = 0
+    current_time = now or now_utc()
 
     for session in sessions_data.get("sessions", []):
         if not isinstance(session, dict):
@@ -115,13 +149,22 @@ def filter_sessions(
 
         active_total += 1
         sid = session_id(session)
-        task_id = task_id_for_session(session, recent_map)
+        task_id, stale_recent_map, recent_map_update_time = recent_task_for_session(
+            session,
+            recent_map,
+            now=current_time,
+            ttl_minutes=recent_map_ttl_minutes,
+        )
         item = {
             "session_id": sid,
             "session_name": session_name(session),
             "state": state,
             "task_id": task_id,
         }
+        if stale_recent_map:
+            item["recent_map_stale"] = "true"
+            if recent_map_update_time:
+                item["recent_map_updateTime"] = recent_map_update_time
 
         if task_id:
             status = task_statuses.get(task_id, "")
@@ -137,7 +180,12 @@ def filter_sessions(
             blocking.append(item)
             continue
 
-        item["reason"] = "unknown_task_id"
+        if state == "IN_PROGRESS":
+            item["reason"] = "stale_recent_task_mapping" if stale_recent_map else "unknown_in_progress_task_id"
+            ignored.append(item)
+            continue
+
+        item["reason"] = "stale_recent_task_mapping" if stale_recent_map else "unknown_task_id"
         blocking.append(item)
 
     return {
@@ -154,6 +202,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sessions", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, default=Path("agent_tasks.json"))
     parser.add_argument("--recent-map", type=Path)
+    parser.add_argument("--recent-map-ttl-minutes", type=int, default=DEFAULT_RECENT_MAP_TTL_MINUTES)
     parser.add_argument("--source", required=True)
     parser.add_argument("--stopped-task-ids", default="")
     parser.add_argument(
@@ -176,6 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         task_statuses=load_manifest_statuses(args.manifest),
         recent_map=load_recent_map(args.recent_map),
         stopped_tasks=stopped_task_ids(args.stopped_task_ids),
+        recent_map_ttl_minutes=max(1, args.recent_map_ttl_minutes),
     )
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))

@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -18,6 +19,14 @@ SPEC.loader.exec_module(module)
 
 
 SOURCE = "sources/github/Omnividente/notion-abuz_ai"
+NOW = datetime(2026, 6, 29, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def recent_task(task_id: str, *, minutes_ago: int = 5) -> dict:
+    return {
+        "task_id": task_id,
+        "updateTime": (NOW - timedelta(minutes=minutes_ago)).isoformat().replace("+00:00", "Z"),
+    }
 
 
 def session(session_id: str, *, state: str = "IN_PROGRESS", source: str = SOURCE) -> dict:
@@ -42,28 +51,55 @@ class FilterActiveJulesSessionsTest(unittest.TestCase):
             },
             recent_map=recent_map or {},
             stopped_tasks=stopped or set(),
+            now=NOW,
         )
 
-    def test_unknown_active_session_blocks_dispatch(self) -> None:
+    def test_unknown_in_progress_session_does_not_block_dispatch(self) -> None:
         result = self.filter([session("111")])
 
         self.assertEqual(result["active_total"], 1)
+        self.assertEqual(result["blocking_count"], 0)
+        self.assertEqual(result["ignored_count"], 1)
+        self.assertEqual(result["ignored_sessions"][0]["reason"], "unknown_in_progress_task_id")
+
+    def test_unknown_awaiting_feedback_session_still_blocks_for_recovery(self) -> None:
+        result = self.filter([session("111", state="AWAITING_USER_FEEDBACK")])
+
         self.assertEqual(result["blocking_count"], 1)
         self.assertEqual(result["ignored_count"], 0)
         self.assertEqual(result["blocking_sessions"][0]["reason"], "unknown_task_id")
 
     def test_todo_task_session_blocks_dispatch(self) -> None:
-        result = self.filter([session("111")], recent_map={"111": {"task_id": "todo-task"}})
+        result = self.filter([session("111")], recent_map={"111": recent_task("todo-task")})
 
         self.assertEqual(result["blocking_count"], 1)
         self.assertEqual(result["blocking_sessions"][0]["reason"], "active_task")
+
+    def test_stale_recent_task_mapping_does_not_block_in_progress_dispatch(self) -> None:
+        result = self.filter([session("111")], recent_map={"111": recent_task("todo-task", minutes_ago=61)})
+
+        self.assertEqual(result["blocking_count"], 0)
+        self.assertEqual(result["ignored_count"], 1)
+        self.assertEqual(result["ignored_sessions"][0]["reason"], "stale_recent_task_mapping")
+        self.assertEqual(result["ignored_sessions"][0]["recent_map_stale"], "true")
+
+    def test_stale_recent_task_mapping_still_blocks_awaiting_feedback_for_recovery(self) -> None:
+        result = self.filter(
+            [session("111", state="AWAITING_USER_FEEDBACK")],
+            recent_map={"111": recent_task("todo-task", minutes_ago=61)},
+        )
+
+        self.assertEqual(result["blocking_count"], 1)
+        self.assertEqual(result["ignored_count"], 0)
+        self.assertEqual(result["blocking_sessions"][0]["reason"], "stale_recent_task_mapping")
+        self.assertEqual(result["blocking_sessions"][0]["recent_map_stale"], "true")
 
     def test_done_or_blocked_task_sessions_do_not_block_dispatch(self) -> None:
         result = self.filter(
             [session("111"), session("222")],
             recent_map={
-                "111": {"task_id": "done-task"},
-                "222": {"task_id": "blocked-task"},
+                "111": recent_task("done-task"),
+                "222": recent_task("blocked-task"),
             },
         )
 
@@ -77,7 +113,7 @@ class FilterActiveJulesSessionsTest(unittest.TestCase):
     def test_stopped_pr_task_session_does_not_block_dispatch(self) -> None:
         result = self.filter(
             [session("111")],
-            recent_map={"111": {"task_id": "stopped-task"}},
+            recent_map={"111": recent_task("stopped-task")},
             stopped={"stopped-task"},
         )
 

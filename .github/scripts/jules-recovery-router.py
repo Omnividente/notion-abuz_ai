@@ -38,6 +38,7 @@ HEALTH_ENFORCE_COOLDOWN_MINUTES = 20
 RERUN_AUTOMERGE_COOLDOWN_MINUTES = 120
 FAILED_CHECK_RECOVERY_COOLDOWN_MINUTES = 30
 MONITOR_COOLDOWN_MINUTES = 7
+RECENT_SESSION_TASK_TTL_MINUTES = 60
 QUALITY_FIX_RECOVERY_COOLDOWN_MINUTES = 30
 QUALITY_FIX_CIRCUIT_BREAKER_ATTEMPTS = 3
 QUALITY_FIX_CIRCUIT_BREAKER_TTL_MINUTES = 7 * 24 * 60
@@ -91,6 +92,17 @@ TASK_ID_RE = re.compile(
     "?
     """
 )
+INVALID_TASK_ID_VALUES = {
+    "str",
+    "task",
+    "task_id",
+    "task.get",
+    "selected",
+    "unknown",
+    "none",
+    "null",
+}
+CODE_LIKE_TASK_ID_RE = re.compile(r"^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$", re.IGNORECASE)
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 LOG_TIMESTAMP_RE = re.compile(r"^\ufeff?\d{4}-\d{2}-\d{2}T[0-9:.]+Z\s+")
 FAILED_LOG_MARKERS = (
@@ -390,6 +402,29 @@ def parse_time(value: str | None) -> datetime | None:
 
 def now_utc() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def recent_session_task_id(
+    entry: Any,
+    *,
+    now: datetime,
+    ttl_minutes: int = RECENT_SESSION_TASK_TTL_MINUTES,
+) -> tuple[str, bool, str]:
+    if isinstance(entry, dict):
+        task_id = str(entry.get("task_id") or "")
+        if not task_id:
+            return "", False, ""
+        update_time = str(entry.get("updateTime") or "")
+        updated_at = parse_time(update_time)
+        if not updated_at:
+            return "", True, update_time
+        if updated_at < now - timedelta(minutes=ttl_minutes):
+            return "", True, update_time
+        return task_id, False, update_time
+    if isinstance(entry, str):
+        task_id = entry.strip()
+        return ("", True, "") if task_id else ("", False, "")
+    return "", False, ""
 
 
 def parse_epoch(value: str | None) -> int:
@@ -1330,7 +1365,64 @@ def active_jules_sessions(state: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         session for session in jules_sessions(state)
         if str(session.get("state") or "") in ACTIVE_JULES_STATES
+        and active_session_should_block_dispatch(session, state)
     ]
+
+
+def is_valid_task_id_candidate(task_id: str) -> bool:
+    clean = task_id.strip().lower()
+    return bool(clean) and clean not in INVALID_TASK_ID_VALUES and not CODE_LIKE_TASK_ID_RE.fullmatch(clean)
+
+
+def pr_mentions_task_id(pr: dict[str, Any], task_id: str) -> bool:
+    if not task_id:
+        return False
+    body = str(pr.get("body") or "")
+    head_ref = str((pr.get("head") or {}).get("ref") or "")
+    haystack = f"{body}\n{head_ref}"
+    if task_id in haystack:
+        return True
+    return re.search(
+        rf"(^|[^a-zA-Z0-9_.-]){re.escape(task_id)}($|[^a-zA-Z0-9_.-])",
+        haystack,
+    ) is not None
+
+
+def task_has_stopped_pr(state: dict[str, Any], task_id: str) -> bool:
+    return any(
+        has_autonomous_stop_label(pr) and pr_mentions_task_id(pr, task_id)
+        for pr in state.get("open_pulls", [])
+        if isinstance(pr, dict)
+    )
+
+
+def task_has_open_pr(state: dict[str, Any], task_id: str) -> bool:
+    return any(
+        pr_mentions_task_id(pr, task_id)
+        for pr in state.get("open_pulls", [])
+        if isinstance(pr, dict)
+    )
+
+
+def active_session_should_block_dispatch(session: dict[str, Any], state: dict[str, Any]) -> bool:
+    task_id = str(session.get("task_id") or ((session.get("activity_summary") or {}).get("task_id")) or "")
+    session_state = str(session.get("state") or "")
+    if task_id and not is_valid_task_id_candidate(task_id):
+        return False
+    if not task_id:
+        return session_state != "IN_PROGRESS"
+
+    task_statuses = state.get("task_statuses") or {}
+    status = str(task_statuses.get(task_id) or "")
+    if status in {"done", "blocked"}:
+        return False
+    task_details = state.get("task_details") or {}
+    task_known = task_id in task_statuses or task_id in task_details
+    if session_state == "IN_PROGRESS" and not task_known and not task_has_open_pr(state, task_id):
+        return False
+    if task_has_stopped_pr(state, task_id):
+        return False
+    return True
 
 
 def should_continue_session(session: dict[str, Any]) -> bool:
@@ -2286,11 +2378,13 @@ def collect_jules_sessions(
     source: str,
     lookback_hours: int,
     recent_session_tasks: dict[str, Any],
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     if not clients:
         return {"api_available": False, "sessions": [], "reason": "no Jules API keys configured"}
 
-    cutoff = now_utc() - timedelta(hours=lookback_hours)
+    current_time = now or now_utc()
+    cutoff = current_time - timedelta(hours=lookback_hours)
     sessions_by_name: dict[str, dict[str, Any]] = {}
     errors: list[str] = []
 
@@ -2331,8 +2425,22 @@ def collect_jules_sessions(
 
             if not enriched.get("task_id"):
                 mapped = recent_session_tasks.get(session_id)
-                if isinstance(mapped, dict):
-                    enriched["task_id"] = str(mapped.get("task_id") or "")
+                mapped_task_id, mapped_stale, mapped_update_time = recent_session_task_id(
+                    mapped,
+                    now=current_time,
+                )
+                if mapped_task_id:
+                    enriched["task_id"] = mapped_task_id
+                    enriched["task_id_source"] = "recent_session_tasks"
+                    enriched["recent_task_mapping_updateTime"] = mapped_update_time
+                elif mapped_stale:
+                    enriched["recent_task_mapping_stale"] = True
+                    if isinstance(mapped, dict):
+                        enriched["recent_task_id"] = str(mapped.get("task_id") or "")
+                    elif isinstance(mapped, str):
+                        enriched["recent_task_id"] = mapped
+                    if mapped_update_time:
+                        enriched["recent_task_mapping_updateTime"] = mapped_update_time
             sessions_by_name[name] = enriched
 
     return {
