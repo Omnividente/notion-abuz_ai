@@ -6379,7 +6379,7 @@
       "health_report_generated_at": "2026-07-07T06:43:34Z"
     },
     {
-      "id": "proxy-session-recovery-system-instruction-truncation-telemetry",
+      "id": "proxy-session-recovery-system-instruction-truncation-telemetry-fix",
       "title": "Add telemetry test for system instruction truncation in session recovery",
       "area": "proxy",
       "risk": "low",
