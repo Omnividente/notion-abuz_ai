@@ -641,7 +641,8 @@ def evaluate_quality(
             elif expected_task_id and evidence.task_id != expected_task_id:
                 reasons.append(
                     f"AUTONOMOUS_TASK_EVIDENCE task_id {evidence.task_id} "
-                    f"does not match changed task {expected_task_id}."
+                    f"does not match changed task {expected_task_id}. "
+                    "(Hint: Double check that the task_id in the evidence block exactly matches the task_id you updated to 'done' in agent_tasks.json)"
                 )
             if evidence.status not in {"done", "blocked"}:
                 reasons.append("AUTONOMOUS_TASK_EVIDENCE status must be done or blocked.")

@@ -6258,7 +6258,7 @@
       "title": "Diagnose stopped quality loop for autonomous PR #351",
       "area": "automation",
       "risk": "low",
-      "status": "todo",
+      "status": "done",
       "description": "Autonomous recovery circuit breaker stopped PR #351 at SHA `98f4cbc7831448fad6528d4da56bcd30953e4da7` for `proxy-session-recovery-system-instruction-truncation-test`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `493f5e32c4c65f6d4beb5617ba267b4bc86f169f`: AUTONOMOUS_TASK_EVIDENCE task_id proxy-session-recovery-system-instruction-truncation-test does not match changed task proxy-session-recovery-system-instruction-truncation-telemetry.; AUTONOMOUS_TASK_EVIDENCE maps 1 acceptance items, but task proxy-session-recovery-system-instruction-truncation-telemetry has 2 acceptance criteria.\n- `c77a786a5f101a14ac64c2259c162e01afcdea08`: AUTONOMOUS_TASK_EVIDENCE task_id prox",
       "allowed_paths": [
         ".github/scripts/jules-recovery-router.py",
@@ -6377,6 +6377,37 @@
       "health_finding_code": "todo_below_minimum",
       "health_finding_severity": "degraded",
       "health_report_generated_at": "2026-07-07T06:43:34Z"
+    },
+    {
+      "id": "proxy-session-recovery-system-instruction-truncation-telemetry",
+      "title": "Add telemetry test for system instruction truncation in session recovery",
+      "area": "proxy",
+      "risk": "low",
+      "status": "todo",
+      "description": "Add a test validating that system_instruction_truncated metric is correctly incremented when system instruction exceeds the threshold in session recovery.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go"
+      ],
+      "acceptance": [
+        "Verify system_instruction_truncated metric is correctly incremented when system instruction exceeds threshold.",
+        "Tests pass."
+      ]
+    },
+    {
+      "id": "proxy-session-recovery-system-instruction-truncation-test-fix",
+      "title": "Fix task id issue for proxy-session-recovery-system-instruction-truncation-test",
+      "area": "proxy",
+      "risk": "low",
+      "status": "todo",
+      "description": "Investigate if proxy-session-recovery-system-instruction-truncation-telemetry was created mistakenly by the agent instead of updating the proxy-session-recovery-system-instruction-truncation-test task.",
+      "allowed_paths": [
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Investigate the mismatch in task names and update the manifest properly.",
+        "Tests pass."
+      ]
     }
   ]
 }
