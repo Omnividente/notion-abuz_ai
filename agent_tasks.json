@@ -6622,7 +6622,7 @@
     },
     {
       "id": "automation-open-ready-stale-branch-summary",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Make stale ready Jules branch handling actionable",
@@ -6638,7 +6638,15 @@
         "A focused offline test covers at least one stale branch behind master and verifies the summary output.",
         "The change does not open PRs for stale branches and does not delete branches automatically."
       ],
-      "source_reference": "monitor logs from run 28880625112"
+      "source_reference": "monitor logs from run 28880625112",
+      "evidence_files": [
+        ".github/scripts/open-ready-jules-prs.py",
+        ".github/scripts/open-ready-jules-prs-test.py",
+        "agent_tasks.json"
+      ],
+      "checks": [
+        "pytest .github/scripts/open-ready-jules-prs-test.py"
+      ]
     },
     {
       "id": "automation-closed-session-blocking-filter",
@@ -6759,6 +6767,41 @@
         "The wait period does not increase duplicate escalations."
       ],
       "source_reference": "burst monitor run 28879989522 (post-analysis)"
+    },
+    {
+      "id": "claude-code-live-smoke-tool-call-loss-diagnostic",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Add live smoke diagnostics for JSON tool-call mode loss",
+      "description": "Add a diagnostic tracker for JSON tool-call mode loss during local live smoke tests to better reproduce missing tool failures offline.",
+      "allowed_paths": [
+        ".github/scripts/rdsh-local-live-smoke.sh",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A diagnostic marker is added to the local live smoke script for JSON tool-call mode loss.",
+        "The task provides a concrete offline artifact collection point."
+      ],
+      "source_reference": "local live smoke artifacts"
+    },
+    {
+      "id": "proxy-session-recovery-persona-leakage-diagnostic",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add session recovery diagnostics for Notion persona leakage",
+      "description": "Enhance session recovery fallback logs to capture when a recovery prompt unexpectedly triggers Notion persona leakage.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logging is added in session.go for persona leakage during fallback.",
+        "A test confirms the log is emitted correctly."
+      ],
+      "source_reference": "captured Claude Code transcripts"
     }
   ]
 }

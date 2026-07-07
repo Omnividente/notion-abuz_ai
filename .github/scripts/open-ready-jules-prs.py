@@ -56,97 +56,107 @@ def is_jules_branch(branch):
     return any(session_id in branch for session_id in session_ids)
 
 
-refs = request("GET", f"/repos/{repo}/git/matching-refs/heads") or []
-pulls = request("GET", f"/repos/{repo}/pulls?state=all&per_page=100") or []
+def main():
+    refs = request("GET", f"/repos/{repo}/git/matching-refs/heads") or []
+    pulls = request("GET", f"/repos/{repo}/pulls?state=all&per_page=100") or []
 
+    def is_autonomous_pr(pr):
+        labels = {label["name"] for label in pr.get("labels", [])}
+        if labels & {"human-review", "no-automerge", "stop-loop"}:
+            return False
+        head_ref = (pr.get("head") or {}).get("ref", "")
+        return "jules" in labels or is_jules_branch(head_ref)
 
-def is_autonomous_pr(pr):
-    labels = {label["name"] for label in pr.get("labels", [])}
-    if labels & {"human-review", "no-automerge", "stop-loop"}:
-        return False
-    head_ref = (pr.get("head") or {}).get("ref", "")
-    return "jules" in labels or is_jules_branch(head_ref)
+    open_autonomous = [
+        pr for pr in pulls
+        if pr.get("state") == "open" and is_autonomous_pr(pr)
+    ]
+    if open_autonomous:
+        numbers = ", ".join(f"#{pr['number']}" for pr in open_autonomous)
+        print(f"Open autonomous PR already exists ({numbers}); not opening another ready PR.")
+        sys.exit(0)
 
+    open_heads = {pr["head"]["ref"] for pr in pulls if pr.get("state") == "open"}
+    closed_head_shas = {
+        (pr["head"]["ref"], pr["head"]["sha"])
+        for pr in pulls
+        if pr.get("state") == "closed"
+    }
 
-open_autonomous = [
-    pr for pr in pulls
-    if pr.get("state") == "open" and is_autonomous_pr(pr)
-]
-if open_autonomous:
-    numbers = ", ".join(f"#{pr['number']}" for pr in open_autonomous)
-    print(f"Open autonomous PR already exists ({numbers}); not opening another ready PR.")
-    sys.exit(0)
+    created = 0
+    stale_branches = []
 
-open_heads = {pr["head"]["ref"] for pr in pulls if pr.get("state") == "open"}
-closed_head_shas = {
-    (pr["head"]["ref"], pr["head"]["sha"])
-    for pr in pulls
-    if pr.get("state") == "closed"
-}
+    for ref in refs:
+        full_ref = ref.get("ref", "")
+        branch = full_ref.removeprefix("refs/heads/")
+        sha = (ref.get("object") or {}).get("sha", "")
 
-created = 0
-for ref in refs:
-    full_ref = ref.get("ref", "")
-    branch = full_ref.removeprefix("refs/heads/")
-    sha = (ref.get("object") or {}).get("sha", "")
+        if not is_jules_branch(branch):
+            continue
+        if branch in open_heads:
+            print(f"Open PR already exists for {branch}; skipping.")
+            continue
+        if (branch, sha) in closed_head_shas:
+            print(f"Closed PR already exists for current {branch}@{sha}; skipping.")
+            continue
 
-    if not is_jules_branch(branch):
-        continue
-    if branch in open_heads:
-        print(f"Open PR already exists for {branch}; skipping.")
-        continue
-    if (branch, sha) in closed_head_shas:
-        print(f"Closed PR already exists for current {branch}@{sha}; skipping.")
-        continue
+        compare = request("GET", f"/repos/{repo}/compare/master...{safe_ref(branch)}")
+        behind_by = int(compare.get("behind_by", 0))
+        if behind_by > 0:
+            stale_branches.append({"branch": branch, "behind_by": behind_by})
+            continue
 
-    compare = request("GET", f"/repos/{repo}/compare/master...{safe_ref(branch)}")
-    if int(compare.get("behind_by", 0)) > 0:
-        print(
-            f"{branch} is behind master by {compare.get('behind_by')} commit(s); "
-            "skipping stale ready branch."
+        if int(compare.get("ahead_by", 0)) <= 0:
+            print(f"{branch} is not ahead of master; skipping.")
+            continue
+
+        commits = compare.get("commits", [])
+        title = f"Jules: автономное обновление {branch}"
+        if commits:
+            title = f"Jules: готовые изменения из {branch}"[:120]
+
+        body = (
+            "Открыто автоматически через Jules Unattended Monitor из готовой "
+            f"ветки Jules.\n\nЭтап плана: PR\nЧто сделано: Jules подготовила изменения в ветке `{branch}`.\n"
+            "Что дальше: CI и automerge workflow должны проверить и смержить PR, если проверки пройдут.\n"
+            "Зачем: сохранить автономный цикл улучшения Claude Code bridge без ручного открытия PR.\n"
+            "Почему так: ветка уже опережает `master`, а открытого PR для нее нет.\n"
+            f"Проверки/риски: требуется CI на PR.\n\nBranch: `{branch}`\nCommit: `{sha}`"
         )
-        continue
-    if int(compare.get("ahead_by", 0)) <= 0:
-        print(f"{branch} is not ahead of master; skipping.")
-        continue
-
-    commits = compare.get("commits", [])
-    title = f"Jules: автономное обновление {branch}"
-    if commits:
-        title = f"Jules: готовые изменения из {branch}"[:120]
-
-    body = (
-        "Открыто автоматически через Jules Unattended Monitor из готовой "
-        f"ветки Jules.\n\nЭтап плана: PR\nЧто сделано: Jules подготовила изменения в ветке `{branch}`.\n"
-        "Что дальше: CI и automerge workflow должны проверить и смержить PR, если проверки пройдут.\n"
-        "Зачем: сохранить автономный цикл улучшения Claude Code bridge без ручного открытия PR.\n"
-        "Почему так: ветка уже опережает `master`, а открытого PR для нее нет.\n"
-        f"Проверки/риски: требуется CI на PR.\n\nBranch: `{branch}`\nCommit: `{sha}`"
-    )
-    pr = request(
-        "POST",
-        f"/repos/{repo}/pulls",
-        {
-            "title": title,
-            "head": branch,
-            "base": "master",
-            "body": body,
-        },
-    )
-    number = pr["number"]
-    created += 1
-    print(f"Opened PR #{number} for {branch}.")
-
-    try:
-        request(
+        pr = request(
             "POST",
-            f"/repos/{repo}/issues/{number}/labels",
-            {"labels": ["jules"]},
+            f"/repos/{repo}/pulls",
+            {
+                "title": title,
+                "head": branch,
+                "base": "master",
+                "body": body,
+            },
         )
-        print(f"Labeled PR #{number} as jules.")
-    except RuntimeError as exc:
-        print(f"Could not label PR #{number}: {exc}")
+        number = pr["number"]
+        created += 1
+        print(f"Opened PR #{number} for {branch}.")
 
-    break
+        try:
+            request(
+                "POST",
+                f"/repos/{repo}/issues/{number}/labels",
+                {"labels": ["jules"]},
+            )
+            print(f"Labeled PR #{number} as jules.")
+        except RuntimeError as exc:
+            print(f"Could not label PR #{number}: {exc}")
 
-print(f"Ready Jules PRs opened: {created}")
+        continue
+
+    if stale_branches:
+        stale_branches.sort(key=lambda x: x["behind_by"], reverse=True)
+        print("Stale ready Jules branches skipped:")
+        for stale in stale_branches:
+            print(f"  - {stale['branch']} (behind by {stale['behind_by']} commits)")
+        print("Action required: Review these branches and either rebase them on master or delete them manually if no longer needed.")
+
+    print(f"Ready Jules PRs opened: {created}")
+
+if __name__ == "__main__":
+    main()
