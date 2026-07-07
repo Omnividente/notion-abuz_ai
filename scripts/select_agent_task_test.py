@@ -349,11 +349,101 @@ class SelectAgentTaskTest(unittest.TestCase):
         selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
 
         self.assertFalse(selected.selected)
-        self.assertEqual(selected.reason, "no eligible todo task matched the risk ceiling, placeholder, and micro-task policy")
+        self.assertEqual(
+            selected.reason,
+            "no eligible todo task matched the risk ceiling, high-risk evidence guard, placeholder, and micro-task policy",
+        )
         self.assertEqual(selected.reason_code, "no_eligible_autonomous_task")
         self.assertEqual(selected.todo_count, 1)
         self.assertEqual(selected.eligible_count, 0)
         self.assertEqual(selected.rejected_count, 0)
+
+    def test_high_ceiling_selects_guarded_legacy_smoke_task(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "guarded-high",
+                    title="Enable legacy compatibility smoke for offline lab runners",
+                    description=(
+                        "High-risk workflow change is bounded by legacy compatibility smoke, "
+                        "self-hosted CentOS runner labels, artifacts, and rollback notes."
+                    ),
+                    risk="high",
+                    allowed_paths=[
+                        ".github/workflows/legacy_compat_smoke.yml",
+                        ".github/scripts/legacy-smoke-auto-dispatch.py",
+                        "agent_tasks.json",
+                    ],
+                )
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="high", focus="automation")
+
+        self.assertTrue(selected.selected)
+        self.assertEqual(selected.task_id, "guarded-high")
+        self.assertIn("guarded high-risk", selected.reason)
+        self.assertEqual(selected.rejected_count, 0)
+
+    def test_high_ceiling_rejects_unguarded_high_task(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "unguarded-high",
+                    title="Rewrite proxy routing",
+                    description="Large high-risk network rewrite.",
+                    risk="high",
+                    allowed_paths=["internal/proxy/reverseproxy.go", "agent_tasks.json"],
+                )
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="high", focus="proxy")
+
+        self.assertFalse(selected.selected)
+        self.assertEqual(selected.reason_code, "no_eligible_autonomous_task")
+        self.assertEqual(selected.rejected_count, 1)
+        self.assertIn("high-risk task", selected.rejected[0]["reason"])
+
+    def test_high_ceiling_rejects_high_task_with_forbidden_path(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "forbidden-high",
+                    title="Enable legacy compatibility smoke",
+                    description="High-risk task with legacy compatibility smoke and rollback evidence.",
+                    risk="high",
+                    allowed_paths=["production/accounts.json", "agent_tasks.json"],
+                )
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="high", focus="proxy")
+
+        self.assertFalse(selected.selected)
+        self.assertEqual(selected.rejected_count, 1)
+        self.assertIn("high-risk task", selected.rejected[0]["reason"])
+
+    def test_exact_high_task_id_requires_guard(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "unguarded-high",
+                    title="Rewrite proxy routing",
+                    description="Large high-risk network rewrite.",
+                    risk="high",
+                    allowed_paths=["internal/proxy/reverseproxy.go", "agent_tasks.json"],
+                )
+            ]
+        }
+
+        with self.assertRaisesRegex(ValueError, "high risk without required legacy/lab evidence guard"):
+            select_agent_task.select_task(
+                data,
+                risk_ceiling="high",
+                focus="proxy",
+                task_id="unguarded-high",
+            )
 
     def test_no_todo_tasks_has_distinct_reason_code(self) -> None:
         data = {

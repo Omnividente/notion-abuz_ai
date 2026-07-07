@@ -66,6 +66,36 @@ class JulesRecoveryPromptTest(unittest.TestCase):
             "block_or_limit_scope",
         )
 
+    def test_high_risk_prompt_allows_only_guarded_lab_scope(self) -> None:
+        payload = module.build_prompt_payload(
+            summary={
+                "wait_reason": "high_risk_confirmation",
+                "prompt_action": "block_or_limit_scope",
+                "latest_agent_excerpt": "This is high risk. Should I proceed?",
+                "continue_token_count": 0,
+            },
+            task={
+                "id": "legacy-high",
+                "status": "todo",
+                "risk": "high",
+                "area": "automation",
+                "title": "Enable legacy compatibility smoke",
+                "allowed_paths": [".github/workflows/legacy_compat_smoke.yml", "agent_tasks.json"],
+                "acceptance": ["Use self-hosted legacy smoke evidence and rollback plan."],
+            },
+            task_id="legacy-high",
+            repo="Omnividente/notion-abuz_ai",
+            session_id="123",
+            session_state="AWAITING_USER_FEEDBACK",
+        )
+
+        prompt = payload["prompt"]
+        self.assertIn("task_risk: high", prompt)
+        self.assertIn("bounded high-risk legacy/offline/lab task", prompt)
+        self.assertIn("CI/smoke/artifact/self-hosted evidence", prompt)
+        self.assertIn("rollback plan", prompt)
+        self.assertIn("unguarded high-risk", prompt)
+
     def test_classifies_unknown_continue(self) -> None:
         self.assert_reason(
             "I have paused and need your input before continuing.",

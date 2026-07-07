@@ -35,6 +35,12 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("steps.select-task.outputs.below_minimum == 'true'", self.text)
         self.assertIn("Minimum todo tasks: ${{ steps.select-task.outputs.minimum_todo_tasks }}", self.text)
 
+    def test_risk_ceiling_supports_guarded_high_risk_opt_in(self) -> None:
+        self.assertIn("          - high", self.text)
+        self.assertIn("unguarded high-risk", self.text)
+        self.assertIn("CI/smoke/artifact/self-hosted evidence", self.text)
+        self.assertIn("rollback notes", self.text)
+
 
 if __name__ == "__main__":
     unittest.main()

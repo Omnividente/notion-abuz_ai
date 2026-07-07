@@ -83,6 +83,23 @@ COMPROMISE_PHRASES = (
     "follow-up task",
     "separate task",
 )
+HIGH_RISK_EVIDENCE_TOKENS = (
+    "legacy compatibility smoke",
+    "legacy_compat_smoke",
+    "compatibility smoke",
+    "self-hosted",
+    "runner label",
+    "runner labels",
+    "centos",
+    "ubuntu",
+    "arm64",
+    "aarch64",
+    "offline reproduction",
+    "artifact",
+    "artifacts",
+    "workflow_dispatch",
+    "rollback",
+)
 
 EVIDENCE_BLOCK_RE = re.compile(
     r"<!--\s*AUTONOMOUS_TASK_EVIDENCE\s*(?P<body>.*?)\s*-->",
@@ -343,6 +360,16 @@ def is_operational_task(task: dict[str, Any]) -> bool:
 def requires_observability_proof(task: dict[str, Any]) -> bool:
     text = task_goal_text(task)
     return any(keyword in text for keyword in OBSERVABILITY_KEYWORDS)
+
+
+def has_high_risk_validation_evidence(evidence: EvidenceBlock) -> bool:
+    text = "\n".join(
+        [
+            "\n".join(evidence.checks).lower(),
+            evidence.micro_pr_justification.lower(),
+        ]
+    )
+    return any(token in text for token in HIGH_RISK_EVIDENCE_TOKENS)
 
 
 def diff_has_direct_observability_assertion(diff_text: str) -> bool:
@@ -700,6 +727,12 @@ def evaluate_quality(
             unmapped_acceptance = [item for item in evidence.acceptance if "->" not in item]
             if unmapped_acceptance:
                 reasons.append("AUTONOMOUS_TASK_EVIDENCE acceptance items must map criteria to evidence with '->'.")
+
+        if task.get("risk") == "high" and not has_high_risk_validation_evidence(evidence):
+            reasons.append(
+                f"Task {change.task_id} is high risk but the PR does not cite concrete "
+                "legacy/offline lab, smoke, artifact, runner-label, rollback, or workflow_dispatch evidence."
+            )
 
         if operational and only_tests_manifest(changed_files):
             reasons.append(

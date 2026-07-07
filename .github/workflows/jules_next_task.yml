@@ -30,6 +30,7 @@ on:
         options:
           - low
           - medium
+          - high
       allow_parallel:
         description: "Allow dispatching even when an autonomous PR is open"
         required: false
@@ -378,11 +379,15 @@ jobs:
           reproduction, log inspection, or artifact inspection. If it is safe,
           non-destructive, inside the selected task scope and allowed_paths, run it.
           If a reproduction requires live secrets, real credentials, production
-          access, or high/critical risk, do not ask the user inside the Jules
-          session. Instead update the selected task to blocked with the exact
-          missing evidence or permission and open one manifest-only PR.
+          access, critical risk, unguarded high-risk, or destructive action, do
+          not ask the user inside the Jules session. Instead update the selected
+          task to blocked with the exact missing evidence or permission and open
+          one manifest-only PR. If the selected task is bounded high-risk legacy,
+          offline, or lab work, continue only inside allowed_paths with concrete
+          CI/smoke/artifact/self-hosted evidence and rollback notes.
           Only wait for user input when the task is blocked by missing permissions,
-          missing secrets, high/critical risk, or an unavoidable destructive action.
+          missing secrets, critical risk, unguarded high-risk, or an unavoidable
+          destructive action.
 
           FAILED SESSION RECOVERY MODE:
           If Recovery session id is non-empty, this session is the single allowed
@@ -558,7 +563,8 @@ jobs:
           - Do not stop in AWAITING_USER_FEEDBACK for ordinary engineering judgment.
           - If multiple safe approaches exist, choose the smallest reversible change that satisfies the selected task's acceptance criteria.
           - If unsure, write focused tests first, then implement the smallest passing fix.
-          - Ask for user input only when blocked by missing permissions, missing secrets, high/critical risk, or an unavoidable destructive action.
+          - Ask for user input only when blocked by missing permissions, missing secrets, critical risk, unguarded high-risk, or an unavoidable destructive action.
+          - For bounded high-risk legacy/offline/lab tasks selected by the manifest, continue only inside allowed_paths and include concrete CI/smoke/artifact/self-hosted evidence plus rollback notes.
           - Keep PRs small and bounded: one task id per PR.
           - Do not modify secrets, account JSON, token files, generated logs, binaries, local config.yaml, or runtime data.
           - Do not modify .github/workflows/** unless the selected task explicitly allows workflow work.

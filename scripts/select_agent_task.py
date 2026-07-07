@@ -11,7 +11,13 @@ from pathlib import Path
 from typing import Any
 
 
-SAFE_RISKS = {"low", "medium"}
+RISK_LEVELS = ("low", "medium", "high")
+RISK_CEILING_TO_ALLOWED = {
+    "low": {"low"},
+    "medium": {"low", "medium"},
+    "high": {"low", "medium", "high"},
+}
+SAFE_RISKS = RISK_CEILING_TO_ALLOWED["medium"]
 MICRO_KEYWORDS = (
     "add test",
     "add tests",
@@ -70,6 +76,39 @@ PLACEHOLDER_BLOCK_REASON = (
     "placeholder/quota-filler task without concrete live smoke, transcript, CI, "
     "or offline reproduction evidence"
 )
+HIGH_RISK_EVIDENCE_TOKENS = (
+    "legacy compatibility smoke",
+    "legacy_compat_smoke",
+    "compatibility smoke",
+    "self-hosted",
+    "runner label",
+    "runner labels",
+    "centos",
+    "ubuntu",
+    "arm64",
+    "aarch64",
+    "offline",
+    "artifact",
+    "artifacts",
+    "workflow_dispatch",
+    "live smoke",
+    "local live smoke",
+    "rollback",
+)
+HIGH_RISK_BLOCK_REASON = (
+    "high-risk task is not bounded by legacy/offline smoke, lab-runner, "
+    "artifact, runner-label, or rollback evidence"
+)
+HIGH_RISK_FORBIDDEN_PATH_TOKENS = (
+    "secret",
+    "secrets",
+    "account",
+    "accounts",
+    ".env",
+    "data/",
+    "prod",
+    "production",
+)
 EXCLUDED_TASK_REASON = "task is already represented by a stopped autonomous PR awaiting review"
 
 
@@ -123,7 +162,7 @@ def task_text(task: dict[str, Any]) -> str:
 
 
 def allowed_risks(risk_ceiling: str) -> set[str]:
-    return {"low"} if risk_ceiling == "low" else SAFE_RISKS
+    return RISK_CEILING_TO_ALLOWED.get(risk_ceiling, RISK_CEILING_TO_ALLOWED["medium"])
 
 
 def is_evidence_backed(text: str) -> bool:
@@ -201,6 +240,21 @@ def is_placeholder_replenishment_task(task: dict[str, Any]) -> bool:
     return manifest_only or non_runtime
 
 
+def is_guarded_high_risk_task(task: dict[str, Any]) -> bool:
+    if task.get("risk") != "high":
+        return True
+
+    text = task_text(task)
+    paths = [str(path).replace("\\", "/").lower() for path in task.get("allowed_paths", [])]
+    if not paths:
+        return False
+    if any(path in {"", ".", "*", "/"} or "*" in path for path in paths):
+        return False
+    if any(any(token in path for token in HIGH_RISK_FORBIDDEN_PATH_TOKENS) for path in paths):
+        return False
+    return any(token in text for token in HIGH_RISK_EVIDENCE_TOKENS)
+
+
 def score_task(task: dict[str, Any], focus: str) -> tuple[int, str]:
     text = task_text(task)
     paths = [str(path) for path in task.get("allowed_paths", [])]
@@ -242,6 +296,9 @@ def score_task(task: dict[str, Any], focus: str) -> tuple[int, str]:
     if task.get("risk") == "medium":
         score += 10
         reasons.append("medium-risk operational scope")
+    if task.get("risk") == "high":
+        score += 15
+        reasons.append("guarded high-risk lab/smoke scope")
     if all(is_low_impact_path(path) for path in paths):
         score -= 20
         reasons.append("low-impact path set")
@@ -274,6 +331,8 @@ def select_task(
                 raise ValueError(f"task {task_id!r} has status {task.get('status')!r}, expected 'todo'")
             if task.get("risk") not in risks:
                 raise ValueError(f"task {task_id!r} risk {task.get('risk')!r} exceeds ceiling {risk_ceiling!r}")
+            if not is_guarded_high_risk_task(task):
+                raise ValueError(f"task {task_id!r} is high risk without required legacy/lab evidence guard")
             if is_placeholder_replenishment_task(task):
                 raise ValueError(f"task {task_id!r} is a placeholder replenishment task without evidence")
             return Selection(
@@ -299,6 +358,9 @@ def select_task(
         if current_task_id in excluded:
             rejected.append({"task_id": current_task_id, "reason": EXCLUDED_TASK_REASON})
             continue
+        if not is_guarded_high_risk_task(task):
+            rejected.append({"task_id": current_task_id, "reason": HIGH_RISK_BLOCK_REASON})
+            continue
         if is_placeholder_replenishment_task(task):
             rejected.append({"task_id": current_task_id, "reason": PLACEHOLDER_BLOCK_REASON})
             continue
@@ -317,7 +379,7 @@ def select_task(
             reason = "no todo tasks are available"
             reason_code = "no_todo_tasks"
         elif eligible_count == 0:
-            reason = "no eligible todo task matched the risk ceiling, placeholder, and micro-task policy"
+            reason = "no eligible todo task matched the risk ceiling, high-risk evidence guard, placeholder, and micro-task policy"
             reason_code = "no_eligible_autonomous_task"
         else:
             reason = "no eligible todo task selected"
@@ -369,7 +431,7 @@ def print_selection(selection: Selection, json_output: bool) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", default="agent_tasks.json", type=Path)
-    parser.add_argument("--risk-ceiling", choices=["low", "medium"], default="medium")
+    parser.add_argument("--risk-ceiling", choices=list(RISK_LEVELS), default="medium")
     parser.add_argument("--focus", default="proxy")
     parser.add_argument("--task-id", default="")
     parser.add_argument(

@@ -414,8 +414,9 @@ def action_instruction(prompt_action: str, *, mode: str) -> str:
         )
     if prompt_action == "block_or_limit_scope":
         return (
-            "Не выполняй high/critical-risk или destructive действие. Если есть безопасный low/medium-risk шаг внутри "
-            "allowed_paths, сделай только его; иначе оформи blocked с concrete blocked_reason."
+            "Если это bounded high-risk legacy/offline/lab task, продолжай только внутри task scope/allowed_paths "
+            "и только с concrete CI/smoke/artifact/self-hosted evidence, rollback plan и обратимыми шагами. "
+            "Critical, destructive или unguarded high-risk действие не выполняй: оформи blocked с concrete blocked_reason."
         )
     if prompt_action == "sync_branch":
         return (
@@ -429,7 +430,7 @@ def action_instruction(prompt_action: str, *, mode: str) -> str:
         )
     return (
         "Продолжай без ожидания ответа пользователя. Если можно безопасно завершить задачу внутри scope, сделай это; "
-        "если нельзя без секретов, production-доступа или destructive/high-risk действия, оформи blocked."
+        "если нельзя без секретов, production-доступа, destructive или unguarded high-risk действия, оформи blocked."
     )
 
 
