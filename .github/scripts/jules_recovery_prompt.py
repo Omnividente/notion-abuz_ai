@@ -327,6 +327,40 @@ def task_lines(task: dict[str, Any] | None) -> list[str]:
     return lines
 
 
+def pr_check_context_lines(pr_context: dict[str, Any] | None) -> list[str]:
+    if not pr_context:
+        return []
+
+    lines = ["- pr_context: available"]
+    repo = sanitize_text(str(pr_context.get("repo") or ""), limit=180)
+    pr_number = sanitize_text(str(pr_context.get("pr_number") or ""), limit=80)
+    head_sha = sanitize_text(str(pr_context.get("head_sha") or ""), limit=80)
+    if repo:
+        lines.append(f"- repo: {repo}")
+    if pr_number:
+        lines.append(f"- pr_number: {pr_number}")
+    if head_sha:
+        lines.append(f"- pr_head_sha: {head_sha}")
+
+    failed_checks = pr_context.get("failed_checks") or []
+    if not isinstance(failed_checks, list) or not failed_checks:
+        return lines
+
+    lines.append("- failed_checks:")
+    for item in failed_checks[:MAX_LIST_ITEMS]:
+        if not isinstance(item, dict):
+            continue
+        name = sanitize_text(str(item.get("name") or "unknown"), limit=180)
+        conclusion = sanitize_text(str(item.get("conclusion") or "failure"), limit=80)
+        run_id = sanitize_text(str(item.get("run_id") or ""), limit=80)
+        details_url = sanitize_text(str(item.get("details_url") or ""), limit=240)
+        detail = f"details: {details_url}" if details_url else f"run_id: {run_id}" if run_id else "details: unavailable"
+        lines.append(f"  - {name}: {conclusion}; {detail}")
+    if len(failed_checks) > MAX_LIST_ITEMS:
+        lines.append(f"  - ... еще {len(failed_checks) - MAX_LIST_ITEMS}")
+    return lines
+
+
 def action_instruction(prompt_action: str, *, mode: str) -> str:
     if mode == "stale" and prompt_action in {"continue_safely", "choose_safe_next_step"}:
         return (
@@ -382,6 +416,7 @@ def build_prompt_payload(
     mode: str = "continue",
     stale_reason: str = "",
     max_continue_attempts: int = 2,
+    pr_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     resolved_task_id = task_id or str(summary.get("task_id") or "")
     wait_reason = str(summary.get("wait_reason") or "unknown_continue")
@@ -405,6 +440,7 @@ def build_prompt_payload(
     if excerpt:
         context_lines.append(f"- sanitized_latest_jules_message: {excerpt}")
     context_lines.extend(task_lines(task))
+    context_lines.extend(pr_check_context_lines(pr_context))
 
     prompt = "\n".join(
         context_lines
@@ -412,6 +448,13 @@ def build_prompt_payload(
             "",
             "Что сделать сейчас:",
             action_instruction(prompt_action, mode=mode),
+            (
+                "Если pr_context содержит failed_checks: сначала открой/read linked job logs и артефакты этих checks; "
+                "если лог не содержит конкретных файлов, воспроизведи failing command локально в текущей PR branch; "
+                "исправь причину в этом же PR внутри allowed_paths."
+                if pr_context and pr_context.get("failed_checks")
+                else ""
+            ),
             "",
             "Ограничения:",
             "- Пиши пользовательские сообщения, PR title/body и финальные summary на русском.",
@@ -430,6 +473,7 @@ def build_prompt_payload(
         "continue_attempts": continue_attempts,
         "max_continue_attempts": max_continue_attempts,
         "summary": summary,
+        "pr_context": pr_context or {},
         "prompt": prompt,
     }
 
@@ -442,6 +486,7 @@ def build_from_activities(
     mode: str = "continue",
     stale_reason: str = "",
     max_continue_attempts: int = 2,
+    pr_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     summary = summarize_activities(activities)
     resolved_task_id = task_id or str(summary.get("task_id") or "")
@@ -455,6 +500,7 @@ def build_from_activities(
         mode=mode,
         stale_reason=stale_reason,
         max_continue_attempts=max_continue_attempts,
+        pr_context=pr_context,
     )
 
 
