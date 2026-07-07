@@ -6086,7 +6086,7 @@
     },
     {
       "id": "proxy-observability-bridge-dropped-tool-diagnostic",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add diagnostics when tools drop from history",

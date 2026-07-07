@@ -182,6 +182,32 @@ func TestBuildRecoveryMessages_InstructionPreservation_LongHistoryLost(t *testin
 	}
 }
 
+func TestBuildRecoveryMessages_ContextLoss_HistoryDropped_WithTools(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Initial request."},
+		{Role: "tool", Content: "Tool output 1"},
+		{Role: "tool", Content: "Tool output 2"},
+	}
+
+	// Add long history to push tools out of the context window.
+	longContent := strings.Repeat("a", 500)
+	for i := 0; i < 10; i++ {
+		messages = append(messages, ChatMessage{Role: "assistant", Content: longContent})
+		messages = append(messages, ChatMessage{Role: "user", Content: "Continue"})
+	}
+
+	buildFreshThreadRecoveryMessages(messages)
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "dropping oldest entries including 2 early round tool results") {
+		t.Errorf("Expected diagnostic log indicating dropped tool count, got: %s", logOutput)
+	}
+}
+
 func TestBuildRecoveryMessages_DiagnosticLogging_SkippedEntries(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
