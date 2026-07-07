@@ -801,6 +801,28 @@ func TestBuildSessionChainContinuation_TransientAPIFailureRetry(t *testing.T) {
 	}
 }
 
+func TestBuildSessionChainContinuation_TransientFailureWithPartialContext(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "read main.go and search for login"},
+		{Role: "assistant", Content: "I'll do both.", ToolCalls: []ToolCall{
+			{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Search", Arguments: `{"query":"login"}`}},
+			{ID: "call_2", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: `{"filepath":"main.go"}`}},
+		}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Search", Content: "HTTP/1.1 502 Bad Gateway\nSome proxy error"},
+		{Role: "tool", ToolCallID: "call_2", Name: "Read", Content: "package main\n\nfunc main() {}"},
+	}
+
+	result := buildSessionChainContinuation(messages, "- Search(query: str)\n- Read(filepath: str)\n", "")
+	content := result[0].Content
+
+	if !strings.Contains(content, "transient API or search failure") {
+		t.Fatalf("expected transient failure guard line when there is partial context, got:\n%s", content)
+	}
+	if !strings.Contains(content, "package main") {
+		t.Fatalf("expected partial context to be present, got:\n%s", content)
+	}
+}
+
 func TestBuildSessionChainContinuation_PersonaReminder(t *testing.T) {
 	messages := []ChatMessage{
 		{Role: "user", Content: "Do a thing"},

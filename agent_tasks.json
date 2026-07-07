@@ -6181,7 +6181,7 @@
     },
     {
       "id": "proxy-runtime-transient-api-partial-context-retry",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Retry targeted context collection after transient API or search failure",
