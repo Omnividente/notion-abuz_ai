@@ -6078,7 +6078,7 @@
     },
     {
       "id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate system prompt truncation metrics for Unicode",
@@ -6092,6 +6092,22 @@
         "Add a test with a >1200 rune system prompt containing 4-byte Unicode characters (e.g., emojis).",
         "Verify the emitted truncated string is valid UTF-8 via utf8.ValidString.",
         "Verify the system_instruction_truncated metric is explicitly triggered."
+      ]
+    },
+    {
+      "id": "proxy-metrics-empty-system-prompt-robustness",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate empty system prompt drop metrics for robust fallback behavior",
+      "description": "The logic in buildFreshThreadRecoveryMessages drops empty system prompts to save token context and reduce noise. Create additional test conditions explicitly asserting edge cases such as all-whitespace newlines or repeated empty system prompt segments.",
+      "allowed_paths": [
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Add a test that verifies the empty_system_prompt_dropped metric when the session has exclusively whitespace system messages across multi-turns.",
+        "Assert metric values cleanly scale linearly without panic."
       ]
     }
   ]
