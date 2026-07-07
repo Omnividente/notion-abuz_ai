@@ -6536,7 +6536,7 @@
     },
     {
       "id": "automation-stopped-pr-400-safe-resolution",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Resolve stopped autonomous PR #400 safely",
@@ -6555,7 +6555,11 @@
         "No product runtime files, secrets, raw transcripts, production URLs, or destructive actions are introduced."
       ],
       "source_reference": "pull/400",
-      "source_task_id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics"
+      "source_task_id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics",
+      "completion_evidence": [
+        "PR #400 has been closed by the repository maintainer or automation, naturally resolving the loop.",
+        "The original source task `proxy-runtime-session-recovery-system-prompt-truncation-metrics` is correctly marked as `blocked` in the manifest."
+      ]
     },
     {
       "id": "automation-stopped-pr-446-safe-resolution",
@@ -6580,6 +6584,38 @@
       ],
       "source_reference": "pull/446",
       "source_task_id": "automation-health-repeated-followup-generation-6dc5c3e5"
+    },
+    {
+      "id": "automation-stopped-pr-421-safe-resolution",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Resolve stopped autonomous PR #421 safely",
+      "description": "Determine if PR #421 should remain stopped, be superseded, or unblocked.",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "PR #421 is evaluated.",
+        "No destructive actions."
+      ]
+    },
+    {
+      "id": "automation-stopped-pr-362-safe-resolution",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Resolve stopped autonomous PR #362 safely",
+      "description": "Determine if PR #362 should remain stopped, be superseded, or unblocked.",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "PR #362 is evaluated.",
+        "No destructive actions."
+      ]
     }
   ]
 }
