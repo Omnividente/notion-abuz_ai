@@ -6431,7 +6431,7 @@
     },
     {
       "id": "automation-health-duplicate-active-product-sessions-d212def2",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "medium",
       "title": "Fix automation health finding: duplicate_active_product_sessions",
@@ -6450,7 +6450,8 @@
       "health_finding_hash": "d212def2baac",
       "health_finding_code": "duplicate_active_product_sessions",
       "health_finding_severity": "critical",
-      "health_report_generated_at": "2026-07-07T11:53:01Z"
+      "health_report_generated_at": "2026-07-07T11:53:01Z",
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 7173398022263453490. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
     },
     {
       "id": "automation-health-quality-failure-2b3efb1a",
