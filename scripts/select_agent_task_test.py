@@ -137,6 +137,76 @@ class SelectAgentTaskTest(unittest.TestCase):
                 exclude_task_ids={"runtime"},
             )
 
+    def test_exact_task_id_rejects_placeholder_replenishment_task(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "test-dummy-task-replenishment",
+                    title="Dummy replenishment task",
+                    description="Ensure the required minimum tasks are available.",
+                    risk="low",
+                    allowed_paths=["agent_tasks.json"],
+                )
+            ]
+        }
+
+        with self.assertRaisesRegex(ValueError, "placeholder replenishment task"):
+            select_agent_task.select_task(
+                data,
+                risk_ceiling="medium",
+                focus="proxy",
+                task_id="test-dummy-task-replenishment",
+            )
+
+    def test_placeholder_replenishment_task_is_rejected_and_next_task_selected(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "test-dummy-task-replenishment",
+                    title="Dummy replenishment task",
+                    description="Ensure the required minimum tasks are available.",
+                    risk="low",
+                    allowed_paths=["agent_tasks.json"],
+                ),
+                task(
+                    "runtime",
+                    title="Implement runtime fix from live smoke failure",
+                    description="Use local live smoke artifact to fix reproduced runtime failure.",
+                    risk="medium",
+                    allowed_paths=[
+                        "internal/proxy/anthropic.go",
+                        "internal/proxy/anthropic_test.go",
+                        "agent_tasks.json",
+                    ],
+                ),
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+
+        self.assertTrue(selected.selected)
+        self.assertEqual(selected.task_id, "runtime")
+        self.assertEqual(selected.rejected[0]["task_id"], "test-dummy-task-replenishment")
+        self.assertIn("placeholder", selected.rejected[0]["reason"])
+
+    def test_runtime_quota_task_is_not_treated_as_placeholder(self) -> None:
+        data = {
+            "tasks": [
+                task(
+                    "runtime-quota",
+                    title="Fix quota retry runtime failure",
+                    description="Reproduced runtime failure in PR #456 when quota retry loses tool-call mode.",
+                    risk="medium",
+                    allowed_paths=["internal/proxy/session.go", "agent_tasks.json"],
+                )
+            ]
+        }
+
+        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+
+        self.assertTrue(selected.selected)
+        self.assertEqual(selected.task_id, "runtime-quota")
+
     def test_test_only_without_evidence_is_rejected(self) -> None:
         data = {
             "tasks": [
@@ -193,7 +263,7 @@ class SelectAgentTaskTest(unittest.TestCase):
         selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
 
         self.assertFalse(selected.selected)
-        self.assertEqual(selected.reason, "no eligible todo task matched the risk ceiling and micro-task policy")
+        self.assertEqual(selected.reason, "no eligible todo task matched the risk ceiling, placeholder, and micro-task policy")
         self.assertEqual(selected.reason_code, "no_eligible_autonomous_task")
         self.assertEqual(selected.todo_count, 1)
         self.assertEqual(selected.eligible_count, 0)

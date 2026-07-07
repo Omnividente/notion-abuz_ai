@@ -30,17 +30,17 @@
       "low",
       "medium"
     ],
-    "instruction": "When the todo queue is low, add Claude Code bridge investigation tasks that start from live smoke results, captured transcripts, CI failures, or a clearly reproduced runtime behavior. Do not keep generating one-case test-only robustness tasks such as another malformed JSON, HandleFrame, trimCitationContext, missing field, empty payload, or event-type-only test unless it is tied to a reproduced Claude Code bridge failure. Prefer runtime bridge fixes, live-smoke transcript analysis, observability needed for diagnosis, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode retention, session recovery, final-answer mode, instruction preservation, transient API/search failure retry or incomplete-context handling, production-router/harness coverage, and realistic read/edit/test/finalize transcript coverage. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, workflow, or micro edge-case test tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
+    "instruction": "When the todo queue is low, add Claude Code bridge investigation tasks that start from live smoke results, captured transcripts, CI failures, or a clearly reproduced runtime behavior. Do not keep generating one-case test-only robustness tasks such as another malformed JSON, HandleFrame, trimCitationContext, missing field, empty payload, or event-type-only test unless it is tied to a reproduced Claude Code bridge failure. Never create placeholder, dummy, quota filler, or test replenishment tasks whose acceptance criteria do not name a concrete runtime failure, transcript, CI/smoke artifact, or offline reproduction. Prefer runtime bridge fixes, live-smoke transcript analysis, observability needed for diagnosis, Notion persona leakage prevention, tool-result continuation, JSON tool-call mode retention, session recovery, final-answer mode, instruction preservation, transient API/search failure retry or incomplete-context handling, production-router/harness coverage, and realistic read/edit/test/finalize transcript coverage. Do not generate or select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, workflow, or micro edge-case test tasks unless they directly support a reproduced Claude Code bridge failure or an explicit task_id requests them. Never create tasks that require secrets, production account data, deployment changes, or workflow permission changes.",
     "max_todo_tasks": 40
   },
   "autonomous_loop_policy": {
     "operating_model": "docs/jules_autonomous_loop.md",
-    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium and whose scope directly improves Claude Code bridge reliability through live smoke analysis, runtime bridge behavior, or a reproduced transcript-level failure. Do not select narrow test-only robustness tasks when they only add another edge-case test for existing behavior; mark those tasks blocked and choose the next live-smoke or runtime-focused task instead. Do not autonomously select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, or workflow tasks unless a concrete Claude Code bridge failure requires that area or the task_id is explicitly requested.",
+    "selection_rule": "Choose the exact requested task_id when provided; otherwise choose the first todo task whose risk is low or medium and whose scope directly improves Claude Code bridge reliability through live smoke analysis, runtime bridge behavior, or a reproduced transcript-level failure. Do not select placeholder, dummy, quota filler, or test replenishment tasks; mark them blocked with blocked_reason and choose the next evidence-backed bridge task. Do not select narrow test-only robustness tasks when they only add another edge-case test for existing behavior; mark those tasks blocked and choose the next live-smoke or runtime-focused task instead. Do not autonomously select dashboard, registration, generic config, generic OpenAI/OpenCode, account-pool, or workflow tasks unless a concrete Claude Code bridge failure requires that area or the task_id is explicitly requested.",
     "anti_stall_rule": "Never ask the user what to do next while safe low or medium risk tasks can be selected or generated.",
     "stabilization_first": true,
     "max_pr_scope": "one task id per PR",
     "failure_rule": "If CI fails because of the current change, fix it before opening or updating the PR. If CI fails for an unrelated reason, add a follow-up task and explain the limitation in the PR body.",
-    "discovery_rule": "For Claude Code bridge research and compatibility tasks, add low/medium-risk follow-up todo tasks only for concrete gaps discovered from live smoke results, captured transcripts, CI failures, or offline reproductions of real Claude Code behavior. Prefer findings about Notion persona leakage, tool-call refusal, JSON tool-call mode loss, tool-result continuation, session retry/recovery, final-answer mode, and realistic read/edit/test/finalize transcripts. Do not create more single-edge-case test-only tasks for already-covered parsing or HandleFrame robustness unless a live/reproduced bridge failure proves the gap matters. Keep generated tasks non-duplicative, scoped to one PR, below max_todo_tasks, and backed by allowed_paths plus acceptance criteria."
+    "discovery_rule": "For Claude Code bridge research and compatibility tasks, add low/medium-risk follow-up todo tasks only for concrete gaps discovered from live smoke results, captured transcripts, CI failures, or offline reproductions of real Claude Code behavior. Prefer findings about Notion persona leakage, tool-call refusal, JSON tool-call mode loss, tool-result continuation, session retry/recovery, final-answer mode, and realistic read/edit/test/finalize transcripts. Do not create more single-edge-case test-only tasks for already-covered parsing or HandleFrame robustness unless a live/reproduced bridge failure proves the gap matters. Do not create placeholder tasks just to satisfy minimum_todo_tasks; if no evidence-backed task exists, create a manifest-only diagnostic task that explains the missing evidence source and how to restore it. Keep generated tasks non-duplicative, scoped to one PR, below max_todo_tasks, and backed by allowed_paths plus acceptance criteria."
   },
   "tasks": [
     {
@@ -6064,7 +6064,7 @@
     },
     {
       "id": "test-dummy-task-replenishment",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Dummy replenishment task",
@@ -6073,8 +6073,10 @@
         "agent_tasks.json"
       ],
       "acceptance": [
-        "Dummy criterion"
-      ]
+        "This placeholder task is not selected for autonomous work.",
+        "Future replenishment tasks name concrete live smoke, transcript, CI, or offline reproduction evidence."
+      ],
+      "blocked_reason": "Placeholder quota-filler task has no concrete Claude Code bridge failure, transcript, CI/smoke artifact, or offline reproduction evidence."
     },
     {
       "id": "proxy-runtime-session-recovery-system-prompt-truncation-metrics",
@@ -6095,7 +6097,7 @@
       ]
     },
     {
-      "id": "proxy-metrics-empty-system-prompt-robustness",
+"id": "proxy-metrics-empty-system-prompt-robustness",
       "status": "todo",
       "area": "proxy",
       "risk": "low",
@@ -6108,7 +6110,86 @@
       "acceptance": [
         "Add a test that verifies the empty_system_prompt_dropped metric when the session has exclusively whitespace system messages across multi-turns.",
         "Assert metric values cleanly scale linearly without panic."
-      ]
+      ],
+"id": "automation-quality-loop-pr-313-d1249fde",
+      "title": "Diagnose stopped quality loop for autonomous PR #313",
+      "area": "automation",
+      "risk": "low",
+      "status": "todo",
+      "description": "Autonomous recovery circuit breaker stopped PR #313 at SHA `6eeae54c2bc37cf9b02191abf4c21b9abc319331` for `proxy-session-recovery-system-instruction-metrics`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `6eeae54c2bc37cf9b02191abf4c21b9abc319331`: AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: internal/proxy/session_test.go\n- `78dda074ffca65145a58dba3a5820ee5ad0f6ea0`: AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: internal/proxy/session_test.go\n- `17b7802a6f718fe9d6085b8dafb2624e0bd51b0d`: AUTONOMOUS_TASK_EVIDENCE references files not changed by this PR: internal/proxy/session_test.go\n- `43423fe05ea8968fc11d058f27142f",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_automerge.yml",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for stopped autonomous PR #313 is identified from PR comments, quality gate output, recovery-router ledger evidence, or CI artifacts.",
+        "The automation or manifest state is improved so the same deterministic quality loop is not repeated, or this diagnostic task is blocked with a concrete missing-evidence reason.",
+        "If code changes are made, targeted script/workflow tests are run; no secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_finding_id": "quality_fix_circuit_breaker",
+      "source_document": "jules-recovery-router",
+      "source_reference": "pull/313@6eeae54c2bc37cf9b02191abf4c21b9abc319331",
+      "source_task_id": "proxy-session-recovery-system-instruction-metrics",
+      "circuit_breaker_followup_hash": "d1249fde0e31"
+    },
+    {
+      "id": "automation-quality-loop-pr-351-8773a0a1",
+      "title": "Diagnose stopped quality loop for autonomous PR #351",
+      "area": "automation",
+      "risk": "low",
+      "status": "todo",
+      "description": "Autonomous recovery circuit breaker stopped PR #351 at SHA `98f4cbc7831448fad6528d4da56bcd30953e4da7` for `proxy-session-recovery-system-instruction-truncation-test`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `493f5e32c4c65f6d4beb5617ba267b4bc86f169f`: AUTONOMOUS_TASK_EVIDENCE task_id proxy-session-recovery-system-instruction-truncation-test does not match changed task proxy-session-recovery-system-instruction-truncation-telemetry.; AUTONOMOUS_TASK_EVIDENCE maps 1 acceptance items, but task proxy-session-recovery-system-instruction-truncation-telemetry has 2 acceptance criteria.\n- `c77a786a5f101a14ac64c2259c162e01afcdea08`: AUTONOMOUS_TASK_EVIDENCE task_id prox",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_automerge.yml",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for stopped autonomous PR #351 is identified from PR comments, quality gate output, recovery-router ledger evidence, or CI artifacts.",
+        "The automation or manifest state is improved so the same deterministic quality loop is not repeated, or this diagnostic task is blocked with a concrete missing-evidence reason.",
+        "If code changes are made, targeted script/workflow tests are run; no secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_finding_id": "quality_fix_circuit_breaker",
+      "source_document": "jules-recovery-router",
+      "source_reference": "pull/351@98f4cbc7831448fad6528d4da56bcd30953e4da7",
+      "source_task_id": "proxy-session-recovery-system-instruction-truncation-test",
+      "circuit_breaker_followup_hash": "8773a0a17643"
+    },
+    {
+      "id": "automation-quality-loop-pr-362-d971dacd",
+      "title": "Diagnose stopped quality loop for autonomous PR #362",
+      "area": "automation",
+      "risk": "low",
+      "status": "todo",
+      "description": "Autonomous recovery circuit breaker stopped PR #362 at SHA `8f678dcb9d687fd5cea728943e0739e28377c2b9` for `automation-health-quality-failures-spike-6e14b562`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `6fc4ecf60efa97f5a0054694ff25668243ac48e3`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `eb332ec814fe36dfce3b2032f9fa1091d30f1843`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `3ab860ab9b9f9d53d25a4f4",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_automerge.yml",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for stopped autonomous PR #362 is identified from PR comments, quality gate output, recovery-router ledger evidence, or CI artifacts.",
+        "The automation or manifest state is improved so the same deterministic quality loop is not repeated, or this diagnostic task is blocked with a concrete missing-evidence reason.",
+        "If code changes are made, targeted script/workflow tests are run; no secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_finding_id": "quality_fix_circuit_breaker",
+      "source_document": "jules-recovery-router",
+      "source_reference": "pull/362@8f678dcb9d687fd5cea728943e0739e28377c2b9",
+      "source_task_id": "automation-health-quality-failures-spike-6e14b562",
+      "circuit_breaker_followup_hash": "d971dacd1822"
     }
   ]
 }

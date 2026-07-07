@@ -109,6 +109,7 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["metrics"]["tasks"]["eligible_count"], 0)
         self.assertEqual(report["metrics"]["tasks"]["rejected_count"], 2)
         self.assertEqual(report["metrics"]["tasks"]["selector_reason_code"], "no_eligible_autonomous_task")
+        self.assertIn("placeholder", report["findings"][0]["message"])
         self.assertIn("Eligible autonomous tasks", report["_markdown"])
 
     def test_missing_jules_api_key_is_not_a_failure(self) -> None:
