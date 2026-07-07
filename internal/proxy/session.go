@@ -657,6 +657,8 @@ func buildToolBridgeRecoveryMessages(messages []ChatMessage) []ChatMessage {
 		if isNoTool {
 			if reason == "workspace reframing" {
 				log.Printf("[bridge] diagnostic: workspace reframing explicitly tracked (dropped from context during session recovery)")
+			} else if reason == "Notion persona leakage" {
+				log.Printf("[bridge] diagnostic: Notion persona leakage explicitly tracked (dropped from context during session recovery)")
 			} else if reason != "" {
 				log.Printf("[bridge] diagnostic: %s explicitly tracked (dropped from context during session recovery)", reason)
 			}
