@@ -6642,7 +6642,7 @@
     },
     {
       "id": "automation-closed-session-blocking-filter",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Ignore active Jules sessions tied only to closed stopped PRs",
@@ -6703,6 +6703,62 @@
         "Generated follow-up tasks must be evidence-backed and must not be placeholder tasks."
       ],
       "source_reference": "merged recovery block PR #448"
+    },
+    {
+      "id": "add-session-recovery-grace-period",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Add a grace period before terminating stale Jules sessions",
+      "description": "Right now stale Jules sessions are terminated exactly when the max escalation limit is reached, which sometimes overlaps with a new PR opening or agent resuming activity. Add a 5 minute grace period after the final escalation before termination.",
+      "allowed_paths": [
+        ".github/scripts/jules-unattended-monitor.sh",
+        ".github/scripts/jules-unattended-monitor-test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A 5 minute grace period is enforced before final deletion of stale in-progress sessions.",
+        "A test confirms the monitor waits until the grace period is over.",
+        "The wait period does not increase duplicate escalations."
+      ],
+      "source_reference": "burst monitor run 28879989522 (post-analysis)"
+    },
+    {
+      "id": "add-session-recovery-debug-log",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Add debug logging for ignored Jules sessions",
+      "description": "To aid troubleshooting, output the names of all sessions that are ignored by the script filter-active-jules-sessions.py, just like how blocking sessions are logged.",
+      "allowed_paths": [
+        ".github/scripts/filter-active-jules-sessions.py",
+        ".github/scripts/filter-active-jules-sessions-test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The filter script prints a debug list of ignored sessions when a debug flag is provided.",
+        "A test confirms the debug log format."
+      ],
+      "source_reference": "burst monitor run 28879989522 (post-analysis)"
+    },
+    {
+      "id": "add-session-recovery-grace-period-2",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Add a grace period before terminating stale Jules sessions",
+      "description": "Right now stale Jules sessions are terminated exactly when the max escalation limit is reached, which sometimes overlaps with a new PR opening or agent resuming activity. Add a 5 minute grace period after the final escalation before termination.",
+      "allowed_paths": [
+        ".github/scripts/jules-unattended-monitor.sh",
+        ".github/scripts/jules-unattended-monitor-test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A 5 minute grace period is enforced before final deletion of stale in-progress sessions.",
+        "A test confirms the monitor waits until the grace period is over.",
+        "The wait period does not increase duplicate escalations."
+      ],
+      "source_reference": "burst monitor run 28879989522 (post-analysis)"
     }
   ]
 }

@@ -108,13 +108,13 @@ def recent_task_for_session(
         update_time = str(entry.get("updateTime") or "")
         updated_at = parse_time(update_time)
         if not updated_at:
-            return "", True, update_time
+            return task_id, True, update_time
         if updated_at < now - timedelta(minutes=ttl_minutes):
-            return "", True, update_time
+            return task_id, True, update_time
         return task_id, False, update_time
     if isinstance(entry, str):
         task_id = entry.strip()
-        return ("", True, "") if task_id else ("", False, "")
+        return (task_id, True, "") if task_id else ("", False, "")
     return "", False, ""
 
 
@@ -176,6 +176,17 @@ def filter_sessions(
                 item["reason"] = "stopped_autonomous_pr"
                 ignored.append(item)
                 continue
+
+            if stale_recent_map:
+                if state == "IN_PROGRESS":
+                    item["reason"] = "stale_recent_task_mapping"
+                    ignored.append(item)
+                    continue
+                else:
+                    item["reason"] = "stale_recent_task_mapping"
+                    blocking.append(item)
+                    continue
+
             item["reason"] = "active_task"
             blocking.append(item)
             continue

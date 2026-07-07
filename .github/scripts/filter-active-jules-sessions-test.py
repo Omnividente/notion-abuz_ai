@@ -121,6 +121,16 @@ class FilterActiveJulesSessionsTest(unittest.TestCase):
         self.assertEqual(result["ignored_count"], 1)
         self.assertEqual(result["ignored_sessions"][0]["reason"], "stopped_autonomous_pr")
 
+    def test_stale_session_for_closed_stopped_pr_task_is_ignored(self) -> None:
+        result = self.filter(
+            [session("111", state="AWAITING_USER_FEEDBACK")],
+            recent_map={"111": recent_task("done-task", minutes_ago=61)},
+        )
+
+        self.assertEqual(result["blocking_count"], 0)
+        self.assertEqual(result["ignored_count"], 1)
+        self.assertEqual(result["ignored_sessions"][0]["reason"], "manifest_status:done")
+
     def test_other_sources_and_terminal_states_are_ignored(self) -> None:
         result = self.filter(
             [
