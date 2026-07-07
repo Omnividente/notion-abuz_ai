@@ -6311,7 +6311,7 @@
       "title": "Diagnose stopped conflict recovery for autonomous PR #400",
       "area": "automation",
       "risk": "low",
-      "status": "todo",
+      "status": "done",
       "description": "Autonomous recovery circuit breaker stopped PR #400 at SHA `a92f0b62da5ecba86bd1d7a520ab3e8cbfb85f78` for `proxy-runtime-session-recovery-system-prompt-truncation-metrics`. Diagnose why repeated conflict-recovery prompts did not converge. Sanitized reason: conflict-recovery circuit breaker stopped repeated dirty PR recovery",
       "allowed_paths": [
         ".github/scripts/jules-recovery-router.py",
