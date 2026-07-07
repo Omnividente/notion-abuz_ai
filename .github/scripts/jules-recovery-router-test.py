@@ -1444,6 +1444,40 @@ Blocking reasons:
         self.assertEqual(actions[0].payload["labels"], ["human-review", "no-automerge", "stop-loop"])
         self.assertIn("abc123", actions[0].payload["body"])
 
+    def test_conflict_recovery_circuit_breaker_stops_after_two_same_sha_attempts(self) -> None:
+        marker = "<!-- AUTONOMOUS_RECOVERY_ROUTER action=conflict-recovery sha=abc123 -->"
+        ledger = {
+            "version": 1,
+            "actions": {
+                "conflict-recovery:10:abc123": {
+                    "time": (NOW - timedelta(minutes=65)).isoformat().replace("+00:00", "Z"),
+                    "type": "conflict_recovery",
+                },
+                "conflict-recovery:10:abc123:attempt-2": {
+                    "time": (NOW - timedelta(minutes=35)).isoformat().replace("+00:00", "Z"),
+                    "type": "conflict_recovery",
+                },
+            },
+        }
+
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules"],
+                        comments=[marker],
+                        mergeable=False,
+                        mergeable_state="dirty",
+                    )
+                ],
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "conflict_recovery_circuit_breaker")
+        self.assertEqual(actions[0].payload["labels"], ["human-review", "no-automerge", "stop-loop"])
+
     def test_conflict_recovery_circuit_breaker_execution_adds_labels_and_comment(self) -> None:
         action = router.RecoveryAction(
             type="conflict_recovery_circuit_breaker",
