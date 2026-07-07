@@ -561,3 +561,24 @@ func TestBuildToolBridgeRecoveryMessagesDiagnosticLog(t *testing.T) {
 		t.Errorf("Expected diagnostic log for Notion persona leakage, got: %q", logOutput)
 	}
 }
+
+func TestBuildRecoveryMessages_TransientFailureGuard(t *testing.T) {
+	messages := []ChatMessage{
+		{Role: "user", Content: "Start task"},
+		{Role: "assistant", Content: "Running tool", ToolCalls: []ToolCall{{ID: "call_1", Function: ToolCallFunction{Name: "Search", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Search", Content: "error: 502 bad gateway"},
+	}
+
+	result := buildFreshThreadRecoveryMessages(messages)
+
+	if len(result) == 0 {
+		t.Fatalf("Expected non-empty result")
+	}
+
+	prompt := result[0].Content
+	expectedLine := "Warning: A recent tool call encountered a transient API or search failure. Do NOT finalize your answer based on partial context. Please retry the failed tool or use a different search method to ensure you have complete project context."
+
+	if !strings.Contains(prompt, expectedLine) {
+		t.Errorf("Expected prompt to contain transientGuardLine for a transient error. Prompt: %s", prompt)
+	}
+}

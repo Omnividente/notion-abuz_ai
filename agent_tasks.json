@@ -6909,7 +6909,7 @@
     },
     {
       "id": "add-transient-guard-to-proxy-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add transient failure guard to session continuation fallback prompt",
@@ -6922,6 +6922,23 @@
         "The string transientGuardLine is defined and used.",
         "If the trailing output indicates a 502 or timeout, transientGuardLine is appended.",
         "A test confirms transientGuardLine is added for known transient errors."
+      ]
+    },
+    {
+      "id": "add-transient-guard-to-multi-turn",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add logging to track when transient guard is used in session recovery",
+      "description": "Currently, we append a transient guard line when recovering sessions with transient failures. It would be helpful to track how often this occurs by adding a diagnostic log and metric to improve observability.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go"
+      ],
+      "acceptance": [
+        "A diagnostic log is emitted when the transient guard line is added.",
+        "A metric (e.g., `transient_guard_applied`) is recorded when the guard is used.",
+        "A test verifies the new metric is recorded."
       ]
     }
   ]
