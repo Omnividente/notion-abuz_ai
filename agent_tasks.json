@@ -6147,6 +6147,33 @@
       "source_reference": "pull/351@98f4cbc7831448fad6528d4da56bcd30953e4da7",
       "source_task_id": "proxy-session-recovery-system-instruction-truncation-test",
       "circuit_breaker_followup_hash": "8773a0a17643"
+    },
+    {
+      "id": "automation-quality-loop-pr-362-d971dacd",
+      "title": "Diagnose stopped quality loop for autonomous PR #362",
+      "area": "automation",
+      "risk": "low",
+      "status": "todo",
+      "description": "Autonomous recovery circuit breaker stopped PR #362 at SHA `8f678dcb9d687fd5cea728943e0739e28377c2b9` for `automation-health-quality-failures-spike-6e14b562`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `6fc4ecf60efa97f5a0054694ff25668243ac48e3`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `eb332ec814fe36dfce3b2032f9fa1091d30f1843`: PR body repeatedly mentions follow-up tasks. Complete the current task fully without leaving follow-up work, or avoid using the word 'follow-up' if it is a false positive.\n- `3ab860ab9b9f9d53d25a4f4",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_automerge.yml",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for stopped autonomous PR #362 is identified from PR comments, quality gate output, recovery-router ledger evidence, or CI artifacts.",
+        "The automation or manifest state is improved so the same deterministic quality loop is not repeated, or this diagnostic task is blocked with a concrete missing-evidence reason.",
+        "If code changes are made, targeted script/workflow tests are run; no secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_finding_id": "quality_fix_circuit_breaker",
+      "source_document": "jules-recovery-router",
+      "source_reference": "pull/362@8f678dcb9d687fd5cea728943e0739e28377c2b9",
+      "source_task_id": "automation-health-quality-failures-spike-6e14b562",
+      "circuit_breaker_followup_hash": "d971dacd1822"
     }
   ]
 }
