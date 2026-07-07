@@ -5,6 +5,9 @@ on:
     - cron: "*/5 * * * *"
   workflow_run:
     workflows:
+      - 2. Trigger Next Proxy Improvement Task
+      - 3. Jules Unattended Monitor
+      - 3b. Jules Burst Monitor
       - CI
       - RDSH Local Live Smoke
       - 1. Auto-Validate and Merge Jules PRs
