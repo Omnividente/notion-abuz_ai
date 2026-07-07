@@ -6683,7 +6683,7 @@
     },
     {
       "id": "automation-replenishment-after-recovery-block",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Replenish safe work after recovery block PRs",
@@ -6698,9 +6698,9 @@
         "agent_tasks.json"
       ],
       "acceptance": [
-        "Blocking a failed Jules task cannot leave todo_count below the manifest replenishment minimum without a concrete follow-up path.",
+        "Blocking a failed Jules task cannot leave todo_count below the manifest replenishment minimum without a concrete replenishment path.",
         "A focused offline test covers a block operation when todo_count would fall below minimum.",
-        "Generated follow-up tasks must be evidence-backed and must not be placeholder tasks."
+        "Generated replenishment tasks must be evidence-backed and must not be placeholder tasks."
       ],
       "source_reference": "merged recovery block PR #448"
     },
