@@ -56,6 +56,8 @@ RECOVERY_LABEL_DEFINITIONS = {
     },
 }
 CONFLICT_RECOVERY_COOLDOWN_MINUTES = 30
+CONFLICT_RECOVERY_CIRCUIT_BREAKER_ATTEMPTS = 3
+CONFLICT_RECOVERY_CIRCUIT_BREAKER_TTL_MINUTES = 7 * 24 * 60
 MAX_QUALITY_FIX_DETAILS_CHARS = 5000
 STALE_AWAITING_FEEDBACK_MINUTES = 10
 STALE_AWAITING_FEEDBACK_COOLDOWN_MINUTES = 10
@@ -652,6 +654,37 @@ def quality_fix_recovery_attempt_shas(pr: dict[str, Any], ledger: dict[str, Any]
     return shas
 
 
+def conflict_recovery_attempt_shas(pr: dict[str, Any], ledger: dict[str, Any]) -> list[str]:
+    number = str(pr.get("number") or "")
+    shas: list[str] = []
+    seen: set[str] = set()
+
+    def add_sha(value: str) -> None:
+        sha = value.strip()
+        if not sha or sha in seen:
+            return
+        seen.add(sha)
+        shas.append(sha)
+
+    marker_pattern = re.compile(
+        rf"{re.escape(ROUTER_MARKER)}\s+action=conflict-recovery\s+sha=([a-zA-Z0-9._/-]+)"
+    )
+    for comment in pr.get("comments", []):
+        body = str(comment.get("body") or "")
+        for match in marker_pattern.finditer(body):
+            add_sha(match.group(1))
+
+    prefix = f"conflict-recovery:{number}:"
+    for key, entry in (ledger.get("actions") or {}).items():
+        if not isinstance(entry, dict) or entry.get("type") != "conflict_recovery":
+            continue
+        key_text = str(key)
+        if key_text.startswith(prefix):
+            add_sha(key_text.removeprefix(prefix))
+
+    return shas
+
+
 def quality_fix_circuit_breaker_marker(pr: dict[str, Any]) -> str:
     sha = (pr.get("head") or {}).get("sha") or ""
     return f"{ROUTER_MARKER} action=quality-fix-circuit-breaker sha={sha}"
@@ -659,6 +692,36 @@ def quality_fix_circuit_breaker_marker(pr: dict[str, Any]) -> str:
 
 def has_quality_fix_circuit_breaker_marker(pr: dict[str, Any]) -> bool:
     return comments_contain(pr, f"{ROUTER_MARKER} action=quality-fix-circuit-breaker")
+
+
+def conflict_recovery_circuit_breaker_marker(pr: dict[str, Any]) -> str:
+    sha = (pr.get("head") or {}).get("sha") or ""
+    return f"{ROUTER_MARKER} action=conflict-recovery-circuit-breaker sha={sha}"
+
+
+def conflict_recovery_circuit_breaker_comment(
+    pr: dict[str, Any],
+    *,
+    attempt_shas: list[str],
+) -> str:
+    number = pr.get("number")
+    sha = (pr.get("head") or {}).get("sha") or ""
+    marker = f"<!-- {conflict_recovery_circuit_breaker_marker(pr)} -->"
+    attempt_list = ", ".join(attempt_shas[-5:]) if attempt_shas else "unknown"
+    labels = ", ".join(f"`{label}`" for label in QUALITY_FIX_CIRCUIT_BREAKER_LABELS)
+    return (
+        f"{marker}\n\n"
+        f"Autonomous recovery circuit breaker остановил conflict recovery для PR #{number} "
+        f"на SHA `{sha}`.\n\n"
+        "Причина: PR остаётся конфликтным после нескольких Jules recovery попыток. "
+        "Обычные `pull_request` checks не стартуют для конфликтного PR, поэтому повторять "
+        "тот же conflict prompt дальше бесполезно.\n\n"
+        f"Router добавляет labels {labels} и больше не будет отправлять Jules повторный "
+        "conflict-recovery prompt по этому PR. Петля может продолжить следующую автономную "
+        "задачу; этот PR требует ручного закрытия, rebase/resolve вне петли или отдельной "
+        "manifest-only diagnostic задачи.\n\n"
+        f"Учтённые conflict-recovery SHA: {attempt_list}."
+    )
 
 
 def quality_fix_followup_hash(pr: dict[str, Any], task_ids: list[str]) -> str:
@@ -1048,6 +1111,38 @@ def plan_recovery_actions(
         sha = str((pr.get("head") or {}).get("sha") or "")
 
         if is_conflicting_pr(pr):
+            attempt_shas = conflict_recovery_attempt_shas(pr, ledger)
+            if len(attempt_shas) >= CONFLICT_RECOVERY_CIRCUIT_BREAKER_ATTEMPTS:
+                dedupe_key = f"conflict-recovery-circuit-breaker:{number}:{sha}"
+                marker = conflict_recovery_circuit_breaker_marker(pr)
+                has_marker = comments_contain(pr, marker)
+                if not action_recently_done(
+                    ledger,
+                    dedupe_key,
+                    now=now,
+                    ttl_minutes=CONFLICT_RECOVERY_CIRCUIT_BREAKER_TTL_MINUTES,
+                ) or not has_marker:
+                    actions.append(
+                        RecoveryAction(
+                            type="conflict_recovery_circuit_breaker",
+                            dedupe_key=dedupe_key,
+                            reason=(
+                                f"PR #{number} exceeded "
+                                f"{CONFLICT_RECOVERY_CIRCUIT_BREAKER_ATTEMPTS} conflict-recovery attempts"
+                            ),
+                            ttl_minutes=CONFLICT_RECOVERY_CIRCUIT_BREAKER_TTL_MINUTES,
+                            payload={
+                                "pr_number": number,
+                                "labels": list(QUALITY_FIX_CIRCUIT_BREAKER_LABELS),
+                                "body": conflict_recovery_circuit_breaker_comment(
+                                    pr,
+                                    attempt_shas=attempt_shas,
+                                ),
+                                "comment_needed": not has_marker,
+                            },
+                        )
+                    )
+                return actions
             dedupe_key = f"conflict-recovery:{number}:{sha}"
             marker = f"{ROUTER_MARKER} action=conflict-recovery sha={sha}"
             has_marker = comments_contain(pr, marker)
@@ -1813,7 +1908,7 @@ def execute_action(
             ok=(200, 201),
         )
         return
-    if action.type == "quality_fix_circuit_breaker":
+    if action.type in {"quality_fix_circuit_breaker", "conflict_recovery_circuit_breaker"}:
         labels = [str(label) for label in payload.get("labels", []) if str(label)]
         if payload.get("comment_needed", True):
             client.request(
