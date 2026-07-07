@@ -47,9 +47,11 @@ class FakeHTTPResponse:
 
 
 class FakeGitHubClient:
-    def __init__(self, responses: list[dict]) -> None:
+    def __init__(self, responses: list[dict], text_responses: list[str] | None = None) -> None:
+        self.api_url = "https://api.github.com"
         self.repo = REPO
         self.responses = list(responses)
+        self.text_responses = list(text_responses or [])
         self.calls: list[tuple[str, str]] = []
 
     def request(
@@ -63,6 +65,17 @@ class FakeGitHubClient:
         if not self.responses:
             raise AssertionError(f"unexpected request: {method} {path}")
         return self.responses.pop(0)
+
+    def request_text(
+        self,
+        method: str,
+        path: str,
+        ok: tuple[int, ...] = (200,),
+    ) -> str:
+        self.calls.append((method, path))
+        if not self.text_responses:
+            raise AssertionError(f"unexpected text request: {method} {path}")
+        return self.text_responses.pop(0)
 
 
 def epoch(minutes_ago: int) -> int:
@@ -1152,6 +1165,79 @@ Blocking reasons:
         self.assertIn("https://github.com/o/r/actions/runs/12345/job/9", actions[0].payload["body"])
         self.assertIn("gofmt required for:", actions[0].payload["body"])
 
+    def test_failed_check_evidence_enrichment_collects_files_annotations_and_log_excerpt(self) -> None:
+        failed_pr = pr(
+            check_runs=[
+                {
+                    "id": 987,
+                    "name": "test-and-merge",
+                    "workflowName": "1. Auto-Validate and Merge Jules PRs",
+                    "status": "completed",
+                    "conclusion": "failure",
+                    "details_url": "https://github.com/o/r/actions/runs/12345/job/987",
+                    "output": {
+                        "annotations_url": (
+                            "https://api.github.com/repos/Omnividente/notion-abuz_ai/"
+                            "check-runs/987/annotations"
+                        )
+                    },
+                }
+            ],
+        )
+        client = FakeGitHubClient(
+            responses=[
+                [
+                    {"filename": ".github/scripts/jules-recovery-router.py"},
+                    {"filename": "pr_body.txt"},
+                ],
+                [
+                    {
+                        "path": ".github",
+                        "start_line": 26,
+                        "message": (
+                            "PR changes protected runtime, token=ghp_abcdef1234567890, "
+                            "or temporary scratch files."
+                        ),
+                    }
+                ],
+            ],
+            text_responses=[
+                "\n".join(
+                    [
+                        "2026-07-07T06:08:03Z .github/scripts/jules-recovery-router.py",
+                        "2026-07-07T06:08:03Z pr_body.txt",
+                        "2026-07-07T06:08:03Z ##[error]PR changes protected runtime, secret, binary, log, data, account, workflow, or temporary scratch files.",
+                        "2026-07-07T06:08:03Z ##[error]Process completed with exit code 1.",
+                    ]
+                )
+            ],
+        )
+
+        router.enrich_failed_check_evidence(client, failed_pr)
+        context = router.failed_check_prompt_context(failed_pr, repo=REPO)
+        prompt = router.failed_check_recovery_prompt(failed_pr)
+
+        self.assertEqual(
+            client.calls,
+            [
+                ("GET", "/repos/Omnividente/notion-abuz_ai/pulls/10/files?per_page=100"),
+                (
+                    "GET",
+                    "/repos/Omnividente/notion-abuz_ai/check-runs/987/annotations?per_page=5",
+                ),
+                ("GET", "/repos/Omnividente/notion-abuz_ai/actions/jobs/987/logs"),
+            ],
+        )
+        self.assertIn("pr_body.txt", context["changed_files"])
+        self.assertIn("pr_body.txt", context["failed_checks"][0]["log_excerpt"])
+        self.assertIn("temporary scratch files", context["failed_checks"][0]["annotations"][0])
+        self.assertIn("Changed files from this PR:", prompt)
+        self.assertIn("pr_body.txt", prompt)
+        self.assertIn("annotation:", prompt)
+        self.assertIn("log_excerpt:", prompt)
+        self.assertIn("[REDACTED]", prompt)
+        self.assertNotIn("ghp_abcdef1234567890", prompt)
+
     def test_failed_ci_check_prompts_jules_without_waiting_for_automerge_rerun(self) -> None:
         actions = plan(
             state(
@@ -1315,9 +1401,18 @@ Blocking reasons:
                         "https://github.com/o/r/actions/runs/222/job/3"
                         "?token=ghp_abcdef1234567890"
                     ),
+                    "annotations": [
+                        "pr_body.txt: PR changes protected scratch file with token=ghp_abcdef1234567890"
+                    ],
+                    "log_excerpt": (
+                        "pr_body.txt\n"
+                        "##[error]PR changes protected runtime, secret, binary, log, data, account, "
+                        "workflow, or temporary scratch files."
+                    ),
                 }
             ],
         )
+        failed_pr["changed_files"] = [".github/scripts/jules-recovery-router.py", "pr_body.txt"]
         fingerprint = router.failed_check_fingerprint(failed_pr)
         ledger = {
             "version": 1,
@@ -1362,14 +1457,20 @@ Blocking reasons:
         self.assertIn("pr_context: available", prompt)
         self.assertIn("pr_number: #10", prompt)
         self.assertIn("pr_head_sha: abc123", prompt)
+        self.assertIn("changed_files:", prompt)
+        self.assertIn("pr_body.txt", prompt)
         self.assertIn("CI / validate: failure", prompt)
-        self.assertIn("открой/read linked job logs", prompt)
+        self.assertIn("annotation:", prompt)
+        self.assertIn("log_excerpt:", prompt)
+        self.assertIn("используй annotations/log_excerpt/changed_files", prompt)
         self.assertNotIn("ghp_abcdef1234567890", prompt)
         self.assertEqual(actions[0].payload["pr_context"]["pr_number"], "#10")
         self.assertEqual(actions[0].payload["repo"], REPO)
         self.assertEqual(actions[0].payload["session_id"], "1234567890123456789")
         self.assertEqual(actions[0].payload["session_state"], "AWAITING_USER_FEEDBACK")
+        self.assertIn("changed_files", actions[0].payload["pr_context"])
         self.assertIn("[REDACTED]", actions[0].payload["pr_context"]["failed_checks"][0]["details_url"])
+        self.assertIn("[REDACTED]", actions[0].payload["pr_context"]["failed_checks"][0]["annotations"][0])
         self.assertNotIn(
             "ghp_abcdef1234567890",
             actions[0].payload["pr_context"]["failed_checks"][0]["details_url"],
