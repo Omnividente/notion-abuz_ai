@@ -316,6 +316,34 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
         self.assertFalse(decision.passed)
         self.assertTrue(any("scratch/planning files" in reason for reason in decision.reasons))
 
+    def test_generated_python_bytecode_file_fails(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+                ".github/scripts/__pycache__/filter-active-jules-sessions.cpython-312.pyc",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body(
+                "runtime-fix",
+                evidence_files=[
+                    "internal/proxy/anthropic.go",
+                    "internal/proxy/anthropic_bridge_test.go",
+                    "agent_tasks.json",
+                    ".github/scripts/__pycache__/filter-active-jules-sessions.cpython-312.pyc",
+                ],
+            ),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("generated cache/bytecode" in reason for reason in decision.reasons))
+
     def test_pr_body_scratch_artifact_fails(self) -> None:
         before = manifest([task("runtime-fix", status="todo")])
         after = manifest([task("runtime-fix", status="done")])

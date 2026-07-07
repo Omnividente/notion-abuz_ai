@@ -142,6 +142,11 @@ SCRATCH_FILE_RE = re.compile(
     r"pr[-_]?body[a-z0-9_-]*|pull[-_]?request[-_]?body[a-z0-9_-]*)\.(?:md|txt)$",
     re.IGNORECASE,
 )
+GENERATED_ARTIFACT_FILE_RE = re.compile(
+    r"(^|/)(__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache)(/|$)|"
+    r"\.(?:py[cod]|coverage)$",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -269,6 +274,10 @@ def is_doc_path(path: str) -> bool:
 
 def is_scratch_file(path: str) -> bool:
     return bool(SCRATCH_FILE_RE.match(normalize_path(path)))
+
+
+def is_generated_artifact_file(path: str) -> bool:
+    return bool(GENERATED_ARTIFACT_FILE_RE.search(normalize_path(path)))
 
 
 def is_runtime_or_script_path(path: str) -> bool:
@@ -611,12 +620,18 @@ def evaluate_quality(
     changed_lines = changed_line_count(numstat, changed_files)
     evidence = parse_evidence_block(pr_body)
     scratch_files = [path for path in changed_files if is_scratch_file(path)]
+    generated_artifact_files = [path for path in changed_files if is_generated_artifact_file(path)]
     autofill_evidence_block = ""
 
     if scratch_files:
         reasons.append(
             "Autonomous PR contains temporary scratch/planning files: "
             + ", ".join(sorted(scratch_files))
+        )
+    if generated_artifact_files:
+        reasons.append(
+            "Autonomous PR contains generated cache/bytecode artifacts: "
+            + ", ".join(sorted(generated_artifact_files))
         )
 
     lower_body = pr_body.lower()

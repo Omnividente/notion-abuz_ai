@@ -29,6 +29,8 @@ consent_traffic.json
 logs/
 
 # Debug/temp
+__pycache__/
+*.py[cod]
 debug_response.jsonl
 proxy_stderr.log
 server.log
