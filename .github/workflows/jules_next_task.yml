@@ -180,6 +180,16 @@ jobs:
           from pathlib import Path
 
           data = json.loads(Path("/tmp/selected-task.json").read_text(encoding="utf-8"))
+          manifest = json.loads(Path("agent_tasks.json").read_text(encoding="utf-8"))
+          policy = manifest.get("replenishment_policy") or {}
+          minimum_todo_tasks = policy.get("minimum_todo_tasks")
+          if not isinstance(minimum_todo_tasks, int):
+              minimum_todo_tasks = 0
+          try:
+              todo_count = int(data.get("todo_count") or 0)
+          except (TypeError, ValueError):
+              todo_count = 0
+          below_minimum = minimum_todo_tasks > 0 and todo_count < minimum_todo_tasks
           output_path = Path(os.environ["GITHUB_OUTPUT"])
 
           def write_output(key, value):
@@ -197,6 +207,8 @@ jobs:
           write_output("reason", data.get("reason", "") or data.get("error", ""))
           write_output("reason_code", data.get("reason_code", ""))
           write_output("todo_count", data.get("todo_count", 0))
+          write_output("minimum_todo_tasks", minimum_todo_tasks)
+          write_output("below_minimum", str(below_minimum).lower())
           write_output("eligible_count", data.get("eligible_count", 0))
           write_output("rejected_count", data.get("rejected_count", 0))
           PY
@@ -217,9 +229,10 @@ jobs:
 
       - name: Dispatch automation health recovery for starved queue
         if: >
-          steps.select-task.outputs.selected != 'true' &&
-          (steps.select-task.outputs.reason_code == 'no_eligible_autonomous_task' ||
-           steps.select-task.outputs.reason_code == 'no_todo_tasks')
+          (steps.select-task.outputs.selected != 'true' &&
+           (steps.select-task.outputs.reason_code == 'no_eligible_autonomous_task' ||
+            steps.select-task.outputs.reason_code == 'no_todo_tasks')) ||
+          steps.select-task.outputs.below_minimum == 'true'
         env:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
         run: |
@@ -274,7 +287,10 @@ jobs:
             "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/automation_health.yml/dispatches" \
             -d "${body}"
 
-          echo "Dispatched Automation Health in enforce mode because selector returned ${{ steps.select-task.outputs.reason_code }}."
+          echo "Dispatched Automation Health in enforce mode."
+          echo "Reason code: ${{ steps.select-task.outputs.reason_code }}"
+          echo "Todo count: ${{ steps.select-task.outputs.todo_count }}"
+          echo "Minimum todo tasks: ${{ steps.select-task.outputs.minimum_todo_tasks }}"
 
       - name: Detect open autonomous PRs
         id: open-prs

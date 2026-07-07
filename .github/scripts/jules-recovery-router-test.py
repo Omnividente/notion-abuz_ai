@@ -119,6 +119,7 @@ def state(
     selector: dict | None = None,
     jules_sessions: list[dict] | None = None,
     task_statuses: dict[str, str] | None = None,
+    task_metrics: dict[str, int] | None = None,
     task_details: dict[str, dict] | None = None,
     recent_unattended: bool = True,
     recent_next: bool = False,
@@ -154,6 +155,7 @@ def state(
         "selector": selector if selector is not None else {"selected": False, "reason": "none"},
         "jules": {"api_available": True, "sessions": jules_sessions or []},
         "task_statuses": task_statuses or {},
+        "task_metrics": task_metrics or {},
         "task_details": task_details or {},
     }
 
@@ -1290,6 +1292,58 @@ Blocking reasons:
                 recent_unattended=False,
                 selector={"selected": True, "task_id": "automation-health-failed-session-86122315"},
             )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "dispatch_workflow")
+        self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
+
+    def test_selected_task_with_thin_queue_dispatches_health_recovery_first(self) -> None:
+        actions = plan(
+            state(
+                selector={
+                    "selected": True,
+                    "task_id": "automation-health-failed-session-86122315",
+                    "todo_count": 4,
+                },
+                task_metrics={"todo_count": 4, "minimum_todo_tasks": 5},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "dispatch_workflow")
+        self.assertEqual(actions[0].payload["workflow"], "automation_health.yml")
+        self.assertEqual(actions[0].payload["inputs"]["mode"], "enforce")
+        self.assertIn("4/5", actions[0].reason)
+
+    def test_recent_health_recovery_allows_selected_task_dispatch(self) -> None:
+        actions = plan(
+            state(
+                recent_health=True,
+                selector={
+                    "selected": True,
+                    "task_id": "automation-health-failed-session-86122315",
+                    "todo_count": 4,
+                },
+                task_metrics={"todo_count": 4, "minimum_todo_tasks": 5},
+            )
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "dispatch_workflow")
+        self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
+
+    def test_disabled_health_recovery_allows_selected_task_dispatch(self) -> None:
+        actions = plan(
+            state(
+                selector={
+                    "selected": True,
+                    "task_id": "automation-health-failed-session-86122315",
+                    "todo_count": 4,
+                },
+                task_metrics={"todo_count": 4, "minimum_todo_tasks": 5},
+            ),
+            health_mode="disabled",
         )
 
         self.assertEqual(len(actions), 1)
