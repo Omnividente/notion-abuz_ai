@@ -346,8 +346,88 @@ for i in "${!key_labels[@]}"; do
         session_age="$((now_epoch - session_create_epoch))"
 
         if [ "${latest_agent_epoch:-0}" -eq 0 ]; then
-          echo "Skipped ${session_name}; no agent activity found for stale in-progress recovery."
+          if [ -z "$active_task_id" ]; then
+            active_task_id="$(resolve_session_task_id_from_recent_map "$session_name")"
+          fi
+          if [ -z "$active_task_id" ]; then
+            echo "::warning::No task id found for no-agent IN_PROGRESS session ${session_name}; recovery prompt will carry task_id=unknown."
+          fi
+
+          if [ "$continue_token_count" -ge "$max_stale_in_progress_escalations" ]; then
+            echo "Autonomous in-progress recovery limit reached for ${session_name} without agent activity; deleting stale session and blocking task."
+            record_prompt_detail "${session_name##*/}" "$prompt_json" "$max_stale_in_progress_escalations"
+            if [ -n "$active_task_id" ]; then
+              printf '%s\t%s\t%s\n' "${session_name##*/}" "$active_task_id" "repeated_stale_in_progress" >> "$failed_sessions_file"
+            fi
+            out="${tmpdir}/delete-${session_name//\//-}.json"
+            if jules_delete "$key" "$session_name" "$out"; then
+              active_sessions=$((active_sessions - 1))
+              touched_sessions=$((touched_sessions + 1))
+              echo "Deleted no-agent stale in-progress Jules session ${session_name} after ${continue_token_count} autonomous recovery messages."
+            else
+              echo "::warning::Could not delete no-agent stale in-progress Jules session ${session_name}."
+              record_active_task_id "$active_task_id"
+            fi
+            continue
+          fi
+
+          if [ "${latest_token_epoch:-0}" -gt 0 ]; then
+            token_age="$((now_epoch - latest_token_epoch))"
+            if [ "$token_age" -lt "$stale_in_progress_seconds" ]; then
+              echo "Skipped ${session_name}; no agent activity yet, but in-progress recovery prompt is still fresh (${token_age}s old, stale threshold ${stale_in_progress_seconds}s, continue tokens ${continue_token_count}/${max_stale_in_progress_escalations})."
+              record_prompt_detail "${session_name##*/}" "$prompt_json" "$max_stale_in_progress_escalations"
+              stale_in_progress_sessions+=("${session_name##*/}:no-agent-token:${token_age}s/${stale_in_progress_seconds}s:${continue_token_count}/${max_stale_in_progress_escalations}")
+              record_active_task_id "$active_task_id"
+              continue
+            fi
+            echo "Previous no-agent in-progress recovery for ${session_name} is stale after $((token_age / 60)) minute(s); sending escalation ${continue_token_count}/${max_stale_in_progress_escalations}."
+            stale_in_progress_sessions+=("${session_name##*/}:no-agent-stale-token:${continue_token_count}/${max_stale_in_progress_escalations}")
+            if ! build_recovery_prompt \
+              "$activities_file" \
+              "${session_name##*/}" \
+              "$session_state" \
+              "$active_task_id" \
+              "stale" \
+              "previous no-agent in-progress autonomous recovery token is stale" \
+              "$prompt_json" \
+              "$max_stale_in_progress_escalations"; then
+              echo "::warning::Could not build no-agent in-progress escalation prompt for ${session_name}; skipping."
+              record_active_task_id "$active_task_id"
+              continue
+            fi
+          elif [ "$max_in_progress_session_seconds" -gt 0 ] && [ "$session_age" -ge "$max_in_progress_session_seconds" ]; then
+            echo "Detected long-running IN_PROGRESS Jules session ${session_name} without agent activity after $((session_age / 60)) minute(s); sending dynamic recovery prompt."
+            stale_in_progress_sessions+=("${session_name##*/}:no-agent-long-running:${continue_token_count}/${max_stale_in_progress_escalations}")
+            if ! build_recovery_prompt \
+              "$activities_file" \
+              "${session_name##*/}" \
+              "$session_state" \
+              "$active_task_id" \
+              "stale" \
+              "Jules session stayed IN_PROGRESS for $((session_age / 60)) minute(s) without any agent activity or PR" \
+              "$prompt_json" \
+              "$max_stale_in_progress_escalations"; then
+              echo "::warning::Could not build long-running no-agent in-progress recovery prompt for ${session_name}; skipping."
+              record_active_task_id "$active_task_id"
+              continue
+            fi
+          else
+            echo "Skipped ${session_name}; no agent activity found for stale in-progress recovery (session age ${session_age}s, long-running threshold ${max_in_progress_session_seconds}s)."
+            record_active_task_id "$active_task_id"
+            continue
+          fi
+
           record_active_task_id "$active_task_id"
+          record_prompt_detail "${session_name##*/}" "$prompt_json" "$max_stale_in_progress_escalations"
+          prompt="$(jq -r '.prompt // ""' "$prompt_json")"
+          body="$(jq -n --arg prompt "$prompt" '{prompt: $prompt}')"
+          out="${tmpdir}/send-${session_name//\//-}.json"
+          if jules_post "$key" "${session_name}:sendMessage" "$body" "$out"; then
+            echo "Sent dynamic no-agent in-progress recovery message to ${session_name}."
+            touched_sessions=$((touched_sessions + 1))
+          else
+            echo "::warning::Could not send no-agent in-progress recovery message to ${session_name}."
+          fi
           continue
         fi
 

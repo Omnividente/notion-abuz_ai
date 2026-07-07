@@ -40,6 +40,7 @@ method = "GET"
 out = ""
 url = ""
 body = ""
+writeout = ""
 i = 0
 while i < len(args):
     arg = args[i]
@@ -58,6 +59,10 @@ while i < len(args):
         out = args[i + 1]
         i += 2
         continue
+    if arg == "-w":
+        writeout = args[i + 1]
+        i += 2
+        continue
     if arg.startswith("http://") or arg.startswith("https://"):
         url = arg
     i += 1
@@ -74,6 +79,10 @@ elif scenario == "in_progress_stale":
     session_name = "sessions/test-in-progress-stale"
 elif scenario == "in_progress_long_running_fresh":
     session_name = "sessions/test-in-progress-long-running"
+elif scenario == "in_progress_no_agent_long_running":
+    session_name = "sessions/test-in-progress-no-agent"
+elif scenario == "in_progress_no_agent_repeat":
+    session_name = "sessions/test-in-progress-no-agent-repeat"
 elif scenario == "in_progress_repeat":
     session_name = "sessions/test-in-progress-repeat"
 else:
@@ -82,8 +91,8 @@ task_id = "proxy-runtime-final-answer-mode-stability"
 
 if method == "GET" and url.endswith("/sessions?pageSize=100"):
     state = "IN_PROGRESS" if scenario.startswith("in_progress_") else "AWAITING_USER_FEEDBACK"
-    update_time = iso(now - 5) if scenario == "in_progress_long_running_fresh" else iso(now - 4000) if scenario.startswith("in_progress_") else iso(now - 60)
-    create_time = iso(now - 20000) if scenario == "in_progress_long_running_fresh" else iso(now - 900)
+    update_time = iso(now - 5) if scenario in {"in_progress_long_running_fresh", "in_progress_no_agent_long_running"} else iso(now - 4000) if scenario.startswith("in_progress_") else iso(now - 60)
+    create_time = iso(now - 20000) if scenario in {"in_progress_long_running_fresh", "in_progress_no_agent_long_running", "in_progress_no_agent_repeat"} else iso(now - 900)
     payload = {
         "sessions": [
             {
@@ -94,6 +103,17 @@ if method == "GET" and url.endswith("/sessions?pageSize=100"):
                 "updateTime": update_time,
             }
         ]
+    }
+elif method == "GET" and "/actions/variables/JULES_RECENT_SESSION_TASKS" in url:
+    payload = {
+        "value": json.dumps(
+            {
+                session_name.split("/")[-1]: {
+                    "task_id": task_id,
+                    "updateTime": iso(now - 60),
+                }
+            }
+        )
     }
 elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "routine_question":
     payload = {
@@ -139,6 +159,23 @@ elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "
                     )
                 },
             }
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_no_agent_long_running":
+    payload = {"activities": []}
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_no_agent_repeat":
+    payload = {
+        "activities": [
+            {
+                "originator": "USER",
+                "createTime": iso(now - 4900),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled no-agent work."},
+            },
+            {
+                "originator": "USER",
+                "createTime": iso(now - 4500),
+                "message": {"text": "AUTONOMOUS_CONTINUE_TOKEN\nRecover stalled no-agent work again."},
+            },
         ]
     }
 elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_repeat":
@@ -202,6 +239,8 @@ else:
     raise SystemExit(22)
 
 Path(out).write_text(json.dumps(payload), encoding="utf-8")
+if "%{http_code}" in writeout:
+    print("200", end="")
 PY
 """
 
@@ -245,6 +284,9 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
         )
         for name in ("JULES_API_KEY_BACKUP", "GITHUB_API_TOKEN", "GITHUB_API_URL"):
             env.pop(name, None)
+        if scenario.startswith("in_progress_no_agent_"):
+            env["GITHUB_API_TOKEN"] = "fake-gh-token"
+            env["GITHUB_API_URL"] = "https://api.github.test"
 
         result = subprocess.run(
             ["bash", str(SCRIPT)],
@@ -386,6 +428,67 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertEqual(outputs["touched_sessions"], "1")
             self.assertEqual(outputs["stale_in_progress_count"], "1")
             self.assertIn("test-in-progress-long-running:long-running", outputs["stale_in_progress_sessions"])
+
+    def test_long_running_in_progress_without_agent_activity_gets_recovery_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_no_agent_long_running",
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("without agent activity", result.stdout)
+            self.assertIn("Sent dynamic no-agent in-progress recovery message", result.stdout)
+            body = json.loads(send_body.read_text(encoding="utf-8"))
+            prompt = body["prompt"]
+            self.assertIn("session_id: test-in-progress-no-agent", prompt)
+            self.assertIn(f"task_id: {TASK_ID}", prompt)
+            self.assertIn("wait_reason: unknown_continue", prompt)
+            self.assertIn("without any agent activity or PR", prompt)
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "1")
+            self.assertEqual(outputs["touched_sessions"], "1")
+            self.assertEqual(outputs["stale_in_progress_count"], "1")
+            self.assertIn("test-in-progress-no-agent:no-agent-long-running", outputs["stale_in_progress_sessions"])
+            self.assertIn(TASK_ID, outputs["prompt_task_id"])
+
+    def test_repeated_no_agent_in_progress_limit_deletes_and_blocks_task(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, _send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_no_agent_repeat",
+            )
+            curl_log = tmp_path / "curl.log"
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("without agent activity; deleting stale session", result.stdout)
+            self.assertEqual(curl_log.read_text(encoding="utf-8"), "DELETE sessions/test-in-progress-no-agent-repeat\n")
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "0")
+            self.assertEqual(outputs["touched_sessions"], "1")
+            self.assertEqual(outputs["failed_recovery_action"], "block")
+            self.assertEqual(outputs["failed_task_id"], TASK_ID)
+            self.assertEqual(outputs["failed_session_id"], "test-in-progress-no-agent-repeat")
 
     def test_repeated_stale_in_progress_limit_deletes_and_blocks_task(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
