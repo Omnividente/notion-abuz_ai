@@ -22,6 +22,7 @@ def task(
     task_id: str,
     *,
     status: str,
+    risk: str = "low",
     title: str = "Ensure workspace reframing events are logged as bridge decisions",
     description: str = "Verify and test that workspace reframing is explicitly emitted as a bridge decision log.",
     allowed_paths: list[str] | None = None,
@@ -32,7 +33,7 @@ def task(
         "id": task_id,
         "status": status,
         "area": "proxy",
-        "risk": "low",
+        "risk": risk,
         "title": title,
         "description": description,
         "allowed_paths": allowed_paths
@@ -540,6 +541,101 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
 
         self.assertFalse(decision.passed)
         self.assertTrue(any("micro_pr_justification" in reason for reason in decision.reasons))
+
+    def test_high_risk_done_requires_legacy_lab_evidence(self) -> None:
+        before = manifest(
+            [
+                task(
+                    "legacy-high",
+                    status="todo",
+                    risk="high",
+                    title="Enable scheduled legacy/offline compatibility smoke after lab runners are ready",
+                    description="Enable low-frequency Legacy Compatibility Smoke after lab runners are ready.",
+                    allowed_paths=[".github/workflows/legacy_compat_smoke.yml", "agent_tasks.json"],
+                    acceptance=["Scheduled smoke is enabled after required runner labels are available."],
+                )
+            ]
+        )
+        after = manifest(
+            [
+                task(
+                    "legacy-high",
+                    status="done",
+                    risk="high",
+                    title="Enable scheduled legacy/offline compatibility smoke after lab runners are ready",
+                    description="Enable low-frequency Legacy Compatibility Smoke after lab runners are ready.",
+                    allowed_paths=[".github/workflows/legacy_compat_smoke.yml", "agent_tasks.json"],
+                    acceptance=["Scheduled smoke is enabled after required runner labels are available."],
+                )
+            ]
+        )
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[".github/workflows/legacy_compat_smoke.yml", "agent_tasks.json"],
+            diff_text="+ schedule:\n+   - cron: '17 3 * * 0'",
+            pr_body=evidence_body(
+                "legacy-high",
+                acceptance=[
+                    "Scheduled smoke is enabled after required runner labels are available -> .github/workflows/legacy_compat_smoke.yml"
+                ],
+                evidence_files=[".github/workflows/legacy_compat_smoke.yml", "agent_tasks.json"],
+                checks=["python3 scripts/validate_agent_tasks.py agent_tasks.json"],
+            ),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("high risk" in reason for reason in decision.reasons))
+
+    def test_high_risk_done_passes_with_legacy_smoke_evidence(self) -> None:
+        before = manifest(
+            [
+                task(
+                    "legacy-high",
+                    status="todo",
+                    risk="high",
+                    title="Enable scheduled legacy/offline compatibility smoke after lab runners are ready",
+                    description="Enable low-frequency Legacy Compatibility Smoke after lab runners are ready.",
+                    allowed_paths=[".github/workflows/legacy_compat_smoke.yml", "agent_tasks.json"],
+                    acceptance=["Scheduled smoke is enabled after required runner labels are available."],
+                )
+            ]
+        )
+        after = manifest(
+            [
+                task(
+                    "legacy-high",
+                    status="done",
+                    risk="high",
+                    title="Enable scheduled legacy/offline compatibility smoke after lab runners are ready",
+                    description="Enable low-frequency Legacy Compatibility Smoke after lab runners are ready.",
+                    allowed_paths=[".github/workflows/legacy_compat_smoke.yml", "agent_tasks.json"],
+                    acceptance=["Scheduled smoke is enabled after required runner labels are available."],
+                )
+            ]
+        )
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=[".github/workflows/legacy_compat_smoke.yml", "agent_tasks.json"],
+            diff_text="+ schedule:\n+   - cron: '17 3 * * 0'",
+            pr_body=evidence_body(
+                "legacy-high",
+                acceptance=[
+                    "Scheduled smoke is enabled after required runner labels are available -> .github/workflows/legacy_compat_smoke.yml"
+                ],
+                evidence_files=[".github/workflows/legacy_compat_smoke.yml", "agent_tasks.json"],
+                checks=[
+                    "python3 scripts/validate_agent_tasks.py agent_tasks.json",
+                    "workflow_dispatch Legacy Compatibility Smoke run checked CentOS self-hosted runner labels",
+                ],
+                micro_pr_justification="High-risk scheduling is bounded by Legacy Compatibility Smoke runner evidence and rollback.",
+            ),
+        )
+
+        self.assertTrue(decision.passed)
 
 
 if __name__ == "__main__":
