@@ -6926,7 +6926,7 @@
     },
     {
       "id": "add-transient-guard-to-multi-turn",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add logging to track when transient guard is used in session recovery",
@@ -6939,6 +6939,22 @@
         "A diagnostic log is emitted when the transient guard line is added.",
         "A metric (e.g., `transient_guard_applied`) is recorded when the guard is used.",
         "A test verifies the new metric is recorded."
+      ]
+    },
+    {
+      "id": "improve-context-loss-logging",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Improve context loss logging verbosity",
+      "description": "Add detailed context parameters to the recordContextLossMetric logger to improve observability of what exactly was dropped.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/tools.go"
+      ],
+      "acceptance": [
+        "A parameter is added to recordContextLossMetric to allow additional diagnostic context.",
+        "At least one call site (e.g. transient_guard_applied) is updated to include context."
       ]
     }
   ]

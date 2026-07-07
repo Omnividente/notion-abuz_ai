@@ -563,6 +563,10 @@ func TestBuildToolBridgeRecoveryMessagesDiagnosticLog(t *testing.T) {
 }
 
 func TestBuildRecoveryMessages_TransientFailureGuard(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
 	messages := []ChatMessage{
 		{Role: "user", Content: "Start task"},
 		{Role: "assistant", Content: "Running tool", ToolCalls: []ToolCall{{ID: "call_1", Function: ToolCallFunction{Name: "Search", Arguments: "{}"}}}},
@@ -580,5 +584,13 @@ func TestBuildRecoveryMessages_TransientFailureGuard(t *testing.T) {
 
 	if !strings.Contains(prompt, expectedLine) {
 		t.Errorf("Expected prompt to contain transientGuardLine for a transient error. Prompt: %s", prompt)
+	}
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["transient_guard_applied"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected transient_guard_applied metric to be 1, got %v (exists: %v)", count, exists)
 	}
 }

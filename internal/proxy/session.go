@@ -635,6 +635,8 @@ func buildRecoveryMessages(messages []ChatMessage, skipEntry func(ChatMessage, s
 		transientGuardLine := "\nWarning: A recent tool call encountered a transient API or search failure. Do NOT finalize your answer based on partial context. Please retry the failed tool or use a different search method to ensure you have complete project context.\n"
 
 		if hasTransientFailure {
+			log.Printf("[bridge] diagnostic: transient guard applied to multi-turn session continuation")
+			recordContextLossMetric("transient_guard_applied")
 			prompt.WriteString(transientGuardLine)
 		}
 		prompt.WriteString("\n\nContinue from the partial progress above and provide the next step or final answer.")
