@@ -114,6 +114,20 @@ class AutomationMetaTaskTest(unittest.TestCase):
         self.assertEqual(plan.tasks, [])
         self.assertEqual(plan.skipped_hashes, [meta.stable_finding_hash(item)])
 
+    def test_existing_pending_finding_code_blocks_duplicate_meta_task(self) -> None:
+        item = finding("repeated_followup_generation")
+        existing = {
+            "id": "automation-health-repeated-followup-generation-existing",
+            "status": "todo",
+            "health_finding_code": "repeated_followup_generation",
+            "health_finding_hash": "different-current-evidence",
+        }
+
+        plan = meta.plan_meta_tasks(health_report(item), manifest([existing]), max_tasks=3)
+
+        self.assertEqual(plan.tasks, [])
+        self.assertEqual(plan.skipped_hashes, [meta.stable_finding_hash(item)])
+
     def test_max_todo_tasks_is_respected(self) -> None:
         existing_todo = [{"id": "existing", "status": "todo"}]
         plan = meta.plan_meta_tasks(

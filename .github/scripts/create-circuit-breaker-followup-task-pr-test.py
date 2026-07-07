@@ -88,6 +88,37 @@ class CircuitBreakerFollowupTaskTest(unittest.TestCase):
         )
         self.assertFalse(module.existing_followup_task({"tasks": []}, task_id=task_id, digest=digest))
 
+    def test_pending_followup_task_ids_find_unresolved_quality_loop_tasks(self) -> None:
+        manifest = {
+            "tasks": [
+                {
+                    "id": "automation-quality-loop-pr-10-a",
+                    "status": "done",
+                    "source_finding_id": "quality_fix_circuit_breaker",
+                },
+                {
+                    "id": "automation-quality-loop-pr-11-b",
+                    "status": "todo",
+                    "source_finding_id": "quality_fix_circuit_breaker",
+                },
+                {
+                    "id": "automation-quality-loop-pr-12-c",
+                    "status": "in_progress",
+                    "source_finding_id": "quality_fix_circuit_breaker",
+                },
+                {
+                    "id": "automation-health-repeated-followup",
+                    "status": "todo",
+                    "health_finding_code": "repeated_followup_generation",
+                },
+            ]
+        }
+
+        self.assertEqual(
+            module.pending_followup_task_ids(manifest),
+            ["automation-quality-loop-pr-11-b", "automation-quality-loop-pr-12-c"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

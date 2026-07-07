@@ -170,6 +170,19 @@ def existing_finding_hashes(manifest: dict[str, Any]) -> set[str]:
     return hashes
 
 
+def existing_pending_finding_codes(manifest: dict[str, Any]) -> set[str]:
+    codes: set[str] = set()
+    for task in manifest.get("tasks", []):
+        if not isinstance(task, dict):
+            continue
+        if task.get("status") not in {"todo", "in_progress"}:
+            continue
+        value = task.get("health_finding_code")
+        if isinstance(value, str) and value:
+            codes.add(value)
+    return codes
+
+
 def summarize_evidence(evidence: dict[str, Any]) -> str:
     if not evidence:
         return "No structured evidence was attached to the finding."
@@ -248,6 +261,7 @@ def plan_meta_tasks(
         return MetaTaskPlan(reason="todo queue is already at max_todo_tasks")
 
     seen = existing_finding_hashes(manifest)
+    pending_codes = existing_pending_finding_codes(manifest)
     planned: list[dict[str, Any]] = []
     skipped: list[str] = []
     severity_rank = {"critical": 0, "degraded": 1, "healthy": 2}
@@ -260,7 +274,11 @@ def plan_meta_tasks(
     )
     for finding in findings:
         finding_hash = stable_finding_hash(finding)
+        finding_code = str(finding.get("code") or "")
         if finding_hash in seen:
+            skipped.append(finding_hash)
+            continue
+        if finding_code in pending_codes:
             skipped.append(finding_hash)
             continue
         planned.append(make_task(finding, report))
