@@ -74,6 +74,50 @@ jobs:
             grep "^${key}=" "$file" | tail -n1 | cut -d= -f2- || true
           }
 
+          classify_burst_status() {
+            local active="$1"
+            local touched="$2"
+            local stale_waiting="$3"
+            local stale_in_progress="$4"
+            local wait_reason="$5"
+            local skipped_stopped="$6"
+
+            if [ "${active:-0}" = "0" ]; then
+              echo "idle"
+            elif [ "${touched:-0}" != "0" ]; then
+              echo "recovery_prompted"
+            elif [ "${stale_waiting:-0}" != "0" ] ||
+                 [ "${stale_in_progress:-0}" != "0" ] ||
+                 [ -n "${wait_reason:-}" ]; then
+              echo "recovery_signal_pending"
+            elif [ "${skipped_stopped:-0}" != "0" ]; then
+              echo "fresh_active_with_stopped_sessions_skipped"
+            else
+              echo "fresh_active_no_recovery_signal"
+            fi
+          }
+
+          explain_final_burst_status() {
+            local status="$1"
+            case "$status" in
+              recovery_prompted)
+                echo "Active Jules sessions remain after ${cycles} burst passes; a dynamic recovery prompt was sent, so scheduled monitor/router will enforce the retry/delete/block limits."
+                ;;
+              recovery_signal_pending)
+                echo "Active Jules sessions remain after ${cycles} burst passes with recovery signals still present; scheduled monitor/router will continue from the recorded wait_reason and stale-session details."
+                ;;
+              fresh_active_with_stopped_sessions_skipped)
+                echo "Active Jules sessions remain after ${cycles} burst passes; stopped task sessions were ignored and the remaining active session has no stale recovery signal yet."
+                ;;
+              fresh_active_no_recovery_signal)
+                echo "Active Jules sessions remain after ${cycles} burst passes; latest activity is still fresh and no recovery prompt was needed."
+                ;;
+              *)
+                echo "Active Jules sessions remain after ${cycles} burst passes; scheduled monitor/router will continue with the recorded dynamic recovery state."
+                ;;
+            esac
+          }
+
           dispatch_recovery_retry() {
             local task_id="$1"
             local failed_session_id="$2"
@@ -150,10 +194,19 @@ jobs:
             stale_waiting_sessions="$(get_output stale_waiting_sessions "$output_file")"
             stale_in_progress_count="$(get_output stale_in_progress_count "$output_file")"
             stale_in_progress_sessions="$(get_output stale_in_progress_sessions "$output_file")"
+            skipped_stopped_count="$(get_output skipped_stopped_count "$output_file")"
+            skipped_stopped_sessions="$(get_output skipped_stopped_sessions "$output_file")"
             wait_reason="$(get_output wait_reason "$output_file")"
             prompt_action="$(get_output prompt_action "$output_file")"
             prompt_task_id="$(get_output prompt_task_id "$output_file")"
             continue_attempts="$(get_output continue_attempts "$output_file")"
+            burst_status="$(classify_burst_status \
+              "${active_sessions:-0}" \
+              "${touched_sessions:-0}" \
+              "${stale_waiting_count:-0}" \
+              "${stale_in_progress_count:-0}" \
+              "${wait_reason:-}" \
+              "${skipped_stopped_count:-0}")"
             JULES_SESSION_IDS="$session_ids" python3 .github/scripts/open-ready-jules-prs.py
 
             open_prs="$(count_open_autonomous_prs)"
@@ -163,6 +216,8 @@ jobs:
             echo "Failed recovery action: ${failed_recovery_action:-none}"
             echo "Stale waiting sessions: ${stale_waiting_count:-0} ${stale_waiting_sessions:-}"
             echo "Stale in-progress sessions: ${stale_in_progress_count:-0} ${stale_in_progress_sessions:-}"
+            echo "Skipped stopped sessions: ${skipped_stopped_count:-0} ${skipped_stopped_sessions:-}"
+            echo "Burst status: ${burst_status}"
             echo "Dynamic wait reasons: ${wait_reason:-}"
             echo "Dynamic prompt actions: ${prompt_action:-}"
             echo "Dynamic prompt task ids: ${prompt_task_id:-}"
@@ -213,5 +268,5 @@ jobs:
           done
 
           if [ "${active_sessions:-0}" != "0" ]; then
-            echo "Active Jules sessions remain after ${cycles} burst passes; scheduled monitor and recovery router will continue with the recorded dynamic recovery state."
+            explain_final_burst_status "${burst_status:-unknown}"
           fi
