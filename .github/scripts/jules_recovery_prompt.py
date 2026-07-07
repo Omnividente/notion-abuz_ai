@@ -342,6 +342,16 @@ def pr_check_context_lines(pr_context: dict[str, Any] | None) -> list[str]:
     if head_sha:
         lines.append(f"- pr_head_sha: {head_sha}")
 
+    changed_files = pr_context.get("changed_files") or []
+    if isinstance(changed_files, list) and changed_files:
+        lines.append("- changed_files:")
+        for path in changed_files[:MAX_LIST_ITEMS]:
+            clean = sanitize_text(str(path), limit=220)
+            if clean:
+                lines.append(f"  - {clean}")
+        if len(changed_files) > MAX_LIST_ITEMS:
+            lines.append(f"  - ... еще {len(changed_files) - MAX_LIST_ITEMS}")
+
     failed_checks = pr_context.get("failed_checks") or []
     if not isinstance(failed_checks, list) or not failed_checks:
         return lines
@@ -356,6 +366,21 @@ def pr_check_context_lines(pr_context: dict[str, Any] | None) -> list[str]:
         details_url = sanitize_text(str(item.get("details_url") or ""), limit=240)
         detail = f"details: {details_url}" if details_url else f"run_id: {run_id}" if run_id else "details: unavailable"
         lines.append(f"  - {name}: {conclusion}; {detail}")
+        annotations = item.get("annotations") or []
+        if isinstance(annotations, list):
+            for annotation in annotations[:MAX_LIST_ITEMS]:
+                clean = sanitize_text(str(annotation), limit=360)
+                if clean:
+                    lines.append(f"    annotation: {clean}")
+        log_excerpt = sanitize_text(str(item.get("log_excerpt") or ""), limit=900)
+        if log_excerpt:
+            lines.append(f"    log_excerpt: {log_excerpt}")
+        annotations_error = sanitize_text(str(item.get("annotations_error") or ""), limit=260)
+        if annotations_error:
+            lines.append(f"    annotations_unavailable: {annotations_error}")
+        log_excerpt_error = sanitize_text(str(item.get("log_excerpt_error") or ""), limit=260)
+        if log_excerpt_error:
+            lines.append(f"    log_excerpt_unavailable: {log_excerpt_error}")
     if len(failed_checks) > MAX_LIST_ITEMS:
         lines.append(f"  - ... еще {len(failed_checks) - MAX_LIST_ITEMS}")
     return lines
@@ -463,7 +488,8 @@ def build_prompt_payload(
             "Что сделать сейчас:",
             action_instruction(prompt_action, mode=mode),
             (
-                "Если pr_context содержит failed_checks: сначала открой/read linked job logs и артефакты этих checks; "
+                "Если pr_context содержит failed_checks: используй annotations/log_excerpt/changed_files как первичный "
+                "recovery packet; если excerpts недостаточно, открой/read linked job logs и артефакты этих checks; "
                 "если лог не содержит конкретных файлов, воспроизведи failing command локально в текущей PR branch; "
                 "исправь причину в этом же PR внутри allowed_paths."
                 if pr_context and pr_context.get("failed_checks")

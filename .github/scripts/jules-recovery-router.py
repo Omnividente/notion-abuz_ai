@@ -59,6 +59,10 @@ CONFLICT_RECOVERY_COOLDOWN_MINUTES = 30
 CONFLICT_RECOVERY_CIRCUIT_BREAKER_ATTEMPTS = 3
 CONFLICT_RECOVERY_CIRCUIT_BREAKER_TTL_MINUTES = 7 * 24 * 60
 MAX_QUALITY_FIX_DETAILS_CHARS = 5000
+MAX_FAILED_CHECK_ANNOTATIONS = 5
+MAX_FAILED_CHECK_LOG_LINES = 24
+MAX_FAILED_CHECK_LOG_EXCERPT_CHARS = 2400
+MAX_FAILED_CHECK_CHANGED_FILES = 30
 STALE_AWAITING_FEEDBACK_MINUTES = 10
 STALE_AWAITING_FEEDBACK_COOLDOWN_MINUTES = 10
 MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS = 2
@@ -81,6 +85,18 @@ TASK_ID_RE = re.compile(
     ([a-z0-9][a-z0-9_.-]{2,})
     "?
     """
+)
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+LOG_TIMESTAMP_RE = re.compile(r"^\ufeff?\d{4}-\d{2}-\d{2}T[0-9:.]+Z\s+")
+FAILED_LOG_MARKERS = (
+    "##[error]",
+    "::error::",
+    "process completed with exit code",
+    "exit code",
+    "failed",
+    "failure",
+    "protected",
+    "permission denied",
 )
 AUTONOMOUS_CONTINUE_TOKEN = jules_recovery_prompt.AUTONOMOUS_CONTINUE_TOKEN
 ACTIVE_JULES_STATES = {
@@ -116,6 +132,19 @@ class RecoveryAction:
             "ttl_minutes": self.ttl_minutes,
             "payload": self.payload,
         }
+
+
+class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> None:
+        return None
 
 
 class GitHubClient:
@@ -158,6 +187,59 @@ class GitHubClient:
                         return None
                     return json.loads(raw.decode("utf-8"))
             except urllib.error.HTTPError as exc:
+                detail = truncate_http_error_detail(exc.read().decode("utf-8", errors="replace"))
+                if (
+                    exc.code in GITHUB_API_TRANSIENT_STATUS_CODES
+                    and attempt < max_attempts
+                ):
+                    sleep_seconds = 2 ** (attempt - 1)
+                    print(
+                        f"GitHub API transient HTTP {exc.code} for {method} {path}; "
+                        f"retrying in {sleep_seconds}s ({attempt}/{max_attempts}).",
+                        file=sys.stderr,
+                    )
+                    time.sleep(sleep_seconds)
+                    continue
+                raise RuntimeError(f"{method} {path} returned HTTP {exc.code}: {detail}") from exc
+
+        raise RuntimeError(f"{method} {path} failed after {max_attempts} attempts")
+
+    def request_text(
+        self,
+        method: str,
+        path: str,
+        ok: tuple[int, ...] = (200,),
+    ) -> str:
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        req = urllib.request.Request(
+            f"{self.api_url}{path}",
+            headers=headers,
+            method=method,
+        )
+        opener = urllib.request.build_opener(NoRedirectHandler)
+        max_attempts = GITHUB_API_MAX_READ_ATTEMPTS if method.upper() in {"GET", "HEAD"} else 1
+        for attempt in range(1, max_attempts + 1):
+            try:
+                with opener.open(req) as resp:
+                    if resp.status not in ok:
+                        raise RuntimeError(f"{method} {path} returned HTTP {resp.status}")
+                    return resp.read().decode("utf-8", errors="replace")
+            except urllib.error.HTTPError as exc:
+                if exc.code in {301, 302, 303, 307, 308}:
+                    location = exc.headers.get("Location")
+                    if not location:
+                        raise RuntimeError(f"{method} {path} redirected without Location") from exc
+                    redirect_req = urllib.request.Request(location, method="GET")
+                    with urllib.request.urlopen(redirect_req) as resp:
+                        if resp.status not in ok:
+                            raise RuntimeError(
+                                f"{method} {path} redirected log returned HTTP {resp.status}"
+                            )
+                        return resp.read().decode("utf-8", errors="replace")
                 detail = truncate_http_error_detail(exc.read().decode("utf-8", errors="replace"))
                 if (
                     exc.code in GITHUB_API_TRANSIENT_STATUS_CODES
@@ -557,6 +639,155 @@ def check_run_run_id(check_run: dict[str, Any]) -> str:
     return match.group(1) if match else ""
 
 
+def check_run_job_id(check_run: dict[str, Any]) -> str:
+    details_url = str(check_run.get("details_url") or check_run.get("html_url") or "")
+    match = re.search(r"/actions/runs/\d+/job/(\d+)", details_url)
+    if match:
+        return match.group(1)
+    if check_run.get("id"):
+        return str(check_run["id"])
+    return ""
+
+
+def github_api_path(client: GitHubClient, url_or_path: str) -> str:
+    value = str(url_or_path or "")
+    if not value:
+        return ""
+    if value.startswith("/"):
+        return value
+    if value.startswith(client.api_url):
+        return value.removeprefix(client.api_url)
+    parsed = urllib.parse.urlparse(value)
+    if parsed.netloc != urllib.parse.urlparse(client.api_url).netloc:
+        return ""
+    path = parsed.path
+    if parsed.query:
+        path = f"{path}?{parsed.query}"
+    return path
+
+
+def add_query_param(path: str, key: str, value: str) -> str:
+    separator = "&" if "?" in path else "?"
+    return f"{path}{separator}{urllib.parse.quote(key)}={urllib.parse.quote(value)}"
+
+
+def sanitize_changed_files(files: list[Any]) -> list[str]:
+    sanitized: list[str] = []
+    seen: set[str] = set()
+    for item in files:
+        if isinstance(item, dict):
+            name = str(item.get("filename") or "")
+        else:
+            name = str(item or "")
+        clean = jules_recovery_prompt.sanitize_text(name, limit=220)
+        if not clean or clean in seen:
+            continue
+        seen.add(clean)
+        sanitized.append(clean)
+        if len(sanitized) >= MAX_FAILED_CHECK_CHANGED_FILES:
+            break
+    return sanitized
+
+
+def annotation_excerpt(annotation: dict[str, Any]) -> str:
+    path = str(annotation.get("path") or "")
+    line = str(annotation.get("start_line") or "")
+    message = str(annotation.get("message") or annotation.get("title") or "")
+    location = f"{path}:{line}" if path and line else path
+    raw = f"{location}: {message}" if location else message
+    return jules_recovery_prompt.sanitize_text(raw, limit=360)
+
+
+def clean_log_line(line: str) -> str:
+    line = ANSI_ESCAPE_RE.sub("", line)
+    line = LOG_TIMESTAMP_RE.sub("", line)
+    return line.strip()
+
+
+def failure_log_excerpt(log_text: str) -> str:
+    raw_lines = [clean_log_line(line) for line in str(log_text or "").splitlines()]
+    raw_lines = [line for line in raw_lines if line]
+    if not raw_lines:
+        return ""
+
+    hit_indexes: list[int] = []
+    for index, line in enumerate(raw_lines):
+        lower = line.lower()
+        if any(marker in lower for marker in FAILED_LOG_MARKERS):
+            hit_indexes.append(index)
+
+    selected_indexes: list[int] = []
+    if hit_indexes:
+        for index in hit_indexes[:4]:
+            start = max(0, index - 10)
+            end = min(len(raw_lines), index + 3)
+            selected_indexes.extend(range(start, end))
+    else:
+        selected_indexes = list(range(max(0, len(raw_lines) - MAX_FAILED_CHECK_LOG_LINES), len(raw_lines)))
+
+    selected_lines: list[str] = []
+    seen: set[str] = set()
+    for index in selected_indexes:
+        line = raw_lines[index]
+        if line in seen:
+            continue
+        seen.add(line)
+        selected_lines.append(jules_recovery_prompt.sanitize_text(line, limit=320))
+        if len(selected_lines) >= MAX_FAILED_CHECK_LOG_LINES:
+            break
+
+    excerpt = "\n".join(line for line in selected_lines if line)
+    if len(excerpt) > MAX_FAILED_CHECK_LOG_EXCERPT_CHARS:
+        excerpt = excerpt[:MAX_FAILED_CHECK_LOG_EXCERPT_CHARS].rstrip() + "\n...[truncated]"
+    return excerpt
+
+
+def enrich_failed_check_evidence(client: GitHubClient, pr: dict[str, Any]) -> None:
+    number = pr.get("number")
+    if number and "changed_files" not in pr:
+        try:
+            files = client.request(
+                "GET",
+                f"/repos/{client.repo}/pulls/{number}/files?per_page=100",
+            ) or []
+            pr["changed_files"] = sanitize_changed_files(files if isinstance(files, list) else [])
+        except RuntimeError as exc:
+            pr["changed_files_error"] = jules_recovery_prompt.sanitize_text(str(exc), limit=260)
+
+    for check_run in failed_check_runs(pr)[:8]:
+        output = check_run.get("output") if isinstance(check_run.get("output"), dict) else {}
+        annotations_url = str((output or {}).get("annotations_url") or "")
+        if annotations_url and "annotations" not in check_run:
+            path = github_api_path(client, annotations_url)
+            if path:
+                path = add_query_param(path, "per_page", str(MAX_FAILED_CHECK_ANNOTATIONS))
+                try:
+                    annotations = client.request("GET", path) or []
+                    if isinstance(annotations, list):
+                        check_run["annotations"] = [
+                            excerpt
+                            for annotation in annotations[:MAX_FAILED_CHECK_ANNOTATIONS]
+                            if isinstance(annotation, dict)
+                            for excerpt in [annotation_excerpt(annotation)]
+                            if excerpt
+                        ]
+                except RuntimeError as exc:
+                    check_run["annotations_error"] = jules_recovery_prompt.sanitize_text(str(exc), limit=260)
+
+        job_id = check_run_job_id(check_run)
+        if job_id and "log_excerpt" not in check_run:
+            try:
+                log_text = client.request_text(
+                    "GET",
+                    f"/repos/{client.repo}/actions/jobs/{job_id}/logs",
+                )
+                excerpt = failure_log_excerpt(log_text)
+                if excerpt:
+                    check_run["log_excerpt"] = excerpt
+            except RuntimeError as exc:
+                check_run["log_excerpt_error"] = jules_recovery_prompt.sanitize_text(str(exc), limit=260)
+
+
 def latest_failed_automerge_run(pr: dict[str, Any]) -> str:
     for check_run in pr.get("check_runs", []):
         name = str(check_run.get("name") or "")
@@ -841,6 +1072,33 @@ def conflict_recovery_prompt(pr: dict[str, Any]) -> str:
     )
 
 
+def changed_files_block(pr: dict[str, Any]) -> str:
+    changed_files = sanitize_changed_files(list(pr.get("changed_files") or []))
+    if not changed_files:
+        return ""
+    lines = "\n".join(f"- `{name}`" for name in changed_files)
+    return f"\n\nChanged files from this PR:\n{lines}"
+
+
+def failed_check_detail_lines(check_run: dict[str, Any]) -> list[str]:
+    lines: list[str] = []
+    annotations = check_run.get("annotations") or []
+    if isinstance(annotations, list):
+        for annotation in annotations[:MAX_FAILED_CHECK_ANNOTATIONS]:
+            text = jules_recovery_prompt.sanitize_text(str(annotation), limit=360)
+            if text:
+                lines.append(f"  annotation: {text}")
+
+    log_excerpt = str(check_run.get("log_excerpt") or "")
+    if log_excerpt:
+        lines.append("  log_excerpt:")
+        for line in log_excerpt.splitlines()[:MAX_FAILED_CHECK_LOG_LINES]:
+            text = jules_recovery_prompt.sanitize_text(line, limit=320)
+            if text:
+                lines.append(f"    {text}")
+    return lines
+
+
 def failed_check_recovery_prompt(pr: dict[str, Any]) -> str:
     number = pr.get("number")
     sha = (pr.get("head") or {}).get("sha") or ""
@@ -853,6 +1111,7 @@ def failed_check_recovery_prompt(pr: dict[str, Any]) -> str:
         run_id = check_run_run_id(check_run)
         detail = f"details: {url}" if url else f"run_id: {run_id}" if run_id else "details: unavailable"
         check_lines.append(f"- `{name}`: {conclusion}; {detail}")
+        check_lines.extend(failed_check_detail_lines(check_run))
     checks_block = "\n".join(check_lines) if check_lines else "- failed check details unavailable"
 
     return (
@@ -861,8 +1120,10 @@ def failed_check_recovery_prompt(pr: dict[str, Any]) -> str:
         "Исправь этот же PR; не открывай новый PR и не создавай follow-up задачу.\n\n"
         "Failed checks:\n"
         f"{checks_block}\n\n"
+        f"{changed_files_block(pr)}\n\n"
         "Что нужно сделать:\n"
-        "- открой/read linked job logs и артефакты failed checks;\n"
+        "- используй failed check annotations/log_excerpt/changed files выше как первичный recovery packet;\n"
+        "- если этих excerpts недостаточно, открой/read linked job logs и артефакты failed checks;\n"
         "- если лог не содержит конкретных файлов, воспроизведи failing command локально в PR branch;\n"
         "- для Go formatting failures выполни `files=\"$(gofmt -l .)\"; if [ -n \"$files\" ]; then printf 'gofmt required for:\\n%s\\n' \"$files\"; fi`;\n"
         "- исправь причину failure внутри scope текущей задачи и allowed_paths;\n"
@@ -874,28 +1135,51 @@ def failed_check_recovery_prompt(pr: dict[str, Any]) -> str:
 
 
 def failed_check_prompt_context(pr: dict[str, Any], *, repo: str) -> dict[str, Any]:
-    failed_checks: list[dict[str, str]] = []
+    failed_checks: list[dict[str, Any]] = []
     for check_run in failed_check_runs(pr)[:8]:
-        failed_checks.append(
-            {
-                "name": jules_recovery_prompt.sanitize_text(check_run_display_name(check_run), limit=180),
-                "conclusion": jules_recovery_prompt.sanitize_text(
-                    str(check_run.get("conclusion") or "failure"),
-                    limit=80,
-                ),
-                "run_id": jules_recovery_prompt.sanitize_text(check_run_run_id(check_run), limit=80),
-                "details_url": jules_recovery_prompt.sanitize_text(
-                    str(check_run.get("details_url") or check_run.get("html_url") or ""),
-                    limit=240,
-                ),
-            }
-        )
+        item: dict[str, Any] = {
+            "name": jules_recovery_prompt.sanitize_text(check_run_display_name(check_run), limit=180),
+            "conclusion": jules_recovery_prompt.sanitize_text(
+                str(check_run.get("conclusion") or "failure"),
+                limit=80,
+            ),
+            "run_id": jules_recovery_prompt.sanitize_text(check_run_run_id(check_run), limit=80),
+            "details_url": jules_recovery_prompt.sanitize_text(
+                str(check_run.get("details_url") or check_run.get("html_url") or ""),
+                limit=240,
+            ),
+        }
+        annotations = check_run.get("annotations") or []
+        if isinstance(annotations, list) and annotations:
+            item["annotations"] = [
+                jules_recovery_prompt.sanitize_text(str(annotation), limit=360)
+                for annotation in annotations[:MAX_FAILED_CHECK_ANNOTATIONS]
+                if str(annotation).strip()
+            ]
+        log_excerpt = str(check_run.get("log_excerpt") or "")
+        if log_excerpt:
+            item["log_excerpt"] = failure_log_excerpt(log_excerpt) or jules_recovery_prompt.sanitize_text(
+                log_excerpt,
+                limit=MAX_FAILED_CHECK_LOG_EXCERPT_CHARS,
+            )
+        if check_run.get("annotations_error"):
+            item["annotations_error"] = jules_recovery_prompt.sanitize_text(
+                str(check_run.get("annotations_error")),
+                limit=260,
+            )
+        if check_run.get("log_excerpt_error"):
+            item["log_excerpt_error"] = jules_recovery_prompt.sanitize_text(
+                str(check_run.get("log_excerpt_error")),
+                limit=260,
+            )
+        failed_checks.append(item)
     if not failed_checks:
         return {}
     return {
         "repo": jules_recovery_prompt.sanitize_text(repo, limit=180),
         "pr_number": jules_recovery_prompt.sanitize_text(f"#{pr.get('number')}", limit=80),
         "head_sha": jules_recovery_prompt.sanitize_text(str((pr.get("head") or {}).get("sha") or ""), limit=80),
+        "changed_files": sanitize_changed_files(list(pr.get("changed_files") or [])),
         "failed_checks": failed_checks,
     }
 
@@ -2136,6 +2420,8 @@ def collect_live_state(
                 f"/repos/{client.repo}/commits/{sha}/check-runs?per_page=100",
             ) or {}
             pr["check_runs"] = checks.get("check_runs", [])
+        if number and failed_check_runs(pr):
+            enrich_failed_check_evidence(client, pr)
 
     workflow_runs: dict[str, Any] = {}
     for workflow in (

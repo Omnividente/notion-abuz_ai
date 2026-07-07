@@ -132,12 +132,23 @@ class JulesRecoveryPromptTest(unittest.TestCase):
                 "repo": "Omnividente/notion-abuz_ai",
                 "pr_number": "#401",
                 "head_sha": "abc123",
+                "changed_files": [
+                    ".github/scripts/jules-recovery-router.py",
+                    "pr_body.txt",
+                ],
                 "failed_checks": [
                     {
                         "name": "CI / validate",
                         "conclusion": "failure",
                         "run_id": "12345",
                         "details_url": "https://github.com/o/r/actions/runs/12345/job/9?token=ghp_abcdef1234567890",
+                        "annotations": [
+                            "pr_body.txt: PR changes protected scratch file with token=ghp_abcdef1234567890"
+                        ],
+                        "log_excerpt": (
+                            "pr_body.txt\n"
+                            "##[error]PR changes protected runtime, secret, binary, log, data, account, workflow, or temporary scratch files."
+                        ),
                     }
                 ],
             },
@@ -149,8 +160,12 @@ class JulesRecoveryPromptTest(unittest.TestCase):
         self.assertIn("session_state: AWAITING_USER_FEEDBACK", prompt)
         self.assertIn("pr_context: available", prompt)
         self.assertIn("pr_number: #401", prompt)
+        self.assertIn("changed_files:", prompt)
+        self.assertIn("pr_body.txt", prompt)
         self.assertIn("CI / validate: failure", prompt)
-        self.assertIn("открой/read linked job logs", prompt)
+        self.assertIn("annotation:", prompt)
+        self.assertIn("log_excerpt:", prompt)
+        self.assertIn("используй annotations/log_excerpt/changed_files", prompt)
         self.assertIn("[REDACTED]", prompt)
         self.assertNotIn("ghp_abcdef1234567890", prompt)
 
