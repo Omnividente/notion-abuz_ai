@@ -6359,7 +6359,7 @@
     },
     {
       "id": "automation-health-todo-below-minimum-c4763a56",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: todo_below_minimum",
@@ -6377,7 +6377,8 @@
       "health_finding_hash": "c4763a566875",
       "health_finding_code": "todo_below_minimum",
       "health_finding_severity": "degraded",
-      "health_report_generated_at": "2026-07-07T06:43:34Z"
+      "health_report_generated_at": "2026-07-07T06:43:34Z",
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 2191630921890936779. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
     },
     {
       "id": "automation-health-repeated-followup-generation-6dc5c3e5",
