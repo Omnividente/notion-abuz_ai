@@ -1145,6 +1145,74 @@ Blocking reasons:
         self.assertIn("allowed_paths: .github/scripts/jules-recovery-router.py", prompt)
         self.assertIn("Повтори targeted search/read", prompt)
 
+    def test_awaiting_user_feedback_prompt_includes_associated_failed_check_context(self) -> None:
+        failed_pr = pr(
+            labels=["jules"],
+            comments=["<!-- AUTONOMOUS_RECOVERY_ROUTER action=failed-check sha=abc123 -->"],
+            check_runs=[
+                {
+                    "name": "validate",
+                    "workflowName": "CI",
+                    "status": "completed",
+                    "conclusion": "failure",
+                    "details_url": (
+                        "https://github.com/o/r/actions/runs/222/job/3"
+                        "?token=ghp_abcdef1234567890"
+                    ),
+                }
+            ],
+        )
+        fingerprint = router.failed_check_fingerprint(failed_pr)
+        ledger = {
+            "version": 1,
+            "actions": {
+                f"failed-check-recovery:10:abc123:{fingerprint}": {
+                    "time": (NOW - timedelta(minutes=5)).isoformat().replace("+00:00", "Z"),
+                    "type": "failed_check_recovery",
+                }
+            },
+        }
+        actions = plan(
+            state(
+                open_pulls=[failed_pr],
+                jules_sessions=[
+                    session(
+                        state="AWAITING_USER_FEEDBACK",
+                        wait_reason="unknown_continue",
+                        prompt_action="continue_safely",
+                        latest_agent_excerpt="I am waiting for input before fixing the failed check.",
+                    )
+                ],
+                task_details={
+                    "automation-health-failed-session-86122315": {
+                        "status": "todo",
+                        "area": "automation",
+                        "risk": "low",
+                        "title": "Recover stuck session",
+                        "allowed_paths": [".github/scripts/jules-recovery-router.py"],
+                        "acceptance": ["Prompt includes failed check context"],
+                    }
+                },
+            ),
+            ledger=ledger,
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "jules_send_message")
+        prompt = actions[0].payload["prompt"]
+        self.assertIn("pr_context: available", prompt)
+        self.assertIn("pr_number: #10", prompt)
+        self.assertIn("pr_head_sha: abc123", prompt)
+        self.assertIn("CI / validate: failure", prompt)
+        self.assertIn("открой/read linked job logs", prompt)
+        self.assertNotIn("ghp_abcdef1234567890", prompt)
+        self.assertEqual(actions[0].payload["pr_context"]["pr_number"], "#10")
+        self.assertIn("[REDACTED]", actions[0].payload["pr_context"]["failed_checks"][0]["details_url"])
+        self.assertNotIn(
+            "ghp_abcdef1234567890",
+            actions[0].payload["pr_context"]["failed_checks"][0]["details_url"],
+        )
+
     def test_awaiting_user_feedback_token_prevents_duplicate_continue(self) -> None:
         actions = plan(
             state(

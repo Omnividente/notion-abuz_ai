@@ -790,6 +790,66 @@ def failed_check_recovery_prompt(pr: dict[str, Any]) -> str:
     )
 
 
+def failed_check_prompt_context(pr: dict[str, Any], *, repo: str) -> dict[str, Any]:
+    failed_checks: list[dict[str, str]] = []
+    for check_run in failed_check_runs(pr)[:8]:
+        failed_checks.append(
+            {
+                "name": jules_recovery_prompt.sanitize_text(check_run_display_name(check_run), limit=180),
+                "conclusion": jules_recovery_prompt.sanitize_text(
+                    str(check_run.get("conclusion") or "failure"),
+                    limit=80,
+                ),
+                "run_id": jules_recovery_prompt.sanitize_text(check_run_run_id(check_run), limit=80),
+                "details_url": jules_recovery_prompt.sanitize_text(
+                    str(check_run.get("details_url") or check_run.get("html_url") or ""),
+                    limit=240,
+                ),
+            }
+        )
+    if not failed_checks:
+        return {}
+    return {
+        "repo": jules_recovery_prompt.sanitize_text(repo, limit=180),
+        "pr_number": jules_recovery_prompt.sanitize_text(f"#{pr.get('number')}", limit=80),
+        "head_sha": jules_recovery_prompt.sanitize_text(str((pr.get("head") or {}).get("sha") or ""), limit=80),
+        "failed_checks": failed_checks,
+    }
+
+
+def associated_pr_for_session(
+    session: dict[str, Any],
+    open_prs: list[dict[str, Any]],
+    task_ids: list[str],
+) -> dict[str, Any] | None:
+    session_id = str(session.get("session_id") or "")
+    summary = session.get("activity_summary") or {}
+    task_id = str(session.get("task_id") or summary.get("task_id") or "")
+
+    if session_id:
+        for pr in open_prs:
+            if extract_session_id_from_pr(pr) == session_id:
+                return pr
+    if task_id:
+        for pr in open_prs:
+            if task_id_from_pr(pr, task_ids) == task_id:
+                return pr
+    return None
+
+
+def session_pr_context(
+    session: dict[str, Any],
+    open_prs: list[dict[str, Any]],
+    *,
+    repo: str,
+    task_ids: list[str],
+) -> dict[str, Any]:
+    pr = associated_pr_for_session(session, open_prs, task_ids)
+    if not pr:
+        return {}
+    return failed_check_prompt_context(pr, repo=repo)
+
+
 def jules_sessions(state: dict[str, Any]) -> list[dict[str, Any]]:
     jules = state.get("jules") or {}
     sessions = jules.get("sessions") or []
@@ -849,10 +909,21 @@ def recovery_prompt_payload_for_session(
     *,
     mode: str,
     stale_reason: str = "",
+    repo: str = "",
+    task_ids: list[str] | None = None,
+    open_prs: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     summary = dict(session.get("activity_summary") or {})
     task_id = str(session.get("task_id") or summary.get("task_id") or "")
     task = (state.get("task_details") or {}).get(task_id)
+    pr_context = {}
+    if repo and task_ids is not None:
+        pr_context = session_pr_context(
+            session,
+            open_prs if open_prs is not None else list(state.get("open_pulls") or []),
+            repo=repo,
+            task_ids=task_ids,
+        )
     return jules_recovery_prompt.build_prompt_payload(
         summary=summary,
         task=task,
@@ -860,6 +931,7 @@ def recovery_prompt_payload_for_session(
         mode=mode,
         stale_reason=stale_reason,
         max_continue_attempts=MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS,
+        pr_context=pr_context,
     )
 
 
@@ -870,6 +942,9 @@ def plan_stale_feedback_action(
     *,
     now: datetime,
     reason: str,
+    repo: str = "",
+    task_ids: list[str] | None = None,
+    open_prs: list[dict[str, Any]] | None = None,
 ) -> RecoveryAction | None:
     session_id = str(session.get("session_id") or "")
     if not session_id:
@@ -901,6 +976,9 @@ def plan_stale_feedback_action(
         state,
         mode="stale",
         stale_reason=reason,
+        repo=repo,
+        task_ids=task_ids,
+        open_prs=open_prs,
     )
     return RecoveryAction(
         type="jules_send_message",
@@ -913,6 +991,7 @@ def plan_stale_feedback_action(
             "wait_reason": prompt_payload["wait_reason"],
             "prompt_action": prompt_payload["prompt_action"],
             "task_id": prompt_payload["task_id"],
+            "pr_context": prompt_payload["pr_context"],
         },
     )
 
@@ -1118,9 +1197,6 @@ def plan_recovery_actions(
                 )
                 return actions
 
-    if open_prs:
-        return actions
-
     for session in active_jules_sessions(state):
         session_id = str(session.get("session_id") or "")
         session_name = str(session.get("name") or f"sessions/{session_id}")
@@ -1146,6 +1222,9 @@ def plan_recovery_actions(
                 session,
                 state,
                 mode="continue",
+                repo=repo,
+                task_ids=task_ids,
+                open_prs=open_prs,
             )
             prompt = prompt_payload["prompt"]
             dedupe_key = f"continue:{session_id}:{summary.get('latest_agent_epoch') or update_marker}"
@@ -1162,6 +1241,7 @@ def plan_recovery_actions(
                             "wait_reason": prompt_payload["wait_reason"],
                             "prompt_action": prompt_payload["prompt_action"],
                             "task_id": prompt_payload["task_id"],
+                            "pr_context": prompt_payload["pr_context"],
                         },
                     )
                 )
@@ -1173,6 +1253,9 @@ def plan_recovery_actions(
                     ledger,
                     now=now,
                     reason="recorded continue did not produce new agent activity",
+                    repo=repo,
+                    task_ids=task_ids,
+                    open_prs=open_prs,
                 )
                 if action:
                     actions.append(action)
@@ -1185,11 +1268,17 @@ def plan_recovery_actions(
                 ledger,
                 now=now,
                 reason="latest autonomous continue token is stale",
+                repo=repo,
+                task_ids=task_ids,
+                open_prs=open_prs,
             )
             if action:
                 actions.append(action)
                 return actions
             continue
+
+    if open_prs:
+        return actions
 
     task_statuses = state.get("task_statuses") or {}
     active_ids = active_task_ids(state)

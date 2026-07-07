@@ -6157,7 +6157,7 @@
     },
     {
       "id": "automation-stuck-session-failed-check-context",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Include failed-check context in stuck Jules recovery prompts",
@@ -6176,7 +6176,8 @@
       ],
       "source_finding_id": "stuck-session-missing-failed-check-context",
       "source_document": "jules-recovery-router",
-      "source_reference": "AWAITING_USER_FEEDBACK dynamic prompt audit"
+      "source_reference": "AWAITING_USER_FEEDBACK dynamic prompt audit",
+      "completion_notes": "Dynamic stuck-session recovery prompts now include sanitized associated PR failed-check context when available, and router tests cover the cooldown/marker case where PR-level failed-check recovery was already sent."
     },
     {
       "id": "proxy-runtime-transient-api-partial-context-retry",
