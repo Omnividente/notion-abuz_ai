@@ -29,6 +29,8 @@ if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
     echo "failed_recovery_reason=no Jules API keys configured"
     echo "skipped_inactive_sessions="
     echo "skipped_inactive_count=0"
+    echo "skipped_unknown_in_progress_sessions="
+    echo "skipped_unknown_in_progress_count=0"
   } >> "${GITHUB_OUTPUT:-/dev/null}"
   exit 0
 fi
@@ -74,6 +76,7 @@ stale_waiting_sessions=()
 stale_in_progress_sessions=()
 skipped_stopped_sessions=()
 skipped_inactive_sessions=()
+skipped_unknown_in_progress_sessions=()
 wait_reason_details=()
 prompt_action_details=()
 prompt_task_id_details=()
@@ -326,6 +329,21 @@ skip_inactive_manifest_session() {
   return 0
 }
 
+skip_unknown_in_progress_session() {
+  local session_name="$1"
+  local task_id="$2"
+  if [ -n "$task_id" ]; then
+    return 1
+  fi
+
+  echo "Skipped ${session_name}; IN_PROGRESS recovery has no task_id or manifest scope."
+  skipped_unknown_in_progress_sessions+=("${session_name##*/}")
+  if [ "$active_sessions" -gt 0 ]; then
+    active_sessions=$((active_sessions - 1))
+  fi
+  return 0
+}
+
 skip_stopped_active_session() {
   local session_name="$1"
   local task_id="$2"
@@ -537,6 +555,9 @@ for i in "${!key_labels[@]}"; do
         prompt_task_id="$(jq -r '.task_id // ""' "$prompt_json")"
         if [ -z "$active_task_id" ] && [ -n "$prompt_task_id" ]; then
           active_task_id="$prompt_task_id"
+        fi
+        if skip_unknown_in_progress_session "$session_name" "$active_task_id"; then
+          continue
         fi
         if skip_inactive_manifest_session "$session_name" "$active_task_id"; then
           continue
@@ -857,11 +878,13 @@ echo "Stale waiting Jules sessions: ${#stale_waiting_sessions[@]}"
 echo "Stale in-progress Jules sessions: ${#stale_in_progress_sessions[@]}"
 echo "Skipped stopped Jules sessions: ${#skipped_stopped_sessions[@]}"
 echo "Skipped inactive manifest Jules sessions: ${#skipped_inactive_sessions[@]}"
+echo "Skipped unknown in-progress Jules sessions: ${#skipped_unknown_in_progress_sessions[@]}"
 session_ids_csv="$(IFS=,; echo "${session_ids[*]}")"
 stale_waiting_csv="$(IFS=,; echo "${stale_waiting_sessions[*]}")"
 stale_in_progress_csv="$(IFS=,; echo "${stale_in_progress_sessions[*]}")"
 skipped_stopped_csv="$(IFS=,; echo "${skipped_stopped_sessions[*]}")"
 skipped_inactive_csv="$(IFS=,; echo "${skipped_inactive_sessions[*]}")"
+skipped_unknown_in_progress_csv="$(IFS=,; echo "${skipped_unknown_in_progress_sessions[*]}")"
 wait_reason_csv="$(IFS=,; echo "${wait_reason_details[*]}")"
 prompt_action_csv="$(IFS=,; echo "${prompt_action_details[*]}")"
 prompt_task_id_csv="$(IFS=,; echo "${prompt_task_id_details[*]}")"
@@ -880,6 +903,8 @@ continue_attempt_csv="$(IFS=,; echo "${continue_attempt_details[*]}")"
   echo "skipped_stopped_count=${#skipped_stopped_sessions[@]}"
   echo "skipped_inactive_sessions=${skipped_inactive_csv}"
   echo "skipped_inactive_count=${#skipped_inactive_sessions[@]}"
+  echo "skipped_unknown_in_progress_sessions=${skipped_unknown_in_progress_csv}"
+  echo "skipped_unknown_in_progress_count=${#skipped_unknown_in_progress_sessions[@]}"
   echo "wait_reason=${wait_reason_csv}"
   echo "prompt_action=${prompt_action_csv}"
   echo "prompt_task_id=${prompt_task_id_csv}"

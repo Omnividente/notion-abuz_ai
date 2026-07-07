@@ -88,6 +88,8 @@ elif scenario == "in_progress_no_agent_token_stale":
     session_name = "sessions/test-in-progress-no-agent-token-stale"
 elif scenario == "in_progress_inactive_manifest":
     session_name = "sessions/test-in-progress-inactive"
+elif scenario == "in_progress_unknown_task":
+    session_name = "sessions/test-in-progress-unknown"
 elif scenario == "in_progress_no_agent_repeat":
     session_name = "sessions/test-in-progress-no-agent-repeat"
 elif scenario == "in_progress_repeat":
@@ -133,16 +135,19 @@ elif method == "GET" and "/pulls?state=open" in url:
             }
         ]
 elif method == "GET" and "/actions/variables/JULES_RECENT_SESSION_TASKS" in url:
-    payload = {
-        "value": json.dumps(
-            {
-                session_name.split("/")[-1]: {
-                    "task_id": task_id,
-                    "updateTime": iso(now - 60),
+    if scenario == "in_progress_unknown_task":
+        payload = {"value": "{}"}
+    else:
+        payload = {
+            "value": json.dumps(
+                {
+                    session_name.split("/")[-1]: {
+                        "task_id": task_id,
+                        "updateTime": iso(now - 60),
+                    }
                 }
-            }
-        )
-    }
+            )
+        }
 elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "stopped_in_progress":
     payload = {
         "activities": [
@@ -200,6 +205,18 @@ elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "
                         f"selected task id: {task_id}\n"
                         "Old inactive task session should not receive another recovery prompt."
                     )
+                },
+            }
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "in_progress_unknown_task":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 3900),
+                "message": {
+                    "text": "I am still working, but this old transcript has no selected task id."
                 },
             }
         ]
@@ -624,6 +641,37 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertIn(
                 f"test-in-progress-inactive:{INACTIVE_TASK_ID}:blocked",
                 outputs["skipped_inactive_sessions"],
+            )
+
+    def test_unknown_in_progress_session_does_not_receive_recovery_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path,
+                scenario="in_progress_unknown_task",
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn("Skipped sessions/test-in-progress-unknown", result.stdout)
+            self.assertIn("IN_PROGRESS recovery has no task_id", result.stdout)
+            self.assertFalse(send_body.exists())
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertEqual(outputs["active_sessions"], "0")
+            self.assertEqual(outputs["touched_sessions"], "0")
+            self.assertEqual(outputs["stale_in_progress_count"], "0")
+            self.assertEqual(outputs["skipped_unknown_in_progress_count"], "1")
+            self.assertIn(
+                "test-in-progress-unknown",
+                outputs["skipped_unknown_in_progress_sessions"],
             )
 
     def test_long_running_in_progress_session_gets_recovery_prompt_even_with_fresh_activity(self) -> None:
