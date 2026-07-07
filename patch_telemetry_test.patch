@@ -1,0 +1,25 @@
+--- internal/proxy/telemetry_metrics_test.go
++++ internal/proxy/telemetry_metrics_test.go
+@@ -14,7 +14,12 @@
+	contextLossMetricsMu.Unlock()
+
+	recordContextLossMetric("tool_schema_simplification_recursion_limit")
++
++	toolModeLossMetricsMu.Lock()
++	toolModeLossMetrics = make(map[string]int)
++	toolModeLossMetricsMu.Unlock()
+
++	recordToolModeLossMetric("unparseable_json_candidate_blocks")
+	auth := NewDashboardAuth("", "")
+
+	req, _ := http.NewRequest("GET", "/admin/metrics", nil)
+@@ -35,4 +40,9 @@
+	if metrics["tool_schema_simplification_recursion_limit"] != 1 {
+		t.Errorf("expected tool_schema_simplification_recursion_limit to be 1, got %d", metrics["tool_schema_simplification_recursion_limit"])
+	}
++
++	toolModeLossMetrics := res["tool_mode_loss"]
++	if toolModeLossMetrics["unparseable_json_candidate_blocks"] != 1 {
++		t.Errorf("expected unparseable_json_candidate_blocks to be 1, got %d", toolModeLossMetrics["unparseable_json_candidate_blocks"])
++	}
+ }

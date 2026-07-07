@@ -10,3 +10,14 @@ func GetContextLossMetrics() map[string]int {
 	}
 	return out
 }
+
+func GetToolModeLossMetrics() map[string]int {
+	toolModeLossMetricsMu.Lock()
+	defer toolModeLossMetricsMu.Unlock()
+
+	out := make(map[string]int, len(toolModeLossMetrics))
+	for k, v := range toolModeLossMetrics {
+		out[k] = v
+	}
+	return out
+}

@@ -1,0 +1,14 @@
+--- internal/proxy/handler.go
++++ internal/proxy/handler.go
+@@ -506,8 +506,10 @@
+		}
+
+		metrics := GetContextLossMetrics()
++		toolModeLossMetrics := GetToolModeLossMetrics()
+		json.NewEncoder(w).Encode(map[string]interface{}{
+-			"context_loss": metrics,
++			"context_loss":   metrics,
++			"tool_mode_loss": toolModeLossMetrics,
+		})
+	}
+ }

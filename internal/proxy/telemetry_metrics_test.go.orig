@@ -15,11 +15,6 @@ func TestHandleAdminMetrics(t *testing.T) {
 
 	recordContextLossMetric("tool_schema_simplification_recursion_limit")
 
-	toolModeLossMetricsMu.Lock()
-	toolModeLossMetrics = make(map[string]int)
-	toolModeLossMetricsMu.Unlock()
-
-	recordToolModeLossMetric("unparseable_json_candidate_blocks")
 	auth := NewDashboardAuth("", "")
 
 	req, _ := http.NewRequest("GET", "/admin/metrics", nil)
@@ -40,10 +35,5 @@ func TestHandleAdminMetrics(t *testing.T) {
 	metrics := res["context_loss"]
 	if metrics["tool_schema_simplification_recursion_limit"] != 1 {
 		t.Errorf("expected tool_schema_simplification_recursion_limit to be 1, got %d", metrics["tool_schema_simplification_recursion_limit"])
-	}
-
-	toolModeLossMetrics := res["tool_mode_loss"]
-	if toolModeLossMetrics["unparseable_json_candidate_blocks"] != 1 {
-		t.Errorf("expected unparseable_json_candidate_blocks to be 1, got %d", toolModeLossMetrics["unparseable_json_candidate_blocks"])
 	}
 }
