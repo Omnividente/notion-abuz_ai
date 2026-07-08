@@ -179,6 +179,24 @@ class FilterActiveJulesSessionsTest(unittest.TestCase):
         self.assertIn("Blocking session: sessions/222 (reason: unknown_task_id)", output)
         self.assertIn("Ignored session: sessions/111 (reason: unknown_in_progress_task_id)", output)
 
+    def test_load_json_handles_missing_file(self) -> None:
+        from pathlib import Path
+        result = module.load_json(Path("does_not_exist_file.json"))
+        self.assertEqual(result, {})
+
+    def test_load_json_handles_invalid_json(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.NamedTemporaryFile("w+", delete=False) as f:
+            f.write("{invalid_json: true")
+            temp_path = f.name
+
+        try:
+            result = module.load_json(Path(temp_path))
+            self.assertEqual(result, {})
+        finally:
+            Path(temp_path).unlink()
 
 if __name__ == "__main__":
     unittest.main()
