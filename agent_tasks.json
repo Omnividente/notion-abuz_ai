@@ -7048,7 +7048,7 @@
     },
     {
       "id": "proxy-grace-period-logging",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add structured logging for termination grace period decisions",
@@ -7059,6 +7059,22 @@
       ],
       "acceptance": [
         "A structured log format is emitted when a session avoids termination due to grace period."
+      ]
+    },
+    {
+      "id": "proxy-log-event-formatting",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Standardize event labels in shell script logs",
+      "description": "To improve log consistency, review the bash scripts in .github/scripts/ for JSON logs and ensure they all use consistent 'event' keys.",
+      "allowed_paths": [
+        ".github/scripts/jules-unattended-monitor.sh",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Identify any inconsistent JSON structured logs and standardize the key for event types."
       ]
     }
   ]

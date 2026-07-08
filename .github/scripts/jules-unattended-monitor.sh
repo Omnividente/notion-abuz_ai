@@ -428,6 +428,20 @@ record_prompt_detail() {
   continue_attempt_details+=("${session_id}:${continue_attempts}/${max_attempts}")
 }
 
+log_grace_period_skip() {
+  local session="$1"
+  local task="$2"
+  local age="$3"
+  echo "Skipped deletion of ${session}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${age}s old)."
+  jq -n -c \
+    --arg event "grace_period_skip" \
+    --arg session "$session" \
+    --arg task_id "${task:-unknown}" \
+    --argjson age "$age" \
+    --argjson grace "$TERMINATION_GRACE_PERIOD_MINUTES" \
+    '{event: $event, session: $session, task_id: $task_id, token_age_seconds: $age, grace_period_minutes: $grace}'
+}
+
 session_epoch_filter='
   def ts:
     ((.updateTime // .createTime // "1970-01-01T00:00:00Z")
@@ -588,7 +602,7 @@ for i in "${!key_labels[@]}"; do
           if [ "$continue_token_count" -ge "$max_stale_in_progress_escalations" ]; then
             token_age="$((now_epoch - latest_token_epoch))"
             if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
-              echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
+              log_grace_period_skip "$session_name" "$active_task_id" "$token_age"
               record_active_task_id "$active_task_id"
               continue
             fi
@@ -672,7 +686,7 @@ for i in "${!key_labels[@]}"; do
         if [ "$continue_token_count" -ge "$max_stale_in_progress_escalations" ]; then
           token_age="$((now_epoch - latest_token_epoch))"
           if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
-            echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
+            log_grace_period_skip "$session_name" "$active_task_id" "$token_age"
             record_active_task_id "$active_task_id"
             continue
           fi
@@ -805,12 +819,7 @@ for i in "${!key_labels[@]}"; do
       fi
       if [ "$continue_token_count" -ge "$max_stale_feedback_escalations" ]; then
         if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
-          echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
-          record_active_task_id "$active_task_id"
-          continue
-        fi
-        if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
-          echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
+          log_grace_period_skip "$session_name" "$active_task_id" "$token_age"
           record_active_task_id "$active_task_id"
           continue
         fi
@@ -854,12 +863,7 @@ for i in "${!key_labels[@]}"; do
     if [ "$continue_token_count" -ge "$max_stale_feedback_escalations" ]; then
       token_age="$((now_epoch - latest_token_epoch))"
       if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
-        echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
-        record_active_task_id "$active_task_id"
-        continue
-      fi
-      if [ "$token_age" -lt "$termination_grace_period_seconds" ]; then
-        echo "Skipped deletion of ${session_name}; session is in its ${TERMINATION_GRACE_PERIOD_MINUTES} minute termination grace period (${token_age}s old)."
+        log_grace_period_skip "$session_name" "$active_task_id" "$token_age"
         record_active_task_id "$active_task_id"
         continue
       fi
