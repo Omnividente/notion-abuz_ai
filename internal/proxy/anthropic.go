@@ -1656,10 +1656,7 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 			return
 		}
 		headersSent = true
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		w.Header().Set("X-Accel-Buffering", "no")
+		setAnthropicSSEHeaders(w)
 		w.WriteHeader(http.StatusOK)
 
 		inputTokens := 0
@@ -1768,10 +1765,7 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 		}
 		log.Printf("[err] %s: streaming failed mid-stream, partial state: sawContent=%v, flushed=%d chars, toolURLs=%d, error=%v", requestID, sawContent, fullContent.Len(), len(knownCitationURLs), cbErr)
 		if !headersSent {
-			w.Header().Set("Content-Type", "text/event-stream")
-			w.Header().Set("Cache-Control", "no-cache")
-			w.Header().Set("Connection", "keep-alive")
-			w.Header().Set("X-Accel-Buffering", "no")
+			setAnthropicSSEHeaders(w)
 			w.WriteHeader(http.StatusOK)
 		}
 		sendAnthropicSSE(w, flusher, "error", map[string]interface{}{
@@ -1894,6 +1888,14 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 }
 
 // handleAnthropicStream handles streaming Anthropic response
+
+func setAnthropicSSEHeaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+}
+
 func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
 	var fullContent strings.Builder
 	var finalUsage *UsageInfo
@@ -1944,10 +1946,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 		}
 		log.Printf("[err] %s: streaming failed mid-stream, partial state: sawContent=false, toolURLs=0, error=%v", requestID, cbErr)
 
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		w.Header().Set("X-Accel-Buffering", "no")
+		setAnthropicSSEHeaders(w)
 		w.WriteHeader(http.StatusOK)
 
 		flusher, ok := w.(http.Flusher)
@@ -2023,10 +2022,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 		return nil
 	}
 
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("X-Accel-Buffering", "no")
+	setAnthropicSSEHeaders(w)
 	w.WriteHeader(http.StatusOK)
 
 	// message_start
@@ -2616,10 +2612,7 @@ func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []Chat
 			return
 		}
 		headersSent = true
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		w.Header().Set("X-Accel-Buffering", "no")
+		setAnthropicSSEHeaders(w)
 		w.WriteHeader(http.StatusOK)
 
 		sendAnthropicSSE(w, flusher, "message_start", map[string]interface{}{
@@ -2745,10 +2738,7 @@ func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []Chat
 		log.Printf("[err] %s researcher: %v", requestID, cbErr)
 		log.Printf("[err] %s: streaming failed mid-stream, partial state: thinking_chars=%d, text_chars=%d, textBlockStarted=%v", requestID, thinkingForLog.Len(), textForLog.Len(), textBlockStarted)
 		if !headersSent {
-			w.Header().Set("Content-Type", "text/event-stream")
-			w.Header().Set("Cache-Control", "no-cache")
-			w.Header().Set("Connection", "keep-alive")
-			w.Header().Set("X-Accel-Buffering", "no")
+			setAnthropicSSEHeaders(w)
 			w.WriteHeader(http.StatusOK)
 		}
 		flusher, ok := w.(http.Flusher)
