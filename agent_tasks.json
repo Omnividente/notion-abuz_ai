@@ -7286,7 +7286,7 @@
     },
     {
       "id": "audit-openai-sse-headers",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit OpenAI SSE Headers",
@@ -7297,6 +7297,21 @@
       ],
       "acceptance": [
         "OpenAI SSE headers are normalized via a helper function to prevent duplicate headers."
+      ]
+    },
+    {
+      "id": "proxy-audit-sse-headers-msa",
+      "status": "todo",
+      "area": "msalogin",
+      "risk": "low",
+      "title": "Audit MSA login SSE Headers",
+      "description": "Ensure SSE headers in msalogin use the centralized setSSEHeaders helper if applicable.",
+      "allowed_paths": [
+        "internal/msalogin/login.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "MSA login SSE headers are reviewed and normalized if needed."
       ]
     }
   ]
