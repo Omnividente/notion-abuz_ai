@@ -223,6 +223,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Active Jules state. Defaults to the known active states.",
     )
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--debug", action="store_true", help="Print debug list of blocking and ignored sessions")
     return parser
 
 
@@ -241,6 +242,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
+        if args.debug:
+            import sys
+            for item in result.get("blocking_sessions", []):
+                print(f"Blocking session: {item.get('session_name')} (reason: {item.get('reason')})", file=sys.stderr)
+            for item in result.get("ignored_sessions", []):
+                print(f"Ignored session: {item.get('session_name')} (reason: {item.get('reason')})", file=sys.stderr)
         print(result["blocking_count"])
     return 0
 

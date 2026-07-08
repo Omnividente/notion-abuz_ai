@@ -147,6 +147,38 @@ class FilterActiveJulesSessionsTest(unittest.TestCase):
 
         self.assertEqual(parsed["111"]["task_id"], "done-task")
 
+    def test_debug_logging_prints_blocking_and_ignored_sessions(self) -> None:
+        import io
+        import json
+        import tempfile
+
+        test_sessions = {
+            "sessions": [
+                session("111"),  # ignored: unknown_in_progress_task_id
+                session("222", state="AWAITING_USER_FEEDBACK"),  # blocking: unknown_task_id
+            ]
+        }
+
+        with tempfile.NamedTemporaryFile("w+", delete=False) as f:
+            json.dump(test_sessions, f)
+            temp_path = f.name
+
+        captured_stderr = io.StringIO()
+        old_stderr = sys.stderr
+        sys.stderr = captured_stderr
+        try:
+            # Pass debug flag but not JSON flag
+            module.main(["--sessions", temp_path, "--source", SOURCE, "--debug"])
+        except SystemExit:
+            pass
+        finally:
+            sys.stderr = old_stderr
+            Path(temp_path).unlink()
+
+        output = captured_stderr.getvalue()
+        self.assertIn("Blocking session: sessions/222 (reason: unknown_task_id)", output)
+        self.assertIn("Ignored session: sessions/111 (reason: unknown_in_progress_task_id)", output)
+
 
 if __name__ == "__main__":
     unittest.main()
