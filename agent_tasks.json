@@ -7208,7 +7208,7 @@
     },
     {
       "id": "audit-check-user-workspace-timeout",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Audit CheckUserWorkspace timeout",
@@ -7219,6 +7219,22 @@
       ],
       "acceptance": [
         "CheckUserWorkspace uses client with configured timeout."
+      ],
+      "blocked_reason": "The task asks to explicitly use a client with configured timeout in CheckUserWorkspace, but `client := getChromeHTTPClient(AppConfig.APITimeoutDuration())` is already correctly used, so the acceptance criterion is met without any runtime change needed."
+    },
+    {
+      "id": "audit-check-quota-timeout",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit CheckQuota timeout",
+      "description": "Ensure CheckQuota applies explicit HTTP timeouts when calling Notion API.",
+      "allowed_paths": [
+        "internal/proxy/notion.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "CheckQuota uses client with configured timeout."
       ]
     }
   ]
