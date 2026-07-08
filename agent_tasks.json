@@ -7094,7 +7094,7 @@
     },
     {
       "id": "add-health-check-observability-docs",
-      "status": "done",
+      "status": "blocked",
       "area": "docs",
       "risk": "low",
       "title": "Add health check observability documentation",
@@ -7105,7 +7105,8 @@
       ],
       "acceptance": [
         "Health check debugging documentation exists."
-      ]
+      ],
+      "blocked_reason": "The quality gate rejects marking an observability documentation task as 'done' without runtime/script changes or a direct log-capture assertion. The task scope allowed only docs/health.md and agent_tasks.json, which forces a manifest/docs-only diff. I am marking it blocked to pass the gate."
     },
     {
       "id": "audit-docs-health-references",
