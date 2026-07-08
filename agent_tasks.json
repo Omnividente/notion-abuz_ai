@@ -6988,7 +6988,7 @@
     },
     {
       "id": "add-session-cwd-regex-match-test",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add session test for cwd regex extraction",
@@ -6998,6 +6998,20 @@
       ],
       "acceptance": [
         "A unit test verifies the extracted CWD value via context details in metrics."
+      ]
+    },
+    {
+      "id": "add-session-cwd-regex-match-test-followup-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test for system drop condition",
+      "description": "Ensure there is coverage for dropping empty wrapper user messages.",
+      "allowed_paths": [
+        "internal/proxy/session_test.go"
+      ],
+      "acceptance": [
+        "A unit test verifies the empty_wrapper_user_message_dropped metric."
       ]
     }
   ]
