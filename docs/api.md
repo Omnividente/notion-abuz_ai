@@ -200,6 +200,8 @@ Common cases:
 - `429 rate_limit_error` – every account in the pool is currently exhausted; the response message describes which quota tripped
 - `502 bad_gateway` – upstream Notion error after retries
 
+For real-time observability into the proxy's `AccountPool` and Notion AI quotas, see the [`/health` endpoint documentation](health.md).
+
 ## Error Normalization
 
 The proxy provides stable error responses:

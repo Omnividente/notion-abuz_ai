@@ -7110,7 +7110,7 @@
     },
     {
       "id": "audit-docs-health-references",
-      "status": "todo",
+      "status": "blocked",
       "area": "docs",
       "risk": "low",
       "title": "Audit documentation for health check references",
@@ -7122,6 +7122,23 @@
       ],
       "acceptance": [
         "Other relevant markdown files contain links to docs/health.md.",
+        "The task is marked as done in the manifest."
+      ],
+      "blocked_reason": "Task requires observability/logging proof, but the diff has no runtime/script change and no direct log-capture assertion. This is purely a documentation linking task, not a runtime observability task."
+    },
+    {
+      "id": "audit-dashboard-docs",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Audit dashboard docs for feature parity",
+      "description": "Ensure the dashboard documentation is up-to-date with any newly added frontend features.",
+      "allowed_paths": [
+        "docs/dashboard.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The docs/dashboard.md file includes all main tabs and features.",
         "The task is marked as done in the manifest."
       ]
     }

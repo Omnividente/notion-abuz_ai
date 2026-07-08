@@ -100,7 +100,7 @@ An invalid `NOTION_PROXY` is logged once at startup and dropped — runtime fall
 
 | Path | Purpose | Auth |
 | --- | --- | --- |
-| `GET /health` | Health and account pool summary | None |
+| `GET /health` | Health and account pool summary (see [health.md](health.md)) | None |
 | `POST /v1/messages` | Anthropic Messages API | API key |
 | `GET /dashboard/` | Dashboard UI | Dashboard login |
 | `GET /proxy/start` | Create a targeted proxy session | Dashboard login |
