@@ -6974,7 +6974,7 @@
     },
     {
       "id": "add-diagnostics-cwd-regex-dropped",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add diagnostics to cwd regex system message drop",
@@ -6984,6 +6984,20 @@
       ],
       "acceptance": [
         "recordContextLossMetric(system_message_dropped_cwd_regex) is updated to include a parameter dictionary."
+      ]
+    },
+    {
+      "id": "add-session-cwd-regex-match-test",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add session test for cwd regex extraction",
+      "description": "Ensure there is explicit coverage for testing extracted_cwd from the system prompt drop.",
+      "allowed_paths": [
+        "internal/proxy/session_test.go"
+      ],
+      "acceptance": [
+        "A unit test verifies the extracted CWD value via context details in metrics."
       ]
     }
   ]
