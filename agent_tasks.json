@@ -7031,7 +7031,7 @@
     },
     {
       "id": "filter-script-transient-api-guard",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Add test coverage for filter script json loading errors",
@@ -7090,6 +7090,21 @@
       ],
       "acceptance": [
         "Task is added to the manifest."
+      ]
+    },
+    {
+      "id": "add-health-check-observability-docs",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Add health check observability documentation",
+      "description": "Document how to observe and debug health checks in the project.",
+      "allowed_paths": [
+        "docs/health.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Health check debugging documentation exists."
       ]
     }
   ]

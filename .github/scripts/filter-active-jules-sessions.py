@@ -34,8 +34,13 @@ def now_utc() -> datetime:
 
 
 def load_json(path: Path) -> Any:
-    with path.open("r", encoding="utf-8") as data_file:
-        return json.load(data_file)
+    if not path.exists():
+        return {}
+    try:
+        with path.open("r", encoding="utf-8") as data_file:
+            return json.load(data_file)
+    except (json.JSONDecodeError, OSError):
+        return {}
 
 
 def load_manifest_statuses(path: Path) -> dict[str, str]:
