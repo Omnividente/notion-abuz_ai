@@ -65,6 +65,13 @@ Top-right `+ Register` button. Streams a job's progress live. See [Bulk Registra
 
 A history drawer (`History` button) shows the most recent jobs from `/admin/register/jobs`, with per-job snapshot, retry, and delete actions.
 
+## Models configuration
+
+A dedicated panel below the token statistics reading `GET /admin/models`. Shows:
+
+- **Configured aliases (`model_map`)** — Custom model names mapped to target internal models.
+- **Available internal models** — A list of models known to the system that can be aliased to.
+
 ## Settings panel
 
 Editable knobs persisted into `config.yaml`:
