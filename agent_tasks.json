@@ -7110,7 +7110,7 @@
     },
     {
       "id": "audit-docs-health-references",
-      "status": "done",
+      "status": "blocked",
       "area": "docs",
       "risk": "low",
       "title": "Audit documentation for health check references",
@@ -7123,7 +7123,8 @@
       "acceptance": [
         "Other relevant markdown files contain links to docs/health.md.",
         "The task is marked as done in the manifest."
-      ]
+      ],
+      "blocked_reason": "Task requires observability/logging proof, but the diff has no runtime/script change and no direct log-capture assertion. This is purely a documentation linking task, not a runtime observability task."
     },
     {
       "id": "audit-dashboard-docs",
