@@ -1,0 +1,12 @@
+<!-- AUTONOMOUS_TASK_EVIDENCE
+task_id: add-session-cwd-regex-match-test
+status: blocked
+blocked_reason: The quality gate rejected the task because it is operational/diagnostic and the PR only contains test and manifest changes. A runtime or observability proof change is required, which is out of the strict allowed_paths scope (internal/proxy/session_test.go).
+evidence_files:
+- internal/proxy/session_test.go
+- agent_tasks.json
+checks:
+- go test -v ./internal/proxy -run TestInjectToolsIntoMessages_CWDRegexExtraction
+- python3 scripts/validate_agent_tasks.py agent_tasks.json
+micro_pr_justification: The PR explicitly addresses the task and adds coverage for the extraction metric logic per allowed paths.
+-->
