@@ -52,6 +52,14 @@ environment variables > config.yaml > code defaults
 | `refresh.concurrency` | `10` | `10` | Concurrent refresh workers |
 | `refresh.live_check_seconds` | unset | `5` | Min interval between live per-request quota checks for the same account; `0` = check on every request |
 
+## Browser
+
+| Setting | Repo sample | Code default | Notes |
+| --- | --- | --- | --- |
+| `browser.user_agent` | empty | (auto) | Spoofed User-Agent for Notion endpoints |
+| `browser.sec_ch_ua` | empty | (auto) | Spoofed sec-ch-ua header |
+| `browser.sec_ch_ua_platform` | empty | (auto) | Spoofed sec-ch-ua-platform header |
+
 ## Register (bulk MS SSO)
 
 | Setting | Code default | Notes |
@@ -102,15 +110,21 @@ An invalid `NOTION_PROXY` is logged once at startup and dropped — runtime fall
 | --- | --- | --- |
 | `GET /health` | Health and account pool summary (see [health.md](health.md)) | None |
 | `POST /v1/messages` | Anthropic Messages API | API key |
+| `POST /v1/chat/completions` | OpenAI Chat Completions API | API key |
+| `POST /v1/responses` | OpenAI Responses API | API key |
+| `GET /v1/models` (and `/models`) | OpenAI models API | None |
 | `GET /dashboard/` | Dashboard UI | Dashboard login |
 | `GET /proxy/start` | Create a targeted proxy session | Dashboard login |
 | `GET /ai` | Local Notion Web proxy entry | `np_session` |
 | `GET /admin/accounts` | Pool list (supports `q`, `page`, `page_size`) | Dashboard session |
+| `POST /admin/accounts/add` | Add account file + pool entry | Dashboard session |
+| `POST /admin/accounts/delete` | Legacy POST for removing an account | Dashboard session |
 | `DELETE /admin/accounts/{email}` | Remove account file + pool entry | Dashboard session |
 | `GET /admin/models` | Model mapping + pool-discovered models | Dashboard session |
 | `GET/POST /admin/refresh` | Refresh status / trigger refresh | Dashboard session |
 | `GET/PUT /admin/settings` | Read / update runtime settings (`enable_web_search`, `enable_workspace_search`, `ask_mode_default`, `debug_logging`, `notion_proxy`) | Dashboard session |
 | `GET /admin/stats` | Token usage statistics (lifetime + today + 24h + 30-day series + top-N) | Dashboard session |
+| `GET /admin/metrics` | Prometheus metrics | Dashboard session |
 | `POST /admin/register` | Legacy synchronous bulk register (kept for back-compat) | Dashboard session |
 | `GET /admin/register/providers` | List registered Providers | Dashboard session |
 | `POST /admin/register/start` | Start a new bulk-register Job | Dashboard session |

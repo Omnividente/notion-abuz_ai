@@ -7144,7 +7144,7 @@
     },
     {
       "id": "audit-api-docs-for-feature-parity",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit API docs for feature parity",
@@ -7157,6 +7157,21 @@
       "acceptance": [
         "Any missing API endpoints in docs/api.md are added.",
         "Any missing configuration options in docs/configuration.md are documented."
+      ]
+    },
+    {
+      "id": "audit-frontend-dashboard-docs",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Audit frontend dashboard API usage docs",
+      "description": "Ensure the dashboard API usage docs are fully aligned with the internal/proxy implementation.",
+      "allowed_paths": [
+        "docs/dashboard.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The docs/dashboard.md file accurately reflects API changes made in the dashboard."
       ]
     }
   ]
