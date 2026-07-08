@@ -1647,24 +1647,7 @@ func setNotionHeaders(req *http.Request, acc *Account) {
 	req.Header.Set("Referer", "https://www.notion.so/"+acc.SpaceID)
 
 	// Cookies — use full_cookie if available, otherwise build minimal set
-	if acc.FullCookie != "" {
-		req.Header.Set("Cookie", acc.FullCookie)
-	} else {
-		browserID := acc.BrowserID
-		if browserID == "" {
-			browserID = generateUUIDv4()
-		}
-		deviceID := acc.DeviceID
-		if deviceID == "" {
-			deviceID = generateUUIDv4()
-		}
-		userIDNoDash := strings.ReplaceAll(acc.UserID, "-", "")
-		cookie := fmt.Sprintf(
-			"notion_browser_id=%s; device_id=%s; notion_user_id=%s; notion_locale=en-US/legacy; notion_users=[%%22%s%%22]; notion_check_cookie_consent=false; notion_cookie_sync_completed=%%7B%%22completed%%22%%3Atrue%%2C%%22version%%22%%3A4%%7D; _cioid=%s; token_v2=%s",
-			browserID, deviceID, acc.UserID, acc.UserID, userIDNoDash, acc.TokenV2,
-		)
-		req.Header.Set("Cookie", cookie)
-	}
+	req.Header.Set("Cookie", buildCookie(acc))
 }
 
 // FetchModels calls Notion's getAvailableModels API to get the current model list
@@ -1726,23 +1709,29 @@ func setNotionHeadersJSON(req *http.Request, acc *Account) {
 	req.Header.Set("User-Agent", AppConfig.Browser.UserAgent)
 	req.Header.Set("Origin", "https://www.notion.so")
 
+	// Cookies — use full_cookie if available, otherwise build minimal set
+	req.Header.Set("Cookie", buildCookie(acc))
+}
+
+// buildCookie constructs the Cookie header string for Notion API requests.
+// It uses full_cookie if available, otherwise builds a minimal set from account attributes.
+func buildCookie(acc *Account) string {
 	if acc.FullCookie != "" {
-		req.Header.Set("Cookie", acc.FullCookie)
-	} else {
-		browserID := acc.BrowserID
-		if browserID == "" {
-			browserID = generateUUIDv4()
-		}
-		deviceID := acc.DeviceID
-		if deviceID == "" {
-			deviceID = generateUUIDv4()
-		}
-		cookie := fmt.Sprintf(
-			"notion_browser_id=%s; device_id=%s; notion_user_id=%s; notion_locale=en-US/legacy; notion_users=[%%22%s%%22]; token_v2=%s",
-			browserID, deviceID, acc.UserID, acc.UserID, acc.TokenV2,
-		)
-		req.Header.Set("Cookie", cookie)
+		return acc.FullCookie
 	}
+	browserID := acc.BrowserID
+	if browserID == "" {
+		browserID = generateUUIDv4()
+	}
+	deviceID := acc.DeviceID
+	if deviceID == "" {
+		deviceID = generateUUIDv4()
+	}
+	userIDNoDash := strings.ReplaceAll(acc.UserID, "-", "")
+	return fmt.Sprintf(
+		"notion_browser_id=%s; device_id=%s; notion_user_id=%s; notion_locale=en-US/legacy; notion_users=[%%22%s%%22]; notion_check_cookie_consent=false; notion_cookie_sync_completed=%%7B%%22completed%%22%%3Atrue%%2C%%22version%%22%%3A4%%7D; _cioid=%s; token_v2=%s",
+		browserID, deviceID, acc.UserID, acc.UserID, userIDNoDash, acc.TokenV2,
+	)
 }
 
 // CheckQuota calls both V1 and V2 Notion quota APIs:

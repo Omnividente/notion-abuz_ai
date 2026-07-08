@@ -7240,7 +7240,7 @@
     },
     {
       "id": "audit-auth-cookie-formatting",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit auth cookie formatting",
@@ -7251,6 +7251,22 @@
       ],
       "acceptance": [
         "Authentication cookie formatting logic is consistent."
+      ]
+    },
+    {
+      "id": "audit-proxy-header-normalization",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy header normalization",
+      "description": "Ensure incoming headers are consistently normalized (e.g., lowercase vs Camel-Case) before processing them in the proxy layer to prevent duplicate headers or bypasses.",
+      "allowed_paths": [
+        "internal/proxy/reverseproxy.go",
+        "internal/proxy/notion.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Header normalization logic is consistent across the proxy."
       ]
     }
   ]
