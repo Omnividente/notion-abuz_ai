@@ -4,6 +4,7 @@
 
 `/v1/messages` accepts Anthropic Messages API payloads.
 `/v1/chat/completions` and `/v1/responses` accept OpenAI-compatible payloads.
+`/v1/models` (and `/models`) provide OpenAI-compatible model listing.
 
 All admin / dashboard surfaces live under `/admin/*` and `/dashboard/` and use a
 separate session-cookie auth model (see [Dashboard](dashboard.md)).
