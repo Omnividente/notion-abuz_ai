@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -592,5 +593,52 @@ func TestBuildRecoveryMessages_TransientFailureGuard(t *testing.T) {
 
 	if !exists || count != 1 {
 		t.Errorf("Expected transient_guard_applied metric to be 1, got %v (exists: %v)", count, exists)
+	}
+}
+
+func TestInjectToolsIntoMessages_CWDRegexExtraction(t *testing.T) {
+	// Reset metrics before test
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	var buf bytes.Buffer
+	originalLogOutput := log.Writer()
+	log.SetOutput(&buf)
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		log.SetOutput(originalLogOutput)
+		globalLogWriter.out = originalWriter
+	}()
+
+	messages := []ChatMessage{
+		{Role: "system", Content: "System context\n<cwd>/test/dir</cwd>\nMore context"},
+		{Role: "user", Content: "Hello"},
+	}
+
+	tools := make([]Tool, 6)
+	for i := 0; i < 6; i++ {
+		tools[i] = Tool{
+			Type: "function",
+			Function: ToolFunction{
+				Name: fmt.Sprintf("tool_%d", i),
+			},
+		}
+	}
+
+	_ = injectToolsIntoMessages(messages, tools, "claude-3-5-sonnet-20241022", nil)
+
+	contextLossMetricsMu.Lock()
+	count := contextLossMetrics["system_message_dropped_cwd_regex"]
+	contextLossMetricsMu.Unlock()
+
+	if count != 1 {
+		t.Errorf("expected 1 system_message_dropped_cwd_regex metric, got %d", count)
+	}
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "\"extracted_cwd\":\"/test/dir\"") {
+		t.Errorf("expected log output to contain context details with extracted_cwd, got: %s", logOutput)
 	}
 }
