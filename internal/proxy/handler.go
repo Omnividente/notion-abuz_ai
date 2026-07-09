@@ -381,12 +381,12 @@ func HandleAdminSettings(configPath string, auth *DashboardAuth) http.HandlerFun
 func persistSearchSettings(configPath string) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		log.Printf("[settings] failed to read %s: %v", configPath, err)
+		log.Printf("[err] [settings] failed to read %s: %v", configPath, err)
 		return
 	}
 	var root yaml.Node
 	if err := yaml.Unmarshal(data, &root); err != nil || root.Kind == 0 {
-		log.Printf("[settings] failed to parse %s: %v", configPath, err)
+		log.Printf("[err] [settings] failed to parse %s: %v", configPath, err)
 		return
 	}
 
@@ -404,11 +404,11 @@ func persistSearchSettings(configPath string) {
 
 	out, err := yaml.Marshal(&root)
 	if err != nil {
-		log.Printf("[settings] failed to marshal config: %v", err)
+		log.Printf("[err] [settings] failed to marshal config: %v", err)
 		return
 	}
 	if err := os.WriteFile(configPath, out, 0644); err != nil {
-		log.Printf("[settings] failed to write %s: %v", configPath, err)
+		log.Printf("[err] [settings] failed to write %s: %v", configPath, err)
 	}
 }
 
