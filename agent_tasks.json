@@ -7565,7 +7565,7 @@
     },
     {
       "id": "audit-proxy-context-loss-metric-consistency",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy context loss metric consistency",
@@ -7577,6 +7577,40 @@
       ],
       "acceptance": [
         "Context loss metrics log uniformly with identical tracking methods across tools and sessions fallback locations."
+      ]
+    },
+    {
+      "id": "proxy-tools-add-xml-array-fallback-metric",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add metrics to xml array fallback extractors",
+      "description": "The XML array fallback extractors (direct_array and wrapper_array) successfully extract tools but only call recordXMLArrayMetric, omitting the general recordToolModeLossMetric call that explicitly tracks JSON mode loss, unlike other fallbacks.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "recordToolModeLossMetric is called during XML array and wrapper array fallback extraction.",
+        "A corresponding test validates the metric count."
+      ]
+    },
+    {
+      "id": "automation-health-add-metric-tests-2",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add supplementary metric tests 2",
+      "description": "Ensure metric tests exist for other fallback extraction branches",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "recordContextLossMetric is called during session fallback extraction.",
+        "A corresponding test validates the metric count."
       ]
     }
   ]
