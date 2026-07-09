@@ -7716,7 +7716,7 @@
     },
     {
       "id": "proxy-audit-sse-headers",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit SSE header usage in proxy",
@@ -7724,7 +7724,8 @@
       "allowed_paths": [
         "internal/proxy/tools.go",
         "internal/proxy/handler.go",
-        "agent_tasks.json"
+        "agent_tasks.json",
+        "internal/proxy/tools_sse_test.go"
       ],
       "acceptance": [
         "SSE endpoints consistently use SetSSEHeaders."
@@ -7758,6 +7759,38 @@
       ],
       "acceptance": [
         "Metrics in internal/proxy are consistent."
+      ]
+    },
+    {
+      "id": "proxy-audit-ndjson-headers",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit ndjson header usage in proxy",
+      "description": "Ensure application/x-ndjson is used consistently across proxy tests and endpoints.",
+      "allowed_paths": [
+        "internal/proxy/notion.go",
+        "internal/proxy/anthropic_observability_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "ndjson headers are verified and centralized or kept if already consistent."
+      ]
+    },
+    {
+      "id": "dashboard-audit-cache-control",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit Cache-Control headers in dashboard",
+      "description": "Ensure Cache-Control headers in the dashboard static file serving are consistent and appropriate.",
+      "allowed_paths": [
+        "internal/proxy/dashboard.go",
+        "internal/proxy/dashboard_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Dashboard Cache-Control headers are verified and correct."
       ]
     }
   ]
