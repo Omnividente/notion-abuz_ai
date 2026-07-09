@@ -555,11 +555,23 @@ func TestBuildToolBridgeRecoveryMessagesDiagnosticLog(t *testing.T) {
 		{Role: "user", Content: "你来动手"},
 	}
 
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
 	buildToolBridgeRecoveryMessages(messages)
 
 	logOutput := buf.String()
 	if !strings.Contains(logOutput, "[bridge] diagnostic: Notion persona leakage explicitly tracked (dropped from context during session recovery)") {
 		t.Errorf("Expected diagnostic log for Notion persona leakage, got: %q", logOutput)
+	}
+
+	contextLossMetricsMu.Lock()
+	metricCount := contextLossMetrics["Notion persona leakage"]
+	contextLossMetricsMu.Unlock()
+
+	if metricCount != 1 {
+		t.Errorf("Expected context loss metric for 'Notion persona leakage' to be 1, got %d", metricCount)
 	}
 }
 

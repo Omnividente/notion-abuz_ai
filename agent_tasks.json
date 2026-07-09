@@ -7795,7 +7795,7 @@
     },
     {
       "id": "proxy-audit-context-loss-metric",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit context loss metric consistency in session.go",
@@ -7807,6 +7807,21 @@
       ],
       "acceptance": [
         "All instances of Notion persona leakage logging in session.go have a corresponding recordContextLossMetric call."
+      ]
+    },
+    {
+      "id": "docs-audit-agent-tasks-schema",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Audit agent_tasks.json schema documentation",
+      "description": "Ensure the format and rules for agent_tasks.json are fully documented in the developer guides.",
+      "allowed_paths": [
+        "docs/",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The schema and rules for agent_tasks.json (e.g., minimum thresholds, valid statuses) are clearly documented."
       ]
     }
   ]
