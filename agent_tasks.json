@@ -7748,7 +7748,7 @@
     },
     {
       "id": "proxy-audit-missing-metrics",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy missing metrics",
@@ -7759,7 +7759,8 @@
       ],
       "acceptance": [
         "Metrics in internal/proxy are consistent."
-      ]
+      ],
+      "blocked_reason": "PR loop stopped by circuit breaker after failing quality checks (AUTONOMOUS_TASK_EVIDENCE referenced uncommitted runtime change files because original implementation squashed agent_tasks.json and code into conflicting PR states). Abandoning task."
     },
     {
       "id": "proxy-audit-ndjson-headers",
