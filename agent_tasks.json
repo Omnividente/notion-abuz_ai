@@ -101,6 +101,21 @@
   },
   "tasks": [
     {
+      "id": "audit-proxy-api-error-consistency",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit Proxy API Error Consistency",
+      "description": "Ensure API errors returned from non-streaming endpoints have consistent formatting and types.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Non-streaming errors use standard writeAnthropicError formats."
+      ]
+    },
+    {
       "id": "proxy-runtime-session-recovery-first-user-message-dropped",
       "status": "done",
       "area": "proxy",
@@ -7351,7 +7366,7 @@
     },
     {
       "id": "audit-proxy-anthropic-sse-error-handling",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit Anthropic SSE Error Handling",
