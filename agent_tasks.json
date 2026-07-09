@@ -7825,6 +7825,33 @@
       "acceptance": [
         "Trailing empty tool outputs explicitly log and emit context drop metrics consistently."
       ]
+    },
+    {
+      "id": "automation-quality-loop-pr-520-e3a07e26",
+      "title": "Diagnose stopped quality loop for autonomous PR #520",
+      "area": "automation",
+      "risk": "low",
+      "status": "todo",
+      "description": "Autonomous recovery circuit breaker stopped PR #520 at SHA `c289b349450ba017335037509d9f14fd2d628b34` for `proxy-audit-context-loss-metric`. Diagnose why repeated quality-fix prompts did not converge. Sanitized reason: История последних failed SHA/reasons:\n- `c289b349450ba017335037509d9f14fd2d628b34`: No task moved to done or blocked in agent_tasks.json; autonomous PR has no durable task state update.\n- `381b89b74efa4b87deddeb9d20c0bb9c7bf94eba`: No task moved to done or blocked in agent_tasks.json; autonomous PR has no durable task state update.\n- `3c2008890dd7d1bf580eb894a7d5ebe9cc3452af`: Task proxy-audit-context-loss-metric is operational/diagnostic but the PR changed only tests and agent_tasks.json.; Task",
+      "allowed_paths": [
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/update-quality-fix-comment.py",
+        ".github/workflows/jules_automerge.yml",
+        ".github/workflows/jules_recovery_router.yml",
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Root cause for stopped autonomous PR #520 is identified from PR comments, quality gate output, recovery-router ledger evidence, or CI artifacts.",
+        "The automation or manifest state is improved so the same deterministic recovery loop is not repeated, or this diagnostic task is blocked with a concrete missing-evidence reason.",
+        "If code changes are made, targeted script/workflow tests are run; no secrets, raw transcripts, production URLs, or destructive actions are introduced."
+      ],
+      "source_finding_id": "quality_fix_circuit_breaker",
+      "source_document": "jules-recovery-router",
+      "source_reference": "pull/520@c289b349450ba017335037509d9f14fd2d628b34",
+      "source_task_id": "proxy-audit-context-loss-metric",
+      "circuit_breaker_followup_hash": "e3a07e261825"
     }
   ]
 }
