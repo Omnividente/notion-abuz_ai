@@ -1974,6 +1974,15 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 				}
 			}
 			recordToolCallMetric(wrapper.ToolCall.Name)
+
+			mode := ""
+			if len(toolChoiceMode) > 0 && toolChoiceMode[0] != "" {
+				mode = "_mode_" + toolChoiceMode[0]
+			}
+			recordToolModeLossMetric("xml_object_fallback_wrapper" + mode)
+			log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool object wrapper, 1 call extracted)")
+			log.Printf("[bridge] successfully extracted 1 tool calls from JSON object wrapper format (mode: %v)", toolChoiceMode)
+
 			return []ToolCall{{
 				ID:   fmt.Sprintf("call_%d_%s", index, generateUUIDv4()[:8]),
 				Type: "function",
@@ -1996,6 +2005,15 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 		}
 	}
 	recordToolCallMetric(call.Name)
+
+	mode := ""
+	if len(toolChoiceMode) > 0 && toolChoiceMode[0] != "" {
+		mode = "_mode_" + toolChoiceMode[0]
+	}
+	recordToolModeLossMetric("xml_object_fallback_direct" + mode)
+	log.Printf("[bridge] diagnostics: JSON tool-call mode loss explicitly tracked (fallback to XML tool object, 1 call extracted)")
+	log.Printf("[bridge] successfully extracted 1 tool calls from JSON object format (mode: %v)", toolChoiceMode)
+
 	return []ToolCall{{
 		ID:   fmt.Sprintf("call_%d_%s", index, generateUUIDv4()[:8]),
 		Type: "function",

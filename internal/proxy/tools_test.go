@@ -3540,3 +3540,45 @@ func TestBuildSessionChainContinuation_Truncation(t *testing.T) {
 		t.Errorf("Did not find the expected continuation message")
 	}
 }
+func TestParseToolCalls_JSONToolModeLoss_SingleObject(t *testing.T) {
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
+
+	// Direct object fallback
+	contentDirect := "<tool_call>{\"name\":\"Bash\",\"arguments\":{}}</tool_call>"
+	calls, _, _ := parseToolCalls(contentDirect, "auto")
+
+	if len(calls) != 1 {
+		t.Fatalf("Expected 1 call, got %d", len(calls))
+	}
+
+	toolModeLossMetricsMu.Lock()
+	lossDirectCount, lossDirectExists := toolModeLossMetrics["xml_object_fallback_direct_mode_auto"]
+	toolModeLossMetricsMu.Unlock()
+
+	if !lossDirectExists || lossDirectCount != 1 {
+		t.Errorf("Expected xml_object_fallback_direct_mode_auto metric to be 1, got %d (exists: %v)", lossDirectCount, lossDirectExists)
+	}
+
+	// Reset metrics
+	toolModeLossMetricsMu.Lock()
+	toolModeLossMetrics = make(map[string]int)
+	toolModeLossMetricsMu.Unlock()
+
+	// Wrapper object fallback
+	contentWrapper := "<tool_call>{\"tool_call\":{\"name\":\"Bash\",\"arguments\":{}}}</tool_call>"
+	callsWrapper, _, _ := parseToolCalls(contentWrapper)
+
+	if len(callsWrapper) != 1 {
+		t.Fatalf("Expected 1 call for wrapper, got %d", len(callsWrapper))
+	}
+
+	toolModeLossMetricsMu.Lock()
+	lossWrapperCount, lossWrapperExists := toolModeLossMetrics["xml_object_fallback_wrapper"]
+	toolModeLossMetricsMu.Unlock()
+
+	if !lossWrapperExists || lossWrapperCount != 1 {
+		t.Errorf("Expected xml_object_fallback_wrapper metric to be 1, got %d (exists: %v)", lossWrapperCount, lossWrapperExists)
+	}
+}

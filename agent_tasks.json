@@ -102,7 +102,7 @@
   "tasks": [
     {
       "id": "add-audit-proxy-api-observability-metric",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy observability metrics for streaming mode fallbacks",
@@ -7547,6 +7547,21 @@
       "source_task_id": "audit-anthropic-response-mapping-coverage",
       "circuit_breaker_followup_hash": "21b8a06728c0",
       "blocked_reason": "PR #502 experienced a deterministic conflict loop (SHA 76531f27c8147c4bb22b0684d09608185b0ef958 failed to push repeatedly). The circuit breaker stopped it correctly. No further code changes are needed since this is expected behavior for unrecoverable branch states."
+    },
+    {
+      "id": "automation-health-audit-unparseable-json-truncation-handling",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy missing robust parsing unparseable candidate logs length",
+      "description": "Ensure the JSON extraction fallback limits its error log candidate snippet size to prevent huge payload logging.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The excerpt length is strictly limited during truncation in robust json fallback errors."
+      ]
     }
   ]
 }
