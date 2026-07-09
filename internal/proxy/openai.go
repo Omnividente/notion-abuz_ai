@@ -952,7 +952,7 @@ func streamAnthropicAsOpenAIChat(w http.ResponseWriter, r *http.Request, anthrop
 			return
 		}
 		if !headersSent {
-			setSSEHeaders(w)
+			SetSSEHeaders(w)
 			headersSent = true
 		}
 		if err := transcoder.HandleFrame(frame); err != nil {
@@ -1004,7 +1004,7 @@ func streamAnthropicAsOpenAIResponses(w http.ResponseWriter, r *http.Request, an
 			log.Printf("[openai-resp] frame %d: event=%s", frameCount, frame.Event)
 		}
 		if !headersSent {
-			setSSEHeaders(w)
+			SetSSEHeaders(w)
 			headersSent = true
 		}
 		if err := transcoder.HandleFrame(frame); err != nil {
@@ -2014,9 +2014,3 @@ func isOpenAIInputContentType(typeName string) bool {
 	}
 }
 
-func setSSEHeaders(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("X-Accel-Buffering", "no")
-}
