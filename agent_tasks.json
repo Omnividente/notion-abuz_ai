@@ -7795,7 +7795,7 @@
     },
     {
       "id": "proxy-audit-context-loss-metric",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Audit context loss metric consistency in session.go",
@@ -7807,7 +7807,8 @@
       ],
       "acceptance": [
         "All instances of Notion persona leakage logging in session.go have a corresponding recordContextLossMetric call."
-      ]
+      ],
+      "blocked_reason": "Audit confirmed all instances of Notion persona leakage logging in session.go already have a corresponding recordContextLossMetric call. No runtime modifications or direct scripts are required. The autonomous quality loop requires operational tasks to modify runtime/scripts to be considered 'done'."
     },
     {
       "id": "proxy-audit-context-loss-metric-followup",
