@@ -7779,7 +7779,7 @@
     },
     {
       "id": "dashboard-audit-cache-control",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit Cache-Control headers in dashboard",
@@ -7791,6 +7791,22 @@
       ],
       "acceptance": [
         "Dashboard Cache-Control headers are verified and correct."
+      ]
+    },
+    {
+      "id": "proxy-audit-context-loss-metric",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit context loss metric consistency in session.go",
+      "description": "Ensure that recordContextLossMetric is called consistently for all Notion persona leakage scenarios.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "All instances of Notion persona leakage logging in session.go have a corresponding recordContextLossMetric call."
       ]
     }
   ]

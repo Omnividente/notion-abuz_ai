@@ -265,6 +265,9 @@ func HandleDashboard(apiKey string, auth *DashboardAuth) http.Handler {
 		// Serve static assets (JS, CSS) with caching
 		if strings.HasPrefix(path, "/assets/") {
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			// Fallback for other static files (e.g. logo.png, favicon.ico)
+			w.Header().Set("Cache-Control", "no-cache")
 		}
 
 		// Serve file from embedded FS

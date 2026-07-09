@@ -140,4 +140,22 @@ func TestDashboard_RoutingFallback(t *testing.T) {
 			t.Errorf("Expected Cache-Control header for static asset")
 		}
 	})
+
+	t.Run("Non-asset static file has no-cache fallback", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/dashboard/logo.png", nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			// Tests might not have the actual logo.png depending on FileServer mock/embedded FS,
+			// but we are primarily testing the header injection before ServeHTTP delegates.
+			// Actually, if it's 404, we don't strictly care for the router header test,
+			// but we want to check the header.
+		}
+
+		if cache := w.Header().Get("Cache-Control"); cache != "no-cache" {
+			t.Errorf("Expected Cache-Control: no-cache for non-asset file, got %q", cache)
+		}
+	})
 }
