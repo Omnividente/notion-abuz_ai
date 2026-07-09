@@ -7301,7 +7301,7 @@
     },
     {
       "id": "proxy-audit-sse-headers-msa",
-      "status": "todo",
+      "status": "blocked",
       "area": "msalogin",
       "risk": "low",
       "title": "Audit MSA login SSE Headers",
@@ -7312,6 +7312,41 @@
       ],
       "acceptance": [
         "MSA login SSE headers are reviewed and normalized if needed."
+      ],
+      "blocked_reason": "msalogin is a client library, not a server handler, and does not serve SSE streams. There are no SSE headers to normalize in allowed_paths."
+    },
+    {
+      "id": "proxy-refactor-sse-headers",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Refactor SSE headers to use centralized helper",
+      "description": "Export setSSEHeaders and use it across the proxy package (anthropic.go, admin_register_jobs.go) to avoid duplication.",
+      "allowed_paths": [
+        "internal/proxy/openai.go",
+        "internal/proxy/anthropic.go",
+        "internal/proxy/admin_register_jobs.go",
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "SSE headers in anthropic.go and admin_register_jobs.go use a centralized helper function.",
+        "The centralized helper is defined once and reused to prevent duplication."
+      ]
+    },
+    {
+      "id": "proxy-audit-sse-headers-admin",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit Admin Registration SSE Headers",
+      "description": "Ensure SSE headers in admin_register_jobs.go are correctly formatted and cache is disabled.",
+      "allowed_paths": [
+        "internal/proxy/admin_register_jobs.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Admin registration SSE headers are reviewed and normalized."
       ]
     }
   ]
