@@ -547,6 +547,10 @@ func TestBuildToolBridgeRecoveryMessagesDiagnosticLog(t *testing.T) {
 		log.SetOutput(originalLogOutput)
 	}()
 
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
 	messages := []ChatMessage{
 		{Role: "system", Content: "Answer in Chinese."},
 		{Role: "user", Content: "修改 internal/web/dist/assets/index-DlVudHMF.js"},
@@ -555,23 +559,19 @@ func TestBuildToolBridgeRecoveryMessagesDiagnosticLog(t *testing.T) {
 		{Role: "user", Content: "你来动手"},
 	}
 
+	buildToolBridgeRecoveryMessages(messages)
+
 	contextLossMetricsMu.Lock()
-	contextLossMetrics = make(map[string]int)
+	count, exists := contextLossMetrics["Notion persona leakage"]
 	contextLossMetricsMu.Unlock()
 
-	buildToolBridgeRecoveryMessages(messages)
+	if !exists || count != 1 {
+		t.Errorf("Expected Notion persona leakage metric to be exactly 1, got %d (exists=%v)", count, exists)
+	}
 
 	logOutput := buf.String()
 	if !strings.Contains(logOutput, "[bridge] diagnostic: Notion persona leakage explicitly tracked (dropped from context during session recovery)") {
 		t.Errorf("Expected diagnostic log for Notion persona leakage, got: %q", logOutput)
-	}
-
-	contextLossMetricsMu.Lock()
-	metricCount := contextLossMetrics["Notion persona leakage"]
-	contextLossMetricsMu.Unlock()
-
-	if metricCount != 1 {
-		t.Errorf("Expected context loss metric for 'Notion persona leakage' to be 1, got %d", metricCount)
 	}
 }
 
