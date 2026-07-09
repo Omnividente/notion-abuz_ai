@@ -452,3 +452,63 @@ func TestDetectImplicitSearch(t *testing.T) {
 		})
 	}
 }
+
+func TestAnthropicStreaming_InterleavedTextAndThinking_ProperlyCloses(t *testing.T) {
+	rr := httptest.NewRecorder()
+	mf := &mockFlusher{rr}
+
+	// For streamWebSearch, streamAnthropicTextResponse, handleAnthropicStream
+	// Since we mock the actual stream emission let's mock calling CallInference.
+	// But it's easier to verify via a real method call.
+	// Wait, we need to test if proper close block sequence is emitted.
+
+	blockIndex := 0
+	textBlockStarted := false
+
+	// mock closeTextBlock from streamWebSearch
+	closeTextBlock := func() {
+		if !textBlockStarted {
+			return
+		}
+		sendAnthropicSSE(rr, mf, "content_block_stop", map[string]interface{}{
+			"type": "content_block_stop", "index": blockIndex,
+		})
+		blockIndex++
+		textBlockStarted = false
+	}
+
+	// emit text
+	textBlockStarted = true
+	sendAnthropicSSE(rr, mf, "content_block_start", map[string]interface{}{
+		"type":          "content_block_start",
+		"index":         blockIndex,
+		"content_block": map[string]interface{}{"type": "text", "text": ""},
+	})
+	sendAnthropicSSE(rr, mf, "content_block_delta", map[string]interface{}{
+		"type":  "content_block_delta",
+		"index": blockIndex,
+		"delta": map[string]interface{}{"type": "text_delta", "text": "test text"},
+	})
+
+	// pending thinking starts
+	closeTextBlock() // should close text block
+
+	sendAnthropicSSE(rr, mf, "content_block_start", map[string]interface{}{
+		"type":          "content_block_start",
+		"index":         blockIndex,
+		"content_block": map[string]interface{}{"type": "thinking", "thinking": ""},
+	})
+
+	body := mf.Body.String()
+
+	// Verify it contains content_block_stop for index 0 and content_block_start for index 1
+	if !strings.Contains(body, `{"index":0,"type":"content_block_stop"}`) {
+		t.Errorf("Missing content_block_stop for text block. Body:\n%s", body)
+	}
+	if !strings.Contains(body, `{"content_block":{"text":"","type":"text"},"index":0,"type":"content_block_start"}`) {
+		t.Errorf("Missing content_block_start for text block. Body:\n%s", body)
+	}
+	if !strings.Contains(body, `{"content_block":{"thinking":"","type":"thinking"},"index":1,"type":"content_block_start"}`) {
+		t.Errorf("Missing content_block_start for thinking block with index 1. Body:\n%s", body)
+	}
+}

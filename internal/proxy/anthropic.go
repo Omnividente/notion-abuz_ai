@@ -273,11 +273,23 @@ func streamWebSearch(w http.ResponseWriter, flusher http.Flusher, acc *Account, 
 	// emitPendingThinking emits any thinking blocks that have been collected
 	// since the last check. Called before first text delta to ensure thinking
 	// appears before text in the SSE stream.
+	closeTextBlock := func() {
+		if !textBlockStarted {
+			return
+		}
+		sendAnthropicSSE(w, flusher, "content_block_stop", map[string]interface{}{
+			"type": "content_block_stop", "index": *blockIndex,
+		})
+		*blockIndex++
+		textBlockStarted = false
+	}
+
 	emitPendingThinking := func() {
 		if !hasThinking {
 			return
 		}
 		for thinkingEmitted < len(thinkingBlocks) {
+			closeTextBlock() // ensure text block is closed before thinking block
 			tb := thinkingBlocks[thinkingEmitted]
 			sig := tb.Signature
 			if sig == "" {
@@ -1698,9 +1710,21 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 		thinkingBlockOpen = false
 	}
 
+	closeTextBlock := func() {
+		if !textBlockOpen {
+			return
+		}
+		sendAnthropicSSE(w, flusher, "content_block_stop", map[string]interface{}{
+			"type": "content_block_stop", "index": blockIndex,
+		})
+		blockIndex++
+		textBlockOpen = false
+	}
+
 	ensureTextBlock := func() {
 		ensureHeaders()
 		if !textBlockOpen {
+			closeThinkingBlock("") // ensure thinking block is closed before opening text block
 			sendAnthropicSSE(w, flusher, "content_block_start", map[string]interface{}{
 				"type":          "content_block_start",
 				"index":         blockIndex,
@@ -1723,6 +1747,7 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 			sawContent = true
 			ensureHeaders()
 			if !thinkingBlockOpen {
+				closeTextBlock() // ensure text block is closed before opening thinking block
 				sendAnthropicSSE(w, flusher, "content_block_start", map[string]interface{}{
 					"type":          "content_block_start",
 					"index":         blockIndex,
@@ -2620,10 +2645,42 @@ func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []Chat
 		sendAnthropicSSE(w, flusher, "ping", map[string]string{"type": "ping"})
 	}
 
+	closeTextBlock := func() {
+		if !textBlockStarted {
+			return
+		}
+		sendAnthropicSSE(w, flusher, "content_block_stop", map[string]interface{}{
+			"type": "content_block_stop", "index": blockIndex,
+		})
+		blockIndex++
+		textBlockStarted = false
+	}
+
+	closeThinkingBlock := func(signature string) {
+		if !thinkingBlockOpen {
+			return
+		}
+		if signature == "" {
+			signature = generateFakeSignature()
+		}
+		sendAnthropicSSE(w, flusher, "content_block_delta", map[string]interface{}{
+			"type":  "content_block_delta",
+			"index": blockIndex,
+			"delta": map[string]interface{}{"type": "signature_delta", "signature": signature},
+		})
+		sendAnthropicSSE(w, flusher, "content_block_stop", map[string]interface{}{
+			"type": "content_block_stop", "index": blockIndex,
+		})
+		blockIndex++
+		thinkingBlockOpen = false
+		log.Printf("[researcher] closed thinking block (real_sig=%v)", signature != "")
+	}
+
 	// ensureTextBlock opens a text block if not already open
 	ensureTextBlock := func() {
 		ensureHeaders()
 		if !textBlockStarted {
+			closeThinkingBlock("") // ensure thinking block is closed
 			sendAnthropicSSE(w, flusher, "content_block_start", map[string]interface{}{
 				"type":          "content_block_start",
 				"index":         blockIndex,
@@ -2653,23 +2710,7 @@ func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []Chat
 		if hasThinking {
 			// Client supports thinking: emit as thinking block
 			if done {
-				if thinkingBlockOpen {
-					sig := signature
-					if sig == "" {
-						sig = generateFakeSignature()
-					}
-					sendAnthropicSSE(w, flusher, "content_block_delta", map[string]interface{}{
-						"type":  "content_block_delta",
-						"index": blockIndex,
-						"delta": map[string]interface{}{"type": "signature_delta", "signature": sig},
-					})
-					sendAnthropicSSE(w, flusher, "content_block_stop", map[string]interface{}{
-						"type": "content_block_stop", "index": blockIndex,
-					})
-					blockIndex++
-					thinkingBlockOpen = false
-					log.Printf("[researcher] closed thinking block (real_sig=%v)", signature != "")
-				}
+				closeThinkingBlock(signature)
 				return
 			}
 			if delta == "" {
@@ -2678,6 +2719,7 @@ func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []Chat
 			thinkingForLog.WriteString(delta)
 			ensureHeaders()
 			if !thinkingBlockOpen {
+				closeTextBlock() // ensure text block is closed before opening thinking block
 				sendAnthropicSSE(w, flusher, "content_block_start", map[string]interface{}{
 					"type":          "content_block_start",
 					"index":         blockIndex,
