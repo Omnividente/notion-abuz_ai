@@ -1226,6 +1226,8 @@ func extractAnthropicTextAndToolCalls(blocks []AnthropicContentBlock) (string, [
 		switch block.Type {
 		case "text":
 			text.WriteString(block.Text)
+		case "thinking":
+			text.WriteString(block.Thinking)
 		case "tool_use":
 			toolCalls = append(toolCalls, OpenAIChatToolCall{
 				ID:   block.ID,

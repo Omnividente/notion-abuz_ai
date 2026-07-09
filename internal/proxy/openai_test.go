@@ -1314,6 +1314,27 @@ func TestOpenAIChatStreamTranscoder_UnknownEventVariants(t *testing.T) {
 	}
 }
 
+func TestExtractAnthropicTextAndToolCalls(t *testing.T) {
+	blocks := []AnthropicContentBlock{
+		{Type: "text", Text: "Hello "},
+		{Type: "thinking", Thinking: "Let me think..."},
+		{Type: "text", Text: "World!"},
+		{Type: "tool_use", ID: "call_123", Name: "my_tool", Input: []byte(`{"arg": "value"}`)},
+	}
+
+	text, tools := extractAnthropicTextAndToolCalls(blocks)
+	expectedText := "Hello Let me think...World!"
+	if text != expectedText {
+		t.Errorf("expected text %q, got %q", expectedText, text)
+	}
+	if len(tools) != 1 {
+		t.Fatalf("expected 1 tool call, got %d", len(tools))
+	}
+	if tools[0].ID != "call_123" || tools[0].Function.Name != "my_tool" || tools[0].Function.Arguments != `{"arg": "value"}` {
+		t.Errorf("unexpected tool call: %+v", tools[0])
+	}
+}
+
 func TestOpenAIChatStreamTranscoder_MissingFields(t *testing.T) {
 	rr := httptest.NewRecorder()
 	transcoder := newOpenAIChatStreamTranscoder(rr, rr, "chatcmpl_test", "gpt-5.4", 123, true)
