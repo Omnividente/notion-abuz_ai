@@ -2013,4 +2013,3 @@ func isOpenAIInputContentType(typeName string) bool {
 		return false
 	}
 }
-
