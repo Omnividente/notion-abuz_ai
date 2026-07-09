@@ -102,7 +102,7 @@
   "tasks": [
     {
       "id": "audit-proxy-api-error-consistency",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Audit Proxy API Error Consistency",
@@ -113,7 +113,8 @@
       ],
       "acceptance": [
         "Non-streaming errors use standard writeAnthropicError formats."
-      ]
+      ],
+      "blocked_reason": "The existing codebase is already compliant with the acceptance criteria and does not require any code modifications. No API errors are returned from non-streaming endpoints without using standard writeAnthropicError formats."
     },
     {
       "id": "proxy-runtime-session-recovery-first-user-message-dropped",
@@ -7377,6 +7378,21 @@
       ],
       "acceptance": [
         "Anthropic SSE proxy passes proper upstream errors back without silently closing the connection."
+      ]
+    },
+    {
+      "id": "audit-proxy-api-error-consistency-follow-up",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit Proxy API Error Consistency (Follow Up)",
+      "description": "Additional audit for streaming endpoints error formatting.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Streaming errors are verified."
       ]
     }
   ]
