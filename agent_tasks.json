@@ -7397,7 +7397,7 @@
     },
     {
       "id": "audit-proxy-api-error-logging-consistency",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit Proxy API Error Logging Consistency",
@@ -7408,6 +7408,21 @@
       ],
       "acceptance": [
         "Error logging is audited."
+      ]
+    },
+    {
+      "id": "audit-proxy-openai-api-error-logging-consistency",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit Proxy OpenAI API Error Logging Consistency",
+      "description": "Ensure that writeOpenAIError consistently logs the error type in addition to the message.",
+      "allowed_paths": [
+        "internal/proxy/openai.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "OpenAI error logging is audited."
       ]
     }
   ]

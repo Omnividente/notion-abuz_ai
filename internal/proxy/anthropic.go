@@ -2882,6 +2882,8 @@ func handleResearcherNonStream(w http.ResponseWriter, acc *Account, messages []C
 }
 
 func writeAnthropicError(w http.ResponseWriter, requestID string, status int, message, errType string) {
+	log.Printf("[err] %s: %s (type=%s, status=%d)", requestID, message, errType, status)
+
 	payload := map[string]interface{}{
 		"type": "error",
 		"error": map[string]interface{}{
@@ -2889,7 +2891,7 @@ func writeAnthropicError(w http.ResponseWriter, requestID string, status int, me
 			"message": message,
 		},
 	}
-	LogAPIOutputJSON(requestID, fmt.Sprintf("anthropic error status=%d", status), payload)
+	LogAPIOutputJSON(requestID, fmt.Sprintf("anthropic error status=%d type=%s", status, errType), payload)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
