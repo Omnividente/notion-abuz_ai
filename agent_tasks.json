@@ -7748,7 +7748,7 @@
     },
     {
       "id": "proxy-audit-missing-metrics",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy missing metrics",
@@ -7852,6 +7852,21 @@
       "source_reference": "pull/520@c289b349450ba017335037509d9f14fd2d628b34",
       "source_task_id": "proxy-audit-context-loss-metric",
       "circuit_breaker_followup_hash": "e3a07e261825"
+    },
+    {
+      "id": "proxy-audit-handle-admin-accounts-metrics-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit HandleAdminAccounts metrics missing edgecases",
+      "description": "Ensure metric tests exist for other fallback extraction branches",
+      "allowed_paths": [
+        "internal/proxy/handler.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Metrics in internal/proxy are consistent."
+      ]
     }
   ]
 }
