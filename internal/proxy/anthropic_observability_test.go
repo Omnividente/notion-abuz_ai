@@ -472,7 +472,11 @@ func TestHandleAnthropicStream_PrematureCloseRecovery(t *testing.T) {
 		// Just want to see what is logged.
 	}
 
-	if !strings.Contains(body, `"event":"error"`) && !strings.Contains(body, `event: error`) {
-		t.Errorf("Should emit an SSE error event to tell the client the stream aborted. Body: %s", body)
+	if mf.Code != http.StatusBadGateway {
+		t.Errorf("expected status %d, got %d", http.StatusBadGateway, mf.Code)
+	}
+
+	if !strings.Contains(body, `"type":"error"`) || !strings.Contains(body, `"type":"api_error"`) {
+		t.Errorf("Should emit a standard API error. Body: %s", body)
 	}
 }
