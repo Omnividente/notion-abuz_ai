@@ -1,0 +1,5 @@
+test(proxy): Block diagnostic task due to missing runtime changes
+
+- Task proxy-runtime-session-empty-system-prompt-metric was rejected by the autonomous PR quality gate.
+- The gate rejects diagnostic tasks that change only tests/manifests without runtime changes.
+- Since the implementation already exists in internal/proxy/session.go, the task is marked as blocked in agent_tasks.json with a concrete blocked_reason to satisfy the quality gate.
