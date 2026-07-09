@@ -7795,7 +7795,7 @@
     },
     {
       "id": "proxy-audit-context-loss-metric",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit context loss metric consistency in session.go",
@@ -7807,6 +7807,22 @@
       ],
       "acceptance": [
         "All instances of Notion persona leakage logging in session.go have a corresponding recordContextLossMetric call."
+      ]
+    },
+    {
+      "id": "proxy-audit-context-loss-metric-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit trailing progress loss edge cases in session recovery",
+      "description": "Ensure metric logging during recovery catches nested empty tools.",
+      "allowed_paths": [
+        "internal/proxy/session.go",
+        "internal/proxy/session_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Trailing empty tool outputs explicitly log and emit context drop metrics consistently."
       ]
     }
   ]
