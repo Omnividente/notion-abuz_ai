@@ -7412,7 +7412,7 @@
     },
     {
       "id": "audit-proxy-openai-api-error-logging-consistency",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit Proxy OpenAI API Error Logging Consistency",
@@ -7423,6 +7423,22 @@
       ],
       "acceptance": [
         "OpenAI error logging is audited."
+      ]
+    },
+    {
+      "id": "investigate-openai-api-error-logging-context",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Investigate Context for OpenAI API Errors",
+      "description": "Investigate if contextual request information (such as request ID, source IP) should be included when logging OpenAI API errors, similar to writeAnthropicError.",
+      "allowed_paths": [
+        "internal/proxy/openai.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Contextual error logging for OpenAI API is investigated and added if appropriate."
       ]
     }
   ]

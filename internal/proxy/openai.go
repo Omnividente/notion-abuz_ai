@@ -1926,6 +1926,7 @@ func ensureJSONSchemaObject(schema interface{}) interface{} {
 }
 
 func writeOpenAIError(w http.ResponseWriter, status int, message, errType, param string) {
+	log.Printf("[err] openai api error: %s (type=%s, param=%s, status=%d)", message, errType, param, status)
 	payload := OpenAIErrorResponse{Error: OpenAIError{Message: message, Type: errType, Param: param}}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
