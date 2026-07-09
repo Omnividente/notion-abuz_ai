@@ -7763,7 +7763,7 @@
     },
     {
       "id": "proxy-audit-ndjson-headers",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit ndjson header usage in proxy",

@@ -12,7 +12,7 @@ import (
 
 func TestAnthropicStreaming_FinalAnswerIdentityDriftWithTools(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.Header().Set("Content-Type", ndjsonContentType)
 		w.WriteHeader(http.StatusOK)
 
 		// 1) Submit text via agent-inference (Notion stream protocol)
@@ -57,7 +57,7 @@ func TestEnsureNotionPersonaLeakageLoggedAsDecision(t *testing.T) {
 	// For CallInference stream parsing, we need a complete NDJSON `agent-inference` message
 	// with a `step.FinishedAt` to trigger the final handling of the text.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.Header().Set("Content-Type", ndjsonContentType)
 		w.WriteHeader(http.StatusOK)
 
 		// 1) Submit text via agent-inference (Notion stream protocol)
@@ -119,7 +119,7 @@ func TestEnsureNotionPersonaLeakageLoggedAsDecision(t *testing.T) {
 // Tests that a tool-call refusal payload triggers the exact bridge decision log natively.
 func TestEnsureToolCallRefusalLoggedAsDecision(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.Header().Set("Content-Type", ndjsonContentType)
 		w.WriteHeader(http.StatusOK)
 
 		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant."}]}` + "\n"))
@@ -180,7 +180,7 @@ func TestMCPServerRefusalDiagnosticLog(t *testing.T) {
 
 func TestEnsureMCPServerRefusalLoggedAsDecision(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.Header().Set("Content-Type", ndjsonContentType)
 		w.WriteHeader(http.StatusOK)
 
 		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I do not have access to the local file system. You will need to manually adjust your mcp server configuration."}]}` + "\n"))
@@ -249,7 +249,7 @@ func TestSystemPromptDiagnosticLog(t *testing.T) {
 // Tests that a system prompt leakage payload triggers both the bridge decision and diagnostic log natively.
 func TestEnsureSystemPromptLeakageLoggedAsDecision(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.Header().Set("Content-Type", ndjsonContentType)
 		w.WriteHeader(http.StatusOK)
 
 		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I do not have access to edit files. You will need to manually adjust your system prompt."}]}` + "\n"))
@@ -295,7 +295,7 @@ func TestEnsureSystemPromptLeakageLoggedAsDecision(t *testing.T) {
 // Tests that a JSON mode loss (tool-call refusal) triggers the session recovery retry loop natively and logs it.
 func TestEnsureSessionRecoveryLoggedForToolCallLoss(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.Header().Set("Content-Type", ndjsonContentType)
 		w.WriteHeader(http.StatusOK)
 
 		w.Write([]byte(`{"type": "agent-inference", "id":"test", "value": [{"type":"text","content":"I do not have access to run terminal commands such as bash or read or edit local files. You will need to copy and paste this into your coding assistant."}]}` + "\n"))
@@ -367,7 +367,7 @@ func TestMissingLocalToolsDiagnosticLog(t *testing.T) {
 // rather than failing to return a valid JSON payload (by incorrectly sending message_stop).
 func TestAnthropicStreaming_PrematureCloseRecovery(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.Header().Set("Content-Type", ndjsonContentType)
 		w.WriteHeader(http.StatusOK)
 
 		flusher, _ := w.(http.Flusher)
@@ -428,7 +428,7 @@ func TestAnthropicStreaming_PrematureCloseRecovery(t *testing.T) {
 // rather than failing to return a valid JSON payload when using handleAnthropicStream (hasTools=true).
 func TestHandleAnthropicStream_PrematureCloseRecovery(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/x-ndjson")
+		w.Header().Set("Content-Type", ndjsonContentType)
 		w.WriteHeader(http.StatusOK)
 
 		flusher, _ := w.(http.Flusher)

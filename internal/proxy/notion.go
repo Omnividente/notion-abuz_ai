@@ -43,6 +43,8 @@ var ErrEmptyResponse = errors.New("empty response from inference")
 // missing tool context or malformed history (e.g., mismatched tool calls/results).
 var ErrMissingContext = errors.New("missing tool context or malformed history")
 
+const ndjsonContentType = "application/x-ndjson"
+
 var (
 	NotionAPIBase        = "https://www.notion.so/api/v3"
 	DefaultClientVersion = "23.13.20260313.1423"
@@ -1623,7 +1625,7 @@ func buildPartialTranscript(acc *Account, newUserContent string, notionModel str
 func setNotionHeaders(req *http.Request, acc *Account) {
 	// Content negotiation
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/x-ndjson")
+	req.Header.Set("Accept", ndjsonContentType)
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
 
