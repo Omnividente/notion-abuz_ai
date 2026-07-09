@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"sort"
 	"sync"
@@ -2075,4 +2076,12 @@ func detectImplicitSearch(messages []ChatMessage) (bool, bool) {
 		strings.Contains(lower, "look in notion")
 
 	return webSearch, workspaceSearch
+}
+
+// SetSSEHeaders sets the standard headers for Server-Sent Events (SSE).
+func SetSSEHeaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
 }

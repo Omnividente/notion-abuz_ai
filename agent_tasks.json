@@ -7317,7 +7317,7 @@
     },
     {
       "id": "proxy-refactor-sse-headers",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Refactor SSE headers to use centralized helper",

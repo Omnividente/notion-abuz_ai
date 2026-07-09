@@ -525,10 +525,7 @@ func serveJobEvents(deps *RegisterJobsDeps, id string, w http.ResponseWriter, r 
 	}
 	defer cancel()
 
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("X-Accel-Buffering", "no")
+	SetSSEHeaders(w)
 	w.WriteHeader(http.StatusOK)
 
 	if err := writeSSE(w, "snapshot", snap); err != nil {
