@@ -7581,7 +7581,7 @@
     },
     {
       "id": "proxy-tools-add-xml-array-fallback-metric",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Add metrics to xml array fallback extractors",
@@ -7594,7 +7594,8 @@
       "acceptance": [
         "recordToolModeLossMetric is called during XML array and wrapper array fallback extraction.",
         "A corresponding test validates the metric count."
-      ]
+      ],
+      "blocked_reason": "Task objective is already satisfied in the existing codebase: recordToolModeLossMetric is explicitly called for 'xml_array_fallback_direct' (line 1879) and 'xml_array_fallback_wrapper' (line 1945) in tools.go, and corresponding tests like TestParseToolCalls_XMLArrayFallbackMetrics already exist."
     },
     {
       "id": "automation-health-add-metric-tests-2",
