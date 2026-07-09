@@ -7616,7 +7616,7 @@
     },
     {
       "id": "automation-health-repeated-failed-sessions-same-task-9d09f4bd",
-      "status": "todo",
+      "status": "blocked",
       "area": "automation",
       "risk": "medium",
       "title": "Fix automation health finding: repeated_failed_sessions_same_task",
@@ -7635,7 +7635,8 @@
       "health_finding_hash": "9d09f4bd774a",
       "health_finding_code": "repeated_failed_sessions_same_task",
       "health_finding_severity": "critical",
-      "health_report_generated_at": "2026-07-09T17:41:01Z"
+      "health_report_generated_at": "2026-07-09T17:41:01Z",
+      "blocked_reason": "To clear this finding properly, `.github/scripts/automation-health-report.py` needs to check `== \"todo\"` instead of `!= \"blocked\"` on line 728, which is outside the `allowed_paths`."
     },
     {
       "id": "automation-health-no-eligible-autonomous-task-fb65b195",

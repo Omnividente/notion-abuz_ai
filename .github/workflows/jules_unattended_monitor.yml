@@ -108,8 +108,7 @@ jobs:
 
       - name: Block task after repeated failed Jules sessions
         if: >
-          steps.jules-monitor.outputs.failed_recovery_action == 'block' &&
-          steps.open-prs.outputs.count == '0'
+          steps.jules-monitor.outputs.failed_recovery_action == 'block'
         env:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
         run: |
