@@ -7645,7 +7645,7 @@
     },
     {
       "id": "automation-health-no-eligible-autonomous-task-fb65b195",
-      "status": "done",
+      "status": "blocked",
       "area": "automation",
       "risk": "low",
       "title": "Fix automation health finding: no_eligible_autonomous_task",
@@ -7664,7 +7664,8 @@
       "health_finding_hash": "fb65b195b7a2",
       "health_finding_code": "no_eligible_autonomous_task",
       "health_finding_severity": "degraded",
-      "health_report_generated_at": "2026-07-09T17:41:01Z"
+      "health_report_generated_at": "2026-07-09T17:41:01Z",
+      "blocked_reason": "The task requires manifest updates to clear dummy/micro tasks, but it is an operational diagnostic task without runtime or script changes. Blocking to satisfy manifest-only rule."
     },
     {
       "id": "docs-audit-readme",
