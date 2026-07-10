@@ -8240,7 +8240,7 @@
     },
     {
       "id": "docs-api-audit-authentication",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Audit API documentation for authentication",
@@ -8299,6 +8299,21 @@
       ],
       "acceptance": [
         "Static embedding documentation is audited."
+      ]
+    },
+    {
+      "id": "docs-api-audit-authentication-followup",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Audit API documentation for missing parameter schemas",
+      "description": "Ensure API documentation includes descriptions for complex schema parameters like image/document inputs.",
+      "allowed_paths": [
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "API documentation covers necessary complex parameter types."
       ]
     }
   ]

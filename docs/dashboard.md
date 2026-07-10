@@ -10,7 +10,7 @@ The frontend dashboard (React + TypeScript + Vite) is built into the `web/dist` 
 
 Two distinct auth surfaces:
 
-- `/v1/messages` — **API key** auth (`Authorization: Bearer <key>` or `x-api-key: <key>`), for external clients
+- `/v1/messages`, `/v1/chat/completions`, `/v1/responses`, `/v1/models`, `/models` — **API key** auth (`Authorization: Bearer <key>` or `x-api-key: <key>`), for external clients
 - `/admin/*`, `/dashboard/`, `/proxy/start` — **dashboard session-cookie** auth (cookie set by `/dashboard/auth/login`)
 
 After signing in through `/dashboard/`, the frontend uses the `dashboard_session` cookie to access:

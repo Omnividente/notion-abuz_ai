@@ -26,7 +26,7 @@ If the alias exists, the request is routed to the configured Notion internal mod
 
 ## Authentication
 
-Send the API key the same way you would talk to Anthropic:
+For API endpoints such as `/v1/messages` and `/v1/chat/completions`, send the API key the same way you would talk to Anthropic or OpenAI:
 
 ```bash
 -H "Authorization: Bearer <api_key>"
