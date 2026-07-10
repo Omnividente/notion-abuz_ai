@@ -5,9 +5,12 @@
 `/v1/messages` accepts Anthropic Messages API payloads.
 `/v1/chat/completions` and `/v1/responses` accept OpenAI-compatible payloads.
 `/v1/models` (and `/models`) provide OpenAI-compatible model listing.
+`/health` provides real-time account pool and quota availability metrics.
 
-All admin / dashboard surfaces live under `/admin/*` and `/dashboard/` and use a
-separate session-cookie auth model (see [Dashboard](dashboard.md)).
+Admin endpoints live under `/admin/*` and use a separate session-cookie auth model (see [Dashboard](dashboard.md)). Key routes include:
+- `/admin/accounts`, `/admin/accounts/add`, `/admin/accounts/delete`, `/admin/accounts/{email}`
+- `/admin/models`, `/admin/stats`, `/admin/metrics`, `/admin/settings`, `/admin/refresh`
+- `/admin/register`, `/admin/register/start`, `/admin/register/providers`, `/admin/register/jobs`
 
 OpenAI-compatible clients like OpenCode can connect to the proxy and expect a
 near-native experience.
