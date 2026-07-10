@@ -8224,7 +8224,7 @@
     },
     {
       "id": "docs-dashboard-registration-audit",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Audit dashboard registration documentation",
@@ -8236,6 +8236,69 @@
       ],
       "acceptance": [
         "Dashboard registration documentation is audited and verified to cover the bulk registration drawer."
+      ]
+    },
+    {
+      "id": "docs-api-audit-authentication",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Audit API documentation for authentication",
+      "description": "Ensure docs/api.md accurately reflects the API key authentication flow for /v1/messages.",
+      "allowed_paths": [
+        "docs/api.md",
+        "docs/dashboard.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "API authentication documentation is audited and verified to cover /v1/messages auth."
+      ]
+    },
+    {
+      "id": "proxy-audit-cookie-forwarding",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy cookie forwarding",
+      "description": "Ensure the proxy handles injecting the full_cookie when proxying to Notion.",
+      "allowed_paths": [
+        "internal/proxy/dashboard.go",
+        "internal/proxy/proxy.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Cookie forwarding logic is audited and documented."
+      ]
+    },
+    {
+      "id": "proxy-audit-streaming-errors",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit streaming errors formatting",
+      "description": "Ensure streaming errors mid-stream are properly formatted as SSE error events.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Streaming error handling is audited to ensure Anthropic SSE format."
+      ]
+    },
+    {
+      "id": "dashboard-audit-static-embed",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Audit dashboard static files embedding",
+      "description": "Ensure documentation reflects how dashboard static files are embedded.",
+      "allowed_paths": [
+        "docs/dashboard.md",
+        "internal/web/embed.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Static embedding documentation is audited."
       ]
     }
   ]

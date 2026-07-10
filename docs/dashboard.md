@@ -64,6 +64,8 @@ Top-right `+ Register` button. Streams a job's progress live. See [Bulk Registra
 4. **Start** kicks off the run; the drawer streams `event: snapshot`, `event: step`, `event: done` over `/admin/register/jobs/{id}/events`
 5. Failed rows can be retried in one click — credentials come from the server-side sidecar; the dashboard never re-asks for the secret
 
+After pressing **Start**, the drawer streams a live progress list driven by SSE. Failed rows render a red badge with the truncated provider error message; success rows show the new `space_id` / `user_id` and the file path that was written into `accounts/`.
+
 A history drawer (`History` button) shows the most recent jobs from `/admin/register/jobs`, with per-job snapshot, retry, and delete actions.
 
 ## Models configuration
