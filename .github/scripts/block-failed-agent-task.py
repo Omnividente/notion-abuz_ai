@@ -35,7 +35,9 @@ RECOVERY_LABELS = {
 
 
 def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return subprocess.run(
+        cmd, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
 
 
 def safe_branch_part(value: str, limit: int = 80) -> str:
@@ -52,10 +54,14 @@ def load_manifest(path: Path) -> dict[str, Any]:
 
 
 def write_manifest(path: Path, data: dict[str, Any]) -> None:
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
 
-def request(method: str, path: str, *, token: str, api_url: str, body: Any = None) -> Any:
+def request(
+    method: str, path: str, *, token: str, api_url: str, body: Any = None
+) -> Any:
     data = None
     headers = {
         "Authorization": f"Bearer {token}",
@@ -66,7 +72,9 @@ def request(method: str, path: str, *, token: str, api_url: str, body: Any = Non
         data = json.dumps(body).encode("utf-8")
         headers["Content-Type"] = "application/json"
 
-    req = urllib.request.Request(f"{api_url}{path}", data=data, headers=headers, method=method)
+    req = urllib.request.Request(
+        f"{api_url}{path}", data=data, headers=headers, method=method
+    )
     try:
         with urllib.request.urlopen(req) as resp:
             content = resp.read()
@@ -75,10 +83,14 @@ def request(method: str, path: str, *, token: str, api_url: str, body: Any = Non
             return json.loads(content.decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"{method} {path} returned HTTP {exc.code}: {detail}") from exc
+        raise RuntimeError(
+            f"{method} {path} returned HTTP {exc.code}: {detail}"
+        ) from exc
 
 
-def ensure_label(*, name: str, color: str, description: str, token: str, repo: str, api_url: str) -> None:
+def ensure_label(
+    *, name: str, color: str, description: str, token: str, repo: str, api_url: str
+) -> None:
     try:
         request(
             "POST",
@@ -101,10 +113,20 @@ def open_block_pr(
     repo: str,
     api_url: str,
 ) -> int:
-    short_session = safe_branch_part(failed_sessions[0] if failed_sessions else "unknown", 20)
+    short_session = safe_branch_part(
+        failed_sessions[0] if failed_sessions else "unknown", 20
+    )
     branch = f"{RECOVERY_BRANCH_PREFIX}-{safe_branch_part(task_id, 70)}-{short_session}"
 
-    open_pulls = request("GET", f"/repos/{repo}/pulls?state=open&per_page=100", token=token, api_url=api_url) or []
+    open_pulls = (
+        request(
+            "GET",
+            f"/repos/{repo}/pulls?state=open&per_page=100",
+            token=token,
+            api_url=api_url,
+        )
+        or []
+    )
     for pr in open_pulls:
         head_ref = (pr.get("head") or {}).get("ref", "")
         body = pr.get("body") or ""
@@ -127,14 +149,18 @@ def open_block_pr(
         print(f"Task {task_id!r} not found; cannot open block PR.")
         return 0
     if target.get("status") != "todo":
-        print(f"Task {task_id!r} status is {target.get('status')!r}; block PR not needed.")
+        print(
+            f"Task {task_id!r} status is {target.get('status')!r}; block PR not needed."
+        )
         return 0
 
     sessions_text = ", ".join(failed_sessions)
     target["status"] = "blocked"
     target["blocked_reason"] = BLOCK_REASON_TEMPLATE.format(sessions=sessions_text)
 
-    minimum_todo_tasks = manifest.get("replenishment_policy", {}).get("minimum_todo_tasks", 5)
+    minimum_todo_tasks = manifest.get("replenishment_policy", {}).get(
+        "minimum_todo_tasks", 5
+    )
 
     if todo_count < minimum_todo_tasks:
         import hashlib
@@ -142,7 +168,9 @@ def open_block_pr(
 
     while todo_count < minimum_todo_tasks:
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        h = hashlib.sha256(f"{task_id}-{todo_count}-{now}".encode("utf-8")).hexdigest()[:8]
+        h = hashlib.sha256(f"{task_id}-{todo_count}-{now}".encode("utf-8")).hexdigest()[
+            :8
+        ]
         new_task_id = f"automation-recovery-followup-{h}"
         new_task = {
             "id": new_task_id,
@@ -151,22 +179,27 @@ def open_block_pr(
             "risk": "low",
             "title": f"Investigate root cause of Jules failure for {task_id}",
             "description": f"The task {task_id} repeatedly failed and was blocked. We need an offline reproduction and concrete CI artifacts to unblock it or fix the underlying bridge issue.",
-            "allowed_paths": [
-                "agent_tasks.json"
-            ],
+            "allowed_paths": ["agent_tasks.json"],
             "acceptance": [
                 "Concrete offline reproduction evidence is collected.",
                 "The root cause is identified using CI logs, local live smoke, or captured Claude Code transcripts.",
-                "A fix is proposed or the task is closed if obsolete."
+                "A fix is proposed or the task is closed if obsolete.",
             ],
-            "source_reference": f"Blocked task {task_id}"
+            "source_reference": f"Blocked task {task_id}",
         }
         tasks.append(new_task)
         todo_count += 1
     write_manifest(manifest_path, manifest)
 
     run(["git", "config", "user.name", "github-actions[bot]"])
-    run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
+    run(
+        [
+            "git",
+            "config",
+            "user.email",
+            "41898282+github-actions[bot]@users.noreply.github.com",
+        ]
+    )
     run(["git", "checkout", "-B", branch])
     run(["git", "add", str(manifest_path)])
 
@@ -234,7 +267,9 @@ def main(argv: list[str] | None = None) -> int:
         print("GITHUB_API_TOKEN and GITHUB_REPOSITORY are required.", file=sys.stderr)
         return 2
 
-    sessions = [item.strip() for item in args.failed_sessions.split(",") if item.strip()]
+    sessions = [
+        item.strip() for item in args.failed_sessions.split(",") if item.strip()
+    ]
     if not sessions:
         print("No failed sessions were provided; block PR not needed.")
         return 0

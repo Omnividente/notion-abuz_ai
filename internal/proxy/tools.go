@@ -2063,7 +2063,13 @@ func injectCodingAssistantInstruction(messages []ChatMessage) []ChatMessage {
 		Role:    "system",
 		Content: instruction,
 	})
-	result = append(result, messages...)
+	for _, msg := range messages {
+		if msg.Role == "system" || msg.Role == "developer" {
+			// Strip problematic identity claims that cause Notion tool refusal
+			msg.Content = stripStructuredOutputSystemNoise(msg.Content)
+		}
+		result = append(result, msg)
+	}
 	return result
 }
 
