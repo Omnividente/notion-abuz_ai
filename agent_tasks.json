@@ -8145,7 +8145,7 @@
     },
     {
       "id": "proxy-audit-legacy-collapse-metric-followup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy legacy collapse metric logging",
@@ -8156,6 +8156,21 @@
       ],
       "acceptance": [
         "Legacy collapse paths are audited and documented for context loss metrics."
+      ]
+    },
+    {
+      "id": "proxy-audit-context-loss-read-narrowing",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit read narrowing context loss metrics",
+      "description": "Ensure context loss metrics related to Read narrowing are consistently logged for diagnostics.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Read narrowing paths have corresponding diagnostic logs alongside metrics."
       ]
     }
   ]

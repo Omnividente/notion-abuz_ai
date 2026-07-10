@@ -807,6 +807,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 			for i, m := range messages {
 				if m.Role == "tool" && i <= userQueryIdx {
 					recordContextLossMetric("legacy_collapse_dropped_tool_result")
+					log.Printf("[bridge] legacy collapse: dropped tool result %q (len=%d) from earlier turn", resolveName(m), len(m.Content))
 				}
 				if m.Role == "assistant" && i <= userQueryIdx && strings.Contains(m.Content, "---\nSources:") {
 					recordContextLossMetric("legacy_collapse_dropped_search_context")
