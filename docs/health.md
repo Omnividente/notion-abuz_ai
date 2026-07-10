@@ -24,15 +24,30 @@ curl -s http://localhost:3000/health | jq
   "available": 2,
   "quota": [
     {
+      "checked_at": "2023-10-27T10:05:00Z",
       "eligible": true,
       "email": "alice@example.com",
       "exhausted": false,
+      "has_premium": true,
+      "last_usage_at": 1698401100000,
+      "limit": 1000,
       "name": "Alice User",
       "no_workspace": false,
       "permanent": false,
       "plan": "Plus",
+      "premium_balance": 500,
+      "premium_limit": 500,
+      "premium_usage": 0,
+      "remaining": 955,
+      "research_usage": 10,
       "space_count": 1,
+      "space_limit": 1000,
+      "space_remaining": 955,
+      "space_usage": 45,
       "usage": 45,
+      "user_limit": 1000,
+      "user_remaining": 955,
+      "user_usage": 45,
       "workspace_checked_at": "2023-10-27T10:00:00Z"
     },
     {
@@ -77,7 +92,16 @@ Each object in the `quota` array represents the real-time state of an account:
 - **`space_count`**: Number of workspaces the account has access to.
 - **`workspace_checked_at`**: ISO-8601 timestamp of the last successful workspace probe.
 - **`eligible`**: Boolean indicating if the workspace is theoretically eligible for AI features.
-- **`usage`**: The percentage (or raw count, depending on the Notion API payload) of AI quota consumed.
+- **`usage`**: The legacy combined usage metric.
+- **`limit`**: The legacy combined limit metric.
+- **`remaining`**: The legacy combined remaining metric.
+- **`space_usage` / `space_limit` / `space_remaining`**: Workspace-level quota metrics.
+- **`user_usage` / `user_limit` / `user_remaining`**: User-level quota metrics.
+- **`last_usage_at`**: Unix timestamp (milliseconds) of the last AI usage.
+- **`research_usage`**: V1 research mode usage.
+- **`has_premium`**: Boolean indicating if the account has premium credits.
+- **`premium_balance` / `premium_usage` / `premium_limit`**: V2 premium credit metrics.
+- **`checked_at`**: ISO-8601 timestamp of the last successful quota probe.
 
 ## Debugging Scenarios
 
