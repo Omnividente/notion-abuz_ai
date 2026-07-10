@@ -7994,7 +7994,7 @@
     },
     {
       "id": "scripts-audit-python-lint-dedupe-task-4",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting: select_agent_task.py",
