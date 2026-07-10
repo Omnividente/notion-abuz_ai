@@ -7919,7 +7919,7 @@
     },
     {
       "id": "scripts-audit-python-lint-validate-tasks",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting: validate_agent_tasks.py",
@@ -7930,6 +7930,21 @@
       ],
       "acceptance": [
         "validate_agent_tasks.py is audited for standard Python formatting using ruff."
+      ]
+    },
+    {
+      "id": "scripts-audit-python-lint-select-task",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Audit python scripts for formatting: select_agent_task.py",
+      "description": "Review select_agent_task.py for standard formatting using ruff.",
+      "allowed_paths": [
+        "scripts/select_agent_task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "select_agent_task.py is audited for standard Python formatting using ruff."
       ]
     }
   ]
