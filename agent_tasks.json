@@ -8190,7 +8190,7 @@
     },
     {
       "id": "proxy-audit-context-loss-legacy-collapse-dropped",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy context loss metric for dropped search context in fallback",
@@ -8202,6 +8202,24 @@
       ],
       "acceptance": [
         "`legacy_collapse_dropped_search_context` metric has corresponding tests and adequate observability logic."
+      ]
+    },
+    {
+      "id": "proxy-audit-context-loss-legacy-collapse-dropped-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy context loss metric for dropped tool results in fallback",
+      "description": "Ensure context loss metric `legacy_collapse_dropped_tool_result` is tested and explicitly documented when legacy fallback drops prior tool results.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "docs/claude-code-integration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "`legacy_collapse_dropped_tool_result` metric has corresponding tests and adequate observability logic.",
+        "Fallback documentation in `docs/claude-code-integration.md` explicitly mentions this context loss."
       ]
     }
   ]

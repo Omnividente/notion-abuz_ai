@@ -1441,6 +1441,16 @@ func TestBuildTranscript_LegacyCollapseSearchContextDrop(t *testing.T) {
 	contextLossMetrics = make(map[string]int)
 	contextLossMetricsMu.Unlock()
 
+	var buf bytes.Buffer
+	originalLogOutput := log.Writer()
+	log.SetOutput(&buf)
+	originalWriter := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalWriter
+		log.SetOutput(originalLogOutput)
+	}()
+
 	messages := []ChatMessage{
 		{Role: "user", Content: "Query 1"},
 		{Role: "assistant", Content: "Here is what I found.\n\n---\nSources:\n[1] example.com"},
@@ -1470,6 +1480,11 @@ func TestBuildTranscript_LegacyCollapseSearchContextDrop(t *testing.T) {
 
 	if !exists || count != 1 {
 		t.Errorf("Expected legacy_collapse_dropped_search_context to be 1, got %d (exists: %v)", count, exists)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "[bridge] legacy collapse: dropped search context") {
+		t.Errorf("Expected log to contain '[bridge] legacy collapse: dropped search context', got: %s", output)
 	}
 }
 

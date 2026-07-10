@@ -120,6 +120,8 @@ Notion threads preserve full conversation context server-side. The model sees it
 
 When no session exists (expired, cleared after error, etc.), the proxy collapses the entire conversation into a single self-contained message with the original query, all prior tool results, and the continuation prompt.
 
+During this collapse, search history from previous turns is explicitly dropped (tracked via the `legacy_collapse_dropped_search_context` context loss metric) to prevent context inflation. Prior tool execution results (`legacy_collapse_dropped_tool_result`) and read narrowing constraints (`legacy_collapse_read_narrowing`) are also dropped or constrained appropriately to fit within the single-message fallback payload.
+
 ## Global Compatibility Research Model
 
 Claude Code compatibility must be evaluated at the agent-loop level, not only at
