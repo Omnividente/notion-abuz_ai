@@ -66,19 +66,27 @@ def validate_replenishment_policy(policy: Any) -> int:
 
     minimum = policy.get("minimum_todo_tasks")
     if not isinstance(minimum, int) or minimum < 1:
-        raise ValidationError("replenishment_policy.minimum_todo_tasks must be a positive integer")
+        raise ValidationError(
+            "replenishment_policy.minimum_todo_tasks must be a positive integer"
+        )
 
     batch_size = policy.get("batch_size")
     if not isinstance(batch_size, int) or batch_size < 1:
-        raise ValidationError("replenishment_policy.batch_size must be a positive integer")
+        raise ValidationError(
+            "replenishment_policy.batch_size must be a positive integer"
+        )
 
     max_todo = policy.get("max_todo_tasks")
     if max_todo is not None and (not isinstance(max_todo, int) or max_todo < minimum):
-        raise ValidationError("replenishment_policy.max_todo_tasks must be >= minimum_todo_tasks")
+        raise ValidationError(
+            "replenishment_policy.max_todo_tasks must be >= minimum_todo_tasks"
+        )
 
     allowed = policy.get("allowed_risks_for_generated_tasks")
     if not isinstance(allowed, list) or not allowed:
-        raise ValidationError("replenishment_policy.allowed_risks_for_generated_tasks must be a non-empty array")
+        raise ValidationError(
+            "replenishment_policy.allowed_risks_for_generated_tasks must be a non-empty array"
+        )
     invalid = set(allowed).difference(VALID_RISKS)
     if invalid:
         raise ValidationError(f"invalid generated task risks: {sorted(invalid)}")
@@ -94,7 +102,9 @@ def validate_task(task: Any, index: int, seen_ids: set[str]) -> str:
 
     missing = REQUIRED_TASK_FIELDS.difference(task)
     if missing:
-        raise ValidationError(f"tasks[{index}] missing required fields: {sorted(missing)}")
+        raise ValidationError(
+            f"tasks[{index}] missing required fields: {sorted(missing)}"
+        )
 
     task_id = require_string(task.get("id"), f"tasks[{index}].id")
     if task_id in seen_ids:
@@ -137,14 +147,22 @@ def validate_manifest(data: dict[str, Any]) -> list[str]:
         raise ValidationError("merge_policy must be an object")
     missing_policy = VALID_RISKS.difference(merge_policy)
     if missing_policy:
-        raise ValidationError(f"merge_policy missing risk levels: {sorted(missing_policy)}")
+        raise ValidationError(
+            f"merge_policy missing risk levels: {sorted(missing_policy)}"
+        )
 
     minimum_todo_tasks = validate_replenishment_policy(data.get("replenishment_policy"))
 
     loop_policy = data.get("autonomous_loop_policy")
     if not isinstance(loop_policy, dict):
         raise ValidationError("autonomous_loop_policy must be an object")
-    for field in ("operating_model", "selection_rule", "anti_stall_rule", "max_pr_scope", "failure_rule"):
+    for field in (
+        "operating_model",
+        "selection_rule",
+        "anti_stall_rule",
+        "max_pr_scope",
+        "failure_rule",
+    ):
         require_string(loop_policy.get(field), f"autonomous_loop_policy.{field}")
 
     tasks = data.get("tasks")
