@@ -7700,7 +7700,7 @@
     },
     {
       "id": "docs-api-endpoints-audit",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Audit API documentation against handler routes",
@@ -7852,6 +7852,22 @@
       "source_reference": "pull/520@c289b349450ba017335037509d9f14fd2d628b34",
       "source_task_id": "proxy-audit-context-loss-metric",
       "circuit_breaker_followup_hash": "e3a07e261825"
+    },
+    {
+      "id": "docs-dashboard-auth-audit",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Audit dashboard authentication documentation",
+      "description": "Ensure docs/dashboard.md accurately reflects the session-cookie auth model mentioned in api.md.",
+      "allowed_paths": [
+        "docs/dashboard.md",
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Dashboard authentication documentation is audited and verified to cover the session-cookie model."
+      ]
     }
   ]
 }
