@@ -8287,7 +8287,7 @@
     },
     {
       "id": "dashboard-audit-static-embed",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Audit dashboard static files embedding",

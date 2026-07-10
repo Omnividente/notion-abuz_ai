@@ -2,6 +2,10 @@
 
 [← Back to README](../README.md)
 
+## Static files embedding
+
+The frontend dashboard (React + TypeScript + Vite) is built into the `web/dist` directory. These static files are then copied to `internal/web/dist` and embedded directly into the Go backend binary using the `go:embed` directive in `internal/web/embed.go`. This allows the single `notion-manager` binary to serve both the API and the full frontend dashboard without requiring a separate web server.
+
 ## Auth model
 
 Two distinct auth surfaces:
