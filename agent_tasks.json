@@ -8160,7 +8160,7 @@
     },
     {
       "id": "proxy-audit-context-loss-read-narrowing",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit read narrowing context loss metrics",
@@ -8171,6 +8171,21 @@
       ],
       "acceptance": [
         "Read narrowing paths have corresponding diagnostic logs alongside metrics."
+      ]
+    },
+    {
+      "id": "proxy-audit-context-loss-read-narrowing-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit read narrowing context loss metrics mapping in fallback modes",
+      "description": "Ensure context loss metrics related to Read narrowing are consistently logged in fallback scenarios and mapped correctly to Notion responses.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Read narrowing path in fallback mode has corresponding diagnostic logs alongside metrics."
       ]
     }
   ]
