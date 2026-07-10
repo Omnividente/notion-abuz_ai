@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -115,7 +114,9 @@ def find_duplicates(data: dict[str, Any], min_score: float) -> list[Duplicate]:
                     score=score,
                     reason=f"similar to {other_status} task",
                 )
-            if candidate.score >= min_score and (best is None or candidate.score > best.score):
+            if candidate.score >= min_score and (
+                best is None or candidate.score > best.score
+            ):
                 best = candidate
 
         if best is not None:
@@ -159,7 +160,11 @@ def main(argv: list[str] | None = None) -> int:
     """Run the duplicate task detector."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", nargs="?", default="agent_tasks.json")
-    parser.add_argument("--write", action="store_true", help="write blocked statuses back to the manifest")
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="write blocked statuses back to the manifest",
+    )
     parser.add_argument(
         "--min-score",
         type=float,
