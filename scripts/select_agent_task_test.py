@@ -7,7 +7,9 @@ import unittest
 import select_agent_task
 
 
-def task(task_id: str, *, title: str, description: str, risk: str, allowed_paths: list[str]) -> dict:
+def task(
+    task_id: str, *, title: str, description: str, risk: str, allowed_paths: list[str]
+) -> dict:
     return {
         "id": task_id,
         "status": "todo",
@@ -29,7 +31,10 @@ class SelectAgentTaskTest(unittest.TestCase):
                     title="Add tests for HandleFrame missing metadata",
                     description="One parser edge case.",
                     risk="low",
-                    allowed_paths=["internal/proxy/anthropic_test.go", "agent_tasks.json"],
+                    allowed_paths=[
+                        "internal/proxy/anthropic_test.go",
+                        "agent_tasks.json",
+                    ],
                 )
             ]
         }
@@ -53,7 +58,10 @@ class SelectAgentTaskTest(unittest.TestCase):
                     title="Add test coverage for CI failure",
                     description="CI failure reproduced in PR #123.",
                     risk="low",
-                    allowed_paths=["internal/proxy/anthropic_test.go", "agent_tasks.json"],
+                    allowed_paths=[
+                        "internal/proxy/anthropic_test.go",
+                        "agent_tasks.json",
+                    ],
                 ),
                 task(
                     "runtime",
@@ -70,7 +78,9 @@ class SelectAgentTaskTest(unittest.TestCase):
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="proxy"
+        )
 
         self.assertTrue(selected.selected)
         self.assertEqual(selected.task_id, "runtime")
@@ -109,7 +119,9 @@ class SelectAgentTaskTest(unittest.TestCase):
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="automation")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="automation"
+        )
 
         self.assertTrue(selected.selected)
         self.assertEqual(selected.task_id, "failed-check-context")
@@ -194,7 +206,9 @@ class SelectAgentTaskTest(unittest.TestCase):
                 task_id="test-dummy-task-replenishment",
             )
 
-    def test_placeholder_replenishment_task_is_rejected_and_next_task_selected(self) -> None:
+    def test_placeholder_replenishment_task_is_rejected_and_next_task_selected(
+        self,
+    ) -> None:
         data = {
             "tasks": [
                 task(
@@ -218,11 +232,15 @@ class SelectAgentTaskTest(unittest.TestCase):
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="proxy"
+        )
 
         self.assertTrue(selected.selected)
         self.assertEqual(selected.task_id, "runtime")
-        self.assertEqual(selected.rejected[0]["task_id"], "test-dummy-task-replenishment")
+        self.assertEqual(
+            selected.rejected[0]["task_id"], "test-dummy-task-replenishment"
+        )
         self.assertIn("placeholder", selected.rejected[0]["reason"])
 
     def test_runtime_quota_task_is_not_treated_as_placeholder(self) -> None:
@@ -238,7 +256,9 @@ class SelectAgentTaskTest(unittest.TestCase):
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="proxy"
+        )
 
         self.assertTrue(selected.selected)
         self.assertEqual(selected.task_id, "runtime-quota")
@@ -251,12 +271,17 @@ class SelectAgentTaskTest(unittest.TestCase):
                     title="Add tests for Anthropic HandleFrame missing metadata",
                     description="Ensure parser handles missing metadata.",
                     risk="low",
-                    allowed_paths=["internal/proxy/anthropic_test.go", "agent_tasks.json"],
+                    allowed_paths=[
+                        "internal/proxy/anthropic_test.go",
+                        "agent_tasks.json",
+                    ],
                 )
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="proxy"
+        )
 
         self.assertFalse(selected.selected)
         self.assertEqual(selected.rejected[0]["task_id"], "micro")
@@ -284,7 +309,9 @@ class SelectAgentTaskTest(unittest.TestCase):
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="proxy"
+        )
 
         self.assertFalse(selected.selected)
         self.assertEqual(selected.rejected[0]["task_id"], "runtime-boundary")
@@ -301,12 +328,17 @@ class SelectAgentTaskTest(unittest.TestCase):
                     title="Add test coverage for CI failure",
                     description="Reproduced CI failure in PR #456.",
                     risk="low",
-                    allowed_paths=["internal/proxy/anthropic_test.go", "agent_tasks.json"],
+                    allowed_paths=[
+                        "internal/proxy/anthropic_test.go",
+                        "agent_tasks.json",
+                    ],
                 )
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="proxy"
+        )
 
         self.assertTrue(selected.selected)
         self.assertEqual(selected.task_id, "evidence-test")
@@ -328,7 +360,9 @@ class SelectAgentTaskTest(unittest.TestCase):
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="proxy"
+        )
 
         self.assertTrue(selected.selected)
         self.assertEqual(selected.task_id, "runtime-boundary")
@@ -346,7 +380,9 @@ class SelectAgentTaskTest(unittest.TestCase):
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="proxy"
+        )
 
         self.assertFalse(selected.selected)
         self.assertEqual(
@@ -378,7 +414,9 @@ class SelectAgentTaskTest(unittest.TestCase):
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="high", focus="automation")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="high", focus="automation"
+        )
 
         self.assertTrue(selected.selected)
         self.assertEqual(selected.task_id, "guarded-high")
@@ -393,12 +431,17 @@ class SelectAgentTaskTest(unittest.TestCase):
                     title="Rewrite proxy routing",
                     description="Large high-risk network rewrite.",
                     risk="high",
-                    allowed_paths=["internal/proxy/reverseproxy.go", "agent_tasks.json"],
+                    allowed_paths=[
+                        "internal/proxy/reverseproxy.go",
+                        "agent_tasks.json",
+                    ],
                 )
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="high", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="high", focus="proxy"
+        )
 
         self.assertFalse(selected.selected)
         self.assertEqual(selected.reason_code, "no_eligible_autonomous_task")
@@ -418,7 +461,9 @@ class SelectAgentTaskTest(unittest.TestCase):
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="high", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="high", focus="proxy"
+        )
 
         self.assertFalse(selected.selected)
         self.assertEqual(selected.rejected_count, 1)
@@ -432,12 +477,17 @@ class SelectAgentTaskTest(unittest.TestCase):
                     title="Rewrite proxy routing",
                     description="Large high-risk network rewrite.",
                     risk="high",
-                    allowed_paths=["internal/proxy/reverseproxy.go", "agent_tasks.json"],
+                    allowed_paths=[
+                        "internal/proxy/reverseproxy.go",
+                        "agent_tasks.json",
+                    ],
                 )
             ]
         }
 
-        with self.assertRaisesRegex(ValueError, "high risk without required legacy/lab evidence guard"):
+        with self.assertRaisesRegex(
+            ValueError, "high risk without required legacy/lab evidence guard"
+        ):
             select_agent_task.select_task(
                 data,
                 risk_ceiling="high",
@@ -454,14 +504,19 @@ class SelectAgentTaskTest(unittest.TestCase):
                         title="Runtime task",
                         description="Runtime failure.",
                         risk="medium",
-                        allowed_paths=["internal/proxy/anthropic.go", "agent_tasks.json"],
+                        allowed_paths=[
+                            "internal/proxy/anthropic.go",
+                            "agent_tasks.json",
+                        ],
                     ),
                     "status": "done",
                 }
             ]
         }
 
-        selected = select_agent_task.select_task(data, risk_ceiling="medium", focus="proxy")
+        selected = select_agent_task.select_task(
+            data, risk_ceiling="medium", focus="proxy"
+        )
 
         self.assertFalse(selected.selected)
         self.assertEqual(selected.reason_code, "no_todo_tasks")
