@@ -8099,7 +8099,7 @@
     },
     {
       "id": "scripts-audit-python-lint-block-failed-agent-task",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting: block-failed-agent-task.py",
@@ -8110,6 +8110,21 @@
       ],
       "acceptance": [
         "block-failed-agent-task.py is audited for standard Python formatting using ruff."
+      ]
+    },
+    {
+      "id": "proxy-audit-missing-tool-fallback-f0dcb4d0",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy missing tool fallback diagnostics",
+      "description": "Ensure internal/proxy/tools.go contains adequate diagnostics when empty tools fallback is triggered.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Missing tool fallback path has appropriate diagnostic logging."
       ]
     }
   ]
