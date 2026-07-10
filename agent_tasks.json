@@ -8114,7 +8114,7 @@
     },
     {
       "id": "proxy-audit-missing-tool-fallback-f0dcb4d0",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy missing tool fallback diagnostics",
@@ -8125,6 +8125,21 @@
       ],
       "acceptance": [
         "Missing tool fallback path has appropriate diagnostic logging."
+      ]
+    },
+    {
+      "id": "proxy-audit-tool-result-continuation-logging",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy tool result continuation logging",
+      "description": "Ensure internal/proxy/tools.go contains adequate diagnostic logs for tracking multi-turn tool result continuation events.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tool result continuation paths have appropriate [bridge] diagnostic logging."
       ]
     }
   ]
