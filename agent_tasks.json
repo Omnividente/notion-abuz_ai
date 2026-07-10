@@ -7934,7 +7934,7 @@
     },
     {
       "id": "scripts-audit-python-lint-select-task",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting: select_agent_task.py",
@@ -7945,6 +7945,21 @@
       ],
       "acceptance": [
         "select_agent_task.py is audited for standard Python formatting using ruff."
+      ]
+    },
+    {
+      "id": "scripts-audit-python-lint-dedupe-task",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Audit python scripts for formatting: dedupe_agent_tasks.py",
+      "description": "Review dedupe_agent_tasks.py for standard formatting using ruff.",
+      "allowed_paths": [
+        "scripts/dedupe_agent_tasks.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "dedupe_agent_tasks.py is audited for standard Python formatting using ruff."
       ]
     }
   ]
