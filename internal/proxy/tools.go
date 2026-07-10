@@ -823,7 +823,7 @@ func injectToolsIntoMessages(messages []ChatMessage, tools []Tool, model string,
 					content := m.Content
 					if name == "Read" && strings.Contains(content, "exceeds maximum allowed tokens") {
 						needsReadNarrowing = true
-						recordContextLossMetric("session_continuation_read_narrowing")
+						recordContextLossMetric("legacy_collapse_read_narrowing")
 						log.Printf("[bridge] diagnostic: Read tool output exceeded token limit, triggering read narrowing guard")
 					}
 					runes := []rune(content)
