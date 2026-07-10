@@ -131,7 +131,12 @@ def stale_after_autonomous_continue(session: dict[str, Any], *, now: datetime) -
 
 
 def iso_now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def labels_of(pr: dict[str, Any]) -> set[str]:
@@ -219,7 +224,9 @@ def is_autonomous_pr(pr: dict[str, Any], task_ids: list[str], repo: str) -> bool
     head_repo = str(head_repo_obj.get("full_name") or pr.get("head_repo") or "")
 
     user_lower = user.lower()
-    if user == "google-jules[bot]" or ("jules" in user_lower and user_lower.endswith("[bot]")):
+    if user == "google-jules[bot]" or (
+        "jules" in user_lower and user_lower.endswith("[bot]")
+    ):
         return True
     if "PR created automatically by Jules" in body or "jules.google.com/task" in body:
         return True
@@ -227,7 +234,10 @@ def is_autonomous_pr(pr: dict[str, Any], task_ids: list[str], repo: str) -> bool
         return False
     if head_ref.startswith(("jules-", "jules/")):
         return True
-    return any(head_ref == task_id or head_ref.startswith(f"{task_id}-") for task_id in task_ids)
+    return any(
+        head_ref == task_id or head_ref.startswith(f"{task_id}-")
+        for task_id in task_ids
+    )
 
 
 def pr_time(pr: dict[str, Any]) -> datetime | None:
@@ -304,13 +314,19 @@ def session_task_id(session: dict[str, Any], session_task_map: dict[str, Any]) -
     if isinstance(mapped, dict) and isinstance(mapped.get("task_id"), str):
         return mapped["task_id"]
     text = json.dumps(session, ensure_ascii=False)
-    match = re.search(r"(?i)(?:selected\s+task\s+id|task_id)\s*[:=]\s*\"?([a-z0-9][a-z0-9_.-]{2,})", text)
+    match = re.search(
+        r"(?i)(?:selected\s+task\s+id|task_id)\s*[:=]\s*\"?([a-z0-9][a-z0-9_.-]{2,})",
+        text,
+    )
     return match.group(1) if match else ""
 
 
 def session_kind(session: dict[str, Any]) -> str:
     text = json.dumps(session, ensure_ascii=False).lower()
-    if "autonomous_critic_review_token" in text or "critic" in str(session.get("title", "")).lower():
+    if (
+        "autonomous_critic_review_token" in text
+        or "critic" in str(session.get("title", "")).lower()
+    ):
         return "critic"
     return str(session.get("session_kind") or session.get("sessionKind") or "product")
 
@@ -339,14 +355,18 @@ def selector_diagnostics(manifest: dict[str, Any]) -> dict[str, Any]:
         return {"available": False, "error": "scripts/select_agent_task.py not found"}
 
     try:
-        spec = importlib.util.spec_from_file_location("automation_health_select_agent_task", selector_path)
+        spec = importlib.util.spec_from_file_location(
+            "automation_health_select_agent_task", selector_path
+        )
         if spec is None or spec.loader is None:
             return {"available": False, "error": "could not load selector module"}
         module = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = module
         spec.loader.exec_module(module)
         risk_ceiling = os.environ.get("AUTONOMOUS_RISK_CEILING", "medium")
-        selection = module.select_task(manifest, risk_ceiling=risk_ceiling, focus="proxy")
+        selection = module.select_task(
+            manifest, risk_ceiling=risk_ceiling, focus="proxy"
+        )
         data = selection.to_dict()
         data["available"] = True
         data["risk_ceiling"] = risk_ceiling
@@ -362,13 +382,25 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
     task_ids = task_ids_from_manifest(manifest)
     statuses = task_statuses(manifest)
     pulls = data.get("pulls") if isinstance(data.get("pulls"), list) else []
-    workflow_runs = data.get("workflow_runs") if isinstance(data.get("workflow_runs"), list) else []
-    sessions = data.get("jules_sessions") if isinstance(data.get("jules_sessions"), list) else []
-    session_task_map = data.get("session_task_map") if isinstance(data.get("session_task_map"), dict) else {}
+    workflow_runs = (
+        data.get("workflow_runs") if isinstance(data.get("workflow_runs"), list) else []
+    )
+    sessions = (
+        data.get("jules_sessions")
+        if isinstance(data.get("jules_sessions"), list)
+        else []
+    )
+    session_task_map = (
+        data.get("session_task_map")
+        if isinstance(data.get("session_task_map"), dict)
+        else {}
+    )
     findings: list[Finding] = []
     missing_sources = list(data.get("missing_sources") or [])
 
-    api_errors = data.get("api_errors") if isinstance(data.get("api_errors"), dict) else {}
+    api_errors = (
+        data.get("api_errors") if isinstance(data.get("api_errors"), dict) else {}
+    )
     if api_errors.get("github"):
         add_finding_once(
             findings,
@@ -397,7 +429,10 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         for task in manifest.get("tasks", [])
         if isinstance(task, dict)
         and task.get("status") == "blocked"
-        and (not isinstance(task.get("blocked_reason"), str) or not task.get("blocked_reason", "").strip())
+        and (
+            not isinstance(task.get("blocked_reason"), str)
+            or not task.get("blocked_reason", "").strip()
+        )
     ]
     if blocked_without_reason:
         add_finding_once(
@@ -415,7 +450,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         for task in manifest.get("tasks", [])
         if isinstance(task, dict) and task.get("status") == "todo"
     )
-    minimum = ((manifest.get("replenishment_policy") or {}).get("minimum_todo_tasks"))
+    minimum = (manifest.get("replenishment_policy") or {}).get("minimum_todo_tasks")
     if isinstance(minimum, int) and todo_count < minimum:
         add_finding_once(
             findings,
@@ -448,8 +483,14 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             for task in manifest.get("tasks", [])
             if isinstance(task, dict) and task.get("status") == "todo"
         ]
-        high_risk_only = bool(todo_tasks) and all(task.get("risk") == "high" for task in todo_tasks)
-        code = "legacy_queue_starvation" if high_risk_only else "no_eligible_autonomous_task"
+        high_risk_only = bool(todo_tasks) and all(
+            task.get("risk") == "high" for task in todo_tasks
+        )
+        code = (
+            "legacy_queue_starvation"
+            if high_risk_only
+            else "no_eligible_autonomous_task"
+        )
         message = (
             "Only high-risk tasks remain, but none satisfies the guarded legacy/offline smoke evidence policy."
             if high_risk_only
@@ -476,12 +517,17 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             ),
         )
 
-    autonomous_pulls = [pr for pr in pulls if isinstance(pr, dict) and is_autonomous_pr(pr, task_ids, repo)]
+    autonomous_pulls = [
+        pr
+        for pr in pulls
+        if isinstance(pr, dict) and is_autonomous_pr(pr, task_ids, repo)
+    ]
     open_autonomous = [pr for pr in autonomous_pulls if pr.get("state") == "open"]
-    autonomous_head_refs = {pr_head_ref(pr) for pr in autonomous_pulls if pr_head_ref(pr)}
+    autonomous_head_refs = {
+        pr_head_ref(pr) for pr in autonomous_pulls if pr_head_ref(pr)
+    }
     active_open_autonomous = [
-        pr for pr in open_autonomous
-        if not is_stopped_autonomous_pr(pr)
+        pr for pr in open_autonomous if not is_stopped_autonomous_pr(pr)
     ]
     stopped_task_ids = {
         task_id
@@ -496,7 +542,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
                 code="duplicate_open_autonomous_prs",
                 severity="critical",
                 message="More than one active autonomous PR is open.",
-                evidence={"pr_numbers": [pr.get("number") for pr in active_open_autonomous]},
+                evidence={
+                    "pr_numbers": [pr.get("number") for pr in active_open_autonomous]
+                },
             ),
         )
 
@@ -504,7 +552,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
     unresolved_label_counts = {label: 0 for label in TRACKED_LABELS}
     windows: dict[str, Any] = {}
     for label in TRACKED_LABELS:
-        label_counts[label] = sum(1 for pr in autonomous_pulls if label in labels_of(pr))
+        label_counts[label] = sum(
+            1 for pr in autonomous_pulls if label in labels_of(pr)
+        )
         unresolved_label_counts[label] = sum(
             1
             for pr in autonomous_pulls
@@ -517,7 +567,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         needs_quality = [pr for pr in recent if has_unresolved_quality_label(pr)]
         blocked = [pr for pr in recent if has_unresolved_blocking_label(pr)]
         suspicious = [pr for pr in recent if is_suspicious_micro_pr(pr)]
-        auto_continue_count = sum(int(pr.get("auto_continue_count") or 0) for pr in recent)
+        auto_continue_count = sum(
+            int(pr.get("auto_continue_count") or 0) for pr in recent
+        )
 
         if hours == 24 and len(needs_quality) >= 3:
             add_finding_once(
@@ -548,7 +600,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             reverse=True,
         )
         first_two = recent_sorted[:2]
-        if len(first_two) == 2 and all(has_unresolved_blocking_label(pr) for pr in first_two):
+        if len(first_two) == 2 and all(
+            has_unresolved_blocking_label(pr) for pr in first_two
+        ):
             add_finding_once(
                 findings,
                 Finding(
@@ -586,7 +640,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
 
         windows[window_name] = {
             "autonomous_pr_count": len(recent),
-            "merged_count": sum(1 for pr in recent if pr.get("merged_at") or pr.get("merged") is True),
+            "merged_count": sum(
+                1 for pr in recent if pr.get("merged_at") or pr.get("merged") is True
+            ),
             "open_count": sum(1 for pr in recent if pr.get("state") == "open"),
             "needs_quality_fix_count": len(needs_quality),
             "blocked_count": len(blocked),
@@ -598,7 +654,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         files = changed_files(pr)
         mergeable = pr.get("mergeable")
         mergeable_state = str(pr.get("mergeable_state") or "")
-        if "agent_tasks.json" in files and (mergeable is False or mergeable_state in {"dirty", "unknown", "blocked"}):
+        if "agent_tasks.json" in files and (
+            mergeable is False or mergeable_state in {"dirty", "unknown", "blocked"}
+        ):
             open_agent_task_conflicts.append(pr.get("number"))
     if open_agent_task_conflicts:
         add_finding_once(
@@ -646,7 +704,10 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
                 code="master_ci_failed",
                 severity="critical",
                 message="Latest completed CI workflow on master failed.",
-                evidence={"run_id": latest_ci.get("id"), "conclusion": latest_ci.get("conclusion")},
+                evidence={
+                    "run_id": latest_ci.get("id"),
+                    "conclusion": latest_ci.get("conclusion"),
+                },
             ),
         )
     elif latest_ci is None:
@@ -655,11 +716,13 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
     local_smoke_failures = [
         run
         for run in workflow_runs
-        if str(run.get("name") or run.get("workflowName") or "") == "RDSH Local Live Smoke"
+        if str(run.get("name") or run.get("workflowName") or "")
+        == "RDSH Local Live Smoke"
         and run.get("conclusion") == "failure"
         and (
             not autonomous_head_refs
-            or str(run.get("head_branch") or run.get("branch") or "") in autonomous_head_refs
+            or str(run.get("head_branch") or run.get("branch") or "")
+            in autonomous_head_refs
         )
     ]
     if local_smoke_failures:
@@ -669,7 +732,12 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
                 code="local_live_smoke_failure",
                 severity="degraded",
                 message="Local PR-code live smoke failures were observed.",
-                evidence={"run_ids": [run.get("id") or run.get("databaseId") for run in local_smoke_failures]},
+                evidence={
+                    "run_ids": [
+                        run.get("id") or run.get("databaseId")
+                        for run in local_smoke_failures
+                    ]
+                },
             ),
         )
 
@@ -694,7 +762,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             and not is_inactive_manifest_task(task_id, statuses)
         ):
             active_product_sessions.append(sid)
-        if state == "AWAITING_USER_FEEDBACK" and stale_after_autonomous_continue(session, now=now):
+        if state == "AWAITING_USER_FEEDBACK" and stale_after_autonomous_continue(
+            session, now=now
+        ):
             stale_waiting_after_continue.append(sid)
         if state == "FAILED":
             if task_id:
@@ -761,7 +831,11 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         "autonomous_prs": {
             "total": len(autonomous_pulls),
             "open": len(open_autonomous),
-            "merged": sum(1 for pr in autonomous_pulls if pr.get("merged_at") or pr.get("merged") is True),
+            "merged": sum(
+                1
+                for pr in autonomous_pulls
+                if pr.get("merged_at") or pr.get("merged") is True
+            ),
             "labels": label_counts,
             "unresolved_labels": unresolved_label_counts,
         },
@@ -779,7 +853,9 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
             "by_state": sessions_by_state,
             "active_product_count": len(active_product_sessions),
             "stale_waiting_after_continue_count": len(stale_waiting_after_continue),
-            "failed_by_task": {task_id: len(ids) for task_id, ids in failed_by_task.items()},
+            "failed_by_task": {
+                task_id: len(ids) for task_id, ids in failed_by_task.items()
+            },
         },
         "windows": windows,
     }
@@ -800,18 +876,26 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
     return report
 
 
-def latest_completed_workflow(workflow_runs: list[Any], *, name: str, branch: str) -> dict[str, Any] | None:
+def latest_completed_workflow(
+    workflow_runs: list[Any], *, name: str, branch: str
+) -> dict[str, Any] | None:
     candidates: list[dict[str, Any]] = []
     for run in workflow_runs:
         if not isinstance(run, dict):
             continue
         run_name = str(run.get("name") or run.get("workflowName") or "")
         run_branch = str(run.get("head_branch") or run.get("branch") or "")
-        if run_name == name and run_branch == branch and run.get("status") == "completed":
+        if (
+            run_name == name
+            and run_branch == branch
+            and run.get("status") == "completed"
+        ):
             candidates.append(run)
     candidates.sort(
-        key=lambda run: parse_time(str(run.get("updated_at") or run.get("created_at") or ""))
-        or datetime.min.replace(tzinfo=timezone.utc),
+        key=lambda run: (
+            parse_time(str(run.get("updated_at") or run.get("created_at") or ""))
+            or datetime.min.replace(tzinfo=timezone.utc)
+        ),
         reverse=True,
     )
     return candidates[0] if candidates else None
@@ -881,7 +965,9 @@ def write_markdown(report: dict[str, Any]) -> str:
     if report["status"] == "critical":
         next_action = "Review critical findings and create or triage an automation meta-task; the loop remains non-stopping."
     elif report["status"] == "degraded":
-        next_action = "Review degraded findings and consider a future automation meta-task."
+        next_action = (
+            "Review degraded findings and consider a future automation meta-task."
+        )
     lines.extend(["", "## Recommended Next Action", "", next_action, ""])
     return "\n".join(lines)
 
@@ -900,7 +986,12 @@ def request_json(url: str, headers: dict[str, str]) -> dict[str, Any]:
     try:
         with urllib.request.urlopen(req, timeout=20) as response:
             return json.loads(response.read().decode("utf-8"))
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+        json.JSONDecodeError,
+    ) as exc:
         raise ApiError(str(exc)) from exc
 
 
@@ -927,7 +1018,9 @@ def collect_live(repo: str, api_url: str) -> dict[str, Any]:
         data["manifest"] = {}
         data["missing_sources"].append("agent_tasks.json")
 
-    github_token = os.environ.get("GITHUB_API_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
+    github_token = (
+        os.environ.get("GITHUB_API_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
+    )
     if not github_token:
         data["api_errors"]["github"] = "missing GitHub token"
     else:
@@ -948,11 +1041,16 @@ def collect_live(repo: str, api_url: str) -> dict[str, Any]:
                     continue
                 if pr.get("number") not in open_numbers:
                     continue
-                details = request_json(f"{api_url}/repos/{repo}/pulls/{pr['number']}", headers)
+                details = request_json(
+                    f"{api_url}/repos/{repo}/pulls/{pr['number']}", headers
+                )
                 if isinstance(details, dict):
                     pr["mergeable"] = details.get("mergeable")
                     pr["mergeable_state"] = details.get("mergeable_state")
-                files = request_json(f"{api_url}/repos/{repo}/pulls/{pr['number']}/files?per_page=100", headers)
+                files = request_json(
+                    f"{api_url}/repos/{repo}/pulls/{pr['number']}/files?per_page=100",
+                    headers,
+                )
                 pr["changed_files"] = [
                     item.get("filename")
                     for item in files
@@ -962,8 +1060,12 @@ def collect_live(repo: str, api_url: str) -> dict[str, Any]:
             data["api_errors"]["github"] = f"pull collection failed: {exc}"
 
         try:
-            runs = request_json(f"{api_url}/repos/{repo}/actions/runs?per_page=100", headers)
-            data["workflow_runs"] = runs.get("workflow_runs", []) if isinstance(runs, dict) else []
+            runs = request_json(
+                f"{api_url}/repos/{repo}/actions/runs?per_page=100", headers
+            )
+            data["workflow_runs"] = (
+                runs.get("workflow_runs", []) if isinstance(runs, dict) else []
+            )
         except ApiError as exc:
             existing = data["api_errors"].get("github")
             data["api_errors"]["github"] = "; ".join(
@@ -971,7 +1073,10 @@ def collect_live(repo: str, api_url: str) -> dict[str, Any]:
             )
 
         try:
-            variable = request_json(f"{api_url}/repos/{repo}/actions/variables/JULES_RECENT_SESSION_TASKS", headers)
+            variable = request_json(
+                f"{api_url}/repos/{repo}/actions/variables/JULES_RECENT_SESSION_TASKS",
+                headers,
+            )
             if isinstance(variable, dict) and isinstance(variable.get("value"), str):
                 data["session_task_map"] = json.loads(variable["value"])
         except (ApiError, json.JSONDecodeError):
@@ -997,7 +1102,9 @@ def collect_live(repo: str, api_url: str) -> dict[str, Any]:
                 "https://jules.googleapis.com/v1alpha/sessions?pageSize=100",
                 {"X-Goog-Api-Key": key},
             )
-            sessions = jules_data.get("sessions", []) if isinstance(jules_data, dict) else []
+            sessions = (
+                jules_data.get("sessions", []) if isinstance(jules_data, dict) else []
+            )
             matching_sessions = [
                 session
                 for session in sessions
@@ -1014,9 +1121,15 @@ def collect_live(repo: str, api_url: str) -> dict[str, Any]:
                         f"https://jules.googleapis.com/v1alpha/{name}/activities?pageSize=50",
                         {"X-Goog-Api-Key": key},
                     )
-                    activity_list = activities.get("activities", []) if isinstance(activities, dict) else []
+                    activity_list = (
+                        activities.get("activities", [])
+                        if isinstance(activities, dict)
+                        else []
+                    )
                     if isinstance(activity_list, list):
-                        session["activity_summary"] = summarize_jules_activities(activity_list)
+                        session["activity_summary"] = summarize_jules_activities(
+                            activity_list
+                        )
                 except ApiError as exc:
                     session["activity_error"] = str(exc)[:300]
             data["jules_sessions"] = matching_sessions
@@ -1033,7 +1146,9 @@ def write_outputs(path: str, report: dict[str, Any]) -> None:
     with Path(path).open("a", encoding="utf-8") as output_file:
         output_file.write(f"status={report['status']}\n")
         output_file.write(f"pause_loop={str(report['pause_loop']).lower()}\n")
-        output_file.write(f"create_meta_task={str(report['create_meta_task']).lower()}\n")
+        output_file.write(
+            f"create_meta_task={str(report['create_meta_task']).lower()}\n"
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1042,7 +1157,9 @@ def build_parser() -> argparse.ArgumentParser:
     mode.add_argument("--fixture-dir", type=Path)
     mode.add_argument("--live", action="store_true")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""))
-    parser.add_argument("--api-url", default=os.environ.get("GITHUB_API_URL", "https://api.github.com"))
+    parser.add_argument(
+        "--api-url", default=os.environ.get("GITHUB_API_URL", "https://api.github.com")
+    )
     parser.add_argument("--output-json", default="automation-health.json", type=Path)
     parser.add_argument("--output-md", default="automation-health.md", type=Path)
     parser.add_argument("--github-output", default=os.environ.get("GITHUB_OUTPUT", ""))
@@ -1052,13 +1169,24 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        data = read_fixture(args.fixture_dir) if args.fixture_dir else collect_live(args.repo, args.api_url)
+        data = (
+            read_fixture(args.fixture_dir)
+            if args.fixture_dir
+            else collect_live(args.repo, args.api_url)
+        )
         report = analyze(data)
         markdown = write_markdown(report)
-        args.output_json.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        args.output_json.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         args.output_md.write_text(markdown, encoding="utf-8")
         write_outputs(args.github_output, report)
-        print(json.dumps({"status": report["status"], "findings": len(report["findings"])}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"status": report["status"], "findings": len(report["findings"])},
+                ensure_ascii=False,
+            )
+        )
         return 0
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
