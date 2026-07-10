@@ -7,7 +7,7 @@
 Two distinct auth surfaces:
 
 - `/v1/messages` — **API key** auth (`Authorization: Bearer <key>` or `x-api-key: <key>`), for external clients
-- `/admin/*`, `/dashboard/`, `/proxy/start` — **dashboard session** auth (cookie set by `/dashboard/auth/login`)
+- `/admin/*`, `/dashboard/`, `/proxy/start` — **dashboard session-cookie** auth (cookie set by `/dashboard/auth/login`)
 
 After signing in through `/dashboard/`, the frontend uses the `dashboard_session` cookie to access:
 

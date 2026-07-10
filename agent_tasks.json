@@ -7855,7 +7855,7 @@
     },
     {
       "id": "docs-dashboard-auth-audit",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Audit dashboard authentication documentation",
@@ -8220,6 +8220,22 @@
       "acceptance": [
         "`legacy_collapse_dropped_tool_result` metric has corresponding tests and adequate observability logic.",
         "Fallback documentation in `docs/claude-code-integration.md` explicitly mentions this context loss."
+      ]
+    },
+    {
+      "id": "docs-dashboard-registration-audit",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Audit dashboard registration documentation",
+      "description": "Ensure docs/dashboard.md accurately reflects the registration flow mentioned in other docs.",
+      "allowed_paths": [
+        "docs/dashboard.md",
+        "docs/registration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Dashboard registration documentation is audited and verified to cover the bulk registration drawer."
       ]
     }
   ]
