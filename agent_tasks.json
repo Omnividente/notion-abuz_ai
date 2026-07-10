@@ -8084,7 +8084,7 @@
     },
     {
       "id": "scripts-audit-python-lint-automation-health",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting: automation-health-report.py",
@@ -8095,6 +8095,21 @@
       ],
       "acceptance": [
         "automation-health-report.py is audited for standard Python formatting using ruff."
+      ]
+    },
+    {
+      "id": "scripts-audit-python-lint-block-failed-agent-task",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Audit python scripts for formatting: block-failed-agent-task.py",
+      "description": "Review block-failed-agent-task.py for standard formatting using ruff.",
+      "allowed_paths": [
+        ".github/scripts/block-failed-agent-task.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "block-failed-agent-task.py is audited for standard Python formatting using ruff."
       ]
     }
   ]
