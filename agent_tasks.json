@@ -8069,7 +8069,7 @@
     },
     {
       "id": "scripts-audit-python-lint-advisory-critic",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Audit python scripts for formatting: advisory-critic-review.py",

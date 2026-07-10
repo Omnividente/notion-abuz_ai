@@ -25,7 +25,9 @@ EVIDENCE_BLOCK_RE = re.compile(
 FOLLOWUP_COMPROMISE_RE = re.compile(
     r"(?i)(left as follow-up|follow-up task|separate task|не удалось|не получилось|вместо этого|unable to|could not|instead)"
 )
-SECRET_LINE_RE = re.compile(r"(?i)(api[_-]?key|token|secret|password|authorization|bearer\s+[a-z0-9._-]+)")
+SECRET_LINE_RE = re.compile(
+    r"(?i)(api[_-]?key|token|secret|password|authorization|bearer\s+[a-z0-9._-]+)"
+)
 
 
 @dataclass
@@ -91,7 +93,11 @@ def read_json(path: str | Path | None) -> dict[str, Any]:
         data = json.loads(text)
     except json.JSONDecodeError:
         return {"_parse_error": "invalid JSON"}
-    return data if isinstance(data, dict) else {"_parse_error": "JSON root is not an object"}
+    return (
+        data
+        if isinstance(data, dict)
+        else {"_parse_error": "JSON root is not an object"}
+    )
 
 
 def parse_evidence_block(body: str) -> EvidenceBlock:
@@ -135,7 +141,11 @@ def parse_evidence_block(body: str) -> EvidenceBlock:
 
 
 def is_test_file(path: str) -> bool:
-    return path.endswith("_test.go") or "/__tests__/" in path or path.endswith((".spec.ts", ".test.ts", ".spec.tsx", ".test.tsx"))
+    return (
+        path.endswith("_test.go")
+        or "/__tests__/" in path
+        or path.endswith((".spec.ts", ".test.ts", ".spec.tsx", ".test.tsx"))
+    )
 
 
 def is_doc_file(path: str) -> bool:
@@ -167,7 +177,9 @@ def redact_text(text: str, limit: int = 12000) -> str:
     return "\n".join(lines)
 
 
-def verdict_from_findings(findings: list[Finding], changed_files: list[str], evidence: EvidenceBlock) -> str:
+def verdict_from_findings(
+    findings: list[Finding], changed_files: list[str], evidence: EvidenceBlock
+) -> str:
     if any(finding.severity == "high" for finding in findings):
         return "needs_attention"
     if findings:
@@ -194,7 +206,9 @@ def evaluate(
     warnings: list[str] = []
 
     if quality_report.get("_parse_error"):
-        warnings.append(f"Could not parse deterministic quality report: {quality_report['_parse_error']}")
+        warnings.append(
+            f"Could not parse deterministic quality report: {quality_report['_parse_error']}"
+        )
     elif quality_report and quality_report.get("passed") is False:
         findings.append(
             Finding(
@@ -241,7 +255,11 @@ def evaluate(
             )
         )
 
-    if evidence.status == "done" and changed_files and all(is_test_doc_or_manifest(path) for path in changed_files):
+    if (
+        evidence.status == "done"
+        and changed_files
+        and all(is_test_doc_or_manifest(path) for path in changed_files)
+    ):
         findings.append(
             Finding(
                 code="test_doc_manifest_only_done_pr",
@@ -261,13 +279,19 @@ def evaluate(
             )
         )
 
-    runtime_files = [path for path in changed_files if has_runtime_or_control_code([path])]
+    runtime_files = [
+        path for path in changed_files if has_runtime_or_control_code([path])
+    ]
     test_files = [path for path in changed_files if is_test_file(path)]
     if runtime_files and not test_files and evidence.status == "done":
-        warnings.append("Runtime/control code changed without a changed test file; verify checks prove the behavior another way.")
+        warnings.append(
+            "Runtime/control code changed without a changed test file; verify checks prove the behavior another way."
+        )
 
     if evidence.acceptance and evidence.evidence_files:
-        missing_evidence_files = sorted(set(evidence.evidence_files) - set(changed_files))
+        missing_evidence_files = sorted(
+            set(evidence.evidence_files) - set(changed_files)
+        )
         if missing_evidence_files:
             findings.append(
                 Finding(
@@ -279,7 +303,9 @@ def evaluate(
             )
 
     if diff_text and SECRET_LINE_RE.search(diff_text):
-        warnings.append("Diff contained sensitive-looking lines; critic prompt/report redacted those lines.")
+        warnings.append(
+            "Diff contained sensitive-looking lines; critic prompt/report redacted those lines."
+        )
 
     verdict = verdict_from_findings(findings, changed_files, evidence)
     return {
@@ -298,7 +324,9 @@ def evaluate(
         "quality_report": {
             "present": bool(quality_report),
             "passed": quality_report.get("passed"),
-            "reasons": quality_report.get("reasons", [])[:10] if isinstance(quality_report.get("reasons"), list) else [],
+            "reasons": quality_report.get("reasons", [])[:10]
+            if isinstance(quality_report.get("reasons"), list)
+            else [],
         },
         "findings": [finding.to_dict() for finding in findings],
         "warnings": warnings,
@@ -342,7 +370,9 @@ def build_critic_prompt(report: dict[str, Any], *, pr_body: str, diff_text: str)
     )
 
 
-def request_json(url: str, headers: dict[str, str], body: dict[str, Any], timeout: int) -> dict[str, Any]:
+def request_json(
+    url: str, headers: dict[str, str], body: dict[str, Any], timeout: int
+) -> dict[str, Any]:
     data = json.dumps(body).encode("utf-8")
     request = urllib.request.Request(url, data=data, headers=headers, method="POST")
     with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -353,9 +383,15 @@ def request_json(url: str, headers: dict[str, str], body: dict[str, Any], timeou
 
 def extract_gemini_text(response: dict[str, Any]) -> str:
     texts: list[str] = []
-    for candidate in response.get("candidates", []) if isinstance(response.get("candidates"), list) else []:
+    for candidate in (
+        response.get("candidates", [])
+        if isinstance(response.get("candidates"), list)
+        else []
+    ):
         content = candidate.get("content") if isinstance(candidate, dict) else {}
-        for part in content.get("parts", []) if isinstance(content.get("parts"), list) else []:
+        for part in (
+            content.get("parts", []) if isinstance(content.get("parts"), list) else []
+        ):
             text = part.get("text") if isinstance(part, dict) else ""
             if isinstance(text, str) and text:
                 texts.append(text)
@@ -381,7 +417,15 @@ def parse_json_from_text(text: str) -> dict[str, Any]:
             return {}
 
 
-def invoke_gemini(report: dict[str, Any], prompt: str, *, model: str, api_key: str, api_base: str, timeout: int) -> None:
+def invoke_gemini(
+    report: dict[str, Any],
+    prompt: str,
+    *,
+    model: str,
+    api_key: str,
+    api_base: str,
+    timeout: int,
+) -> None:
     report["llm"] = {
         "provider": "gemini",
         "status": "unavailable",
@@ -420,17 +464,37 @@ def invoke_gemini(report: dict[str, Any], prompt: str, *, model: str, api_key: s
                 "raw_excerpt": text[:1200],
                 "verdict": str(parsed.get("verdict") or ""),
                 "summary": str(parsed.get("summary") or ""),
-                "findings": parsed.get("findings", []) if isinstance(parsed.get("findings"), list) else [],
-                "recommendations": parsed.get("recommendations", []) if isinstance(parsed.get("recommendations"), list) else [],
+                "findings": parsed.get("findings", [])
+                if isinstance(parsed.get("findings"), list)
+                else [],
+                "recommendations": parsed.get("recommendations", [])
+                if isinstance(parsed.get("recommendations"), list)
+                else [],
                 "confidence": parsed.get("confidence", ""),
             }
         )
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, OSError) as exc:
+    except (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        TimeoutError,
+        json.JSONDecodeError,
+        OSError,
+    ) as exc:
         report["llm"]["status"] = "unavailable"
-        report["warnings"].append(f"Gemini critic unavailable; advisory workflow remains non-blocking: {type(exc).__name__}.")
+        report["warnings"].append(
+            f"Gemini critic unavailable; advisory workflow remains non-blocking: {type(exc).__name__}."
+        )
 
 
-def invoke_jules(report: dict[str, Any], prompt: str, *, repo: str, starting_branch: str, api_base: str, timeout: int) -> None:
+def invoke_jules(
+    report: dict[str, Any],
+    prompt: str,
+    *,
+    repo: str,
+    starting_branch: str,
+    api_base: str,
+    timeout: int,
+) -> None:
     report["llm"] = {
         "provider": "jules",
         "status": "unavailable",
@@ -438,7 +502,14 @@ def invoke_jules(report: dict[str, Any], prompt: str, *, repo: str, starting_bra
         "summary": "",
         "findings": [],
     }
-    keys = [value for value in (os.environ.get("JULES_API_KEY"), os.environ.get("JULES_API_KEY_BACKUP")) if value]
+    keys = [
+        value
+        for value in (
+            os.environ.get("JULES_API_KEY"),
+            os.environ.get("JULES_API_KEY_BACKUP"),
+        )
+        if value
+    ]
     if not keys:
         report["llm"]["status"] = "skipped_missing_key"
         return
@@ -463,7 +534,9 @@ def invoke_jules(report: dict[str, Any], prompt: str, *, repo: str, starting_bra
                 body,
                 timeout,
             )
-            session_id = response.get("id") or str(response.get("name") or "").rsplit("/", 1)[-1]
+            session_id = (
+                response.get("id") or str(response.get("name") or "").rsplit("/", 1)[-1]
+            )
             report["llm"].update(
                 {
                     "status": "session_created",
@@ -474,12 +547,22 @@ def invoke_jules(report: dict[str, Any], prompt: str, *, repo: str, starting_bra
                 }
             )
             return
-        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, OSError) as exc:
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            TimeoutError,
+            json.JSONDecodeError,
+            OSError,
+        ) as exc:
             last_error = type(exc).__name__
-    report["warnings"].append(f"Jules critic unavailable; advisory workflow remains non-blocking: {last_error}.")
+    report["warnings"].append(
+        f"Jules critic unavailable; advisory workflow remains non-blocking: {last_error}."
+    )
 
 
-def attach_llm_review(report: dict[str, Any], prompt: str, args: argparse.Namespace) -> None:
+def attach_llm_review(
+    report: dict[str, Any], prompt: str, args: argparse.Namespace
+) -> None:
     provider = args.llm_provider
     if provider == "auto":
         if os.environ.get("GEMINI_API_KEY") and os.environ.get("GEMINI_CRITIC_MODEL"):
@@ -542,7 +625,9 @@ def write_markdown(report: dict[str, Any]) -> str:
     lines.extend(["", "### Findings"])
     if report["findings"]:
         for finding in report["findings"]:
-            lines.append(f"- `{finding['severity']}` `{finding['code']}`: {finding['message']}")
+            lines.append(
+                f"- `{finding['severity']}` `{finding['code']}`: {finding['message']}"
+            )
     else:
         lines.append("- none")
 
@@ -586,14 +671,38 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--changed-files-file", default="")
     parser.add_argument("--diff-file", default="")
     parser.add_argument("--quality-report-json", default="")
-    parser.add_argument("--output-json", type=Path, default=Path("advisory-critic-review.json"))
-    parser.add_argument("--output-md", type=Path, default=Path("advisory-critic-review.md"))
+    parser.add_argument(
+        "--output-json", type=Path, default=Path("advisory-critic-review.json")
+    )
+    parser.add_argument(
+        "--output-md", type=Path, default=Path("advisory-critic-review.md")
+    )
     parser.add_argument("--github-output", default=os.environ.get("GITHUB_OUTPUT", ""))
-    parser.add_argument("--llm-provider", choices=["auto", "none", "gemini", "jules"], default=os.environ.get("CRITIC_LLM_PROVIDER", "auto"))
-    parser.add_argument("--gemini-api-base", default=os.environ.get("GEMINI_API_BASE", "https://generativelanguage.googleapis.com"))
-    parser.add_argument("--jules-api-base", default=os.environ.get("JULES_API_BASE", "https://jules.googleapis.com/v1alpha"))
-    parser.add_argument("--starting-branch", default=os.environ.get("PR_HEAD_REF", "master"))
-    parser.add_argument("--api-timeout", type=int, default=int(os.environ.get("CRITIC_API_TIMEOUT_SECONDS", "45")))
+    parser.add_argument(
+        "--llm-provider",
+        choices=["auto", "none", "gemini", "jules"],
+        default=os.environ.get("CRITIC_LLM_PROVIDER", "auto"),
+    )
+    parser.add_argument(
+        "--gemini-api-base",
+        default=os.environ.get(
+            "GEMINI_API_BASE", "https://generativelanguage.googleapis.com"
+        ),
+    )
+    parser.add_argument(
+        "--jules-api-base",
+        default=os.environ.get(
+            "JULES_API_BASE", "https://jules.googleapis.com/v1alpha"
+        ),
+    )
+    parser.add_argument(
+        "--starting-branch", default=os.environ.get("PR_HEAD_REF", "master")
+    )
+    parser.add_argument(
+        "--api-timeout",
+        type=int,
+        default=int(os.environ.get("CRITIC_API_TIMEOUT_SECONDS", "45")),
+    )
     return parser
 
 
@@ -613,10 +722,16 @@ def main(argv: list[str] | None = None) -> int:
         prompt = build_critic_prompt(report, pr_body=pr_body, diff_text=diff_text)
         attach_llm_review(report, prompt, args)
         markdown = write_markdown(report)
-        args.output_json.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        args.output_json.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         args.output_md.write_text(markdown, encoding="utf-8")
         write_outputs(args.github_output, report)
-        print(json.dumps({"verdict": report["verdict"], "llm": report["llm"]}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"verdict": report["verdict"], "llm": report["llm"]}, ensure_ascii=False
+            )
+        )
     except Exception as exc:  # noqa: BLE001 - advisory tool must fail open.
         fallback = {
             "version": 1,
@@ -629,10 +744,26 @@ def main(argv: list[str] | None = None) -> int:
             "warnings": [f"Advisory critic failed open: {type(exc).__name__}."],
             "llm": {"provider": "none", "status": "failed_open"},
         }
-        args.output_json.write_text(json.dumps(fallback, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        args.output_md.write_text(write_markdown({**fallback, "pr": {"number": args.pr_number, "title": args.pr_title}, "changed_files": [], "evidence": EvidenceBlock().to_dict(), "quality_report": {}}), encoding="utf-8")
+        args.output_json.write_text(
+            json.dumps(fallback, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        args.output_md.write_text(
+            write_markdown(
+                {
+                    **fallback,
+                    "pr": {"number": args.pr_number, "title": args.pr_title},
+                    "changed_files": [],
+                    "evidence": EvidenceBlock().to_dict(),
+                    "quality_report": {},
+                }
+            ),
+            encoding="utf-8",
+        )
         write_outputs(args.github_output, fallback)
-        print(f"::warning::Advisory critic failed open: {type(exc).__name__}", file=sys.stderr)
+        print(
+            f"::warning::Advisory critic failed open: {type(exc).__name__}",
+            file=sys.stderr,
+        )
     return 0
 
 
