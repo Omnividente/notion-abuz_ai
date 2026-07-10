@@ -8130,7 +8130,7 @@
     },
     {
       "id": "proxy-audit-tool-result-continuation-logging",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy tool result continuation logging",
@@ -8141,6 +8141,21 @@
       ],
       "acceptance": [
         "Tool result continuation paths have appropriate [bridge] diagnostic logging."
+      ]
+    },
+    {
+      "id": "proxy-audit-legacy-collapse-metric-followup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy legacy collapse metric logging",
+      "description": "Ensure legacy tool result collapse paths have appropriate diagnostic logs or context loss metrics for dropped lines.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Legacy collapse paths are audited and documented for context loss metrics."
       ]
     }
   ]
