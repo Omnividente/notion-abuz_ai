@@ -7871,7 +7871,7 @@
     },
     {
       "id": "docs-audit-health-check",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Audit health check documentation",
