@@ -8175,7 +8175,7 @@
     },
     {
       "id": "proxy-audit-context-loss-read-narrowing-followup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit read narrowing context loss metrics mapping in fallback modes",
@@ -8186,6 +8186,22 @@
       ],
       "acceptance": [
         "Read narrowing path in fallback mode has corresponding diagnostic logs alongside metrics."
+      ]
+    },
+    {
+      "id": "proxy-audit-context-loss-legacy-collapse-dropped",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy context loss metric for dropped search context in fallback",
+      "description": "Ensure context loss metric `legacy_collapse_dropped_search_context` is tested and explicitly documented when legacy fallback drops search history.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "`legacy_collapse_dropped_search_context` metric has corresponding tests and adequate observability logic."
       ]
     }
   ]

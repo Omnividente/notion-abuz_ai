@@ -3627,3 +3627,47 @@ func TestParseToolCalls_JSONToolModeLoss_SingleObject(t *testing.T) {
 		t.Errorf("Expected xml_object_fallback_wrapper metric to be 1, got %d (exists: %v)", lossWrapperCount, lossWrapperExists)
 	}
 }
+
+func TestFallbackCollapse_ReadNarrowing(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Read the file"},
+		{Role: "assistant", Content: "Calling a tool", ToolCalls: []ToolCall{{ID: "1", Function: ToolCallFunction{Name: "Read"}}}},
+		{Role: "tool", Content: "This file exceeds maximum allowed tokens. Please truncate.", ToolCallID: "1", Name: "Read"},
+	}
+
+	tools := []Tool{
+		{Type: "function", Function: ToolFunction{Name: "Read"}},
+	}
+	// Add padding to exceed tool list threshold for legacy collapse if needed
+	for i := 0; i < 6; i++ {
+		tools = append(tools, Tool{Type: "function", Function: ToolFunction{Name: "ToolX"}})
+	}
+
+	var buf bytes.Buffer
+	originalLogOutput := log.Writer()
+	log.SetOutput(&buf)
+	globalLogWriter.out = &buf
+	defer func() {
+		log.SetOutput(originalLogOutput)
+		globalLogWriter.out = originalLogOutput
+	}()
+
+	injectToolsIntoMessages(messages, tools, "claude-4", nil)
+
+	contextLossMetricsMu.Lock()
+	count, exists := contextLossMetrics["legacy_collapse_read_narrowing"]
+	contextLossMetricsMu.Unlock()
+
+	if !exists || count != 1 {
+		t.Errorf("Expected legacy_collapse_read_narrowing metric to be 1, got count=%d, exists=%v", count, exists)
+	}
+
+	expectedLog := "Read tool output exceeded token limit, triggering read narrowing guard"
+	if !strings.Contains(buf.String(), expectedLog) {
+		t.Errorf("Expected log %q, got:\n%s", expectedLog, buf.String())
+	}
+}
