@@ -3406,8 +3406,9 @@ func TestBuildSessionChainContinuation_DroppedToolResult(t *testing.T) {
 	contextLossMetricsMu.Unlock()
 
 	var buf strings.Builder
+	originalLogOutputStd := log.Writer()
 	log.SetOutput(&buf)
-	defer log.SetOutput(os.Stderr)
+	defer log.SetOutput(originalLogOutputStd)
 
 	messages := []ChatMessage{
 		{Role: "user", Content: "Start"},
@@ -3429,6 +3430,36 @@ func TestBuildSessionChainContinuation_DroppedToolResult(t *testing.T) {
 	contextLossMetricsMu.Unlock()
 	if count != 1 {
 		t.Errorf("Expected session_continuation_dropped_tool_result metric to be 1, got %d", count)
+	}
+}
+
+func TestBuildSessionChainContinuation_DiagnosticLogging(t *testing.T) {
+	contextLossMetricsMu.Lock()
+	contextLossMetrics = make(map[string]int)
+	contextLossMetricsMu.Unlock()
+
+	var buf strings.Builder
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	// Intercept globalLogWriter
+	originalLogOutput := globalLogWriter.out
+	globalLogWriter.out = &buf
+	defer func() {
+		globalLogWriter.out = originalLogOutput
+	}()
+
+	messages := []ChatMessage{
+		{Role: "user", Content: "Run tests"},
+		{Role: "assistant", Content: "Testing", ToolCalls: []ToolCall{{ID: "call_1", Function: ToolCallFunction{Name: "Bash", Arguments: "{}"}}}},
+		{Role: "tool", ToolCallID: "call_1", Name: "Bash", Content: "Success"},
+	}
+
+	buildSessionChainContinuation(messages, "Bash, Read", "/tmp/test")
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "[bridge] session chain: continuation for partial transcript") {
+		t.Errorf("Expected continuation diagnostic log, got: %s", logOutput)
 	}
 }
 
