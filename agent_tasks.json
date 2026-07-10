@@ -7669,7 +7669,7 @@
     },
     {
       "id": "docs-audit-readme",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Audit README for stale Claude Code references",
@@ -7867,6 +7867,38 @@
       ],
       "acceptance": [
         "Dashboard authentication documentation is audited and verified to cover the session-cookie model."
+      ]
+    },
+    {
+      "id": "docs-audit-health-check",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Audit health check documentation",
+      "description": "Ensure docs/health.md accurately reflects the current GET /health endpoint observability structure and AccountPool state fields.",
+      "allowed_paths": [
+        "docs/health.md",
+        "internal/proxy/handler.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Health check documentation is audited against internal/proxy/handler.go and updated if necessary."
+      ]
+    },
+    {
+      "id": "proxy-audit-log-prefixes",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit log prefixes for proxy diagnostics",
+      "description": "Review internal/proxy logging to ensure standard log prefixes (e.g., [bridge], [session], [err]) are used consistently across observability points.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/session.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Diagnostic logs in proxy codebase are audited for prefix consistency."
       ]
     }
   ]
