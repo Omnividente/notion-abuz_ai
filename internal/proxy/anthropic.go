@@ -439,6 +439,7 @@ type AnthropicRequest struct {
 	OutputConfig      *AnthropicOutputConfig `json:"output_config,omitempty"`
 	Metadata          map[string]interface{} `json:"metadata,omitempty"`
 	ContextManagement interface{}            `json:"context_management,omitempty"`
+	Mode              string                 `json:"mode,omitempty"`
 }
 
 // AnthropicMessage represents a message in Anthropic format
@@ -938,19 +939,13 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 			model = AppConfig.Proxy.DefaultModel
 		}
 
-		// ── ASK mode resolution ──
-		// 1. Per-request override via "-ask" suffix on the model name
-		//    (e.g. "claude-sonnet-4.6-ask"). Stripped before logging so
-		//    downstream model-resolution sees the canonical name.
-		// 2. Global default from /admin/settings (ask_mode_default).
-		// Either source flips Notion's workflow useReadOnlyMode flag,
-		// matching the frontend's "Ask" toggle.
-		stripped, askFromModel := StripAskModeSuffix(model)
-		if askFromModel {
-			log.Printf("[ask-mode] %q -> %q (per-request override)", model, stripped)
+		// Resolve model/mode as an explicit request contract. Invalid or
+		// conflicting values fail instead of being silently downgraded.
+		model, useReadOnlyMode, err = ResolveRequestMode(model, req.Mode, AppConfig.AskModeDefault())
+		if err != nil {
+			writeAnthropicError(w, requestID, http.StatusBadRequest, err.Error(), "invalid_request_error")
+			return
 		}
-		model = stripped
-		useReadOnlyMode := askFromModel || AppConfig.AskModeDefault()
 
 		// ── Detailed request logging ──
 		logAnthropicRequest(req, model)
@@ -1272,9 +1267,9 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 					reqErr = handleResearcherNonStream(w, acc, requestMessages, model, requestID, hasThinking)
 				}
 			} else if req.Stream {
-				reqErr = handleAnthropicStream(w, acc, requestMessages, model, requestID, hasTools, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
+				reqErr = handleAnthropicStream(w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
 			} else {
-				reqErr = handleAnthropicNonStream(w, acc, requestMessages, model, requestID, hasTools, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
+				reqErr = handleAnthropicNonStream(w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
 			}
 
 			// Trigger an async live quota refresh after every call so the next
@@ -1914,7 +1909,7 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 
 // handleAnthropicStream handles streaming Anthropic response
 
-func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
+func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
 	var fullContent strings.Builder
 	var finalUsage *UsageInfo
 	defer func() {
@@ -1928,7 +1923,8 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 	var knownCitationDocs []CitationCandidate
 	knownToolCallURLs := make(map[string][]string)
 
-	disableBuiltin := AppConfig.Proxy.DisableNotionPrompt
+	disableBuiltin := ShouldDisableAgentFallback(AppConfig.Proxy.DisableNotionPrompt, isCodingAssistant, hasTools, "")
+	log.Printf("[route] request contract: coding_assistant=%v client_tools=%v direct=%v", isCodingAssistant, hasTools, disableBuiltin)
 
 	callOpts := CallOptions{
 		ThinkingBlocks:        &thinkingBlocks,
@@ -2222,7 +2218,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 }
 
 // handleAnthropicNonStream handles non-streaming Anthropic response
-func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
+func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
 	var fullContent strings.Builder
 	var finalUsage *UsageInfo
 	defer func() {
@@ -2237,6 +2233,8 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 	var knownCitationURLs []string
 	var knownCitationDocs []CitationCandidate
 	knownToolCallURLs := make(map[string][]string)
+	disableBuiltin := ShouldDisableAgentFallback(AppConfig.Proxy.DisableNotionPrompt, isCodingAssistant, hasTools, "")
+	log.Printf("[route] request contract: coding_assistant=%v client_tools=%v direct=%v", isCodingAssistant, hasTools, disableBuiltin)
 
 	callOpts := CallOptions{
 		ThinkingBlocks:        &thinkingBlocks,
@@ -2265,7 +2263,7 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 	if hasTools {
 		callOpts.NativeToolUses = &nativeToolUses
 		// Format-based injection: tools embedded in user messages, use normal chat path
-		err = CallInference(acc, messages, model, AppConfig.Proxy.DisableNotionPrompt, func(delta string, done bool, usage *UsageInfo) {
+		err = CallInference(acc, messages, model, disableBuiltin, func(delta string, done bool, usage *UsageInfo) {
 			if delta != "" {
 				fullContent.WriteString(delta)
 			}
@@ -2274,7 +2272,7 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 			}
 		}, callOpts)
 	} else {
-		err = CallInference(acc, messages, model, AppConfig.Proxy.DisableNotionPrompt, func(delta string, done bool, usage *UsageInfo) {
+		err = CallInference(acc, messages, model, disableBuiltin, func(delta string, done bool, usage *UsageInfo) {
 			if delta != "" {
 				fullContent.WriteString(delta)
 			}
