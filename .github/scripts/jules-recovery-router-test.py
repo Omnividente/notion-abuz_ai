@@ -460,9 +460,14 @@ class RecoveryRouterTest(unittest.TestCase):
             self.assertIn("gofmt required for:", text)
             self.assertNotIn('run: test -z "$(gofmt -l .)"', text)
 
-        next_task_text = NEXT_TASK_WORKFLOW_PATH.read_text(encoding="utf-8")
-        self.assertIn('files="\\$(gofmt -l .)"', next_task_text)
-        self.assertIn("gofmt required for:", next_task_text)
+        prompt_path = (
+            NEXT_TASK_WORKFLOW_PATH.parents[1]
+            / "prompts"
+            / "jules_next_task_prompt.txt"
+        )
+        prompt_text = prompt_path.read_text(encoding="utf-8")
+        self.assertIn('files="\\$(gofmt -l .)"', prompt_text)
+        self.assertIn("gofmt required for:", prompt_text)
 
     def test_github_get_retries_transient_503(self) -> None:
         client = router.GitHubClient(api_url="https://api.github.test", repo=REPO, token="token")
