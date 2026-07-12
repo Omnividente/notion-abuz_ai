@@ -130,7 +130,6 @@ func TestNewMux_RegistersOpenAIRoutes(t *testing.T) {
 	}
 }
 
-
 func TestNewMux_ReadinessSmoke(t *testing.T) {
 	pool := proxy.NewAccountPool()
 	dashAuth := proxy.NewDashboardAuth("", "sk-test")
