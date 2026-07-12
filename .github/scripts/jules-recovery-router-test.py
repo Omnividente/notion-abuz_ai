@@ -370,17 +370,21 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("pull-requests: write", text)
         self.assertIn("create-circuit-breaker-followup-task-pr.py", script_text)
 
-    def test_control_plane_concurrency_is_global_and_serialized(self) -> None:
-        paths = (
+    def test_control_plane_concurrency_is_serialized_by_mutation_domain(self) -> None:
+        recovery_paths = (
             WORKFLOW_PATH,
             BURST_WORKFLOW_PATH,
             WORKFLOW_PATH.parent / "jules_unattended_monitor.yml",
-            NEXT_TASK_WORKFLOW_PATH,
         )
-        for path in paths:
+        for path in recovery_paths:
             text = path.read_text(encoding="utf-8")
-            self.assertIn("group: notion-abuz-jules-control-plane", text)
+            self.assertIn("group: notion-abuz-jules-recovery", text)
             self.assertIn("cancel-in-progress: false", text)
+
+        next_task_text = NEXT_TASK_WORKFLOW_PATH.read_text(encoding="utf-8")
+        self.assertIn("group: notion-abuz-jules-dispatch", next_task_text)
+        self.assertIn("cancel-in-progress: false", next_task_text)
+
 
     def test_pull_request_target_router_executes_trusted_base_workflow(self) -> None:
         text = WORKFLOW_PATH.read_text(encoding="utf-8")
@@ -413,7 +417,7 @@ class RecoveryRouterTest(unittest.TestCase):
 
         self.assertIn('default: "10"', text)
         self.assertIn('default: "30"', text)
-        self.assertIn("group: notion-abuz-jules-control-plane", text)
+        self.assertIn("group: notion-abuz-jules-recovery", text)
         self.assertIn("cancel-in-progress: false", text)
         self.assertIn("timeout-minutes: 10", text)
         self.assertIn("vars.JULES_BURST_MONITOR_CYCLES || '10'", text)
