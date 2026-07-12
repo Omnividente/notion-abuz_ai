@@ -8480,7 +8480,7 @@
         "No destructive production action is performed."
       ],
       "deferred_reason": "Stabilization is merged, but no configured deployed target has yet exposed the merged commit SHA for a production-safe smoke.",
-      "retry_condition": "Reactivate when a configured deployment target exposes final stabilization commit a03050784facd7c63f65557560fdd128769738ae or a newer master SHA.",
+      "retry_condition": "Reactivate when a configured deployment target exposes final control-plane commit aaa50eb68fb81317820f66c527b2b2a19d6a5915 or a newer master SHA.",
       "retry_at": "2026-07-13T09:00:00Z"
     },
     {
