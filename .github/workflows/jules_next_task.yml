@@ -69,13 +69,7 @@ jobs:
         contains(github.event.pull_request.body || '', 'PR created automatically by Jules') ||
         contains(github.event.pull_request.body || '', 'jules.google.com/task') ||
         startsWith(github.event.pull_request.head.ref, 'jules-') ||
-        startsWith(github.event.pull_request.head.ref, 'jules/') ||
-        (startsWith(github.event.pull_request.head.ref, 'automation-health-meta-') &&
-         contains(github.event.pull_request.body || '', 'AUTOMATION_HEALTH_META_TASK')) ||
-        (startsWith(github.event.pull_request.head.ref, 'automation-recovery-failed-session-block-') &&
-         contains(github.event.pull_request.body || '', 'AUTOMATION_RECOVERY_FAILED_SESSION_BLOCK')) ||
-        (startsWith(github.event.pull_request.head.ref, 'automation-circuit-breaker-followup-') &&
-         contains(github.event.pull_request.body || '', 'AUTONOMOUS_CIRCUIT_BREAKER_FOLLOWUP_TASK')))))
+        startsWith(github.event.pull_request.head.ref, 'jules/'))))
 
     steps:
       # Workflow reruns preserve the original event SHA. Always read the current
