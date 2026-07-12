@@ -78,7 +78,11 @@ jobs:
          contains(github.event.pull_request.body || '', 'AUTONOMOUS_CIRCUIT_BREAKER_FOLLOWUP_TASK')))))
 
     steps:
+      # Workflow reruns preserve the original event SHA. Always read the current
+      # manifest/control-plane state so a rerun cannot redispatch a completed task.
       - uses: actions/checkout@v5
+        with:
+          ref: master
 
       - name: Detect stopped autonomous task ids
         id: stopped-task-ids
