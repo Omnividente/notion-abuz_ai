@@ -49,7 +49,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: notion-abuz-jules-control-plane
+  group: notion-abuz-jules-recovery
   cancel-in-progress: false
 
 jobs:
