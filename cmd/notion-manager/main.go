@@ -60,6 +60,7 @@ func newMux(pool *proxy.AccountPool, accountsDir string, apiKey string, dashAuth
 
 	// Health check with quota details
 	mux.HandleFunc("/health", proxy.HandleHealth(pool))
+	mux.HandleFunc("/ready", proxy.HandleReadiness(pool))
 
 	// Admin API endpoints
 	mux.HandleFunc("/admin/accounts", proxy.HandleAdminAccounts(pool, dashAuth))
@@ -218,7 +219,8 @@ func main() {
 	log.Printf("  POST /v1/responses                (OpenAI Responses API)")
 	log.Printf("  GET  /v1/models                   (OpenAI models API)")
 	log.Printf("  GET  /models                      (OpenAI models alias)")
-	log.Printf("  GET  /health")
+	log.Printf("  GET  /health                      (liveness)")
+	log.Printf("  GET  /ready                       (readiness)")
 	log.Printf("  GET  /admin/accounts")
 	log.Printf("  GET  /admin/models")
 	log.Printf("  GET  /admin/settings              (search/proxy/ASK settings)")
