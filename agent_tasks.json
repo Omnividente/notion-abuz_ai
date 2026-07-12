@@ -8573,7 +8573,7 @@
     },
     {
       "id": "proxy-audit-context-cancellation",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Audit HTTP request context cancellation handling",
@@ -8585,7 +8585,42 @@
       "acceptance": [
         "Upstream network requests are aborted when the downstream client disconnects.",
         "Streaming inference loops terminate early on client disconnect."
-      ]
+      ],
+      "blocked_reason": "Paused after repeated Jules FAILED sessions: 13423971199068415568. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
+    },
+    {
+      "id": "automation-recovery-followup-9e86197f",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Investigate root cause of Jules failure for proxy-audit-context-cancellation",
+      "description": "The task proxy-audit-context-cancellation repeatedly failed and was blocked. We need an offline reproduction and concrete CI artifacts to unblock it or fix the underlying bridge issue.",
+      "allowed_paths": [
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Concrete offline reproduction evidence is collected.",
+        "The root cause is identified using CI logs, local live smoke, or captured Claude Code transcripts.",
+        "A fix is proposed or the task is closed if obsolete."
+      ],
+      "source_reference": "Blocked task proxy-audit-context-cancellation"
+    },
+    {
+      "id": "automation-recovery-followup-0ee67904",
+      "status": "todo",
+      "area": "automation",
+      "risk": "low",
+      "title": "Investigate root cause of Jules failure for proxy-audit-context-cancellation",
+      "description": "The task proxy-audit-context-cancellation repeatedly failed and was blocked. We need an offline reproduction and concrete CI artifacts to unblock it or fix the underlying bridge issue.",
+      "allowed_paths": [
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Concrete offline reproduction evidence is collected.",
+        "The root cause is identified using CI logs, local live smoke, or captured Claude Code transcripts.",
+        "A fix is proposed or the task is closed if obsolete."
+      ],
+      "source_reference": "Blocked task proxy-audit-context-cancellation"
     }
   ]
 }
