@@ -44,7 +44,7 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusConflict)
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": map[string]string{
-					"type": "duplicate_request",
+					"type":    "duplicate_request",
 					"message": "this Idempotency-Key was already processed; upstream inference was not repeated",
 				},
 			})
