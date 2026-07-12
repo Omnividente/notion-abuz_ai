@@ -9,6 +9,9 @@ from pathlib import Path
 
 WORKFLOW = Path(__file__).parents[1] / "workflows" / "jules_next_task.yml"
 AUTOMERGE_WORKFLOW = Path(__file__).parents[1] / "workflows" / "jules_automerge.yml"
+META_AUTOMERGE_WORKFLOW = (
+    Path(__file__).parents[1] / "workflows" / "automation_meta_automerge.yml"
+)
 
 
 class JulesNextTaskWorkflowTest(unittest.TestCase):
@@ -19,6 +22,12 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
     def test_automerge_explicitly_wakes_next_cycle(self) -> None:
         text = AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("Wake next Jules cycle after token-authenticated merge", text)
+        self.assertIn("actions/workflows/jules_next_task.yml/dispatches", text)
+        self.assertIn('allow_parallel: "false"', text)
+
+    def test_meta_automerge_explicitly_wakes_next_cycle(self) -> None:
+        text = META_AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("Wake next Jules cycle after automation meta merge", text)
         self.assertIn("actions/workflows/jules_next_task.yml/dispatches", text)
         self.assertIn('allow_parallel: "false"', text)
 
