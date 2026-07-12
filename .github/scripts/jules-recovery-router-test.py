@@ -370,13 +370,17 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertIn("pull-requests: write", text)
         self.assertIn("create-circuit-breaker-followup-task-pr.py", script_text)
 
-    def test_pull_request_router_concurrency_is_pr_scoped(self) -> None:
-        text = WORKFLOW_PATH.read_text(encoding="utf-8")
-
-        self.assertIn("jules-recovery-router-${{", text)
-        self.assertIn("github.event_name == 'pull_request_target'", text)
-        self.assertIn("github.event.pull_request.number", text)
-        self.assertIn("|| 'global'", text)
+    def test_control_plane_concurrency_is_global_and_serialized(self) -> None:
+        paths = (
+            WORKFLOW_PATH,
+            BURST_WORKFLOW_PATH,
+            ROOT / ".github/workflows/jules_unattended_monitor.yml",
+            NEXT_TASK_WORKFLOW_PATH,
+        )
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            self.assertIn("group: notion-abuz-jules-control-plane", text)
+            self.assertIn("cancel-in-progress: false", text)
 
     def test_pull_request_target_router_executes_trusted_base_workflow(self) -> None:
         text = WORKFLOW_PATH.read_text(encoding="utf-8")
@@ -409,7 +413,8 @@ class RecoveryRouterTest(unittest.TestCase):
 
         self.assertIn('default: "10"', text)
         self.assertIn('default: "30"', text)
-        self.assertIn("cancel-in-progress: true", text)
+        self.assertIn("group: notion-abuz-jules-control-plane", text)
+        self.assertIn("cancel-in-progress: false", text)
         self.assertIn("timeout-minutes: 10", text)
         self.assertIn("vars.JULES_BURST_MONITOR_CYCLES || '10'", text)
         self.assertIn("vars.JULES_BURST_MONITOR_INTERVAL_SECONDS || '30'", text)
@@ -2051,7 +2056,7 @@ Blocking reasons:
 
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].type, "jules_send_message")
-        self.assertTrue(actions[0].dedupe_key.startswith("stale-continue:1234567890123456789:"))
+        self.assertTrue(actions[0].dedupe_key.startswith("recovery-event:1234567890123456789:"))
         self.assertIn("continue уже был отправлен", actions[0].payload["prompt"])
 
     def test_stale_recorded_continue_escalates_when_token_missing_from_activity(self) -> None:
@@ -2085,7 +2090,7 @@ Blocking reasons:
 
     def test_stale_continue_escalation_has_cooldown_and_then_deletes_stale_session(self) -> None:
         latest_agent = epoch(90)
-        prefix = f"stale-continue:1234567890123456789:{latest_agent}:"
+        prefix = f"recovery-event:1234567890123456789:{latest_agent}:"
         recent_ledger = {
             "version": 1,
             "actions": {
@@ -2117,7 +2122,7 @@ Blocking reasons:
                     "time": (NOW - timedelta(minutes=15 + attempt)).isoformat().replace("+00:00", "Z"),
                     "type": "jules_send_message",
                 }
-                for attempt in range(1, 3)
+                for attempt in range(1, 2)
             },
         }
         actions = plan(
