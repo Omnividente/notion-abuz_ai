@@ -66,6 +66,18 @@ class ValidateAgentTasksTest(unittest.TestCase):
 
         self.assertNotIn("blocked task example-task is missing blocked_reason", warnings)
 
+    def test_deferred_task_requires_retry_contract(self) -> None:
+        deferred = task(status="deferred")
+        with self.assertRaises(validate_agent_tasks.ValidationError):
+            validate_agent_tasks.validate_manifest(base_manifest(deferred))
+
+        deferred.update({
+            "deferred_reason": "Temporary external service outage.",
+            "retry_condition": "Service health endpoint returns 200.",
+            "retry_at": "2026-07-13T12:00:00Z",
+        })
+        validate_agent_tasks.validate_manifest(base_manifest(deferred))
+
 
 if __name__ == "__main__":
     unittest.main()
