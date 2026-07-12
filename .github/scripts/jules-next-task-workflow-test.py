@@ -43,9 +43,22 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("# Workflow reruns preserve the original event SHA.", self.text)
         self.assertIn("      - uses: actions/checkout@v5\n        with:\n          ref: master", self.text)
 
-    def test_circuit_breaker_followup_merge_triggers_next_task(self) -> None:
-        self.assertIn("automation-circuit-breaker-followup-", self.text)
-        self.assertIn("AUTONOMOUS_CIRCUIT_BREAKER_FOLLOWUP_TASK", self.text)
+    def test_meta_merges_use_only_explicit_dispatch_path(self) -> None:
+        self.assertNotIn("automation-health-meta-", self.text)
+        self.assertNotIn("automation-circuit-breaker-followup-", self.text)
+        meta = META_AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("actions/workflows/jules_next_task.yml/dispatches", meta)
+
+    def test_cancelled_runs_do_not_spawn_mutating_followups(self) -> None:
+        burst = (
+            Path(__file__).parents[1] / "workflows" / "jules_burst_monitor.yml"
+        ).read_text(encoding="utf-8")
+        router = (
+            Path(__file__).parents[1] / "workflows" / "jules_recovery_router.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", burst)
+        self.assertIn("github.event.workflow_run.conclusion != 'cancelled'", router)
+
 
     def test_stopped_prs_still_do_not_trigger_next_task(self) -> None:
         self.assertIn("!contains(github.event.pull_request.labels.*.name, 'stop-loop')", self.text)
