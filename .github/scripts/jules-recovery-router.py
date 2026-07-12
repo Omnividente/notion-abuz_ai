@@ -2393,7 +2393,7 @@ def load_ledger(client: GitHubClient) -> dict[str, Any]:
     except json.JSONDecodeError:
         return {"version": 2, "actions": {}, "sessions": {}}
     if not isinstance(ledger, dict):
-        return {"version": 2, "actions": {}, "sessions": {}
+        return {"version": 2, "actions": {}, "sessions": {}}
     ledger.setdefault("version", 2)
     ledger.setdefault("actions", {})
     ledger.setdefault("sessions", {})
@@ -2963,7 +2963,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.ledger_file and args.ledger_file.exists():
             ledger = json.loads(args.ledger_file.read_text(encoding="utf-8"))
         else:
-            ledger = {"version": 1, "actions": {}}
+            ledger = {"version": 2, "actions": {}, "sessions": {}}
     else:
         token = os.environ.get("GITHUB_API_TOKEN") or os.environ.get("GH_TOKEN")
         if not token:
