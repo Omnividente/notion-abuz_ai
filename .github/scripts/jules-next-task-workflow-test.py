@@ -25,7 +25,7 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
     def test_automerge_explicitly_wakes_next_cycle(self) -> None:
         text = AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("Wake next Jules cycle after token-authenticated merge", text)
-        self.assertIn("actions/workflows/${workflow_path}/dispatches", text)
+        self.assertIn("actions/workflows/jules_next_task.yml/dispatches", text)
         self.assertIn('allow_parallel: "false"', text)
 
     def test_meta_automerge_explicitly_wakes_next_cycle(self) -> None:
