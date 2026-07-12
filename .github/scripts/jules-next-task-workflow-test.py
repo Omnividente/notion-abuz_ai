@@ -29,6 +29,12 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("Ignored ${ignored} inactive Jules session", self.text)
         self.assertIn("blocking active Jules session", self.text)
 
+    def test_active_session_runs_recovery_observation_before_duplicate_skip(self) -> None:
+        self.assertIn("running one recovery observation", self.text)
+        self.assertIn("bash .github/scripts/jules-unattended-monitor.sh", self.text)
+        self.assertIn('MAX_STALE_IN_PROGRESS_ESCALATIONS="1"', self.text)
+        self.assertIn("Skipping new dispatch to avoid duplicate sessions.", self.text)
+
     def test_thin_queue_dispatches_automation_health_even_when_task_selected(self) -> None:
         self.assertIn('write_output("minimum_todo_tasks", minimum_todo_tasks)', self.text)
         self.assertIn('write_output("below_minimum", str(below_minimum).lower())', self.text)
