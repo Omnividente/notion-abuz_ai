@@ -307,3 +307,20 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
+
+      - name: Wake next Jules cycle after token-authenticated merge
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_next_task.yml/dispatches" \
+            --input <(jq -n '{
+              ref: "master",
+              inputs: {
+                focus: "proxy",
+                risk_ceiling: "medium",
+                allow_parallel: "false"
+              }
+            }')
