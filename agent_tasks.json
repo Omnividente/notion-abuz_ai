@@ -8485,7 +8485,7 @@
     },
     {
       "id": "proxy-observability-request-contract-metric",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add metric tracking for resolved request mode contract",

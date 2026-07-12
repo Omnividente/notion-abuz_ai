@@ -46,4 +46,9 @@ func TestHandleAdminMetrics(t *testing.T) {
 	if toolModeLossMetrics["unparseable_json_candidate_blocks"] != 1 {
 		t.Errorf("expected unparseable_json_candidate_blocks to be 1, got %d", toolModeLossMetrics["unparseable_json_candidate_blocks"])
 	}
+
+	requestContractMetrics := res["request_contract"]
+	if requestContractMetrics == nil {
+		t.Errorf("expected request_contract to be present in response")
+	}
 }

@@ -1,5 +1,34 @@
 package proxy
 
+import (
+	"log"
+	"sync"
+)
+
+var (
+	requestContractMetricsMu sync.Mutex
+	requestContractMetrics   = make(map[string]int)
+)
+
+func RecordRequestContractMetric(reason string) {
+	requestContractMetricsMu.Lock()
+	requestContractMetrics[reason]++
+	count := requestContractMetrics[reason]
+	requestContractMetricsMu.Unlock()
+	log.Printf("[metrics] request_contract: %s (total: %d)", reason, count)
+}
+
+func GetRequestContractMetrics() map[string]int {
+	requestContractMetricsMu.Lock()
+	defer requestContractMetricsMu.Unlock()
+
+	out := make(map[string]int, len(requestContractMetrics))
+	for k, v := range requestContractMetrics {
+		out[k] = v
+	}
+	return out
+}
+
 func GetContextLossMetrics() map[string]int {
 	contextLossMetricsMu.Lock()
 	defer contextLossMetricsMu.Unlock()
