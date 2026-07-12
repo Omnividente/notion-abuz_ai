@@ -54,27 +54,27 @@ func TestResolveReasoningEffortAliasNoSilentDowngrade(t *testing.T) {
 
 func TestRoutingContractLanguageMatrix(t *testing.T) {
 	cases := []struct {
-		name string
-		messages []ChatMessage
+		name       string
+		messages   []ChatMessage
 		wantCoding bool
 	}{
 		{
-			name: "english contract",
+			name:       "english contract",
 			messages: []ChatMessage{{Role: "system", Content: "You are a coding assistant. Edit repository files and run tests."}},
 			wantCoding: true,
 		},
 		{
-			name: "russian contract",
+			name:       "russian contract",
 			messages: []ChatMessage{{Role: "system", Content: "Ты программный агент: исправляй исходный код репозитория, создавай патчи и запускай тесты."}},
 			wantCoding: true,
 		},
 		{
-			name: "mixed contract",
+			name:       "mixed contract",
 			messages: []ChatMessage{{Role: "developer", Content: "Работай с repository, используй инструменты и run tests."}},
 			wantCoding: true,
 		},
 		{
-			name: "russian ordinary request",
+			name:       "russian ordinary request",
 			messages: []ChatMessage{{Role: "user", Content: "Кратко перескажи документ."}},
 			wantCoding: false,
 		},
