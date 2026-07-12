@@ -60,22 +60,22 @@ func TestRoutingContractLanguageMatrix(t *testing.T) {
 	}{
 		{
 			name:       "english contract",
-			messages: []ChatMessage{{Role: "system", Content: "You are a coding assistant. Edit repository files and run tests."}},
+			messages:   []ChatMessage{{Role: "system", Content: "You are a coding assistant. Edit repository files and run tests."}},
 			wantCoding: true,
 		},
 		{
 			name:       "russian contract",
-			messages: []ChatMessage{{Role: "system", Content: "Ты программный агент: исправляй исходный код репозитория, создавай патчи и запускай тесты."}},
+			messages:   []ChatMessage{{Role: "system", Content: "Ты программный агент: исправляй исходный код репозитория, создавай патчи и запускай тесты."}},
 			wantCoding: true,
 		},
 		{
 			name:       "mixed contract",
-			messages: []ChatMessage{{Role: "developer", Content: "Работай с repository, используй инструменты и run tests."}},
+			messages:   []ChatMessage{{Role: "developer", Content: "Работай с repository, используй инструменты и run tests."}},
 			wantCoding: true,
 		},
 		{
 			name:       "russian ordinary request",
-			messages: []ChatMessage{{Role: "user", Content: "Кратко перескажи документ."}},
+			messages:   []ChatMessage{{Role: "user", Content: "Кратко перескажи документ."}},
 			wantCoding: false,
 		},
 	}
