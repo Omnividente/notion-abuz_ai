@@ -43,7 +43,6 @@ func TestHandleHealth(t *testing.T) {
 	}
 }
 
-
 func TestHandleReadiness_NoUsableAccounts(t *testing.T) {
 	pool := NewAccountPool()
 	rec := httptest.NewRecorder()
