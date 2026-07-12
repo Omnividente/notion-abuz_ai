@@ -49,8 +49,8 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: jules-recovery-router-${{ github.event_name == 'pull_request_target' && format('pr-{0}', github.event.pull_request.number) || 'global' }}
-  cancel-in-progress: true
+  group: notion-abuz-jules-control-plane
+  cancel-in-progress: false
 
 jobs:
   route:

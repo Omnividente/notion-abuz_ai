@@ -20,6 +20,7 @@ func TestRequiresAPIKey(t *testing.T) {
 		{path: "/v1/models", want: true},
 		{path: "/models", want: true},
 		{path: "/health", want: false},
+		{path: "/ready", want: false},
 		{path: "/dashboard/", want: false},
 	}
 
@@ -48,6 +49,7 @@ func TestAPIKeyAuthMiddleware_ProtectsModelsRoutes(t *testing.T) {
 		{name: "chat missing key", path: "/v1/chat/completions", want: http.StatusUnauthorized},
 		{name: "responses x-api-key", path: "/v1/responses", headers: map[string]string{"x-api-key": "sk-test"}, want: http.StatusNoContent},
 		{name: "health no auth", path: "/health", want: http.StatusNoContent},
+		{name: "readiness no auth", path: "/ready", want: http.StatusNoContent},
 	}
 
 	for _, tc := range tests {
@@ -125,5 +127,28 @@ func TestNewMux_RegistersOpenAIRoutes(t *testing.T) {
 		if rec.Code == http.StatusNotFound {
 			t.Fatalf("%s: expected registered handler, got 404", tc.path)
 		}
+	}
+}
+
+func TestNewMux_ReadinessSmoke(t *testing.T) {
+	pool := proxy.NewAccountPool()
+	dashAuth := proxy.NewDashboardAuth("", "sk-test")
+	usageStats := proxy.InitUsageStats("")
+	regDeps := &proxy.RegisterJobsDeps{Pool: pool, AccountsDir: "", Auth: dashAuth}
+	mux := newMux(pool, "", "sk-test", dashAuth, usageStats, regDeps)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected registered readiness 503, got %d body=%s", rec.Code, rec.Body.String())
+	}
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/dashboard/", nil)
+	req.Header.Set("Accept", "text/html")
+	mux.ServeHTTP(rec, req)
+	if rec.Code >= 500 {
+		t.Fatalf("embedded dashboard smoke returned %d: %s", rec.Code, rec.Body.String())
 	}
 }

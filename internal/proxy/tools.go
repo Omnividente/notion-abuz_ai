@@ -2044,7 +2044,13 @@ func isCodingAssistantRequest(messages []ChatMessage) bool {
 				strings.Contains(lower, "files") ||
 				strings.Contains(lower, "tests") ||
 				strings.Contains(lower, "patches") ||
-				strings.Contains(lower, "tools") {
+				strings.Contains(lower, "tools") ||
+				strings.Contains(lower, "репозитор") ||
+				strings.Contains(lower, "программ") ||
+				strings.Contains(lower, "исходн") ||
+				strings.Contains(lower, "патч") ||
+				strings.Contains(lower, "тест") ||
+				strings.Contains(lower, "инструмент") {
 				return true
 			}
 		}

@@ -42,3 +42,25 @@ func TestHandleHealth(t *testing.T) {
 		}
 	}
 }
+
+func TestHandleReadiness_NoUsableAccounts(t *testing.T) {
+	pool := NewAccountPool()
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+
+	HandleReadiness(pool).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if rec.Header().Get("Retry-After") == "" {
+		t.Fatal("expected Retry-After for deferred readiness")
+	}
+	var response map[string]interface{}
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatal(err)
+	}
+	if response["status"] != "not_ready" || response["reason"] != "no usable accounts" {
+		t.Fatalf("response=%#v", response)
+	}
+}

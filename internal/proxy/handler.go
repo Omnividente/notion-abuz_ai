@@ -51,6 +51,31 @@ func HandleHealth(pool *AccountPool) http.HandlerFunc {
 	}
 }
 
+// HandleReadiness reports whether the service can accept inference traffic.
+// Liveness remains /health; readiness is intentionally 503 with zero usable accounts.
+func HandleReadiness(pool *AccountPool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		available := pool.AvailableCount()
+		status := http.StatusOK
+		state := "ready"
+		reason := ""
+		if available == 0 {
+			status = http.StatusServiceUnavailable
+			state = "not_ready"
+			reason = "no usable accounts"
+			w.Header().Set("Retry-After", "30")
+		}
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":    state,
+			"reason":    reason,
+			"accounts":  pool.Count(),
+			"available": available,
+		})
+	}
+}
+
 // HandlePublicModels returns an OpenAI-compatible models list for API clients.
 func HandlePublicModels(pool *AccountPool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

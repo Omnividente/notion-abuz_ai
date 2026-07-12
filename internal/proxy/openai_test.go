@@ -119,18 +119,15 @@ func TestConvertOpenAIChatCompletionRequest_ReasoningEffortRouting(t *testing.T)
 		}
 	})
 
-	t.Run("alias absent fallback", func(t *testing.T) {
+	t.Run("alias absent returns diagnostic", func(t *testing.T) {
 		req := &OpenAIChatCompletionRequest{
 			Model:           "opus-4.8",
 			ReasoningEffort: "low",
 			Messages:        []OpenAIChatMessage{{Role: "user", Content: "test"}},
 		}
-		anthReq, err := convertOpenAIChatCompletionRequest(req)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if anthReq.Model != "opus-4.8" {
-			t.Errorf("expected model 'opus-4.8', got '%s'", anthReq.Model)
+		if _, err := convertOpenAIChatCompletionRequest(req); err == nil ||
+			!strings.Contains(err.Error(), "request was not downgraded") {
+			t.Fatalf("expected explicit unsupported reasoning diagnostic, got %v", err)
 		}
 	})
 }
@@ -207,18 +204,15 @@ func TestConvertOpenAIResponsesRequest_ReasoningEffortRouting(t *testing.T) {
 		}
 	})
 
-	t.Run("alias absent fallback", func(t *testing.T) {
+	t.Run("alias absent returns diagnostic", func(t *testing.T) {
 		req := &OpenAIResponsesRequest{
 			Model:           "opus-4.8",
 			ReasoningEffort: "low",
 			Input:           "test input",
 		}
-		anthReq, err := convertOpenAIResponsesRequest(req)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if anthReq.Model != "opus-4.8" {
-			t.Errorf("expected model 'opus-4.8', got '%s'", anthReq.Model)
+		if _, err := convertOpenAIResponsesRequest(req); err == nil ||
+			!strings.Contains(err.Error(), "request was not downgraded") {
+			t.Fatalf("expected explicit unsupported reasoning diagnostic, got %v", err)
 		}
 	})
 }

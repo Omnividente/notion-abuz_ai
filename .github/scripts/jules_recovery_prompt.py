@@ -487,7 +487,20 @@ def build_prompt_payload(
         + [
             "",
             "Что сделать сейчас:",
+            (
+                "Самостоятельно проверь sanitized packet и выбери ровно одно действие: continue_work, "
+                "recollect_context, run_validation, fix_code, sync_pr, finalize, recreate_session, "
+                "defer_task или real_blocker. Детерминированный classifier предлагает "
+                f"{prompt_action}, но это рекомендация, а не статичная команда."
+            ),
             action_instruction(prompt_action, mode=mode),
+            (
+                "Не отправляй ещё один общий continue. Если предыдущая recovery-попытка не дала нового "
+                "activity/commit/diff/PR/check delta, выбери escalation: finalize, recreate_session, "
+                "defer_task с retry condition/time или real_blocker."
+                if continue_attempts > 0 or mode == "stale"
+                else "После действия создай измеримый progress delta: activity, commit, diff, PR или checks."
+            ),
             (
                 "Если pr_context содержит failed_checks: используй annotations/log_excerpt/changed_files как первичный "
                 "recovery packet; если excerpts недостаточно, открой/read linked job logs и артефакты этих checks; "

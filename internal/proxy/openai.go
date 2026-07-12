@@ -98,6 +98,7 @@ type OpenAIChatCompletionRequest struct {
 	N                    int                        `json:"n,omitempty"`
 	ReasoningEffort      string                     `json:"reasoning_effort,omitempty"`
 	ReasoningEffortCamel string                     `json:"reasoningEffort,omitempty"`
+	Mode                 string                     `json:"mode,omitempty"`
 }
 
 type OpenAIChatCompletionChoice struct {
@@ -134,6 +135,7 @@ type OpenAIResponsesRequest struct {
 	Metadata             map[string]interface{}     `json:"metadata,omitempty"`
 	ReasoningEffort      string                     `json:"reasoning_effort,omitempty"`
 	ReasoningEffortCamel string                     `json:"reasoningEffort,omitempty"`
+	Mode                 string                     `json:"mode,omitempty"`
 }
 
 type anthropicInvocationError struct {
@@ -1269,7 +1271,11 @@ func convertOpenAIChatCompletionRequest(req *OpenAIChatCompletionRequest) (*Anth
 		effort = req.ReasoningEffortCamel
 	}
 	if effort != "" {
-		model = ApplyReasoningEffortAlias(model, effort)
+		var err error
+		model, err = ResolveReasoningEffortAlias(model, effort)
+		if err != nil {
+			return nil, err
+		}
 	}
 	tools, err := convertOpenAITools(req.Tools, req.Functions)
 	if err != nil {
@@ -1291,6 +1297,7 @@ func convertOpenAIChatCompletionRequest(req *OpenAIChatCompletionRequest) (*Anth
 		ToolChoice:   normalizeOpenAIToolChoice(req.ToolChoice, req.FunctionCall),
 		OutputConfig: convertOpenAIResponseFormat(req.ResponseFormat),
 		Metadata:     req.Metadata,
+		Mode:         req.Mode,
 	}
 	return anthReq, nil
 }
@@ -1308,7 +1315,11 @@ func convertOpenAIResponsesRequest(req *OpenAIResponsesRequest) (*AnthropicReque
 		effort = req.ReasoningEffortCamel
 	}
 	if effort != "" {
-		model = ApplyReasoningEffortAlias(model, effort)
+		var err error
+		model, err = ResolveReasoningEffortAlias(model, effort)
+		if err != nil {
+			return nil, err
+		}
 	}
 	tools, err := convertOpenAITools(req.Tools, nil)
 	if err != nil {
@@ -1333,6 +1344,7 @@ func convertOpenAIResponsesRequest(req *OpenAIResponsesRequest) (*AnthropicReque
 		ToolChoice:   req.ToolChoice,
 		OutputConfig: convertOpenAIResponsesTextFormat(req.Text),
 		Metadata:     req.Metadata,
+		Mode:         req.Mode,
 	}, nil
 }
 

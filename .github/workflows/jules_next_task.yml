@@ -54,7 +54,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: jules-next-task
+  group: notion-abuz-jules-control-plane
   cancel-in-progress: false
 
 jobs:

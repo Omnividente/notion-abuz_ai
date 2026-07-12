@@ -24,8 +24,8 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: jules-burst-monitor
-  cancel-in-progress: true
+  group: notion-abuz-jules-control-plane
+  cancel-in-progress: false
 
 jobs:
   burst-monitor:
@@ -47,11 +47,11 @@ jobs:
           LOOKBACK_HOURS: "24"
           MIN_USER_REPLY_INTERVAL_MINUTES: "0"
           STALE_AWAITING_FEEDBACK_MINUTES: "10"
-          MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS: "2"
+          MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS: "1"
           STALE_IN_PROGRESS_MINUTES: "45"
           NO_AGENT_IN_PROGRESS_MINUTES: ${{ vars.JULES_BURST_NO_AGENT_IN_PROGRESS_MINUTES || '4' }}
           NO_AGENT_STALE_IN_PROGRESS_MINUTES: ${{ vars.JULES_BURST_NO_AGENT_STALE_IN_PROGRESS_MINUTES || '5' }}
-          MAX_STALE_IN_PROGRESS_ESCALATIONS: "2"
+          MAX_STALE_IN_PROGRESS_ESCALATIONS: "1"
           CYCLES: ${{ inputs.cycles || vars.JULES_BURST_MONITOR_CYCLES || '10' }}
           INTERVAL_SECONDS: ${{ inputs.interval_seconds || vars.JULES_BURST_MONITOR_INTERVAL_SECONDS || '30' }}
         run: |

@@ -60,6 +60,7 @@ func newMux(pool *proxy.AccountPool, accountsDir string, apiKey string, dashAuth
 
 	// Health check with quota details
 	mux.HandleFunc("/health", proxy.HandleHealth(pool))
+	mux.HandleFunc("/ready", proxy.HandleReadiness(pool))
 
 	// Admin API endpoints
 	mux.HandleFunc("/admin/accounts", proxy.HandleAdminAccounts(pool, dashAuth))
@@ -194,7 +195,7 @@ func main() {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, x-api-key, X-Web-Search, X-Workspace-Search")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, x-api-key, Idempotency-Key, X-Web-Search, X-Workspace-Search")
 			if r.Method == "OPTIONS" {
 				w.WriteHeader(http.StatusOK)
 				return
@@ -218,7 +219,8 @@ func main() {
 	log.Printf("  POST /v1/responses                (OpenAI Responses API)")
 	log.Printf("  GET  /v1/models                   (OpenAI models API)")
 	log.Printf("  GET  /models                      (OpenAI models alias)")
-	log.Printf("  GET  /health")
+	log.Printf("  GET  /health                      (liveness)")
+	log.Printf("  GET  /ready                       (readiness)")
 	log.Printf("  GET  /admin/accounts")
 	log.Printf("  GET  /admin/models")
 	log.Printf("  GET  /admin/settings              (search/proxy/ASK settings)")
@@ -228,7 +230,7 @@ func main() {
 	log.Printf("  GET  /admin/register/jobs/{id}/events (SSE progress)")
 	log.Printf("  GET  /ai                          (Reverse Proxy -> notion.so)")
 
-	if err := http.ListenAndServe(":"+port, cors(apiKeyAuthMiddleware(apiKey, mux))); err != nil {
+	if err := http.ListenAndServe(":"+port, cors(apiKeyAuthMiddleware(apiKey, proxy.IdempotencyMiddleware(mux)))); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 }

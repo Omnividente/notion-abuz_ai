@@ -26,6 +26,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import jules_recovery_prompt
+import jules_session_state
 
 
 LEDGER_VARIABLE = "JULES_RECOVERY_ROUTER_LEDGER"
@@ -71,7 +72,7 @@ MAX_FAILED_CHECK_LOG_EXCERPT_CHARS = 2400
 MAX_FAILED_CHECK_CHANGED_FILES = 30
 STALE_AWAITING_FEEDBACK_MINUTES = 10
 STALE_AWAITING_FEEDBACK_COOLDOWN_MINUTES = 10
-MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS = 2
+MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS = 1
 GITHUB_API_TRANSIENT_STATUS_CODES = {502, 503, 504}
 GITHUB_API_MAX_READ_ATTEMPTS = 3
 MAX_HTTP_ERROR_DETAIL_CHARS = 1200
@@ -1586,7 +1587,8 @@ def plan_stale_feedback_action(
     session_name = str(session.get("name") or f"sessions/{session_id}")
     summary = session.get("activity_summary") or {}
     latest_agent = str(summary.get("latest_agent_epoch") or session.get("updateTime") or "")
-    prefix = f"stale-continue:{session_id}:{latest_agent}:"
+    event_id = str(session.get("recovery_event_id") or f"{session_id}:{latest_agent}")
+    prefix = f"recovery-event:{event_id}:"
     previous = action_times_with_prefix(
         ledger,
         prefix,
@@ -2383,17 +2385,18 @@ def load_ledger(client: GitHubClient) -> dict[str, Any]:
         )
     except RuntimeError as exc:
         if "HTTP 404" in str(exc):
-            return {"version": 1, "actions": {}}
+            return {"version": 2, "actions": {}, "sessions": {}}
         raise
     raw = str((data or {}).get("value") or "{}")
     try:
         ledger = json.loads(raw)
     except json.JSONDecodeError:
-        return {"version": 1, "actions": {}}
+        return {"version": 2, "actions": {}, "sessions": {}}
     if not isinstance(ledger, dict):
-        return {"version": 1, "actions": {}}
-    ledger.setdefault("version", 1)
+        return {"version": 2, "actions": {}, "sessions": {}}
+    ledger.setdefault("version", 2)
     ledger.setdefault("actions", {})
+    ledger.setdefault("sessions", {})
     return ledger
 
 
@@ -2409,7 +2412,8 @@ def prune_ledger(ledger: dict[str, Any], *, now: datetime, keep_days: int = 14) 
         timestamp = parse_time(str(value.get("time") or ""))
         if timestamp and timestamp >= cutoff:
             kept[str(key)] = value
-    return {"version": 1, "actions": kept}
+    sessions = ledger.get("sessions") if isinstance(ledger.get("sessions"), dict) else {}
+    return {"version": 2, "actions": kept, "sessions": sessions}
 
 
 def record_action(ledger: dict[str, Any], action: RecoveryAction, *, now: datetime) -> dict[str, Any]:
@@ -2959,7 +2963,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.ledger_file and args.ledger_file.exists():
             ledger = json.loads(args.ledger_file.read_text(encoding="utf-8"))
         else:
-            ledger = {"version": 1, "actions": {}}
+            ledger = {"version": 2, "actions": {}, "sessions": {}}
     else:
         token = os.environ.get("GITHUB_API_TOKEN") or os.environ.get("GH_TOKEN")
         if not token:
@@ -2976,6 +2980,13 @@ def main(argv: list[str] | None = None) -> int:
             jules_lookback_hours=args.jules_lookback_hours,
         )
         ledger = load_ledger(client)
+
+    session_states = jules_session_state.annotate_sessions(
+        state,
+        ledger,
+        now=current_time,
+        stale_minutes=STALE_AWAITING_FEEDBACK_MINUTES,
+    )
 
     actions = plan_recovery_actions(
         state,
@@ -3004,6 +3015,14 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             execute_action(client, action, jules_clients=jules_clients)
             ledger = record_action(ledger, action, now=current_time)
+            session_id = str(action.payload.get("session_id") or str(action.payload.get("session") or "").rsplit("/", 1)[-1])
+            if session_id:
+                jules_session_state.record_recovery(
+                    ledger,
+                    session_id=session_id,
+                    action=action.type,
+                    now=current_time,
+                )
             executed += 1
         save_ledger(client, prune_ledger(ledger, now=current_time))
 
@@ -3014,6 +3033,7 @@ def main(argv: list[str] | None = None) -> int:
         "actions_executed": executed,
         "actions": [action.to_dict() for action in actions],
         "selector": state.get("selector") or {},
+        "session_states": session_states,
     }
     print(json.dumps(result, ensure_ascii=False, indent=2 if args.json else None))
     return 0

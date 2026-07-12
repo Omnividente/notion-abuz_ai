@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 
-VALID_STATUSES = {"todo", "in_progress", "done", "blocked"}
+VALID_STATUSES = {"todo", "in_progress", "done", "blocked", "deferred", "failed", "stopped"}
 VALID_RISKS = {"low", "medium", "high", "critical"}
 REQUIRED_TASK_FIELDS = {
     "id",
@@ -180,6 +180,10 @@ def validate_manifest(data: dict[str, Any]) -> list[str]:
             or not task.get("blocked_reason", "").strip()
         ):
             warnings.append(f"blocked task {task.get('id')} is missing blocked_reason")
+        if status == "deferred":
+            require_string(task.get("deferred_reason"), f"task {task.get('id')}.deferred_reason")
+            require_string(task.get("retry_condition"), f"task {task.get('id')}.retry_condition")
+            require_string(task.get("retry_at"), f"task {task.get('id')}.retry_at")
 
     if todo_count < minimum_todo_tasks:
         warnings.append(
