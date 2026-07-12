@@ -8479,9 +8479,9 @@
         "Web and API endpoints do not return HTTP 500.",
         "No destructive production action is performed."
       ],
-      "deferred_reason": "The stabilization commit is not merged or deployed yet.",
-      "retry_condition": "Reactivate when the stabilization PR is merged and the deployment target exposes that commit SHA.",
-      "retry_at": "2026-07-12T18:00:00Z"
+      "deferred_reason": "Stabilization is merged, but no configured deployed target has yet exposed the merged commit SHA for a production-safe smoke.",
+      "retry_condition": "Reactivate when a configured deployment target exposes commit 6eb9408c01f6c05ad66253803d2735dc8d799e87 or a newer master SHA.",
+      "retry_at": "2026-07-13T08:00:00Z"
     },
     {
       "id": "proxy-observability-request-contract-metric",
