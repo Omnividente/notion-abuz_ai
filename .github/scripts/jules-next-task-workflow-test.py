@@ -30,9 +30,14 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
 
     def test_meta_automerge_explicitly_wakes_next_cycle(self) -> None:
         text = META_AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
-        self.assertIn("Wake next Jules cycle after automation meta merge", text)
-        self.assertIn("actions/workflows/jules_next_task.yml/dispatches", text)
+        self.assertIn("Wake and verify next Jules cycle after automation meta merge", text)
+        self.assertIn("actions/workflows/${workflow_path}/dispatches", text)
         self.assertIn('allow_parallel: "false"', text)
+        self.assertIn("?event=workflow_dispatch&per_page=1", text)
+        self.assertIn("Verified next-task workflow_dispatch run:", text)
+        self.assertIn("No started workflow_dispatch run appeared", text)
+        self.assertIn('run_status}" = "in_progress"', text)
+        self.assertIn('run_conclusion}" = "success"', text)
 
     def test_large_prompt_is_external_to_workflow_expression(self) -> None:
         self.assertIn(".github/prompts/jules_next_task_prompt.txt", self.text)
@@ -47,7 +52,7 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertNotIn("automation-health-meta-", self.text)
         self.assertNotIn("automation-circuit-breaker-followup-", self.text)
         meta = META_AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
-        self.assertIn("actions/workflows/jules_next_task.yml/dispatches", meta)
+        self.assertIn("actions/workflows/${workflow_path}/dispatches", meta)
 
     def test_cancelled_runs_do_not_spawn_mutating_followups(self) -> None:
         burst = (
