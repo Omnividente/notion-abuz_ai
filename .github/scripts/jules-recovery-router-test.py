@@ -747,6 +747,27 @@ class RecoveryRouterTest(unittest.TestCase):
             ],
         )
 
+    def test_quality_gate_request_suppresses_duplicate_router_comment(self) -> None:
+        quality_comment = """<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->
+Current head: `abc123`
+Blocking reasons:
+- runtime proof required
+"""
+        actions = plan(
+            state(
+                open_pulls=[
+                    pr(
+                        labels=["jules", "needs-quality-fix"],
+                        sha="abc123",
+                        comments=[quality_comment],
+                    )
+                ]
+            )
+        )
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].type, "quality_fix_recovery")
+        self.assertFalse(actions[0].payload["comment_needed"])
+
     def test_quality_fix_prompt_includes_latest_quality_gate_details(self) -> None:
         quality_comment = """<!-- AUTONOMOUS_QUALITY_FIX_REQUEST pr-level -->
 
