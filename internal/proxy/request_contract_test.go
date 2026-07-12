@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -93,5 +94,52 @@ func TestRoutingContractLanguageMatrix(t *testing.T) {
 	}
 	if ShouldDisableAgentFallback(true, true, true, "agent") {
 		t.Fatal("explicit agent mode must be honored")
+	}
+}
+
+
+func TestModeModelReasoningSerializedNotionContract(t *testing.T) {
+	original := SnapshotModelMap()
+	ReplaceModelMap(map[string]string{"opus-4.8-high": "notion-internal-high"})
+	t.Cleanup(func() { ReplaceModelMap(original) })
+
+	converted, err := convertOpenAIChatCompletionRequest(&OpenAIChatCompletionRequest{
+		Model:           "opus-4.8",
+		Mode:            "ask",
+		ReasoningEffort: "high",
+		Messages:        []OpenAIChatMessage{{Role: "user", Content: "Проверь код"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if converted.Model != "opus-4.8-high" || converted.Mode != "ask" {
+		t.Fatalf("converted model=%q mode=%q", converted.Model, converted.Mode)
+	}
+
+	model, readOnly, err := ResolveRequestMode(converted.Model, converted.Mode, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	notionModel := ResolveModel(model)
+	config := buildConfigValue(notionModel, true, false, nil, readOnly, false, true)
+	debug := DebugOverrides{Model: notionModel, EmitAgentSearchExtractedResults: true}
+	payload, err := json.Marshal(map[string]interface{}{
+		"config": config,
+		"debugOverrides": debug,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded map[string]interface{}
+	if err := json.Unmarshal(payload, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	cfg := decoded["config"].(map[string]interface{})
+	overrides := decoded["debugOverrides"].(map[string]interface{})
+	if cfg["useReadOnlyMode"] != true {
+		t.Fatalf("mode missing from serialized config: %s", payload)
+	}
+	if cfg["model"] != "notion-internal-high" || overrides["model"] != "notion-internal-high" {
+		t.Fatalf("model/reasoning alias missing from serialized payload: %s", payload)
 	}
 }
