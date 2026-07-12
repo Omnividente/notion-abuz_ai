@@ -75,6 +75,13 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("Ignored ${ignored} inactive Jules session", self.text)
         self.assertIn("blocking active Jules session", self.text)
 
+    def test_recent_task_dispatch_lease_blocks_eventual_consistency_duplicate(self) -> None:
+        self.assertIn("recent_task_lease_active", self.text)
+        self.assertIn("timedelta(minutes=30)", self.text)
+        self.assertIn('item.get("task_id") != task_id', self.text)
+        self.assertIn('[ -z "$RECOVERY_SESSION_ID" ]', self.text)
+        self.assertIn("skipping eventual-consistency duplicate", self.text)
+
     def test_active_session_runs_recovery_observation_before_duplicate_skip(self) -> None:
         self.assertIn("running one recovery observation", self.text)
         self.assertIn("bash .github/scripts/jules-unattended-monitor.sh", self.text)
