@@ -7748,7 +7748,7 @@
     },
     {
       "id": "proxy-audit-missing-metrics",
-      "status": "todo",
+      "status": "stopped",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy missing metrics",
@@ -7759,7 +7759,8 @@
       ],
       "acceptance": [
         "Metrics in internal/proxy are consistent."
-      ]
+      ],
+      "stopped_reason": "Superseded by runtime-first stabilization queue; do not reselect without an explicit lifecycle transition backed by new runtime evidence."
     },
     {
       "id": "proxy-audit-ndjson-headers",
@@ -7812,7 +7813,7 @@
     },
     {
       "id": "proxy-audit-context-loss-metric-followup",
-      "status": "todo",
+      "status": "stopped",
       "area": "proxy",
       "risk": "low",
       "title": "Audit trailing progress loss edge cases in session recovery",
@@ -7824,7 +7825,8 @@
       ],
       "acceptance": [
         "Trailing empty tool outputs explicitly log and emit context drop metrics consistently."
-      ]
+      ],
+      "stopped_reason": "Superseded by runtime-first stabilization queue; do not reselect without an explicit lifecycle transition backed by new runtime evidence."
     },
     {
       "id": "automation-quality-loop-pr-520-e3a07e26",
@@ -7904,17 +7906,45 @@
     },
     {
       "id": "proxy-audit-missing-tool-fallback",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
-      "risk": "low",
-      "title": "Add test for empty_tools_fallback metric",
-      "description": "Add a unit test in internal/proxy/tools_test.go to verify that multi-turn session continuation with an empty tool list properly triggers the empty_tools_fallback metric.",
+      "risk": "medium",
+      "title": "Prevent unjustified agent fallback and silent parameter downgrades",
+      "description": "Use the request contract, metadata and client tool declarations—not Notion AI response language—to select direct versus agent routing; preserve mode/model/reasoning with explicit diagnostics and cover concurrent duplicate inference events.",
       "allowed_paths": [
-        "internal/proxy/tools_test.go",
+        "internal/proxy/request_contract.go",
+        "internal/proxy/request_contract_test.go",
+        "internal/proxy/idempotency.go",
+        "internal/proxy/idempotency_test.go",
+        "internal/proxy/anthropic.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/openai_test.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/handler.go",
+        "internal/proxy/handler_test.go",
+        "cmd/notion-manager/main.go",
+        "cmd/notion-manager/main_test.go",
+        ".github/scripts/jules_session_state.py",
+        ".github/scripts/jules_session_state_test.py",
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/jules_recovery_prompt.py",
+        ".github/workflows/ci.yml",
+        ".github/workflows/jules_unattended_monitor.yml",
+        ".github/workflows/jules_burst_monitor.yml",
+        ".github/workflows/jules_recovery_router.yml",
+        ".github/workflows/jules_next_task.yml",
+        "scripts/validate_agent_tasks.py",
+        "scripts/validate_agent_tasks_test.py",
         "agent_tasks.json"
       ],
       "acceptance": [
-        "A test in tools_test.go explicitly asserts that context_loss metric 'empty_tools_fallback' is recorded when compactList is empty in buildSessionChainContinuation."
+        "Routing is derived from explicit request mode, coding-assistant metadata and client tools; response language is not an input.",
+        "Russian, English and mixed coding contracts are covered, including an English upstream response scenario for a Russian request contract.",
+        "Unsupported mode or reasoning_effort returns an explicit diagnostic rather than silently downgrading.",
+        "Concurrent requests with the same Idempotency-Key reach inference at most once.",
+        "Jules lifecycle state, progress delta, recovery event and attempt are persisted without raw transcripts or secrets.",
+        "All mutating Jules workflows share one serialized concurrency group and emit at most one recovery message before escalation.",
+        "Health, readiness and embedded-dashboard smoke behavior are tested."
       ]
     },
     {
@@ -8206,7 +8236,7 @@
     },
     {
       "id": "proxy-audit-context-loss-legacy-collapse-dropped-followup",
-      "status": "todo",
+      "status": "stopped",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy context loss metric for dropped tool results in fallback",
@@ -8220,7 +8250,8 @@
       "acceptance": [
         "`legacy_collapse_dropped_tool_result` metric has corresponding tests and adequate observability logic.",
         "Fallback documentation in `docs/claude-code-integration.md` explicitly mentions this context loss."
-      ]
+      ],
+      "stopped_reason": "Superseded by runtime-first stabilization queue; do not reselect without an explicit lifecycle transition backed by new runtime evidence."
     },
     {
       "id": "docs-dashboard-registration-audit",
@@ -8303,7 +8334,7 @@
     },
     {
       "id": "docs-api-audit-authentication-followup",
-      "status": "todo",
+      "status": "stopped",
       "area": "docs",
       "risk": "low",
       "title": "Audit API documentation for missing parameter schemas",
@@ -8314,7 +8345,139 @@
       ],
       "acceptance": [
         "API documentation covers necessary complex parameter types."
+      ],
+      "stopped_reason": "Superseded by runtime-first stabilization queue; do not reselect without an explicit lifecycle transition backed by new runtime evidence."
+    },
+    {
+      "id": "proxy-routing-contract-live-fixtures",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Validate routing contract against realistic Russian English and mixed transcripts",
+      "description": "Use offline captured/sanitized fixtures from the routing regression class to validate direct versus agent configuration, including English Notion AI output after a Russian coding request. This follows the runtime contract introduced by PR #522 replacement scope.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/notion.go",
+        "internal/proxy/tools.go",
+        "internal/proxy/*_test.go",
+        "testdata/routing/*",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fixture matrix covers Russian, English, and mixed request contracts.",
+        "English upstream output does not change the already selected route.",
+        "A runtime Go change is made if any fixture exposes an unjustified agent fallback.",
+        "go test ./internal/proxy passes."
       ]
+    },
+    {
+      "id": "proxy-idempotency-response-replay",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Replay completed non-streaming idempotent responses without reinference",
+      "description": "Extend the Idempotency-Key guard from duplicate rejection to bounded sanitized response replay for completed non-streaming requests, while retaining single execution under concurrent duplicates.",
+      "allowed_paths": [
+        "internal/proxy/idempotency.go",
+        "internal/proxy/idempotency_test.go",
+        "cmd/notion-manager/main.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Concurrent duplicates execute the upstream handler exactly once.",
+        "A completed non-streaming response can be replayed without a second inference.",
+        "Streaming duplicates remain explicit and diagnosable.",
+        "Cached payloads expire and never include credentials or cookies."
+      ]
+    },
+    {
+      "id": "automation-fake-jules-state-integration",
+      "status": "todo",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Run end-to-end fake Jules lifecycle recovery integration",
+      "description": "Exercise created active waiting stale completed failed stopped and deferred states through the router with overlapping-cycle fixtures and prove exactly one recovery message per unchanged event followed by state escalation.",
+      "allowed_paths": [
+        ".github/scripts/jules_session_state.py",
+        ".github/scripts/jules_session_state_test.py",
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/jules-recovery-router-test.py",
+        ".github/scripts/jules-unattended-monitor-test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Fake Jules API covers every canonical lifecycle state.",
+        "Concurrent or overlapping cycles produce one sendMessage for one recovery event.",
+        "No progress after recovery escalates without repeating the same message.",
+        "Progress activity commit diff PR or check resets the event and attempt counter."
+      ]
+    },
+    {
+      "id": "runtime-startup-static-readiness-smoke",
+      "status": "todo",
+      "area": "web",
+      "risk": "medium",
+      "title": "Harden startup static assets and reverse-proxy deployment smoke",
+      "description": "Reproduce the deployed HTTP 500 class using a production-like local build, verify embedded dashboard assets and configuration startup, and add an automated smoke covering /health /ready /dashboard and one authenticated API validation error.",
+      "allowed_paths": [
+        "cmd/notion-manager/main.go",
+        "cmd/notion-manager/main_test.go",
+        "internal/proxy/dashboard.go",
+        "internal/proxy/dashboard_test.go",
+        "internal/web/*",
+        ".github/workflows/rdsh_local_live_smoke.yml",
+        "scripts/*smoke*",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Production-like binary starts without migrations/config/static asset failure.",
+        "/health is 200 and /ready truthfully reflects account availability.",
+        "/dashboard does not return HTTP 500.",
+        "Smoke workflow records endpoint status and commit SHA without secrets."
+      ]
+    },
+    {
+      "id": "proxy-mode-reasoning-notion-payload-proof",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Prove mode model and reasoning mapping in serialized Notion payloads",
+      "description": "Add request-to-Notion payload contract tests for supported mode/model/reasoning combinations and explicit unsupported diagnostics so future proxy changes cannot drop parameters silently.",
+      "allowed_paths": [
+        "internal/proxy/request_contract.go",
+        "internal/proxy/openai.go",
+        "internal/proxy/anthropic.go",
+        "internal/proxy/notion.go",
+        "internal/proxy/*_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests inspect serialized Notion config/debugOverrides for supported mappings.",
+        "Unsupported combinations return a stable 4xx diagnostic.",
+        "No parameter is silently ignored or downgraded.",
+        "OpenAI chat Responses and Anthropic paths are covered."
+      ]
+    },
+    {
+      "id": "deployment-live-evidence-after-merge",
+      "status": "deferred",
+      "area": "runtime",
+      "risk": "high",
+      "title": "Collect live deployment evidence after stabilization merge",
+      "description": "Run production-safe deployment smoke only after the stabilization PR merges and the deployment target reports the merged commit.",
+      "allowed_paths": [
+        ".github/workflows/rdsh_local_live_smoke.yml",
+        "docs/health.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Deployment reports the merged commit SHA.",
+        "Web and API endpoints do not return HTTP 500.",
+        "No destructive production action is performed."
+      ],
+      "deferred_reason": "The stabilization commit is not merged or deployed yet.",
+      "retry_condition": "Reactivate when the stabilization PR is merged and the deployment target exposes that commit SHA.",
+      "retry_at": "2026-07-12T18:00:00Z"
     }
   ]
 }
