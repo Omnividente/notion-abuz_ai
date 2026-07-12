@@ -8519,7 +8519,7 @@
     },
     {
       "id": "proxy-feedback-event-idempotency",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Enforce exactly-once feedback and callback event handling",
@@ -8534,7 +8534,8 @@
         "Concurrent duplicate events are covered by a deterministic integration test.",
         "Missing or conflicting event identity returns an explicit diagnosable result instead of silent downgrade.",
         "No credentials, cookies, or full production payloads are persisted in deduplication state."
-      ]
+      ],
+      "blocked_reason": "Missing documentation or live payloads to identify the exact HTTP endpoints and event structures for feedback/callback delivery boundaries in the OpenAI and Anthropic proxy paths, making it impossible to derive a stable sanitized event identity for deduplication."
     },
     {
       "id": "docs-update-readme-proxy-endpoints",
@@ -8568,6 +8569,21 @@
         "Documentation reflects the new X-Idempotency-Status: replayed header.",
         "Documentation clarifies that streaming responses still return a duplicate error.",
         "Documentation specifies that credentials and cookies are sanitized."
+      ]
+    },
+    {
+      "id": "docs-anthropic-tools-proxy",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Document Anthropic-compatible tool usage mapping",
+      "description": "Document how the proxy translates Anthropic tool_use and tool_result blocks to Notion's internal format and back.",
+      "allowed_paths": [
+        "internal/proxy/*.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Documentation comments are added to the tool mapping functions in anthropic.go."
       ]
     }
   ]
