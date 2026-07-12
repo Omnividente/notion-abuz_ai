@@ -532,9 +532,11 @@ func HandleAdminMetrics(auth *DashboardAuth) http.HandlerFunc {
 
 		metrics := GetContextLossMetrics()
 		toolModeLossMetrics := GetToolModeLossMetrics()
+		requestContractMetrics := GetRequestContractMetrics()
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"context_loss":   metrics,
-			"tool_mode_loss": toolModeLossMetrics,
+			"context_loss":     metrics,
+			"tool_mode_loss":   toolModeLossMetrics,
+			"request_contract": requestContractMetrics,
 		})
 	}
 }

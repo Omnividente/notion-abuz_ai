@@ -95,6 +95,18 @@ func TestRoutingContractLanguageMatrix(t *testing.T) {
 	if ShouldDisableAgentFallback(true, true, true, "agent") {
 		t.Fatal("explicit agent mode must be honored")
 	}
+
+	// Verify metrics
+	metrics := GetRequestContractMetrics()
+	if metrics["coding_assistant"] < 2 {
+		t.Fatalf("expected at least 2 coding_assistant requests recorded, got %d", metrics["coding_assistant"])
+	}
+
+	ShouldDisableAgentFallback(false, false, false, "")
+	metrics = GetRequestContractMetrics()
+	if metrics["normal"] < 1 {
+		t.Fatalf("expected at least 1 normal request recorded, got %d", metrics["normal"])
+	}
 }
 
 func TestModeModelReasoningSerializedNotionContract(t *testing.T) {

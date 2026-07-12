@@ -67,6 +67,11 @@ func ShouldDisableAgentFallback(
 	hasClientTools bool,
 	mode string,
 ) bool {
+	if isCodingAssistant {
+		RecordRequestContractMetric("coding_assistant")
+	} else {
+		RecordRequestContractMetric("normal")
+	}
 	switch strings.ToLower(strings.TrimSpace(mode)) {
 	case "agent":
 		return false
