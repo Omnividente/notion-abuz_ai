@@ -49,14 +49,20 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
 
-      - name: Wake next Jules cycle after automation meta merge
+      - name: Wake and verify next Jules cycle after automation meta merge
         if: success()
         env:
           GH_TOKEN: ${{ secrets.PAT || github.token }}
         run: |
+          set -euo pipefail
+
+          workflow_path="jules_next_task.yml"
+          runs_endpoint="repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_path}/runs"
+          before_id="$(gh api "${runs_endpoint}?event=workflow_dispatch&per_page=1" --jq '.workflow_runs[0].id // 0')"
+
           gh api \
             --method POST \
-            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_next_task.yml/dispatches" \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_path}/dispatches" \
             --input <(jq -n '{
               ref: "master",
               inputs: {
@@ -65,3 +71,29 @@ jobs:
                 allow_parallel: "false"
               }
             }')
+
+          for attempt in $(seq 1 20); do
+            run_row="$(gh api "${runs_endpoint}?event=workflow_dispatch&per_page=1" \
+              --jq '.workflow_runs[0] | [.id, .status, (.conclusion // ""), .html_url] | @tsv')"
+            IFS=\t' read -r run_id run_status run_conclusion run_url <<< "${run_row}"
+
+            if [ -n "${run_id:-}" ] && [ "${run_id}" != "${before_id}" ]; then
+              echo "Verified next-task workflow_dispatch run: id=${run_id} status=${run_status} conclusion=${run_conclusion:-none}"
+              echo "Run URL: ${run_url}"
+
+              if [ "${run_status}" = "in_progress" ]; then
+                exit 0
+              fi
+              if [ "${run_status}" = "completed" ]; then
+                if [ "${run_conclusion}" = "success" ]; then
+                  exit 0
+                fi
+                echo "::error::Dispatched next-task run ${run_id} completed as ${run_conclusion:-unknown}."
+                exit 1
+              fi
+            fi
+            sleep 3
+          done
+
+          echo "::error::No started workflow_dispatch run appeared within 60 seconds after the accepted dispatch."
+          exit 1
