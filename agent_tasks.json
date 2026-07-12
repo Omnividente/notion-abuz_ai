@@ -8573,11 +8573,11 @@
     },
     {
       "id": "proxy-audit-context-cancellation",
-      "status": "blocked",
+      "status": "todo",
       "area": "proxy",
       "risk": "low",
       "title": "Audit HTTP request context cancellation handling",
-      "description": "Audit the reverse proxy and API handlers to ensure downstream client disconnections (context cancellation) are properly propagated to upstream Notion and OpenAI/Anthropic generation loops.",
+      "description": "Audit the reverse proxy and API handlers to ensure downstream client disconnections (context cancellation) are properly propagated to upstream Notion and OpenAI/Anthropic generation loops. Found root cause: CallInference and other HTTP clients use http.NewRequest instead of http.NewRequestWithContext(ctx) with the downstream request context. Update them.",
       "allowed_paths": [
         "internal/proxy/*.go",
         "agent_tasks.json"
@@ -8585,12 +8585,11 @@
       "acceptance": [
         "Upstream network requests are aborted when the downstream client disconnects.",
         "Streaming inference loops terminate early on client disconnect."
-      ],
-      "blocked_reason": "Paused after repeated Jules FAILED sessions: 13423971199068415568. Resume only with human review or concrete live smoke/transcript/CI/offline reproduction evidence."
+      ]
     },
     {
       "id": "automation-recovery-followup-9e86197f",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "low",
       "title": "Investigate root cause of Jules failure for proxy-audit-context-cancellation",
