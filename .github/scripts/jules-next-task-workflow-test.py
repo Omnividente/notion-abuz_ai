@@ -22,6 +22,10 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("actions/workflows/jules_next_task.yml/dispatches", text)
         self.assertIn('allow_parallel: "false"', text)
 
+    def test_rerun_checks_out_current_master_state(self) -> None:
+        self.assertIn("# Workflow reruns preserve the original event SHA.", self.text)
+        self.assertIn("      - uses: actions/checkout@v5\n        with:\n          ref: master", self.text)
+
     def test_circuit_breaker_followup_merge_triggers_next_task(self) -> None:
         self.assertIn("automation-circuit-breaker-followup-", self.text)
         self.assertIn("AUTONOMOUS_CIRCUIT_BREAKER_FOLLOWUP_TASK", self.text)
