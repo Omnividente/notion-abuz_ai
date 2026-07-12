@@ -18,6 +18,9 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.text = WORKFLOW.read_text(encoding="utf-8")
+        cls.prompt_text = (
+            Path(__file__).parents[1] / "prompts" / "jules_next_task_prompt.txt"
+        ).read_text(encoding="utf-8")
 
     def test_automerge_explicitly_wakes_next_cycle(self) -> None:
         text = AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
@@ -30,6 +33,11 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("Wake next Jules cycle after automation meta merge", text)
         self.assertIn("actions/workflows/jules_next_task.yml/dispatches", text)
         self.assertIn('allow_parallel: "false"', text)
+
+    def test_large_prompt_is_external_to_workflow_expression(self) -> None:
+        self.assertIn(".github/prompts/jules_next_task_prompt.txt", self.text)
+        self.assertIn("render-jules-next-task-prompt.py", self.text)
+        self.assertNotIn("PROMPT=$(cat <<EOF", self.text)
 
     def test_rerun_checks_out_current_master_state(self) -> None:
         self.assertIn("# Workflow reruns preserve the original event SHA.", self.text)
@@ -63,9 +71,9 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
 
     def test_risk_ceiling_supports_guarded_high_risk_opt_in(self) -> None:
         self.assertIn("          - high", self.text)
-        self.assertIn("unguarded high-risk", self.text)
-        self.assertIn("CI/smoke/artifact/self-hosted evidence", self.text)
-        self.assertIn("rollback notes", self.text)
+        self.assertIn("unguarded high-risk", self.prompt_text)
+        self.assertIn("CI/smoke/artifact/self-hosted evidence", self.prompt_text)
+        self.assertIn("rollback notes", self.prompt_text)
 
 
 if __name__ == "__main__":
