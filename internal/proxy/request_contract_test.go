@@ -97,7 +97,6 @@ func TestRoutingContractLanguageMatrix(t *testing.T) {
 	}
 }
 
-
 func TestModeModelReasoningSerializedNotionContract(t *testing.T) {
 	original := SnapshotModelMap()
 	ReplaceModelMap(map[string]string{"opus-4.8-high": "notion-internal-high"})
@@ -124,7 +123,7 @@ func TestModeModelReasoningSerializedNotionContract(t *testing.T) {
 	config := buildConfigValue(notionModel, true, false, nil, readOnly, false, true)
 	debug := DebugOverrides{Model: notionModel, EmitAgentSearchExtractedResults: true}
 	payload, err := json.Marshal(map[string]interface{}{
-		"config": config,
+		"config":         config,
 		"debugOverrides": debug,
 	})
 	if err != nil {
