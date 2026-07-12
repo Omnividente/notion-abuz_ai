@@ -54,7 +54,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: notion-abuz-jules-control-plane
+  group: notion-abuz-jules-dispatch
   cancel-in-progress: false
 
 jobs:
