@@ -374,7 +374,7 @@ class RecoveryRouterTest(unittest.TestCase):
         paths = (
             WORKFLOW_PATH,
             BURST_WORKFLOW_PATH,
-            ROOT / ".github/workflows/jules_unattended_monitor.yml",
+            WORKFLOW_PATH.parent / "jules_unattended_monitor.yml",
             NEXT_TASK_WORKFLOW_PATH,
         )
         for path in paths:
