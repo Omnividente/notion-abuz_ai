@@ -8392,24 +8392,26 @@
     },
     {
       "id": "automation-fake-jules-state-integration",
-      "status": "todo",
+      "status": "done",
       "area": "automation",
       "risk": "medium",
-      "title": "Run end-to-end fake Jules lifecycle recovery integration",
-      "description": "Exercise created active waiting stale completed failed stopped and deferred states through the router with overlapping-cycle fixtures and prove exactly one recovery message per unchanged event followed by state escalation.",
+      "title": "Recover an existing Jules session before duplicate dispatch",
+      "description": "When a repeated next-task cycle sees one blocking Jules session, run the unattended monitor once so stale/no-agent recovery advances before returning; never create a parallel session.",
       "allowed_paths": [
         ".github/scripts/jules_session_state.py",
         ".github/scripts/jules_session_state_test.py",
         ".github/scripts/jules-recovery-router.py",
         ".github/scripts/jules-recovery-router-test.py",
         ".github/scripts/jules-unattended-monitor-test.py",
-        "agent_tasks.json"
+        "agent_tasks.json",
+        ".github/workflows/jules_next_task.yml",
+        ".github/scripts/jules-next-task-workflow-test.py"
       ],
       "acceptance": [
-        "Fake Jules API covers every canonical lifecycle state.",
-        "Concurrent or overlapping cycles produce one sendMessage for one recovery event.",
-        "No progress after recovery escalates without repeating the same message.",
-        "Progress activity commit diff PR or check resets the event and attempt counter."
+        "A repeated next-task cycle with an active session invokes jules-unattended-monitor.sh before returning.",
+        "The cycle still creates no parallel Jules session.",
+        "Stale recovery limits are one message per event before escalation.",
+        "Workflow regression tests cover the recovery observation path."
       ]
     },
     {
