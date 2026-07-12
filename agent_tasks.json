@@ -8416,7 +8416,7 @@
     },
     {
       "id": "runtime-startup-static-readiness-smoke",
-      "status": "todo",
+      "status": "done",
       "area": "web",
       "risk": "medium",
       "title": "Harden startup static assets and reverse-proxy deployment smoke",
@@ -8534,6 +8534,23 @@
         "Concurrent duplicate events are covered by a deterministic integration test.",
         "Missing or conflicting event identity returns an explicit diagnosable result instead of silent downgrade.",
         "No credentials, cookies, or full production payloads are persisted in deduplication state."
+      ]
+    },
+    {
+      "id": "docs-update-readme-proxy-endpoints",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Update README with accurate proxy endpoints",
+      "description": "The proxy now supports the OpenAI Responses API, standard models aliases, and SSE progress during registration. Document these endpoints in the README or a dedicated docs file.",
+      "allowed_paths": [
+        "README.md",
+        "docs/*",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "README or API docs lists /v1/responses, /models, and /admin/register/jobs/{id}/events.",
+        "File is updated cleanly without breaking markdown formatting."
       ]
     }
   ]
