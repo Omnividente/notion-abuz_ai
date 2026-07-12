@@ -8480,8 +8480,8 @@
         "No destructive production action is performed."
       ],
       "deferred_reason": "Stabilization is merged, but no configured deployed target has yet exposed the merged commit SHA for a production-safe smoke.",
-      "retry_condition": "Reactivate when a configured deployment target exposes commit 6eb9408c01f6c05ad66253803d2735dc8d799e87 or a newer master SHA.",
-      "retry_at": "2026-07-13T08:00:00Z"
+      "retry_condition": "Reactivate when a configured deployment target exposes final stabilization commit a03050784facd7c63f65557560fdd128769738ae or a newer master SHA.",
+      "retry_at": "2026-07-13T09:00:00Z"
     },
     {
       "id": "proxy-observability-request-contract-metric",
