@@ -68,9 +68,9 @@ func HandleReadiness(pool *AccountPool) http.HandlerFunc {
 		}
 		w.WriteHeader(status)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status": state,
-			"reason": reason,
-			"accounts": pool.Count(),
+			"status":    state,
+			"reason":    reason,
+			"accounts":  pool.Count(),
 			"available": available,
 		})
 	}
