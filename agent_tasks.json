@@ -8519,7 +8519,7 @@
     },
     {
       "id": "proxy-feedback-event-idempotency",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "medium",
       "title": "Enforce exactly-once feedback and callback event handling",
@@ -8534,7 +8534,8 @@
         "Concurrent duplicate events are covered by a deterministic integration test.",
         "Missing or conflicting event identity returns an explicit diagnosable result instead of silent downgrade.",
         "No credentials, cookies, or full production payloads are persisted in deduplication state."
-      ]
+      ],
+      "blocked_reason": "The proxy currently does not expose or implement any feedback or callback endpoints (e.g., /v1/feedback or webhook callbacks) in the OpenAI- and Anthropic-compatible paths. The target functionality does not exist to be protected by idempotency."
     },
     {
       "id": "docs-update-readme-proxy-endpoints",
@@ -8568,6 +8569,22 @@
         "Documentation reflects the new X-Idempotency-Status: replayed header.",
         "Documentation clarifies that streaming responses still return a duplicate error.",
         "Documentation specifies that credentials and cookies are sanitized."
+      ]
+    },
+    {
+      "id": "proxy-audit-context-cancellation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit HTTP request context cancellation handling",
+      "description": "Audit the reverse proxy and API handlers to ensure downstream client disconnections (context cancellation) are properly propagated to upstream Notion and OpenAI/Anthropic generation loops.",
+      "allowed_paths": [
+        "internal/proxy/*.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Upstream network requests are aborted when the downstream client disconnects.",
+        "Streaming inference loops terminate early on client disconnect."
       ]
     }
   ]
