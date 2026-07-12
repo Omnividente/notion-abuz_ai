@@ -8572,6 +8572,22 @@
       ]
     },
     {
+      "id": "proxy-audit-context-cancellation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit HTTP request context cancellation handling",
+      "description": "Audit the reverse proxy and API handlers to ensure downstream client disconnections (context cancellation) are properly propagated to upstream Notion and OpenAI/Anthropic generation loops.",
+      "allowed_paths": [
+        "internal/proxy/*.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Upstream network requests are aborted when the downstream client disconnects.",
+        "Streaming inference loops terminate early on client disconnect."
+      ]
+    },
+    {
       "id": "docs-anthropic-tools-proxy",
       "status": "todo",
       "area": "proxy",
