@@ -1731,7 +1731,7 @@ def plan_recovery_actions(
                         payload={
                             "pr_number": number,
                             "body": prompt,
-                            "comment_needed": not has_marker and not has_quality_request,
+                            "comment_needed": not has_marker,
                             "session_id": session_id,
                         },
                     )
