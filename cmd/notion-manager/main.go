@@ -195,7 +195,7 @@ func main() {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, x-api-key, X-Web-Search, X-Workspace-Search")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, x-api-key, Idempotency-Key, X-Web-Search, X-Workspace-Search")
 			if r.Method == "OPTIONS" {
 				w.WriteHeader(http.StatusOK)
 				return
@@ -230,7 +230,7 @@ func main() {
 	log.Printf("  GET  /admin/register/jobs/{id}/events (SSE progress)")
 	log.Printf("  GET  /ai                          (Reverse Proxy -> notion.so)")
 
-	if err := http.ListenAndServe(":"+port, cors(apiKeyAuthMiddleware(apiKey, mux))); err != nil {
+	if err := http.ListenAndServe(":"+port, cors(apiKeyAuthMiddleware(apiKey, proxy.IdempotencyMiddleware(mux)))); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 }
