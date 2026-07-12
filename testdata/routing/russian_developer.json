@@ -1,0 +1,7 @@
+{
+  "messages": [
+    {"role": "system", "content": "Ты опытный разработчик."},
+    {"role": "user", "content": "Привет"}
+  ],
+  "want_coding": true
+}

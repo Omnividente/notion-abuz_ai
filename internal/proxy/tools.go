@@ -2050,7 +2050,14 @@ func isCodingAssistantRequest(messages []ChatMessage) bool {
 				strings.Contains(lower, "исходн") ||
 				strings.Contains(lower, "патч") ||
 				strings.Contains(lower, "тест") ||
-				strings.Contains(lower, "инструмент") {
+				strings.Contains(lower, "инструмент") ||
+				strings.Contains(lower, "разработчик") ||
+				strings.Contains(lower, "developer") ||
+				strings.Contains(lower, "script") ||
+				strings.Contains(lower, "скрипт") ||
+				strings.Contains(lower, "programming") ||
+				strings.Contains(lower, "coder") ||
+				strings.Contains(lower, "кодер") {
 				return true
 			}
 		}

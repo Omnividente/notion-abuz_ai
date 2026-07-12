@@ -8350,7 +8350,7 @@
     },
     {
       "id": "proxy-routing-contract-live-fixtures",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Validate routing contract against realistic Russian English and mixed transcripts",
@@ -8482,6 +8482,40 @@
       "deferred_reason": "The stabilization commit is not merged or deployed yet.",
       "retry_condition": "Reactivate when the stabilization PR is merged and the deployment target exposes that commit SHA.",
       "retry_at": "2026-07-12T18:00:00Z"
+    },
+    {
+      "id": "proxy-observability-request-contract-metric",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add metric tracking for resolved request mode contract",
+      "description": "Expose observability counters for coding assistant vs normal request volumes mapped in the routing contract, to safely quantify usage patterns.",
+      "allowed_paths": [
+        "internal/proxy/telemetry_metrics.go",
+        "internal/proxy/request_contract.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A metric is added for coding assistant request count.",
+        "Tests verify the metric increments correctly.",
+        "go test ./internal/proxy passes."
+      ]
+    },
+    {
+      "id": "docs-routing-contract-behavior",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Document runtime routing contract and fixture behavior",
+      "description": "Document how the `isCodingAssistantRequest` logic determines routes and the expected inputs, reflecting the new live test fixtures and keywords.",
+      "allowed_paths": [
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Documentation reflects the new routing behavior and keywords.",
+        "The explanation highlights how coding mode prevents agent fallbacks."
+      ]
     }
   ]
 }

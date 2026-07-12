@@ -1,0 +1,7 @@
+{
+  "messages": [
+    {"role": "developer", "content": "Ты AI programming assistant. Пиши скрипты."},
+    {"role": "user", "content": "Do it"}
+  ],
+  "want_coding": true
+}
