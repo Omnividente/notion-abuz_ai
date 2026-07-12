@@ -73,9 +73,11 @@ jobs:
             }')
 
           for attempt in $(seq 1 20); do
-            run_row="$(gh api "${runs_endpoint}?event=workflow_dispatch&per_page=1" \
-              --jq '.workflow_runs[0] | [.id, .status, (.conclusion // ""), .html_url] | @tsv')"
-            IFS=\t' read -r run_id run_status run_conclusion run_url <<< "${run_row}"
+            runs_json="$(gh api "${runs_endpoint}?event=workflow_dispatch&per_page=1")"
+            run_id="$(jq -r '.workflow_runs[0].id // empty' <<< "${runs_json}")"
+            run_status="$(jq -r '.workflow_runs[0].status // empty' <<< "${runs_json}")"
+            run_conclusion="$(jq -r '.workflow_runs[0].conclusion // empty' <<< "${runs_json}")"
+            run_url="$(jq -r '.workflow_runs[0].html_url // empty' <<< "${runs_json}")"
 
             if [ -n "${run_id:-}" ] && [ "${run_id}" != "${before_id}" ]; then
               echo "Verified next-task workflow_dispatch run: id=${run_id} status=${run_status} conclusion=${run_conclusion:-none}"
