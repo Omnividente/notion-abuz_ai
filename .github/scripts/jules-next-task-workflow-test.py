@@ -31,6 +31,11 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("actions/workflows/jules_next_task.yml/dispatches", text)
         self.assertIn('allow_parallel: "false"', text)
 
+    def test_large_prompt_is_external_to_workflow_expression(self) -> None:
+        self.assertIn(".github/prompts/jules_next_task_prompt.txt", self.text)
+        self.assertIn("render-jules-next-task-prompt.py", self.text)
+        self.assertNotIn("PROMPT=$(cat <<EOF", self.text)
+
     def test_rerun_checks_out_current_master_state(self) -> None:
         self.assertIn("# Workflow reruns preserve the original event SHA.", self.text)
         self.assertIn("      - uses: actions/checkout@v5\n        with:\n          ref: master", self.text)
