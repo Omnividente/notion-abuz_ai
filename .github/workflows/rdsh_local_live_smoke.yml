@@ -44,6 +44,17 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: go.sum
 
+      - name: RDSH startup static readiness smoke
+        run: bash scripts/rdsh_startup_smoke.sh
+
+      - name: Upload startup smoke summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: startup-smoke-summary
+          path: /tmp/local-live-smoke-summary.json
+          if-no-files-found: warn
+
       - name: RDSH local live smoke
         run: bash .github/scripts/rdsh-local-live-smoke.sh
 
