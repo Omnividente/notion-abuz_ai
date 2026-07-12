@@ -1,0 +1,7 @@
+{
+  "messages": [
+    {"role": "system", "content": "Ты полезный ИИ-помощник."},
+    {"role": "user", "content": "Напиши стих"}
+  ],
+  "want_coding": false
+}
