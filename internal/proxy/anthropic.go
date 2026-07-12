@@ -941,7 +941,7 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 
 		// Resolve model/mode as an explicit request contract. Invalid or
 		// conflicting values fail instead of being silently downgraded.
-		model, useReadOnlyMode, err = ResolveRequestMode(model, req.Mode, AppConfig.AskModeDefault())
+		model, useReadOnlyMode, err := ResolveRequestMode(model, req.Mode, AppConfig.AskModeDefault())
 		if err != nil {
 			writeAnthropicError(w, requestID, http.StatusBadRequest, err.Error(), "invalid_request_error")
 			return
