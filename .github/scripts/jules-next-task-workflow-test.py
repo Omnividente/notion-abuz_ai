@@ -18,6 +18,9 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.text = WORKFLOW.read_text(encoding="utf-8")
+        cls.prompt_text = (
+            Path(__file__).parents[1] / "prompts" / "jules_next_task_prompt.txt"
+        ).read_text(encoding="utf-8")
 
     def test_automerge_explicitly_wakes_next_cycle(self) -> None:
         text = AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
@@ -68,9 +71,9 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
 
     def test_risk_ceiling_supports_guarded_high_risk_opt_in(self) -> None:
         self.assertIn("          - high", self.text)
-        self.assertIn("unguarded high-risk", self.text)
-        self.assertIn("CI/smoke/artifact/self-hosted evidence", self.text)
-        self.assertIn("rollback notes", self.text)
+        self.assertIn("unguarded high-risk", self.prompt_text)
+        self.assertIn("CI/smoke/artifact/self-hosted evidence", self.prompt_text)
+        self.assertIn("rollback notes", self.prompt_text)
 
 
 if __name__ == "__main__":
