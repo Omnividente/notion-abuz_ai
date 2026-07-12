@@ -1835,6 +1835,12 @@ def plan_recovery_actions(
             dedupe_key = f"quality-fix:{number}:{sha}"
             marker = f"{ROUTER_MARKER} action=quality-fix sha={sha}"
             has_marker = comments_contain(pr, marker)
+            has_quality_request = any(
+                "AUTONOMOUS_QUALITY_FIX_REQUEST" in str(comment.get("body") or "")
+                and sha in str(comment.get("body") or "")
+                for comment in pr.get("comments", [])
+                if isinstance(comment, dict)
+            )
             recovery_recently_done = action_recently_done(
                 ledger,
                 dedupe_key,
@@ -1853,7 +1859,7 @@ def plan_recovery_actions(
                         payload={
                             "pr_number": number,
                             "body": prompt,
-                            "comment_needed": not has_marker,
+                            "comment_needed": not has_marker and not has_quality_request,
                             "session_id": session_id,
                         },
                     )

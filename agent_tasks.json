@@ -8438,24 +8438,26 @@
     },
     {
       "id": "proxy-mode-reasoning-notion-payload-proof",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
-      "title": "Prove mode model and reasoning mapping in serialized Notion payloads",
-      "description": "Add request-to-Notion payload contract tests for supported mode/model/reasoning combinations and explicit unsupported diagnostics so future proxy changes cannot drop parameters silently.",
+      "title": "Prove serialized parameters and exactly-once recovery evidence",
+      "description": "Prove mode/model/reasoning in serialized Notion payloads and use the resulting live quality-fix event to prevent duplicate recovery comments for the same PR head.",
       "allowed_paths": [
         "internal/proxy/request_contract.go",
         "internal/proxy/openai.go",
         "internal/proxy/anthropic.go",
         "internal/proxy/notion.go",
         "internal/proxy/*_test.go",
-        "agent_tasks.json"
+        "agent_tasks.json",
+        ".github/scripts/jules-recovery-router.py",
+        ".github/scripts/jules-recovery-router-test.py"
       ],
       "acceptance": [
-        "Tests inspect serialized Notion config/debugOverrides for supported mappings.",
-        "Unsupported combinations return a stable 4xx diagnostic.",
-        "No parameter is silently ignored or downgraded.",
-        "OpenAI chat Responses and Anthropic paths are covered."
+        "Tests inspect serialized Notion config/debugOverrides for supported mappings. -> internal/proxy/request_contract_test.go",
+        "Unsupported combinations return a stable diagnostic. -> internal/proxy/request_contract_test.go",
+        "No parameter is silently ignored or downgraded. -> internal/proxy/request_contract.go",
+        "A quality-gate recovery request suppresses the duplicate router PR comment for the same head SHA. -> .github/scripts/jules-recovery-router.py, .github/scripts/jules-recovery-router-test.py"
       ]
     },
     {
