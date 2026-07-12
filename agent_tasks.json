@@ -8372,7 +8372,7 @@
     },
     {
       "id": "proxy-idempotency-response-replay",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Replay completed non-streaming idempotent responses without reinference",
@@ -8551,6 +8551,23 @@
       "acceptance": [
         "README or API docs lists /v1/responses, /models, and /admin/register/jobs/{id}/events.",
         "File is updated cleanly without breaking markdown formatting."
+      ]
+    },
+    {
+      "id": "docs-idempotency-replay-behavior",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Document idempotency response replay behavior",
+      "description": "Document how the Idempotency-Key now supports replaying completed non-streaming responses, including headers sanitization and the new X-Idempotency-Status: replayed header.",
+      "allowed_paths": [
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Documentation reflects the new X-Idempotency-Status: replayed header.",
+        "Documentation clarifies that streaming responses still return a duplicate error.",
+        "Documentation specifies that credentials and cookies are sanitized."
       ]
     }
   ]
