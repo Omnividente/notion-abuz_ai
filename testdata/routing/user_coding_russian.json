@@ -1,0 +1,6 @@
+{
+  "messages": [
+    {"role": "user", "content": "Создай bash скрипт"}
+  ],
+  "want_coding": true
+}

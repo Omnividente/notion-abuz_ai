@@ -252,7 +252,7 @@ func TestIsCodingAssistantRequest(t *testing.T) {
 				{Role: "system", Content: "You are a helpful assistant."},
 				{Role: "user", Content: "Help me write some tests using Claude Code."},
 			},
-			want: false,
+			want: true,
 		},
 	}
 

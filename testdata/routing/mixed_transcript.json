@@ -1,0 +1,8 @@
+{
+  "messages": [
+    {"role": "user", "content": "Напиши скрипт для парсинга логов"},
+    {"role": "assistant", "content": "Here is the python script to parse logs..."},
+    {"role": "user", "content": "Thanks, now add tests."}
+  ],
+  "want_coding": true
+}

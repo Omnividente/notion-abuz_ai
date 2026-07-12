@@ -8516,6 +8516,24 @@
         "Documentation reflects the new routing behavior and keywords.",
         "The explanation highlights how coding mode prevents agent fallbacks."
       ]
+    },
+    {
+      "id": "proxy-audit-context-loss-logging",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit diagnostic logs for tool mode loss fallback scenarios",
+      "description": "Ensure that the XML parsing fallbacks in parseToolCallJSONList properly log diagnostic events indicating the payload sizes when tool mode is lost, as established by recent observability requirements.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "XML fallback code paths in parseToolCallJSONList are audited for diagnostic logs.",
+        "Package-level comments or inline comments are added to clarify the metric tracking requirements for these scenarios.",
+        "go test ./internal/proxy passes."
+      ]
     }
   ]
 }

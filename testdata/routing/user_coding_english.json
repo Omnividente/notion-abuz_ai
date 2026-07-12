@@ -1,0 +1,6 @@
+{
+  "messages": [
+    {"role": "user", "content": "Please write a deployment script."}
+  ],
+  "want_coding": true
+}

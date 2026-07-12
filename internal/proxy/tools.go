@@ -2034,7 +2034,7 @@ func parseToolCallJSONList(jsonStr string, index int, toolChoiceMode ...string) 
 // to come from a coding assistant (like Claude Code, Cursor, etc.).
 func isCodingAssistantRequest(messages []ChatMessage) bool {
 	for _, msg := range messages {
-		if msg.Role == "system" || msg.Role == "developer" {
+		if msg.Role == "system" || msg.Role == "developer" || msg.Role == "user" {
 			lower := strings.ToLower(msg.Content)
 			if strings.Contains(lower, "claude code") ||
 				strings.Contains(lower, "cursor") ||

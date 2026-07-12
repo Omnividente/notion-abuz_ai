@@ -1,0 +1,8 @@
+{
+  "messages": [
+    {"role": "user", "content": "Hello there"},
+    {"role": "assistant", "content": "I am a script developer. How can I help?"},
+    {"role": "user", "content": "Just saying hi"}
+  ],
+  "want_coding": false
+}
