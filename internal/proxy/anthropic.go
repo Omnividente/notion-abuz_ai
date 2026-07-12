@@ -1267,9 +1267,9 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 					reqErr = handleResearcherNonStream(w, acc, requestMessages, model, requestID, hasThinking)
 				}
 			} else if req.Stream {
-				reqErr = handleAnthropicStream(w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
+				reqErr = handleAnthropicStream(w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, req.Mode, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
 			} else {
-				reqErr = handleAnthropicNonStream(w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
+				reqErr = handleAnthropicNonStream(w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, req.Mode, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
 			}
 
 			// Trigger an async live quota refresh after every call so the next
@@ -1909,7 +1909,7 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 
 // handleAnthropicStream handles streaming Anthropic response
 
-func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
+func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, mode string, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
 	var fullContent strings.Builder
 	var finalUsage *UsageInfo
 	defer func() {
@@ -1923,7 +1923,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 	var knownCitationDocs []CitationCandidate
 	knownToolCallURLs := make(map[string][]string)
 
-	disableBuiltin := ShouldDisableAgentFallback(AppConfig.Proxy.DisableNotionPrompt, isCodingAssistant, hasTools, "")
+	disableBuiltin := ShouldDisableAgentFallback(AppConfig.Proxy.DisableNotionPrompt, isCodingAssistant, hasTools, mode)
 	log.Printf("[route] request contract: coding_assistant=%v client_tools=%v direct=%v", isCodingAssistant, hasTools, disableBuiltin)
 
 	callOpts := CallOptions{
@@ -2218,7 +2218,7 @@ func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatM
 }
 
 // handleAnthropicNonStream handles non-streaming Anthropic response
-func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
+func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, mode string, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
 	var fullContent strings.Builder
 	var finalUsage *UsageInfo
 	defer func() {
@@ -2233,7 +2233,7 @@ func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []Ch
 	var knownCitationURLs []string
 	var knownCitationDocs []CitationCandidate
 	knownToolCallURLs := make(map[string][]string)
-	disableBuiltin := ShouldDisableAgentFallback(AppConfig.Proxy.DisableNotionPrompt, isCodingAssistant, hasTools, "")
+	disableBuiltin := ShouldDisableAgentFallback(AppConfig.Proxy.DisableNotionPrompt, isCodingAssistant, hasTools, mode)
 	log.Printf("[route] request contract: coding_assistant=%v client_tools=%v direct=%v", isCodingAssistant, hasTools, disableBuiltin)
 
 	callOpts := CallOptions{
