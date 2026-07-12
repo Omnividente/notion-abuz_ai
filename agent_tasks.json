@@ -8516,6 +8516,25 @@
         "Documentation reflects the new routing behavior and keywords.",
         "The explanation highlights how coding mode prevents agent fallbacks."
       ]
+    },
+    {
+      "id": "proxy-feedback-event-idempotency",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Enforce exactly-once feedback and callback event handling",
+      "description": "Identify feedback/callback delivery boundaries in the OpenAI- and Anthropic-compatible proxy paths, derive a stable sanitized event identity, and prevent duplicate side effects under retries or concurrent delivery without retaining request credentials or production payloads.",
+      "allowed_paths": [
+        "internal/proxy/*.go",
+        "cmd/notion-manager/main.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Repeated delivery of the same feedback or callback event produces at most one side effect.",
+        "Concurrent duplicate events are covered by a deterministic integration test.",
+        "Missing or conflicting event identity returns an explicit diagnosable result instead of silent downgrade.",
+        "No credentials, cookies, or full production payloads are persisted in deduplication state."
+      ]
     }
   ]
 }
