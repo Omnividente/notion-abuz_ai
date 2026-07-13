@@ -2419,7 +2419,14 @@ def prune_ledger(ledger: dict[str, Any], *, now: datetime, keep_days: int = 14) 
         if timestamp and timestamp >= cutoff:
             kept[str(key)] = value
     sessions = ledger.get("sessions") if isinstance(ledger.get("sessions"), dict) else {}
-    return {"version": 2, "actions": kept, "sessions": sessions}
+    kept_sessions: dict[str, Any] = {}
+    for key, value in sessions.items():
+        if not isinstance(value, dict):
+            continue
+        timestamp = parse_time(str(value.get("last_seen") or ""))
+        if timestamp and timestamp >= cutoff:
+            kept_sessions[str(key)] = value
+    return {"version": 2, "actions": kept, "sessions": kept_sessions}
 
 
 def record_action(ledger: dict[str, Any], action: RecoveryAction, *, now: datetime) -> dict[str, Any]:
