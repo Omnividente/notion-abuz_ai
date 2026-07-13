@@ -50,8 +50,8 @@ on:
 
 permissions:
   actions: write
-  contents: read
-  pull-requests: read
+  contents: write
+  pull-requests: write
 
 concurrency:
   group: notion-abuz-jules-dispatch
@@ -485,6 +485,23 @@ jobs:
               bash .github/scripts/jules-unattended-monitor.sh
             echo "Active-session recovery observation:"
             sed -E 's/(token|cookie|password|secret|authorization)=[^ ]+/\\1=[REDACTED]/Ig' "${monitor_output}"
+            recovery_output() {
+              sed -n "s/^${1}=//p" "${monitor_output}" | tail -n 1
+            }
+            recovery_action="$(recovery_output failed_recovery_action)"
+            if [ "${recovery_action}" = "block" ]; then
+              failed_task_id="$(recovery_output failed_task_id)"
+              failed_sessions="$(recovery_output failed_sessions)"
+              if [ -z "${failed_task_id}" ] || [ -z "${failed_sessions}" ]; then
+                echo "::error::Recovery requested a block without task/session identity."
+                exit 1
+              fi
+              echo "Persisting terminal recovery transition for task ${failed_task_id}."
+              python3 .github/scripts/block-failed-agent-task.py \
+                --manifest agent_tasks.json \
+                --task-id "${failed_task_id}" \
+                --failed-sessions "${failed_sessions}"
+            fi
             echo "Skipping new dispatch to avoid duplicate sessions."
             exit 0
           fi
