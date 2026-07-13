@@ -8778,7 +8778,7 @@
     },
     {
       "id": "proxy-improve-timeout-logging",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Improve proxy timeout logging details",
@@ -8789,6 +8789,21 @@
       ],
       "acceptance": [
         "Timeout errors explicitly log the target host before returning BadGateway."
+      ]
+    },
+    {
+      "id": "proxy-improve-rproxy-timeout-handling",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Improve reverse proxy timeout response codes",
+      "description": "The reverse proxy generically returns 502 Bad Gateway for all upstream errors. For standard client.Do timeouts, it should instead return 504 Gateway Timeout to give clients an accurate signal to retry.",
+      "allowed_paths": [
+        "internal/proxy/reverseproxy.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "When client.Do returns a context deadline exceeded or i/o timeout error, the reverse proxy returns http.StatusGatewayTimeout instead of http.StatusBadGateway."
       ]
     }
   ]
