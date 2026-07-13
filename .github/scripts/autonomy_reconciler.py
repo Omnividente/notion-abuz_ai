@@ -6,7 +6,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -85,6 +85,107 @@ def terminal_session_is_superseded(
         and current_owner
         and current_owner != session_id
     )
+
+
+def terminal_task_outcome(
+    task_state: dict[str, Any],
+    *,
+    task: dict[str, Any],
+    session_id: str,
+    session_state: str,
+    progress_fingerprint: str,
+    verified_no_change: dict[str, Any] | None,
+    current: datetime,
+    defer_minutes: int,
+) -> tuple[dict[str, Any], str, bool]:
+    """Resolve a terminal session without a PR into a durable task outcome."""
+
+    result = dict(task_state)
+    terminal_key = digest(
+        "terminal-task-outcome",
+        task.get("id"),
+        session_id,
+        session_state,
+        progress_fingerprint,
+        task_fingerprint(task),
+    )
+    if result.get("terminal_evidence_key") == terminal_key and result.get("state") in {
+        "deferred",
+        "verified_no_change",
+    }:
+        return result, str(result.get("state")), False
+    if result.get("state") == "deferred":
+        return result, "deferred", False
+    if (
+        result.get("state") == "verified_no_change"
+        and result.get("completed_task_fingerprint") == task_fingerprint(task)
+    ):
+        return result, "verified_no_change", False
+
+    result.update(
+        {
+            "terminal_evidence_key": terminal_key,
+            "terminal_session_id": session_id,
+            "terminal_session_state": session_state,
+            "current_evidence_fingerprint": progress_fingerprint,
+            "last_observed_at": iso(current),
+        }
+    )
+
+    no_change = verified_no_change or {}
+    verified = bool(
+        session_state == "COMPLETED"
+        and no_change.get("reason")
+        and no_change.get("paths")
+        and no_change.get("evidence")
+    )
+    if verified:
+        for field in (
+            "retry_at",
+            "next_review_at",
+            "retry_condition",
+            "evidence_requirement",
+            "deferred_evidence_fingerprint",
+            "deferred_task_fingerprint",
+        ):
+            result.pop(field, None)
+        result.update(
+            {
+                "state": "verified_no_change",
+                "session_id": None,
+                "session_name": None,
+                "completion_mode": "verified_no_change",
+                "completion_reason": no_change.get("reason"),
+                "completion_paths": list(no_change.get("paths") or []),
+                "completion_evidence": no_change.get("evidence"),
+                "completed_task_fingerprint": task_fingerprint(task),
+                "verified_at": iso(current),
+            }
+        )
+        return result, "verified_no_change", True
+
+    retry_at = current + timedelta(minutes=defer_minutes)
+    reason = (
+        f"Jules session ended in {session_state} without an open PR"
+        if session_state != "COMPLETED"
+        else "Jules session completed without a PR or structured verified-no-change evidence"
+    )
+    result.update(
+        {
+            "state": "deferred",
+            "session_id": None,
+            "session_name": None,
+            "retry_at": iso(retry_at),
+            "next_review_at": iso(retry_at),
+            "retry_condition": "task definition, terminal session, PR or check evidence changes after next_review_at",
+            "evidence_requirement": "new reproducible task evidence, a corrected task definition, or a project-relevant commit/PR",
+            "deferred_evidence_fingerprint": progress_fingerprint,
+            "deferred_task_fingerprint": task_fingerprint(task),
+            "reason": reason,
+            "deferred_at": iso(current),
+        }
+    )
+    return result, "deferred", True
 
 
 def reconcile(args: argparse.Namespace) -> int:
@@ -474,6 +575,57 @@ def reconcile(args: argparse.Namespace) -> int:
                             except Exception as exc:
                                 ledger["messages"][send_key]["delivery_error"] = sanitize(exc, 500)
                                 errors.append(f"recovery delivery failed for {session_id}: {sanitize(exc, 600)}")
+        if (
+            state in TERMINAL
+            and task_id
+            and task
+            and not recovering_open_pr
+            and not task_terminal_in_manifest
+        ):
+            task_state = dict(ledger["tasks"].get(task_state_id, {}))
+            if not terminal_session_is_superseded(
+                task_state,
+                task_id=str(task_id),
+                session_id=session_id,
+                session_state=state,
+                active_task_ids=active_task_ids,
+            ):
+                task_state, outcome, created = terminal_task_outcome(
+                    task_state,
+                    task=task,
+                    session_id=session_id,
+                    session_state=state,
+                    progress_fingerprint=progress_fp,
+                    verified_no_change=summary.get("verified_no_change"),
+                    current=current,
+                    defer_minutes=args.defer_minutes,
+                )
+                ledger["tasks"][task_state_id] = task_state
+                record["terminal_reason"] = task_state.get("reason") or outcome
+                if outcome == "deferred":
+                    blocked_row = {
+                        "task_id": task_id,
+                        "session_id": session_id,
+                        "terminal_state": state,
+                        "reason": task_state.get("reason"),
+                        "retry_condition": task_state.get("retry_condition"),
+                        "evidence_requirement": task_state.get("evidence_requirement"),
+                        "next_review_at": task_state.get("next_review_at"),
+                    }
+                    blocked.append(blocked_row)
+                    if created:
+                        actions.append({"action": "defer_terminal_session", **blocked_row})
+                elif created:
+                    actions.append(
+                        {
+                            "action": "verified_no_change",
+                            "task_id": task_id,
+                            "session_id": session_id,
+                            "terminal_state": state,
+                            "evidence_key": task_state.get("terminal_evidence_key"),
+                        }
+                    )
+                terminated = True
         ledger["sessions"][session_id] = record
         if task_id and not terminated and not task_terminal_in_manifest:
             task_state = dict(ledger["tasks"].get(task_state_id, {}))
