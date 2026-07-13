@@ -143,6 +143,34 @@ class ReconcilerTests(unittest.TestCase):
             )[0]
         )
 
+    def test_each_user_feedback_question_is_resolved_once(self):
+        self.assertTrue(
+            M.user_feedback_needs_resolution(
+                {}, "AWAITING_USER_FEEDBACK", "question-one"
+            )
+        )
+        resolved = {"resolved_feedback_agent_fingerprint": "question-one"}
+        self.assertFalse(
+            M.user_feedback_needs_resolution(
+                resolved, "AWAITING_USER_FEEDBACK", "question-one"
+            )
+        )
+        self.assertTrue(
+            M.user_feedback_needs_resolution(
+                resolved, "AWAITING_USER_FEEDBACK", "question-two"
+            )
+        )
+        self.assertEqual(
+            M.should_recover_session(
+                failed_checks=False,
+                previous_pr_fingerprint="same",
+                current_pr_fingerprint="same",
+                stale=False,
+                awaiting_user_feedback=True,
+            ),
+            (True, "awaiting_user_feedback"),
+        )
+
     def test_packet_is_sanitized_and_complete(self):
         task = {"id": "t", "risk": "medium", "acceptance": ["works"], "allowed_paths": ["internal/proxy/x.go"]}
         packet = M.build_packet(task, {"last_jules_message": "Authorization: Bearer abcdefghijklmnop", "task_id": "t"}, 1, False, "waiting", None, {"failed": [], "pending": [], "passed": []})

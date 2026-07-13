@@ -54,6 +54,7 @@
 - budget in-place recovery сбрасывается только при новом PR head, check fingerprint или task definition; повторное чтение одного terminal session не создаёт новую попытку;
 - active session не считается progress: delta требует новой activity, commit, PR head, checks или terminal transition;
 - historical terminal session не может перезаписать найденного active owner той же задачи: `task.session_id`, `session_name` и `session_state` обновляются атомарно и не зависят от порядка Jules API rows;
+- `AWAITING_USER_FEEDBACK` не ждёт человека: каждый новый agent-question fingerprint получает один verified autonomy packet; повторное чтение того же вопроса дедуплицируется, а небезопасное решение должно оформляться через evidence-bound `AUTONOMY_DEFER_REQUEST`;
 - после bounded recovery без delta session завершается, а task сохраняет `deferred` ledger-state с retry condition, evidence requirement и next review time; один таймер без нового evidence не делает task eligible;
 - failed checks, annotations, changed paths и bounded sanitized activity excerpts включаются в recovery packet;
 - check state дедуплицируется по newest workflow/job run; superseded failure на том же SHA не перекрывает свежий success, а recovery packet получает имя реально упавшего Actions step;
@@ -88,3 +89,5 @@ Post-merge run `29282405208`, attempt 2, дал дополнительный ter
 Дополнительное scheduler evidence: после schedule-run `29282052280` в `20:21Z` активный workflow с `*/5` не создал ни одного нового schedule-run более 55 минут, хотя mutation concurrency был свободен, GitHub Actions Status показывал `operational`, а push/manual runs выполнялись нормально. Смещение cron не считается доказанным до новых фактических `event: schedule` runs и не заменяет требование 12 циклов.
 
 Schedule-run `29285703212` выявил order-dependent task owner: active recovery session `5079834960180138219` была корректно записана в `sessions`, но более старая completed session `13525775686702804526`, обработанная позже, перезаписала task-level `session_id`, оставив `session_name` от active session. Regression test фиксирует инвариант, что terminal history не меняет уже установленного active owner.
+
+После восстановления owner push-run `29286325618` зафиксировал ту же session как `AWAITING_USER_FEEDBACK`. Это live evidence для немедленного автономного resolution: безопасный repository-local вопрос не может останавливать цикл до ручного ответа или общего stale timeout.

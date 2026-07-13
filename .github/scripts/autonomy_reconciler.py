@@ -394,6 +394,11 @@ def reconcile(args: argparse.Namespace) -> int:
                 previous_pr_fingerprint=previous.get("pr_fingerprint"),
                 current_pr_fingerprint=pr_fp,
                 stale=stale,
+                awaiting_user_feedback=user_feedback_needs_resolution(
+                    record,
+                    state,
+                    str(summary.get("agent_fingerprint") or ""),
+                ),
             )
             attempts = int(record.get("recoveries_without_progress") or 0)
             if not pending_key and recover_now:
@@ -435,6 +440,8 @@ def reconcile(args: argparse.Namespace) -> int:
                     wait_reason = (
                         "new_failed_checks"
                         if recovery_trigger == "new_failed_check_evidence"
+                        else "autonomous_resolution_of_user_feedback"
+                        if recovery_trigger == "awaiting_user_feedback"
                         else f"no_progress_for_{int(minutes_since(latest, current))}_minutes"
                     )
                     packet_task = dict(task or {})
@@ -457,6 +464,8 @@ def reconcile(args: argparse.Namespace) -> int:
                                     record.pop("pending_message_key", None)
                                     record["last_verified_message_key"] = send_key
                                     record["recoveries_without_progress"] = attempts + 1
+                                    if recovery_trigger == "awaiting_user_feedback":
+                                        record["resolved_feedback_agent_fingerprint"] = summary.get("agent_fingerprint")
                                     ledger["messages"][send_key]["verified_at"] = iso()
                                     record["post_send_activity_fingerprint"] = refreshed.get("fingerprint")
                                 else:
