@@ -1,0 +1,2213 @@
+{
+  "cycles": [],
+  "messages": {
+    "47a9203e09b4c48d400c6307": {
+      "kind": "pr_recovery",
+      "packet_hash": "ee33925bc87f1cb476c88031",
+      "pr_number": 596,
+      "sent_at": "2026-07-13T20:19:18Z",
+      "task_id": "proxy-improve-rproxy-timeout-handling",
+      "verified_at": null
+    },
+    "legacy-01fba5268ce233391de6bb86": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped conflict-recovery loop on PR #502",
+      "sent_at": "2026-07-09T10:13:43Z",
+      "source_key_hash": "01fba5268ce233391de6bb86",
+      "type": "conflict_recovery_followup_task",
+      "verified_at": "2026-07-09T10:13:43Z"
+    },
+    "legacy-034617a4be6bc085c0dc1494": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #277 is missing jules label",
+      "sent_at": "2026-07-04T01:59:59Z",
+      "source_key_hash": "034617a4be6bc085c0dc1494",
+      "type": "add_label",
+      "verified_at": "2026-07-04T01:59:59Z"
+    },
+    "legacy-0486724635c7d29dd9f28bd0": {
+      "kind": "legacy_router_action",
+      "reason": "Retry failed Jules task audit-anthropic-response-mapping-coverage",
+      "sent_at": "2026-07-09T08:44:41Z",
+      "source_key_hash": "0486724635c7d29dd9f28bd0",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-09T08:44:41Z"
+    },
+    "legacy-052db51a1eb7a3152b97e9b3": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #459 without a blocking label",
+      "sent_at": "2026-07-07T18:58:34Z",
+      "source_key_hash": "052db51a1eb7a3152b97e9b3",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-07T18:58:34Z"
+    },
+    "legacy-075c5942ff456d03ec878574": {
+      "kind": "legacy_router_action",
+      "reason": "PR #519 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-09T21:04:30Z",
+      "source_key_hash": "075c5942ff456d03ec878574",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-09T21:04:30Z"
+    },
+    "legacy-09e4cb103295d8facef18ef0": {
+      "kind": "legacy_router_action",
+      "reason": "PR #421 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T10:24:09Z",
+      "source_key_hash": "09e4cb103295d8facef18ef0",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T10:24:09Z"
+    },
+    "legacy-0b7c8ff7c2f6c0b0e7c7af0d": {
+      "kind": "legacy_router_action",
+      "reason": "PR #313 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T15:14:57Z",
+      "source_key_hash": "0b7c8ff7c2f6c0b0e7c7af0d",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T15:14:57Z"
+    },
+    "legacy-0c526fdea658486b45ed609a": {
+      "kind": "legacy_router_action",
+      "reason": "No eligible autonomous task: no eligible todo task matched the risk ceiling and micro-task policy",
+      "sent_at": "2026-07-01T02:02:38Z",
+      "source_key_hash": "0c526fdea658486b45ed609a",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-01T02:02:38Z"
+    },
+    "legacy-0cb5c633ab6cbbb575f4d990": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #291 is missing jules label",
+      "sent_at": "2026-07-04T07:11:08Z",
+      "source_key_hash": "0cb5c633ab6cbbb575f4d990",
+      "type": "add_label",
+      "verified_at": "2026-07-04T07:11:08Z"
+    },
+    "legacy-120535979acf30e6c3e578c1": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #475 without a blocking label",
+      "sent_at": "2026-07-08T18:07:43Z",
+      "source_key_hash": "120535979acf30e6c3e578c1",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-08T18:07:43Z"
+    },
+    "legacy-1353a7b824b14e0db7b6cd97": {
+      "kind": "legacy_router_action",
+      "reason": "PR #351 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T04:31:35Z",
+      "source_key_hash": "1353a7b824b14e0db7b6cd97",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T04:31:35Z"
+    },
+    "legacy-13f74d2913eab78df3a7769b": {
+      "kind": "legacy_router_action",
+      "reason": "PR #400 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T04:33:31Z",
+      "source_key_hash": "13f74d2913eab78df3a7769b",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T04:33:31Z"
+    },
+    "legacy-13fd8fa1e86fd6e907b70c22": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped conflict-recovery loop on PR #446",
+      "sent_at": "2026-07-07T13:10:15Z",
+      "source_key_hash": "13fd8fa1e86fd6e907b70c22",
+      "type": "conflict_recovery_followup_task",
+      "verified_at": "2026-07-07T13:10:15Z"
+    },
+    "legacy-17639c9932ca89a4212457da": {
+      "kind": "legacy_router_action",
+      "reason": "PR #302 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T23:33:00Z",
+      "source_key_hash": "17639c9932ca89a4212457da",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T23:33:00Z"
+    },
+    "legacy-177110c1c50716b97e982b7b": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #413 without a blocking label",
+      "sent_at": "2026-07-07T06:07:39Z",
+      "source_key_hash": "177110c1c50716b97e982b7b",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-07T06:07:39Z"
+    },
+    "legacy-183ef91787ec0d5b646c80ce": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #495 is missing jules label",
+      "sent_at": "2026-07-09T06:24:40Z",
+      "source_key_hash": "183ef91787ec0d5b646c80ce",
+      "type": "add_label",
+      "verified_at": "2026-07-09T06:24:40Z"
+    },
+    "legacy-18e66d390ed1ee68b23ede88": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #496 is missing jules label",
+      "sent_at": "2026-07-09T06:52:41Z",
+      "source_key_hash": "18e66d390ed1ee68b23ede88",
+      "type": "add_label",
+      "verified_at": "2026-07-09T06:52:41Z"
+    },
+    "legacy-1a0edcd80a461b195621255b": {
+      "kind": "legacy_router_action",
+      "reason": "PR #300 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T19:38:17Z",
+      "source_key_hash": "1a0edcd80a461b195621255b",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T19:38:17Z"
+    },
+    "legacy-1ca09e646523464198986a3a": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #361 is missing jules label",
+      "sent_at": "2026-07-06T09:24:26Z",
+      "source_key_hash": "1ca09e646523464198986a3a",
+      "type": "add_label",
+      "verified_at": "2026-07-06T09:24:26Z"
+    },
+    "legacy-1d6eeb19aa8f29dce802e367": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T21:36:53Z",
+      "source_key_hash": "1d6eeb19aa8f29dce802e367",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T21:36:53Z"
+    },
+    "legacy-1e0ddd0aaa8fed12daeef748": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #455 is missing jules label",
+      "sent_at": "2026-07-07T17:04:09Z",
+      "source_key_hash": "1e0ddd0aaa8fed12daeef748",
+      "type": "add_label",
+      "verified_at": "2026-07-07T17:04:09Z"
+    },
+    "legacy-1e529f9e7b07a4f986cdd81b": {
+      "kind": "legacy_router_action",
+      "reason": "PR #362 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T12:30:44Z",
+      "source_key_hash": "1e529f9e7b07a4f986cdd81b",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T12:30:44Z"
+    },
+    "legacy-1f60bb8e6cfc9a05ce7a1033": {
+      "kind": "legacy_router_action",
+      "reason": "PR #327 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T19:58:08Z",
+      "source_key_hash": "1f60bb8e6cfc9a05ce7a1033",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T19:58:08Z"
+    },
+    "legacy-209456fa8b3761125c4355d3": {
+      "kind": "legacy_router_action",
+      "reason": "PR #258 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-03T17:50:12Z",
+      "source_key_hash": "209456fa8b3761125c4355d3",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-03T17:50:12Z"
+    },
+    "legacy-218f3705e2c0ac4ab1299c41": {
+      "kind": "legacy_router_action",
+      "reason": "PR #527 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-10T00:54:41Z",
+      "source_key_hash": "218f3705e2c0ac4ab1299c41",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-10T00:54:41Z"
+    },
+    "legacy-21ba6d2bc4b9be0bc9a5af96": {
+      "kind": "legacy_router_action",
+      "reason": "PR #400 exceeded 3 conflict-recovery attempts",
+      "sent_at": "2026-07-07T05:15:39Z",
+      "source_key_hash": "21ba6d2bc4b9be0bc9a5af96",
+      "type": "conflict_recovery_circuit_breaker",
+      "verified_at": "2026-07-07T05:15:39Z"
+    },
+    "legacy-23edd87705e79a4f93620f1b": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #195 without a blocking label",
+      "sent_at": "2026-06-30T16:00:09Z",
+      "source_key_hash": "23edd87705e79a4f93620f1b",
+      "type": "rerun_workflow",
+      "verified_at": "2026-06-30T16:00:09Z"
+    },
+    "legacy-244e4902f0b48eb2e154ab62": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped conflict-recovery loop on PR #400",
+      "sent_at": "2026-07-07T05:24:32Z",
+      "source_key_hash": "244e4902f0b48eb2e154ab62",
+      "type": "conflict_recovery_followup_task",
+      "verified_at": "2026-07-07T05:24:32Z"
+    },
+    "legacy-2545d1ea364ccbdb8822959e": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #557 is missing jules label",
+      "sent_at": "2026-07-12T20:29:48Z",
+      "source_key_hash": "2545d1ea364ccbdb8822959e",
+      "type": "add_label",
+      "verified_at": "2026-07-12T20:29:48Z"
+    },
+    "legacy-256016c414ce0031c30bf458": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #463 without a blocking label",
+      "sent_at": "2026-07-07T20:32:36Z",
+      "source_key_hash": "256016c414ce0031c30bf458",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-07T20:32:36Z"
+    },
+    "legacy-269f07f3db7b84d6175e06f1": {
+      "kind": "legacy_router_action",
+      "reason": "No eligible autonomous task: no eligible todo task matched the risk ceiling and micro-task policy",
+      "sent_at": "2026-07-01T06:34:59Z",
+      "source_key_hash": "269f07f3db7b84d6175e06f1",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-01T06:34:59Z"
+    },
+    "legacy-28afbec942cb3994d85f45f5": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #462 is missing jules label",
+      "sent_at": "2026-07-07T20:21:41Z",
+      "source_key_hash": "28afbec942cb3994d85f45f5",
+      "type": "add_label",
+      "verified_at": "2026-07-07T20:21:41Z"
+    },
+    "legacy-29d8c40f4af061e70758b25a": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #333 is missing jules label",
+      "sent_at": "2026-07-05T22:48:51Z",
+      "source_key_hash": "29d8c40f4af061e70758b25a",
+      "type": "add_label",
+      "verified_at": "2026-07-05T22:48:51Z"
+    },
+    "legacy-2b0e5f742d092bf1b5e279f7": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #468 is missing jules label",
+      "sent_at": "2026-07-07T23:55:57Z",
+      "source_key_hash": "2b0e5f742d092bf1b5e279f7",
+      "type": "add_label",
+      "verified_at": "2026-07-07T23:55:57Z"
+    },
+    "legacy-2c28be0e4f5a3d4093ae470d": {
+      "kind": "legacy_router_action",
+      "reason": "PR #306 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T12:45:48Z",
+      "source_key_hash": "2c28be0e4f5a3d4093ae470d",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T12:45:48Z"
+    },
+    "legacy-2cf171a51fd422fb19f846f4": {
+      "kind": "legacy_router_action",
+      "reason": "PR #446 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T12:59:39Z",
+      "source_key_hash": "2cf171a51fd422fb19f846f4",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T12:59:39Z"
+    },
+    "legacy-2d755e1fc0571a3050006de0": {
+      "kind": "legacy_router_action",
+      "reason": "PR #472 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-08T02:35:24Z",
+      "source_key_hash": "2d755e1fc0571a3050006de0",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-08T02:35:24Z"
+    },
+    "legacy-2e99fb876c10a6afed3d695d": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-02T18:57:07Z",
+      "source_key_hash": "2e99fb876c10a6afed3d695d",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-02T18:57:07Z"
+    },
+    "legacy-2ecc12aca936a2fea290ce53": {
+      "kind": "legacy_router_action",
+      "reason": "PR #175 has unresolved needs-quality-fix",
+      "sent_at": "2026-06-30T01:35:31Z",
+      "source_key_hash": "2ecc12aca936a2fea290ce53",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-06-30T01:35:31Z"
+    },
+    "legacy-300a2b4bfcd88ce5214311dc": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #243 without a blocking label",
+      "sent_at": "2026-07-03T01:19:30Z",
+      "source_key_hash": "300a2b4bfcd88ce5214311dc",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-03T01:19:30Z"
+    },
+    "legacy-3012078aa3cf06bc7170a3e8": {
+      "kind": "legacy_router_action",
+      "reason": "PR #313 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T15:22:39Z",
+      "source_key_hash": "3012078aa3cf06bc7170a3e8",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T15:22:39Z"
+    },
+    "legacy-30a9d242e1de98b45e4dd0dd": {
+      "kind": "legacy_router_action",
+      "reason": "PR #400 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T05:05:20Z",
+      "source_key_hash": "30a9d242e1de98b45e4dd0dd",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T05:05:20Z"
+    },
+    "legacy-30c54fff484a34c4992e1303": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #288 is missing jules label",
+      "sent_at": "2026-07-04T05:49:58Z",
+      "source_key_hash": "30c54fff484a34c4992e1303",
+      "type": "add_label",
+      "verified_at": "2026-07-04T05:49:58Z"
+    },
+    "legacy-314743733cb6784074f4f500": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T21:27:33Z",
+      "source_key_hash": "314743733cb6784074f4f500",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T21:27:33Z"
+    },
+    "legacy-31bf2971bb10dadf2003f03c": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #260 is missing jules label",
+      "sent_at": "2026-07-03T18:58:02Z",
+      "source_key_hash": "31bf2971bb10dadf2003f03c",
+      "type": "add_label",
+      "verified_at": "2026-07-03T18:58:02Z"
+    },
+    "legacy-32f6116047dab20ef42cfd8e": {
+      "kind": "legacy_router_action",
+      "reason": "PR #386 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T22:00:04Z",
+      "source_key_hash": "32f6116047dab20ef42cfd8e",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T22:00:04Z"
+    },
+    "legacy-3416d9b1aab5b065816d185d": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #542 is missing jules label",
+      "sent_at": "2026-07-10T03:46:26Z",
+      "source_key_hash": "3416d9b1aab5b065816d185d",
+      "type": "add_label",
+      "verified_at": "2026-07-10T03:46:26Z"
+    },
+    "legacy-35d5c512b40401c9b0c78cbb": {
+      "kind": "legacy_router_action",
+      "reason": "PR #205 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-01T13:18:45Z",
+      "source_key_hash": "35d5c512b40401c9b0c78cbb",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-01T13:18:45Z"
+    },
+    "legacy-35e5acf9b6f7dc7c2e1b4bef": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T20:40:12Z",
+      "source_key_hash": "35e5acf9b6f7dc7c2e1b4bef",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T20:40:12Z"
+    },
+    "legacy-3683cf6bc78e124190bebf6b": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped conflict-recovery loop on PR #421",
+      "sent_at": "2026-07-07T11:08:19Z",
+      "source_key_hash": "3683cf6bc78e124190bebf6b",
+      "type": "conflict_recovery_followup_task",
+      "verified_at": "2026-07-07T11:08:19Z"
+    },
+    "legacy-375862e9c9ae2e8f1f126355": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #513 is missing jules label",
+      "sent_at": "2026-07-09T18:00:53Z",
+      "source_key_hash": "375862e9c9ae2e8f1f126355",
+      "type": "add_label",
+      "verified_at": "2026-07-09T18:00:53Z"
+    },
+    "legacy-37fd76121c9d569da89226e8": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #519 is missing jules label",
+      "sent_at": "2026-07-09T21:02:55Z",
+      "source_key_hash": "37fd76121c9d569da89226e8",
+      "type": "add_label",
+      "verified_at": "2026-07-09T21:02:55Z"
+    },
+    "legacy-3ce5107d1fbc7c10db36ddc7": {
+      "kind": "legacy_router_action",
+      "reason": "Jules session 4114921831374104713 is awaiting user feedback",
+      "sent_at": "2026-07-12T22:16:16Z",
+      "source_key_hash": "3ce5107d1fbc7c10db36ddc7",
+      "type": "jules_send_message",
+      "verified_at": "2026-07-12T22:16:16Z"
+    },
+    "legacy-3e535c116446ae5114fea2ac": {
+      "kind": "legacy_router_action",
+      "reason": "PR #475 has failed checks without an active quality-fix label",
+      "sent_at": "2026-07-08T18:08:14Z",
+      "source_key_hash": "3e535c116446ae5114fea2ac",
+      "type": "failed_check_recovery",
+      "verified_at": "2026-07-08T18:08:14Z"
+    },
+    "legacy-3f73c0e9e1edde5be7190dac": {
+      "kind": "legacy_router_action",
+      "reason": "PR #586 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-13T05:55:49Z",
+      "source_key_hash": "3f73c0e9e1edde5be7190dac",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-13T05:55:49Z"
+    },
+    "legacy-42a80d344368a97f8ac88ff6": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #494 is missing jules label",
+      "sent_at": "2026-07-09T05:55:43Z",
+      "source_key_hash": "42a80d344368a97f8ac88ff6",
+      "type": "add_label",
+      "verified_at": "2026-07-09T05:55:43Z"
+    },
+    "legacy-459b7f32ff2f0caa0962a754": {
+      "kind": "legacy_router_action",
+      "reason": "PR #314 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T16:00:04Z",
+      "source_key_hash": "459b7f32ff2f0caa0962a754",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T16:00:04Z"
+    },
+    "legacy-460624c43e224978e42bd5bb": {
+      "kind": "legacy_router_action",
+      "reason": "PR #421 exceeded 2 conflict-recovery attempts",
+      "sent_at": "2026-07-07T11:04:37Z",
+      "source_key_hash": "460624c43e224978e42bd5bb",
+      "type": "conflict_recovery_circuit_breaker",
+      "verified_at": "2026-07-07T11:04:37Z"
+    },
+    "legacy-46668b2dcb1c0af83a06549b": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #474 is missing jules label",
+      "sent_at": "2026-07-08T03:44:53Z",
+      "source_key_hash": "46668b2dcb1c0af83a06549b",
+      "type": "add_label",
+      "verified_at": "2026-07-08T03:44:53Z"
+    },
+    "legacy-46cd65ee3ca0fbead9a8e871": {
+      "kind": "legacy_router_action",
+      "reason": "PR #333 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T22:49:55Z",
+      "source_key_hash": "46cd65ee3ca0fbead9a8e871",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T22:49:55Z"
+    },
+    "legacy-46ff24fc4aca974c75744092": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #300 without a blocking label",
+      "sent_at": "2026-07-04T20:33:22Z",
+      "source_key_hash": "46ff24fc4aca974c75744092",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-04T20:33:22Z"
+    },
+    "legacy-480158bf1289be40de782452": {
+      "kind": "legacy_router_action",
+      "reason": "PR #586 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-13T06:14:21Z",
+      "source_key_hash": "480158bf1289be40de782452",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-13T06:14:21Z"
+    },
+    "legacy-484030ebbe836ea092c6759f": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked proxy-audit-context-cancellation",
+      "sent_at": "2026-07-13T05:53:08Z",
+      "source_key_hash": "484030ebbe836ea092c6759f",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-13T05:53:08Z"
+    },
+    "legacy-48dc1af729cd9335e1d31748": {
+      "kind": "legacy_router_action",
+      "reason": "PR #306 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T12:49:52Z",
+      "source_key_hash": "48dc1af729cd9335e1d31748",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T12:49:52Z"
+    },
+    "legacy-49655b791e875d446908ebc0": {
+      "kind": "legacy_router_action",
+      "reason": "PR #555 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-12T20:09:16Z",
+      "source_key_hash": "49655b791e875d446908ebc0",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-12T20:09:16Z"
+    },
+    "legacy-4c91fb434a563338302e4253": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked automation-stopped-pr-313-safe-resolution",
+      "sent_at": "2026-07-07T16:07:47Z",
+      "source_key_hash": "4c91fb434a563338302e4253",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-07T16:07:47Z"
+    },
+    "legacy-4c9f113cb22db57c115077d6": {
+      "kind": "legacy_router_action",
+      "reason": "PR #368 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T14:57:14Z",
+      "source_key_hash": "4c9f113cb22db57c115077d6",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T14:57:14Z"
+    },
+    "legacy-4fc198f952e65b46efa8e08f": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #244 is missing jules label",
+      "sent_at": "2026-07-03T01:35:19Z",
+      "source_key_hash": "4fc198f952e65b46efa8e08f",
+      "type": "add_label",
+      "verified_at": "2026-07-03T01:35:19Z"
+    },
+    "legacy-5356ddfd6b2daac5286296b1": {
+      "kind": "legacy_router_action",
+      "reason": "PR #520 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-09T21:40:55Z",
+      "source_key_hash": "5356ddfd6b2daac5286296b1",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-09T21:40:55Z"
+    },
+    "legacy-53af616cd047f8512bec773b": {
+      "kind": "legacy_router_action",
+      "reason": "PR #353 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T07:24:40Z",
+      "source_key_hash": "53af616cd047f8512bec773b",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T07:24:40Z"
+    },
+    "legacy-542261e52e2e38b0c907bfc9": {
+      "kind": "legacy_router_action",
+      "reason": "PR #506 has failed checks without an active quality-fix label",
+      "sent_at": "2026-07-09T11:39:53Z",
+      "source_key_hash": "542261e52e2e38b0c907bfc9",
+      "type": "failed_check_recovery",
+      "verified_at": "2026-07-09T11:39:53Z"
+    },
+    "legacy-54dde809e00ef184559f896c": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #270 is missing jules label",
+      "sent_at": "2026-07-03T22:07:46Z",
+      "source_key_hash": "54dde809e00ef184559f896c",
+      "type": "add_label",
+      "verified_at": "2026-07-03T22:07:46Z"
+    },
+    "legacy-54fa617c5c3886e9c15131bb": {
+      "kind": "legacy_router_action",
+      "reason": "PR #295 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T11:09:37Z",
+      "source_key_hash": "54fa617c5c3886e9c15131bb",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T11:09:37Z"
+    },
+    "legacy-56dc4193bd98096025d2eae3": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #349 without a blocking label",
+      "sent_at": "2026-07-06T03:37:55Z",
+      "source_key_hash": "56dc4193bd98096025d2eae3",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-06T03:37:55Z"
+    },
+    "legacy-574d9b7c342aa666d9d04a6d": {
+      "kind": "legacy_router_action",
+      "reason": "PR #306 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T11:52:54Z",
+      "source_key_hash": "574d9b7c342aa666d9d04a6d",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T11:52:54Z"
+    },
+    "legacy-5819107e7c91bc50497e19c7": {
+      "kind": "legacy_router_action",
+      "reason": "Retry failed Jules task automation-health-closed-pr-label-metrics",
+      "sent_at": "2026-07-07T21:40:50Z",
+      "source_key_hash": "5819107e7c91bc50497e19c7",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-07T21:40:50Z"
+    },
+    "legacy-583d1b11a7dce12019937be9": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #524 is missing jules label",
+      "sent_at": "2026-07-10T00:20:23Z",
+      "source_key_hash": "583d1b11a7dce12019937be9",
+      "type": "add_label",
+      "verified_at": "2026-07-10T00:20:23Z"
+    },
+    "legacy-58abe5a04c3f62a8bbbef571": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #380 is missing jules label",
+      "sent_at": "2026-07-06T20:47:57Z",
+      "source_key_hash": "58abe5a04c3f62a8bbbef571",
+      "type": "add_label",
+      "verified_at": "2026-07-06T20:47:57Z"
+    },
+    "legacy-5a90fdc54948b4aad2af01f3": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T23:20:32Z",
+      "source_key_hash": "5a90fdc54948b4aad2af01f3",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T23:20:32Z"
+    },
+    "legacy-5b5745cfa2ef7714bb54231b": {
+      "kind": "legacy_router_action",
+      "reason": "PR #457 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-07T18:06:59Z",
+      "source_key_hash": "5b5745cfa2ef7714bb54231b",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-07T18:06:59Z"
+    },
+    "legacy-5bd69df548dc0a0cfa4cba5a": {
+      "kind": "legacy_router_action",
+      "reason": "Jules session 9995531588769397516 is awaiting user feedback",
+      "sent_at": "2026-07-13T05:52:52Z",
+      "source_key_hash": "5bd69df548dc0a0cfa4cba5a",
+      "type": "jules_send_message",
+      "verified_at": "2026-07-13T05:52:52Z"
+    },
+    "legacy-5c92f555a052155a15c494e2": {
+      "kind": "legacy_router_action",
+      "reason": "PR #520 is dirty/conflicting with master",
+      "sent_at": "2026-07-09T21:12:48Z",
+      "source_key_hash": "5c92f555a052155a15c494e2",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-09T21:12:48Z"
+    },
+    "legacy-5ca91c85aba4b170bb4d89ac": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #542 without a blocking label",
+      "sent_at": "2026-07-10T03:46:49Z",
+      "source_key_hash": "5ca91c85aba4b170bb4d89ac",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-10T03:46:49Z"
+    },
+    "legacy-5d661ea42945be39d05656c9": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T19:26:47Z",
+      "source_key_hash": "5d661ea42945be39d05656c9",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T19:26:47Z"
+    },
+    "legacy-6033d375e070402670c5a04e": {
+      "kind": "legacy_router_action",
+      "reason": "PR #295 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T13:14:34Z",
+      "source_key_hash": "6033d375e070402670c5a04e",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T13:14:34Z"
+    },
+    "legacy-617e4f92a81cfae0919b8ba3": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #552 is missing jules label",
+      "sent_at": "2026-07-10T06:09:10Z",
+      "source_key_hash": "617e4f92a81cfae0919b8ba3",
+      "type": "add_label",
+      "verified_at": "2026-07-10T06:09:10Z"
+    },
+    "legacy-61adf192f2dd200dc3abdd8a": {
+      "kind": "legacy_router_action",
+      "reason": "PR #520 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-09T21:10:50Z",
+      "source_key_hash": "61adf192f2dd200dc3abdd8a",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-09T21:10:50Z"
+    },
+    "legacy-62053b14590f4f78b6f2af2c": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and unattended monitor is stale",
+      "sent_at": "2026-06-30T23:54:10Z",
+      "source_key_hash": "62053b14590f4f78b6f2af2c",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-06-30T23:54:10Z"
+    },
+    "legacy-6250e730a7ae152ec77c4c78": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked proxy-session-recovery-system-instruction-truncation-test",
+      "sent_at": "2026-07-06T04:50:17Z",
+      "source_key_hash": "6250e730a7ae152ec77c4c78",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-06T04:50:17Z"
+    },
+    "legacy-6348f0a299e604b5389cb230": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped conflict-recovery loop on PR #446",
+      "sent_at": "2026-07-07T13:07:59Z",
+      "source_key_hash": "6348f0a299e604b5389cb230",
+      "type": "conflict_recovery_followup_task",
+      "verified_at": "2026-07-07T13:07:59Z"
+    },
+    "legacy-635dea75165f90b3088b26af": {
+      "kind": "legacy_router_action",
+      "reason": "PR #362 exceeded 3 quality-fix recovery attempts",
+      "sent_at": "2026-07-06T13:03:49Z",
+      "source_key_hash": "635dea75165f90b3088b26af",
+      "type": "quality_fix_circuit_breaker",
+      "verified_at": "2026-07-06T13:03:49Z"
+    },
+    "legacy-66fdd5660e2ff39ea597d1b4": {
+      "kind": "legacy_router_action",
+      "reason": "PR #522 exceeded 3 quality-fix recovery attempts",
+      "sent_at": "2026-07-09T23:45:30Z",
+      "source_key_hash": "66fdd5660e2ff39ea597d1b4",
+      "type": "quality_fix_circuit_breaker",
+      "verified_at": "2026-07-09T23:45:30Z"
+    },
+    "legacy-673df62e822f6226bfe00312": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-02T19:24:26Z",
+      "source_key_hash": "673df62e822f6226bfe00312",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-02T19:24:26Z"
+    },
+    "legacy-6895b89bb91c6ac2f9974e9e": {
+      "kind": "legacy_router_action",
+      "reason": "PR #170 has unresolved needs-quality-fix",
+      "sent_at": "2026-06-29T22:41:17Z",
+      "source_key_hash": "6895b89bb91c6ac2f9974e9e",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-06-29T22:41:17Z"
+    },
+    "legacy-689808531863d9c4d709aac8": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked add-tool-call-loss-metrics-proxy",
+      "sent_at": "2026-07-07T19:58:37Z",
+      "source_key_hash": "689808531863d9c4d709aac8",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-07T19:58:37Z"
+    },
+    "legacy-6968b601d477c7079687df74": {
+      "kind": "legacy_router_action",
+      "reason": "PR #520 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-09T21:26:08Z",
+      "source_key_hash": "6968b601d477c7079687df74",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-09T21:26:08Z"
+    },
+    "legacy-69abfcb428a4515d0be184b0": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked proxy-runtime-final-answer-mode-stability",
+      "sent_at": "2026-07-06T18:00:39Z",
+      "source_key_hash": "69abfcb428a4515d0be184b0",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-06T18:00:39Z"
+    },
+    "legacy-6b1086ed0d3b14584e1e5f45": {
+      "kind": "legacy_router_action",
+      "reason": "PR #351 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T04:09:32Z",
+      "source_key_hash": "6b1086ed0d3b14584e1e5f45",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T04:09:32Z"
+    },
+    "legacy-6b2d4d86b7419e3abca8227d": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #243 is missing jules label",
+      "sent_at": "2026-07-03T01:18:17Z",
+      "source_key_hash": "6b2d4d86b7419e3abca8227d",
+      "type": "add_label",
+      "verified_at": "2026-07-03T01:18:17Z"
+    },
+    "legacy-6d5f87c6d71a5a5a78c30909": {
+      "kind": "legacy_router_action",
+      "reason": "PR #380 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T20:49:08Z",
+      "source_key_hash": "6d5f87c6d71a5a5a78c30909",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T20:49:08Z"
+    },
+    "legacy-6dcd6d1bca2b74486c7feb97": {
+      "kind": "legacy_router_action",
+      "reason": "PR #421 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-07T07:16:58Z",
+      "source_key_hash": "6dcd6d1bca2b74486c7feb97",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-07T07:16:58Z"
+    },
+    "legacy-6e65bac2d748a50257b64f3d": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped quality-fix loop on PR #362",
+      "sent_at": "2026-07-07T00:00:57Z",
+      "source_key_hash": "6e65bac2d748a50257b64f3d",
+      "type": "quality_fix_followup_task",
+      "verified_at": "2026-07-07T00:00:57Z"
+    },
+    "legacy-6f0437069df42cf00cb0dd45": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #283 is missing jules label",
+      "sent_at": "2026-07-04T03:46:06Z",
+      "source_key_hash": "6f0437069df42cf00cb0dd45",
+      "type": "add_label",
+      "verified_at": "2026-07-04T03:46:06Z"
+    },
+    "legacy-6f59b842ab4620d65ed7f87d": {
+      "kind": "legacy_router_action",
+      "reason": "PR #472 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-08T01:28:09Z",
+      "source_key_hash": "6f59b842ab4620d65ed7f87d",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-08T01:28:09Z"
+    },
+    "legacy-6f98e0f43dc9d1d73e319f88": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped quality-fix loop on PR #520",
+      "sent_at": "2026-07-09T21:44:38Z",
+      "source_key_hash": "6f98e0f43dc9d1d73e319f88",
+      "type": "quality_fix_followup_task",
+      "verified_at": "2026-07-09T21:44:38Z"
+    },
+    "legacy-6fe47df997794f0e8af9cc83": {
+      "kind": "legacy_router_action",
+      "reason": "PR #542 has failed checks without an active quality-fix label",
+      "sent_at": "2026-07-10T03:48:06Z",
+      "source_key_hash": "6fe47df997794f0e8af9cc83",
+      "type": "failed_check_recovery",
+      "verified_at": "2026-07-10T03:48:06Z"
+    },
+    "legacy-725bbb1d0c91557d01044339": {
+      "kind": "legacy_router_action",
+      "reason": "PR #522 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-09T23:32:40Z",
+      "source_key_hash": "725bbb1d0c91557d01044339",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-09T23:32:40Z"
+    },
+    "legacy-72f6a496080f5b03ced757a9": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #517 is missing jules label",
+      "sent_at": "2026-07-09T20:32:40Z",
+      "source_key_hash": "72f6a496080f5b03ced757a9",
+      "type": "add_label",
+      "verified_at": "2026-07-09T20:32:40Z"
+    },
+    "legacy-73748fea97b232c42561bec4": {
+      "kind": "legacy_router_action",
+      "reason": "PR #295 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T12:15:58Z",
+      "source_key_hash": "73748fea97b232c42561bec4",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T12:15:58Z"
+    },
+    "legacy-73c5ea1c28c6800ee342782e": {
+      "kind": "legacy_router_action",
+      "reason": "PR #331 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T22:18:57Z",
+      "source_key_hash": "73c5ea1c28c6800ee342782e",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T22:18:57Z"
+    },
+    "legacy-77cc923c2de0ac90f6fd0236": {
+      "kind": "legacy_router_action",
+      "reason": "PR #514 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-09T18:27:52Z",
+      "source_key_hash": "77cc923c2de0ac90f6fd0236",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-09T18:27:52Z"
+    },
+    "legacy-7cc555ba8a69060ef71b7857": {
+      "kind": "legacy_router_action",
+      "reason": "PR #351 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T04:42:13Z",
+      "source_key_hash": "7cc555ba8a69060ef71b7857",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T04:42:13Z"
+    },
+    "legacy-7eadcdcc80114764c631aae4": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T22:33:17Z",
+      "source_key_hash": "7eadcdcc80114764c631aae4",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T22:33:17Z"
+    },
+    "legacy-7f25b3f05dc3e3ecdac3abcf": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #476 is missing jules label",
+      "sent_at": "2026-07-08T18:50:10Z",
+      "source_key_hash": "7f25b3f05dc3e3ecdac3abcf",
+      "type": "add_label",
+      "verified_at": "2026-07-08T18:50:10Z"
+    },
+    "legacy-7f907828f343f63605e9d12d": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T22:41:43Z",
+      "source_key_hash": "7f907828f343f63605e9d12d",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T22:41:43Z"
+    },
+    "legacy-80fa74e8eed89153a69da1e5": {
+      "kind": "legacy_router_action",
+      "reason": "PR #300 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T17:18:46Z",
+      "source_key_hash": "80fa74e8eed89153a69da1e5",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T17:18:46Z"
+    },
+    "legacy-81558d31aa0819eebae37fd7": {
+      "kind": "legacy_router_action",
+      "reason": "PR #400 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T04:18:20Z",
+      "source_key_hash": "81558d31aa0819eebae37fd7",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T04:18:20Z"
+    },
+    "legacy-8184bbc850b73b3646fdb8b1": {
+      "kind": "legacy_router_action",
+      "reason": "PR #362 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T12:47:57Z",
+      "source_key_hash": "8184bbc850b73b3646fdb8b1",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T12:47:57Z"
+    },
+    "legacy-81e32b8794963805dd48085e": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #471 is missing jules label",
+      "sent_at": "2026-07-08T00:59:25Z",
+      "source_key_hash": "81e32b8794963805dd48085e",
+      "type": "add_label",
+      "verified_at": "2026-07-08T00:59:25Z"
+    },
+    "legacy-828bb670731ae038fa8628db": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #506 without a blocking label",
+      "sent_at": "2026-07-09T14:08:50Z",
+      "source_key_hash": "828bb670731ae038fa8628db",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-09T14:08:50Z"
+    },
+    "legacy-8499529866dc24e7c00ae772": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #493 is missing jules label",
+      "sent_at": "2026-07-09T00:30:13Z",
+      "source_key_hash": "8499529866dc24e7c00ae772",
+      "type": "add_label",
+      "verified_at": "2026-07-09T00:30:13Z"
+    },
+    "legacy-866f467604f3391e36e93f6d": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T23:10:16Z",
+      "source_key_hash": "866f467604f3391e36e93f6d",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T23:10:16Z"
+    },
+    "legacy-86fa9b8833ed5b803b6f5d33": {
+      "kind": "legacy_router_action",
+      "reason": "PR #362 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T10:36:03Z",
+      "source_key_hash": "86fa9b8833ed5b803b6f5d33",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T10:36:03Z"
+    },
+    "legacy-886bb985689230be2e9e7e12": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #528 is missing jules label",
+      "sent_at": "2026-07-10T01:08:02Z",
+      "source_key_hash": "886bb985689230be2e9e7e12",
+      "type": "add_label",
+      "verified_at": "2026-07-10T01:08:02Z"
+    },
+    "legacy-8ae904893e8d20784fbe4b80": {
+      "kind": "legacy_router_action",
+      "reason": "PR #300 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T16:13:46Z",
+      "source_key_hash": "8ae904893e8d20784fbe4b80",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T16:13:46Z"
+    },
+    "legacy-8bdf188024bb2590d51b707c": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T22:58:48Z",
+      "source_key_hash": "8bdf188024bb2590d51b707c",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T22:58:48Z"
+    },
+    "legacy-8c352d68a2e1ca919bb73e84": {
+      "kind": "legacy_router_action",
+      "reason": "PR #555 has failed checks without an active quality-fix label",
+      "sent_at": "2026-07-12T20:13:38Z",
+      "source_key_hash": "8c352d68a2e1ca919bb73e84",
+      "type": "failed_check_recovery",
+      "verified_at": "2026-07-12T20:13:38Z"
+    },
+    "legacy-8c911061d54bd5662df4292c": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #497 is missing jules label",
+      "sent_at": "2026-07-09T07:19:25Z",
+      "source_key_hash": "8c911061d54bd5662df4292c",
+      "type": "add_label",
+      "verified_at": "2026-07-09T07:19:25Z"
+    },
+    "legacy-8cffb74f72b1d5345146f5d4": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #262 is missing jules label",
+      "sent_at": "2026-07-03T19:36:11Z",
+      "source_key_hash": "8cffb74f72b1d5345146f5d4",
+      "type": "add_label",
+      "verified_at": "2026-07-03T19:36:11Z"
+    },
+    "legacy-8d522ad0cbe8fff7c8120c5f": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #355 is missing jules label",
+      "sent_at": "2026-07-06T07:56:58Z",
+      "source_key_hash": "8d522ad0cbe8fff7c8120c5f",
+      "type": "add_label",
+      "verified_at": "2026-07-06T07:56:58Z"
+    },
+    "legacy-8e1db609902ecbf3191281aa": {
+      "kind": "legacy_router_action",
+      "reason": "PR #472 has evidence in pr_body.txt that differs from the GitHub PR body",
+      "sent_at": "2026-07-08T02:34:33Z",
+      "source_key_hash": "8e1db609902ecbf3191281aa",
+      "type": "sync_pr_body_from_file",
+      "verified_at": "2026-07-08T02:34:33Z"
+    },
+    "legacy-8e3e1fab0c6022d5478c5a9d": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #274 is missing jules label",
+      "sent_at": "2026-07-04T00:00:30Z",
+      "source_key_hash": "8e3e1fab0c6022d5478c5a9d",
+      "type": "add_label",
+      "verified_at": "2026-07-04T00:00:30Z"
+    },
+    "legacy-8ee2013ade01c0036e9a0a06": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #321 is missing jules label",
+      "sent_at": "2026-07-05T18:12:07Z",
+      "source_key_hash": "8ee2013ade01c0036e9a0a06",
+      "type": "add_label",
+      "verified_at": "2026-07-05T18:12:07Z"
+    },
+    "legacy-906aef78fa6f4d7ff7cab34f": {
+      "kind": "legacy_router_action",
+      "reason": "PR #574 is dirty/conflicting with master",
+      "sent_at": "2026-07-12T22:21:13Z",
+      "source_key_hash": "906aef78fa6f4d7ff7cab34f",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-12T22:21:13Z"
+    },
+    "legacy-90f89946ab714db1b1a2eb6f": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #541 without a blocking label",
+      "sent_at": "2026-07-10T03:37:40Z",
+      "source_key_hash": "90f89946ab714db1b1a2eb6f",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-10T03:37:40Z"
+    },
+    "legacy-914adcb1e6996d08e812560f": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #356 without a blocking label",
+      "sent_at": "2026-07-06T08:16:54Z",
+      "source_key_hash": "914adcb1e6996d08e812560f",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-06T08:16:54Z"
+    },
+    "legacy-9179eafcc0e0acaa4416fe9d": {
+      "kind": "legacy_router_action",
+      "reason": "PR #479 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-08T19:42:55Z",
+      "source_key_hash": "9179eafcc0e0acaa4416fe9d",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-08T19:42:55Z"
+    },
+    "legacy-91cc36bde2665aafc1b75120": {
+      "kind": "legacy_router_action",
+      "reason": "PR #351 exceeded 3 quality-fix recovery attempts",
+      "sent_at": "2026-07-06T04:42:46Z",
+      "source_key_hash": "91cc36bde2665aafc1b75120",
+      "type": "quality_fix_circuit_breaker",
+      "verified_at": "2026-07-06T04:42:46Z"
+    },
+    "legacy-92d6ab59c75c9a4794c64782": {
+      "kind": "legacy_router_action",
+      "reason": "PR #302 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T05:11:03Z",
+      "source_key_hash": "92d6ab59c75c9a4794c64782",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T05:11:03Z"
+    },
+    "legacy-9323767ef4334812de68ff3e": {
+      "kind": "legacy_router_action",
+      "reason": "PR #446 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T13:04:37Z",
+      "source_key_hash": "9323767ef4334812de68ff3e",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T13:04:37Z"
+    },
+    "legacy-9621b8e7124de7e721e90ab9": {
+      "kind": "legacy_router_action",
+      "reason": "PR #520 exceeded 3 quality-fix recovery attempts",
+      "sent_at": "2026-07-09T21:42:30Z",
+      "source_key_hash": "9621b8e7124de7e721e90ab9",
+      "type": "quality_fix_circuit_breaker",
+      "verified_at": "2026-07-09T21:42:30Z"
+    },
+    "legacy-96fd5d67740250901c4b1451": {
+      "kind": "legacy_router_action",
+      "reason": "PR #463 has failed checks without an active quality-fix label",
+      "sent_at": "2026-07-07T20:33:33Z",
+      "source_key_hash": "96fd5d67740250901c4b1451",
+      "type": "failed_check_recovery",
+      "verified_at": "2026-07-07T20:33:33Z"
+    },
+    "legacy-982211d794f1fd8a620f64e2": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #514 is missing jules label",
+      "sent_at": "2026-07-09T18:26:21Z",
+      "source_key_hash": "982211d794f1fd8a620f64e2",
+      "type": "add_label",
+      "verified_at": "2026-07-09T18:26:21Z"
+    },
+    "legacy-993048b07f8b1eaea72bf4dd": {
+      "kind": "legacy_router_action",
+      "reason": "PR #522 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-09T22:57:12Z",
+      "source_key_hash": "993048b07f8b1eaea72bf4dd",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-09T22:57:12Z"
+    },
+    "legacy-9b6db77af5f842f9ff8df4cb": {
+      "kind": "legacy_router_action",
+      "reason": "PR #400 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T00:37:15Z",
+      "source_key_hash": "9b6db77af5f842f9ff8df4cb",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T00:37:15Z"
+    },
+    "legacy-9c5c71a8cf2e550c5df1f5f0": {
+      "kind": "legacy_router_action",
+      "reason": "PR #522 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-09T23:12:00Z",
+      "source_key_hash": "9c5c71a8cf2e550c5df1f5f0",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-09T23:12:00Z"
+    },
+    "legacy-9cb1c336ddad8214fc5dfcc7": {
+      "kind": "legacy_router_action",
+      "reason": "PR #302 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T07:00:41Z",
+      "source_key_hash": "9cb1c336ddad8214fc5dfcc7",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T07:00:41Z"
+    },
+    "legacy-9d1fc4ae15f82a89b515bfaa": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-02T19:15:31Z",
+      "source_key_hash": "9d1fc4ae15f82a89b515bfaa",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-02T19:15:31Z"
+    },
+    "legacy-9ed99654558e4f9a033cb104": {
+      "kind": "legacy_router_action",
+      "reason": "PR #563 is dirty/conflicting with master",
+      "sent_at": "2026-07-12T20:50:35Z",
+      "source_key_hash": "9ed99654558e4f9a033cb104",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-12T20:50:35Z"
+    },
+    "legacy-a0909a35afedcb03a14c3e23": {
+      "kind": "legacy_router_action",
+      "reason": "PR #502 is dirty/conflicting with master",
+      "sent_at": "2026-07-09T09:24:55Z",
+      "source_key_hash": "a0909a35afedcb03a14c3e23",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-09T09:24:55Z"
+    },
+    "legacy-a154bcd446af19afeb0d07ca": {
+      "kind": "legacy_router_action",
+      "reason": "Retry failed Jules task proxy-runtime-tool-continuation-truncation-metrics",
+      "sent_at": "2026-07-06T22:38:31Z",
+      "source_key_hash": "a154bcd446af19afeb0d07ca",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-06T22:38:31Z"
+    },
+    "legacy-a1650caeae73e7b4f6b937cd": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #312 is missing jules label",
+      "sent_at": "2026-07-05T14:40:34Z",
+      "source_key_hash": "a1650caeae73e7b4f6b937cd",
+      "type": "add_label",
+      "verified_at": "2026-07-05T14:40:34Z"
+    },
+    "legacy-a1a056b92ca0778b41c3c705": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked automation-health-quality-failures-spike-6e14b562",
+      "sent_at": "2026-07-06T13:04:13Z",
+      "source_key_hash": "a1a056b92ca0778b41c3c705",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-06T13:04:13Z"
+    },
+    "legacy-a283845553e517061a0a57f1": {
+      "kind": "legacy_router_action",
+      "reason": "PR #313 exceeded 3 quality-fix recovery attempts",
+      "sent_at": "2026-07-05T15:42:10Z",
+      "source_key_hash": "a283845553e517061a0a57f1",
+      "type": "quality_fix_circuit_breaker",
+      "verified_at": "2026-07-05T15:42:10Z"
+    },
+    "legacy-a2bb2fdc9d7afe3afc21700e": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #505 is missing jules label",
+      "sent_at": "2026-07-09T10:30:51Z",
+      "source_key_hash": "a2bb2fdc9d7afe3afc21700e",
+      "type": "add_label",
+      "verified_at": "2026-07-09T10:30:51Z"
+    },
+    "legacy-a46b1620cf180903bcd05a56": {
+      "kind": "legacy_router_action",
+      "reason": "PR #446 exceeded 2 conflict-recovery attempts",
+      "sent_at": "2026-07-07T13:07:24Z",
+      "source_key_hash": "a46b1620cf180903bcd05a56",
+      "type": "conflict_recovery_circuit_breaker",
+      "verified_at": "2026-07-07T13:07:24Z"
+    },
+    "legacy-a47c548ef56edc1da1e90fd8": {
+      "kind": "legacy_router_action",
+      "reason": "PR #313 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T15:27:23Z",
+      "source_key_hash": "a47c548ef56edc1da1e90fd8",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T15:27:23Z"
+    },
+    "legacy-a4fb8d382e01511b94137b16": {
+      "kind": "legacy_router_action",
+      "reason": "PR #306 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T12:56:43Z",
+      "source_key_hash": "a4fb8d382e01511b94137b16",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T12:56:43Z"
+    },
+    "legacy-a5a0666e878de91ae6a873e2": {
+      "kind": "legacy_router_action",
+      "reason": "PR #421 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T09:45:46Z",
+      "source_key_hash": "a5a0666e878de91ae6a873e2",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T09:45:46Z"
+    },
+    "legacy-a70aaa078119d3095d20c92a": {
+      "kind": "legacy_router_action",
+      "reason": "PR #400 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T05:12:57Z",
+      "source_key_hash": "a70aaa078119d3095d20c92a",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T05:12:57Z"
+    },
+    "legacy-a8c0b3d845507966fd05e2c0": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #299 is missing jules label",
+      "sent_at": "2026-07-04T14:59:07Z",
+      "source_key_hash": "a8c0b3d845507966fd05e2c0",
+      "type": "add_label",
+      "verified_at": "2026-07-04T14:59:07Z"
+    },
+    "legacy-af160ee64b36fabb396f86e9": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped quality-fix loop on PR #520",
+      "sent_at": "2026-07-09T21:42:58Z",
+      "source_key_hash": "af160ee64b36fabb396f86e9",
+      "type": "quality_fix_followup_task",
+      "verified_at": "2026-07-09T21:42:58Z"
+    },
+    "legacy-b0748005cb4f6ca1b1e58439": {
+      "kind": "legacy_router_action",
+      "reason": "PR #300 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T17:51:39Z",
+      "source_key_hash": "b0748005cb4f6ca1b1e58439",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T17:51:39Z"
+    },
+    "legacy-b0ab340be7d2caec126170b7": {
+      "kind": "legacy_router_action",
+      "reason": "PR #300 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T18:35:05Z",
+      "source_key_hash": "b0ab340be7d2caec126170b7",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T18:35:05Z"
+    },
+    "legacy-b2d7dcb2f9d6ae498c78696f": {
+      "kind": "legacy_router_action",
+      "reason": "PR #459 has failed checks without an active quality-fix label",
+      "sent_at": "2026-07-07T18:59:18Z",
+      "source_key_hash": "b2d7dcb2f9d6ae498c78696f",
+      "type": "failed_check_recovery",
+      "verified_at": "2026-07-07T18:59:18Z"
+    },
+    "legacy-b3f932089c1fed8c27e57712": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #549 is missing jules label",
+      "sent_at": "2026-07-10T05:30:56Z",
+      "source_key_hash": "b3f932089c1fed8c27e57712",
+      "type": "add_label",
+      "verified_at": "2026-07-10T05:30:56Z"
+    },
+    "legacy-b7baadda729d84abd8c7259d": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped quality-fix loop on PR #351",
+      "sent_at": "2026-07-07T00:00:19Z",
+      "source_key_hash": "b7baadda729d84abd8c7259d",
+      "type": "quality_fix_followup_task",
+      "verified_at": "2026-07-07T00:00:19Z"
+    },
+    "legacy-b9841a2fd1952c500e9bd3f7": {
+      "kind": "legacy_router_action",
+      "reason": "PR #450 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T16:20:31Z",
+      "source_key_hash": "b9841a2fd1952c500e9bd3f7",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T16:20:31Z"
+    },
+    "legacy-b9e2eaa2186ea4940543e689": {
+      "kind": "legacy_router_action",
+      "reason": "PR #302 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T22:30:15Z",
+      "source_key_hash": "b9e2eaa2186ea4940543e689",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T22:30:15Z"
+    },
+    "legacy-ba657065998ad50ef92f2996": {
+      "kind": "legacy_router_action",
+      "reason": "PR #502 exceeded 2 conflict-recovery attempts",
+      "sent_at": "2026-07-09T10:13:22Z",
+      "source_key_hash": "ba657065998ad50ef92f2996",
+      "type": "conflict_recovery_circuit_breaker",
+      "verified_at": "2026-07-09T10:13:22Z"
+    },
+    "legacy-bc796e093104c2ba577cad8c": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #541 is missing jules label",
+      "sent_at": "2026-07-10T03:35:55Z",
+      "source_key_hash": "bc796e093104c2ba577cad8c",
+      "type": "add_label",
+      "verified_at": "2026-07-10T03:35:55Z"
+    },
+    "legacy-bc7c4b350298781e4d6df4a5": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #475 is missing jules label",
+      "sent_at": "2026-07-08T03:56:11Z",
+      "source_key_hash": "bc7c4b350298781e4d6df4a5",
+      "type": "add_label",
+      "verified_at": "2026-07-08T03:56:11Z"
+    },
+    "legacy-c07e67ca1df6c6a5f7289652": {
+      "kind": "legacy_router_action",
+      "reason": "PR #493 has failed checks without an active quality-fix label",
+      "sent_at": "2026-07-09T05:13:48Z",
+      "source_key_hash": "c07e67ca1df6c6a5f7289652",
+      "type": "failed_check_recovery",
+      "verified_at": "2026-07-09T05:13:48Z"
+    },
+    "legacy-c2e9b83d4cbcfb3111f3bae7": {
+      "kind": "legacy_router_action",
+      "reason": "PR #295 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T13:45:15Z",
+      "source_key_hash": "c2e9b83d4cbcfb3111f3bae7",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T13:45:15Z"
+    },
+    "legacy-c31522d986e7bb5c080aef98": {
+      "kind": "legacy_router_action",
+      "reason": "PR #542 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-10T03:51:47Z",
+      "source_key_hash": "c31522d986e7bb5c080aef98",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-10T03:51:47Z"
+    },
+    "legacy-c55825c27170458fb378eb2f": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked proxy-idempotency-cache-observability",
+      "sent_at": "2026-07-13T04:18:20Z",
+      "source_key_hash": "c55825c27170458fb378eb2f",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-13T04:18:20Z"
+    },
+    "legacy-c6264141210972b588d15dbf": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #498 is missing jules label",
+      "sent_at": "2026-07-09T07:38:19Z",
+      "source_key_hash": "c6264141210972b588d15dbf",
+      "type": "add_label",
+      "verified_at": "2026-07-09T07:38:19Z"
+    },
+    "legacy-c66d16a355f90c8ac9f0d81a": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #306 is missing jules label",
+      "sent_at": "2026-07-05T10:32:32Z",
+      "source_key_hash": "c66d16a355f90c8ac9f0d81a",
+      "type": "add_label",
+      "verified_at": "2026-07-05T10:32:32Z"
+    },
+    "legacy-c72691c89c1891a4c6530a57": {
+      "kind": "legacy_router_action",
+      "reason": "PR #318 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T17:08:08Z",
+      "source_key_hash": "c72691c89c1891a4c6530a57",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T17:08:08Z"
+    },
+    "legacy-c796565db77023c6d9e2bbcb": {
+      "kind": "legacy_router_action",
+      "reason": "PR #295 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T13:20:37Z",
+      "source_key_hash": "c796565db77023c6d9e2bbcb",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T13:20:37Z"
+    },
+    "legacy-c8b99357cc4b11f72a5609b9": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked proxy-session-recovery-system-instruction-metrics",
+      "sent_at": "2026-07-05T15:42:39Z",
+      "source_key_hash": "c8b99357cc4b11f72a5609b9",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-05T15:42:39Z"
+    },
+    "legacy-d4c68cadc8b9a8a8cc2bad30": {
+      "kind": "legacy_router_action",
+      "reason": "Create diagnostic task for stopped quality-fix loop on PR #313",
+      "sent_at": "2026-07-06T23:59:41Z",
+      "source_key_hash": "d4c68cadc8b9a8a8cc2bad30",
+      "type": "quality_fix_followup_task",
+      "verified_at": "2026-07-06T23:59:41Z"
+    },
+    "legacy-d5f438b909bdf8d7226d4674": {
+      "kind": "legacy_router_action",
+      "reason": "PR #502 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-09T09:17:50Z",
+      "source_key_hash": "d5f438b909bdf8d7226d4674",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-09T09:17:50Z"
+    },
+    "legacy-d74d02815f08a1eef3b5ea72": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #294 is missing jules label",
+      "sent_at": "2026-07-04T08:22:05Z",
+      "source_key_hash": "d74d02815f08a1eef3b5ea72",
+      "type": "add_label",
+      "verified_at": "2026-07-04T08:22:05Z"
+    },
+    "legacy-d7e349c9038756a56d64a61e": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #252 is missing jules label",
+      "sent_at": "2026-07-03T13:29:20Z",
+      "source_key_hash": "d7e349c9038756a56d64a61e",
+      "type": "add_label",
+      "verified_at": "2026-07-03T13:29:20Z"
+    },
+    "legacy-d7e6410ad9e12b947123b028": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #555 is missing jules label",
+      "sent_at": "2026-07-12T20:07:59Z",
+      "source_key_hash": "d7e6410ad9e12b947123b028",
+      "type": "add_label",
+      "verified_at": "2026-07-12T20:07:59Z"
+    },
+    "legacy-d96c1e0dc048ea754a91b365": {
+      "kind": "legacy_router_action",
+      "reason": "PR #205 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-01T10:32:13Z",
+      "source_key_hash": "d96c1e0dc048ea754a91b365",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-01T10:32:13Z"
+    },
+    "legacy-dad1bf070e7d6340d439aefe": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #249 is missing jules label",
+      "sent_at": "2026-07-03T05:02:16Z",
+      "source_key_hash": "dad1bf070e7d6340d439aefe",
+      "type": "add_label",
+      "verified_at": "2026-07-03T05:02:16Z"
+    },
+    "legacy-dbfd10c00845bada3fe14731": {
+      "kind": "legacy_router_action",
+      "reason": "PR #302 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T01:18:52Z",
+      "source_key_hash": "dbfd10c00845bada3fe14731",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T01:18:52Z"
+    },
+    "legacy-dc3b716a8eb912ba6abda891": {
+      "kind": "legacy_router_action",
+      "reason": "Todo queue below replenishment minimum while selector still has an eligible task: 4/5",
+      "sent_at": "2026-07-07T17:05:37Z",
+      "source_key_hash": "dc3b716a8eb912ba6abda891",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-07T17:05:37Z"
+    },
+    "legacy-de8b12e63eac4f787b5c07ef": {
+      "kind": "legacy_router_action",
+      "reason": "PR #421 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-07T07:28:57Z",
+      "source_key_hash": "de8b12e63eac4f787b5c07ef",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-07T07:28:57Z"
+    },
+    "legacy-dee3fee67f7bac815b151cc6": {
+      "kind": "legacy_router_action",
+      "reason": "PR #333 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T23:17:31Z",
+      "source_key_hash": "dee3fee67f7bac815b151cc6",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T23:17:31Z"
+    },
+    "legacy-e07ceb96355fc7cb7924b799": {
+      "kind": "legacy_router_action",
+      "reason": "PR #230 is dirty/conflicting with master",
+      "sent_at": "2026-07-02T22:17:58Z",
+      "source_key_hash": "e07ceb96355fc7cb7924b799",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-02T22:17:58Z"
+    },
+    "legacy-e0a797b65c3dae0c3dde2e30": {
+      "kind": "legacy_router_action",
+      "reason": "PR #335 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T00:13:00Z",
+      "source_key_hash": "e0a797b65c3dae0c3dde2e30",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T00:13:00Z"
+    },
+    "legacy-e11ffb9cc91beb8107e9446e": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #576 is missing jules label",
+      "sent_at": "2026-07-12T23:21:56Z",
+      "source_key_hash": "e11ffb9cc91beb8107e9446e",
+      "type": "add_label",
+      "verified_at": "2026-07-12T23:21:56Z"
+    },
+    "legacy-e29ccb1b860407f38a16f026": {
+      "kind": "legacy_router_action",
+      "reason": "PR #295 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-04T09:38:54Z",
+      "source_key_hash": "e29ccb1b860407f38a16f026",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-04T09:38:54Z"
+    },
+    "legacy-e35308b6d0173d2cdbe8d08a": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked proxy-observability-manual-handoff-diagnostics",
+      "sent_at": "2026-07-02T03:35:38Z",
+      "source_key_hash": "e35308b6d0173d2cdbe8d08a",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-02T03:35:38Z"
+    },
+    "legacy-e3939eb0825debf2b2db1822": {
+      "kind": "legacy_router_action",
+      "reason": "PR #367 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-06T14:19:05Z",
+      "source_key_hash": "e3939eb0825debf2b2db1822",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-06T14:19:05Z"
+    },
+    "legacy-e3c0d3729d76b2e34941424d": {
+      "kind": "legacy_router_action",
+      "reason": "PR #413 has failed checks without an active quality-fix label",
+      "sent_at": "2026-07-07T06:08:14Z",
+      "source_key_hash": "e3c0d3729d76b2e34941424d",
+      "type": "failed_check_recovery",
+      "verified_at": "2026-07-07T06:08:14Z"
+    },
+    "legacy-e3c180636712920ed60d2171": {
+      "kind": "legacy_router_action",
+      "reason": "PR #480 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-08T20:13:30Z",
+      "source_key_hash": "e3c180636712920ed60d2171",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-08T20:13:30Z"
+    },
+    "legacy-e5091718afde356717eab1c5": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #314 is missing jules label",
+      "sent_at": "2026-07-05T15:58:52Z",
+      "source_key_hash": "e5091718afde356717eab1c5",
+      "type": "add_label",
+      "verified_at": "2026-07-05T15:58:52Z"
+    },
+    "legacy-e9047a453b79fd6dc9e9e0f4": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #380 without a blocking label",
+      "sent_at": "2026-07-06T20:51:59Z",
+      "source_key_hash": "e9047a453b79fd6dc9e9e0f4",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-06T20:51:59Z"
+    },
+    "legacy-e965ee64aaf8627813a8d967": {
+      "kind": "legacy_router_action",
+      "reason": "PR #333 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T23:04:42Z",
+      "source_key_hash": "e965ee64aaf8627813a8d967",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T23:04:42Z"
+    },
+    "legacy-ec52dfd27f3c96471c5e2cdb": {
+      "kind": "legacy_router_action",
+      "reason": "PR #502 is dirty/conflicting with master",
+      "sent_at": "2026-07-09T09:59:30Z",
+      "source_key_hash": "ec52dfd27f3c96471c5e2cdb",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-09T09:59:30Z"
+    },
+    "legacy-eda3537a34c8dba60691564b": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #536 is missing jules label",
+      "sent_at": "2026-07-10T02:33:13Z",
+      "source_key_hash": "eda3537a34c8dba60691564b",
+      "type": "add_label",
+      "verified_at": "2026-07-10T02:33:13Z"
+    },
+    "legacy-ee5893798fbe50181d136d80": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #545 is missing jules label",
+      "sent_at": "2026-07-10T04:32:50Z",
+      "source_key_hash": "ee5893798fbe50181d136d80",
+      "type": "add_label",
+      "verified_at": "2026-07-10T04:32:50Z"
+    },
+    "legacy-eec40778046e67ce4acb9a4f": {
+      "kind": "legacy_router_action",
+      "reason": "No autonomous PR is open and selector picked proxy-idempotency-key-case-insensitivity",
+      "sent_at": "2026-07-13T04:44:32Z",
+      "source_key_hash": "eec40778046e67ce4acb9a4f",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-13T04:44:32Z"
+    },
+    "legacy-eeddb3fe31d6271cea7b42be": {
+      "kind": "legacy_router_action",
+      "reason": "PR #586 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-13T06:08:19Z",
+      "source_key_hash": "eeddb3fe31d6271cea7b42be",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-13T06:08:19Z"
+    },
+    "legacy-ef8ab8f5f998efd72a995091": {
+      "kind": "legacy_router_action",
+      "reason": "PR #400 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T04:48:02Z",
+      "source_key_hash": "ef8ab8f5f998efd72a995091",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T04:48:02Z"
+    },
+    "legacy-f1295a862922ee04e3d8cd97": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #489 is missing jules label",
+      "sent_at": "2026-07-08T23:23:56Z",
+      "source_key_hash": "f1295a862922ee04e3d8cd97",
+      "type": "add_label",
+      "verified_at": "2026-07-08T23:23:56Z"
+    },
+    "legacy-f1a4180ce0eff16fdf3da46c": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #275 is missing jules label",
+      "sent_at": "2026-07-04T00:35:17Z",
+      "source_key_hash": "f1a4180ce0eff16fdf3da46c",
+      "type": "add_label",
+      "verified_at": "2026-07-04T00:35:17Z"
+    },
+    "legacy-f22aae4a11d78098896efe34": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #317 is missing jules label",
+      "sent_at": "2026-07-05T16:48:23Z",
+      "source_key_hash": "f22aae4a11d78098896efe34",
+      "type": "add_label",
+      "verified_at": "2026-07-05T16:48:23Z"
+    },
+    "legacy-f30def9da3f9386acb44d20b": {
+      "kind": "legacy_router_action",
+      "reason": "Jules session 1974463741843488682 is awaiting user feedback",
+      "sent_at": "2026-07-01T20:07:13Z",
+      "source_key_hash": "f30def9da3f9386acb44d20b",
+      "type": "jules_send_message",
+      "verified_at": "2026-07-01T20:07:13Z"
+    },
+    "legacy-f6b27ef3dfd0901bb4a76b87": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #493 without a blocking label",
+      "sent_at": "2026-07-09T05:12:09Z",
+      "source_key_hash": "f6b27ef3dfd0901bb4a76b87",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-09T05:12:09Z"
+    },
+    "legacy-f6d523349f22a898c7e52e22": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #327 without a blocking label",
+      "sent_at": "2026-07-05T20:01:43Z",
+      "source_key_hash": "f6d523349f22a898c7e52e22",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-05T20:01:43Z"
+    },
+    "legacy-f9e979329d3cc9bd444a1553": {
+      "kind": "legacy_router_action",
+      "reason": "PR #334 has unresolved needs-quality-fix",
+      "sent_at": "2026-07-05T23:52:59Z",
+      "source_key_hash": "f9e979329d3cc9bd444a1553",
+      "type": "quality_fix_recovery",
+      "verified_at": "2026-07-05T23:52:59Z"
+    },
+    "legacy-fd3df4e6d359ed17d5d4edab": {
+      "kind": "legacy_router_action",
+      "reason": "Autonomous PR #309 is missing jules label",
+      "sent_at": "2026-07-05T13:15:26Z",
+      "source_key_hash": "fd3df4e6d359ed17d5d4edab",
+      "type": "add_label",
+      "verified_at": "2026-07-05T13:15:26Z"
+    },
+    "legacy-fdce846c4216750d8425d68d": {
+      "kind": "legacy_router_action",
+      "reason": "Todo queue below replenishment minimum while quality-fix recovery is deferred for PR #421: 4/5",
+      "sent_at": "2026-07-07T07:57:43Z",
+      "source_key_hash": "fdce846c4216750d8425d68d",
+      "type": "dispatch_workflow",
+      "verified_at": "2026-07-07T07:57:43Z"
+    },
+    "legacy-fe96d76428253c4164cc3e3d": {
+      "kind": "legacy_router_action",
+      "reason": "Automerge workflow failed for PR #589 without a blocking label",
+      "sent_at": "2026-07-13T17:41:01Z",
+      "source_key_hash": "fe96d76428253c4164cc3e3d",
+      "type": "rerun_workflow",
+      "verified_at": "2026-07-13T17:41:01Z"
+    },
+    "legacy-ffd524a8f0f756ea0d775597": {
+      "kind": "legacy_router_action",
+      "reason": "PR #400 is dirty/conflicting with master",
+      "sent_at": "2026-07-07T01:28:17Z",
+      "source_key_hash": "ffd524a8f0f756ea0d775597",
+      "type": "conflict_recovery",
+      "verified_at": "2026-07-07T01:28:17Z"
+    }
+  },
+  "migration": {
+    "imported_action_count": 220,
+    "imported_session_count": 16,
+    "migrated_at": "2026-07-13T20:18:23Z",
+    "mode": "read_once_bounded_audit",
+    "source": "actions-variable:JULES_RECOVERY_ROUTER_LEDGER",
+    "source_action_count": 220,
+    "source_hash": "a2c34a7e8e66fda1eb9a9fc1",
+    "source_session_count": 16,
+    "status": "migrated"
+  },
+  "revision": 1,
+  "schema": 2,
+  "sessions": {
+    "10318837510805541745": {
+      "activity_fingerprint": "419480cbc36620b19f8b0c28",
+      "last_observed_at": "2026-07-13T20:18:56Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "9e14154142390aa0bf7f4166",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "10525268165109519448": {
+      "activity_fingerprint": "7c0fd0461b576167fd81847f",
+      "last_observed_at": "2026-07-13T20:19:08Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "4f1f9cfcbecdeaf3a0dc12a7",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "scripts-audit-python-lint-dedupe-task-7"
+    },
+    "12147200853076583865": {
+      "activity_fingerprint": "28bdb45c5fb1f5c6cea3b017",
+      "last_observed_at": "2026-07-13T20:19:01Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "5998e2d3a3c7e085a14148ee",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "12578984233954560035": {
+      "activity_fingerprint": "9489e7adaf61cb6cdace8efe",
+      "last_observed_at": "2026-07-13T20:19:06Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "7a999ad89cf291cdfab44a4a",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "13325415678216530585": {
+      "activity_fingerprint": "0c565a1ffa452f4611abf986",
+      "last_observed_at": "2026-07-13T20:18:47Z",
+      "legacy_value_hash": "61f63dc4e7c4be31e36ae1da",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "2d125c0fa5bd9594231e4119",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "proxy-admin-dashboard-stats"
+    },
+    "13408458061430646567": {
+      "activity_fingerprint": "e8c0af223d6c202185d410e9",
+      "last_observed_at": "2026-07-13T20:19:04Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "35504ad2c3a08088887df19d",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "proxy-audit-tool-result-continuation-logging"
+    },
+    "13423971199068415568": {
+      "last_observed_at": "",
+      "legacy_value_hash": "d5148af4405bb2e70a94e5d7",
+      "session_state": "active",
+      "source": "legacy_router_variable",
+      "task_id": "proxy-audit-context-cancellation"
+    },
+    "13434453345784916582": {
+      "activity_fingerprint": "42eb852af605b7e8ba7825b1",
+      "last_observed_at": "2026-07-13T20:19:10Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "46707c0db20cb0828843411c",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "str"
+    },
+    "14012698769106055432": {
+      "activity_fingerprint": "cb9b6083d7a97a7e43a5e01e",
+      "last_observed_at": "2026-07-13T20:19:01Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "0188e396224e99f5e1b078da",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "proxy-audit-context-loss-read-narrowing-followup"
+    },
+    "14639527114573508776": {
+      "activity_fingerprint": "76a72898ab60773f6f4960c2",
+      "last_observed_at": "2026-07-13T20:18:46Z",
+      "legacy_value_hash": "bbad0c0fec5dfd69833ef9f0",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "9b462110bdb6689b3fabbee5",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "proxy-tools-mode-loss-documentation"
+    },
+    "15264337504110031935": {
+      "activity_fingerprint": "3b03e4d4476fbd4577a169fc",
+      "last_observed_at": "2026-07-13T20:19:11Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "9cd2064a4c41403d4e468143",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "15526455168936879925": {
+      "activity_fingerprint": "096750d945696f33cbdd26e0",
+      "last_observed_at": "2026-07-13T20:19:09Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "407ae0ca93944e938c76f0b3",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "str"
+    },
+    "15579014809854553056": {
+      "activity_fingerprint": "95053d95960c25c43e8ebb40",
+      "last_observed_at": "2026-07-13T20:18:50Z",
+      "legacy_value_hash": "7756e4e05022e600923e4264",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "43dcbe528d824f0b4d77c084",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "automation-recovery-followup-9e86197f"
+    },
+    "15943345035899781060": {
+      "activity_fingerprint": "550c333a66be469705178e60",
+      "last_observed_at": "2026-07-13T20:18:56Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "f9ddec00063d538f301df541",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "16020061950734644024": {
+      "activity_fingerprint": "3cf585d0ce633f14cb8af442",
+      "last_observed_at": "2026-07-13T20:18:48Z",
+      "legacy_value_hash": "451d4355b1a683b1bfed5a8c",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "932f96a10dad184baa6bd79a",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "automation-quality-loop-pr-520-e3a07e26"
+    },
+    "16068529411695161754": {
+      "activity_fingerprint": "4682200d2051304b48f15b70",
+      "last_observed_at": "2026-07-13T20:19:00Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "0330ff761ea325a4de00e9f5",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "proxy-audit-context-loss-legacy-collapse-dropped"
+    },
+    "1651902015813353891": {
+      "activity_fingerprint": "821631296d86085f4639cd7d",
+      "last_observed_at": "2026-07-13T20:18:59Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "ae68b71792d6060ca51e1400",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "16561484705343060553": {
+      "activity_fingerprint": "b73c2fc4bbb219623b0dfcf4",
+      "last_observed_at": "2026-07-13T20:18:44Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "e0a9b5ca54c38bdd6d372231",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "17021511161889099852": {
+      "activity_fingerprint": "856e4164b0ef12d039d4d104",
+      "last_observed_at": "2026-07-13T20:18:54Z",
+      "legacy_value_hash": "a27efc77a6d1b7d2c74d7638",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "510a54232dd7229527b8342f",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "runtime-startup-static-readiness-smoke"
+    },
+    "17049109501742459791": {
+      "activity_fingerprint": "2f9398b1c590781f1f70ee40",
+      "last_observed_at": "2026-07-13T20:18:47Z",
+      "legacy_value_hash": "5ccd42d8558148624b9d0ee7",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "098187287874b23ae0f14efa",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "proxy-admin-settings-validation"
+    },
+    "17172798135256299209": {
+      "activity_fingerprint": "97871ce93686d9409e9aefc7",
+      "last_observed_at": "2026-07-13T20:19:12Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "6d4ab604c8a5e5ef7f0ea26c",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "17237448907972893226": {
+      "activity_fingerprint": "42741c6103091bf49d596096",
+      "last_observed_at": "2026-07-13T20:18:57Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "487aa6548e067db23adc40e2",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "proxy-audit-streaming-errors"
+    },
+    "17569823767226973692": {
+      "activity_fingerprint": "7a59b07ce4bdd08c711d17e3",
+      "last_observed_at": "2026-07-13T20:18:53Z",
+      "legacy_value_hash": "92a85064b9011e39f1cd4354",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "d2629a753c7f04dcfa573218",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "proxy-idempotency-response-replay"
+    },
+    "17729508071157917704": {
+      "activity_fingerprint": "ff003058984f17f4f297fafb",
+      "last_observed_at": "2026-07-13T20:19:10Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "0bc250e1b4d64e4b009c38d2",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "scripts-audit-python-lint-dedupe-task-4"
+    },
+    "2335830168077339062": {
+      "activity_fingerprint": "04ca53a98a162d3f32117891",
+      "last_observed_at": "2026-07-13T20:19:02Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "116f3d55bb15d92441d15a82",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "proxy-audit-legacy-collapse-metric-followup"
+    },
+    "2434856474857685191": {
+      "activity_fingerprint": "eb9c95b03481c148c670aa16",
+      "last_observed_at": "2026-07-13T20:18:50Z",
+      "legacy_value_hash": "e10929240111a0d64351f76e",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "539f7600ce3cf23e642bb4f4",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "proxy-observability-request-contract-metric"
+    },
+    "2807867894850292189": {
+      "activity_fingerprint": "db6d8fa99f931a30ef2a7969",
+      "last_observed_at": "2026-07-13T20:18:49Z",
+      "legacy_value_hash": "e4092cff16cd48c190b01718",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "110f19e1135689b9c1d9d937",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "2909804233511844002": {
+      "last_observed_at": "",
+      "legacy_value_hash": "33b11252c1a272fbed20500f",
+      "session_state": "active",
+      "source": "legacy_router_variable",
+      "task_id": "proxy-audit-context-cancellation"
+    },
+    "3029361082918823694": {
+      "activity_fingerprint": "504e75f6146b5308a7f8c23c",
+      "last_observed_at": "2026-07-13T20:19:07Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "31e38de082b28e345e68b171",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "3291409405775447211": {
+      "activity_fingerprint": "f995f4ed70ef90411796b054",
+      "last_observed_at": "2026-07-13T20:18:44Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "ae3500794da9dddf5dc3dc5f",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "automation-recovery-followup-53bd4476"
+    },
+    "4114921831374104713": {
+      "activity_fingerprint": "fde989f34af4fa5067a6254d",
+      "last_observed_at": "2026-07-13T20:18:51Z",
+      "legacy_value_hash": "83fa8fee9e1123782d303e6a",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "cb2c5ee148f84d28ed68c11b",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "proxy-feedback-event-idempotency"
+    },
+    "421622227324255966": {
+      "activity_fingerprint": "06067fb3219321d9c9aa5ac0",
+      "last_observed_at": "2026-07-13T20:18:58Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "6ce24218aa5a6ab4dd3fe5e2",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "docs-dashboard-registration-audit"
+    },
+    "4839394328109958585": {
+      "activity_fingerprint": "9602c2e1570200c6cf733962",
+      "last_observed_at": "2026-07-13T20:18:57Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "ef70da58802cde9897922586",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "4877258906301357889": {
+      "activity_fingerprint": "1c544cc7bd9503de98a8a3fe",
+      "last_observed_at": "2026-07-13T20:19:13Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "c0d0b9d0a85ecc87e82d1c94",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "6888614032956265246": {
+      "activity_fingerprint": "43465356d695efe137bc3d02",
+      "last_observed_at": "2026-07-13T20:18:55Z",
+      "legacy_value_hash": "f0d698f1c900cef45daecaef",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "8d379c31ef85e59cd37d2f38",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "proxy-routing-contract-live-fixtures"
+    },
+    "6896838294581498680": {
+      "activity_fingerprint": "83d444d27238a0564d2bdda3",
+      "last_observed_at": "2026-07-13T20:18:45Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "2f5f3920e9b7c7d1cdab9062",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "7180636042113331429": {
+      "activity_fingerprint": "1007656cbb46587e629ca378",
+      "last_observed_at": "2026-07-13T20:18:53Z",
+      "legacy_value_hash": "61cf464769107d9963971d2b",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "1fb6047bc30501b65754435c",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "7569400473677363375": {
+      "activity_fingerprint": "f944a590b05a49835b46d1df",
+      "last_observed_at": "2026-07-13T20:19:06Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "16a5df24f3c3b70966e032fd",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "scripts-audit-python-lint-automation-health"
+    },
+    "7875485511166516611": {
+      "activity_fingerprint": "ef7c37a91a5b773f1f4cee55",
+      "last_observed_at": "2026-07-13T20:18:52Z",
+      "legacy_value_hash": "083284ba0a801028febcacaf",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "d05f1b603bbb000a0a76807a",
+      "session_state": "COMPLETED",
+      "source": "legacy_router_variable",
+      "state_version": 1,
+      "task_id": "proxy-feedback-event-idempotency"
+    },
+    "8930353694460751183": {
+      "activity_fingerprint": "5b85cacbbf0a6986be668f42",
+      "last_observed_at": "2026-07-13T20:19:12Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "5689a858a43b6ec8f5b5c9da",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "scripts-audit-python-lint-dedupe-task-2"
+    },
+    "9780256794307111476": {
+      "activity_fingerprint": "618324c358632d0e22fc296f",
+      "last_observed_at": "2026-07-13T20:19:03Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "6c8964ccec31db0b33669426",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": ""
+    },
+    "9859689397548345314": {
+      "activity_fingerprint": "4154b942ff6fe85b8fbb0919",
+      "last_observed_at": "2026-07-13T20:19:05Z",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "6497ee7fe332863da9500077",
+      "session_state": "COMPLETED",
+      "state_version": 1,
+      "task_id": "proxy-audit-missing-tool-fallback-f0dcb4d0"
+    },
+    "9995531588769397516": {
+      "last_observed_at": "",
+      "legacy_value_hash": "923892820e5605b0d9e83070",
+      "session_state": "completed",
+      "source": "legacy_router_variable",
+      "task_id": ""
+    }
+  },
+  "tasks": {
+    "proxy-improve-rproxy-timeout-handling": {
+      "last_observed_at": "2026-07-13T20:19:18Z",
+      "pr_number": 596,
+      "pr_recoveries": 1,
+      "progress_fingerprint": "4944b689addac1b10e2a8bdd",
+      "session_id": null,
+      "state": "pr_open_without_active_session"
+    },
+    "str": {
+      "current_evidence_fingerprint": "46707c0db20cb0828843411c",
+      "last_observed_at": "2026-07-13T20:19:10Z",
+      "pr_number": null,
+      "session_id": "13434453345784916582",
+      "state": "completed"
+    }
+  },
+  "updated_at": "2026-07-13T20:19:18Z"
+}
