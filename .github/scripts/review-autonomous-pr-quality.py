@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from fnmatch import fnmatchcase
+import hashlib
 import json
 import os
 import re
@@ -281,6 +282,43 @@ def path_matches_allowed_paths(path: str, allowed_paths: list[str]) -> bool:
         if fnmatchcase(normalized, pattern):
             return True
     return False
+
+
+def scope_task_fingerprint(task: dict[str, Any]) -> str:
+    """Match autonomy_state.task_fingerprint without importing operational code."""
+    stable = {
+        key: value
+        for key, value in task.items()
+        if key not in {"status", "blocked_reason", "resolution"}
+    }
+    raw = json.dumps((stable,), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode()).hexdigest()[:24]
+
+
+def approved_scope_override(
+    task_id: str,
+    base_task: dict[str, Any],
+    scope_ledger: dict[str, Any] | None,
+) -> tuple[list[str], str]:
+    """Return a trusted, evidence-bound scope override from the durable ledger."""
+    tasks = (scope_ledger or {}).get("tasks")
+    row = tasks.get(task_id) if isinstance(tasks, dict) else None
+    if not isinstance(row, dict) or row.get("scope_decision") != "approved_same_task":
+        return [], ""
+    if row.get("scope_task_fingerprint") != scope_task_fingerprint(base_task):
+        return [], "durable scope approval does not match the base task definition"
+    if str(row.get("scope_risk") or "").lower() not in {"low", "medium"}:
+        return [], "durable scope approval has an unsupported risk level"
+    if not row.get("scope_evidence") or not row.get("scope_approved_at"):
+        return [], "durable scope approval is missing evidence or approval time"
+    override = [
+        str(path).strip()
+        for path in row.get("scope_override", [])
+        if isinstance(path, str) and str(path).strip()
+    ]
+    if not override:
+        return [], "durable scope approval has no exact paths"
+    return sorted(set(override)), ""
 
 
 def is_manifest_path(path: str) -> bool:
@@ -636,6 +674,7 @@ def evaluate_quality(
     pr_title: str,
     pr_body: str,
     allow_evidence_autofill: bool = False,
+    scope_ledger: dict[str, Any] | None = None,
 ) -> QualityDecision:
     done_changes = status_changes(before_manifest, after_manifest, "done")
     blocked_changes = status_changes(before_manifest, after_manifest, "blocked")
@@ -658,11 +697,34 @@ def evaluate_quality(
     completed_changes = done_changes + blocked_changes
     if len(completed_changes) == 1:
         completed_change = completed_changes[0]
-        # Scope is immutable during the PR: use the task definition from the
-        # base manifest so a stale or compromised change cannot authorize
-        # itself by broadening allowed_paths in the same commit.
+        # Scope is immutable during the PR unless the authoritative default-
+        # branch reconciler already recorded an evidence-bound, fingerprinted
+        # override in the durable ledger.  The PR check only reads that state.
         scope_task = task_map(before_manifest).get(completed_change.task_id) or completed_change.task
         allowed_paths = normalized_allowed_paths(scope_task)
+        override, override_error = approved_scope_override(
+            completed_change.task_id,
+            scope_task,
+            scope_ledger,
+        )
+        if override_error:
+            warnings.append(
+                f"Ignored durable scope approval for {completed_change.task_id}: {override_error}."
+            )
+        if override:
+            after_paths = normalized_allowed_paths(completed_change.task)
+            undeclared = sorted(set(after_paths) - set(override))
+            if undeclared:
+                reasons.append(
+                    f"Task {completed_change.task_id} broadens allowed_paths beyond the durable approval: "
+                    + ", ".join(undeclared)
+                )
+            else:
+                allowed_paths = override
+                warnings.append(
+                    f"Applied durable scope approval for {completed_change.task_id}: "
+                    + ", ".join(override)
+                )
         if not allowed_paths:
             reasons.append(
                 f"Task {completed_change.task_id} has no usable allowed_paths scope."
@@ -932,6 +994,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pr-title", default="")
     parser.add_argument("--pr-body", default="")
     parser.add_argument("--pr-body-file", default="")
+    parser.add_argument(
+        "--scope-ledger",
+        type=Path,
+        help="optional read-only durable ledger snapshot containing reconciler-approved scope overrides",
+    )
     parser.add_argument("--report", type=Path)
     parser.add_argument(
         "--allow-evidence-autofill",
@@ -949,6 +1016,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        scope_ledger = (
+            json.loads(args.scope_ledger.read_text(encoding="utf-8"))
+            if args.scope_ledger
+            else None
+        )
         before_manifest = load_manifest_from_ref(args.base, args.manifest)
         after_manifest = load_manifest_from_ref(args.head, args.manifest)
         changed_files = changed_files_between(args.base, args.head)
@@ -963,6 +1035,7 @@ def main(argv: list[str] | None = None) -> int:
             pr_title=args.pr_title,
             pr_body=read_pr_body(args),
             allow_evidence_autofill=args.allow_evidence_autofill,
+            scope_ledger=scope_ledger,
         )
     except (QualityInputError, json.JSONDecodeError, OSError) as exc:
         decision = QualityDecision(

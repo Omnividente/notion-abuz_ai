@@ -49,28 +49,21 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
 
-      - name: Wake and verify next Jules cycle after automation meta merge
+      - name: Wake and verify authoritative reconciler after queue mutation
         if: success()
         env:
           GH_TOKEN: ${{ secrets.PAT || github.token }}
         run: |
           set -euo pipefail
 
-          workflow_path="jules_next_task.yml"
+          workflow_path="jules_unattended_monitor.yml"
           runs_endpoint="repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_path}/runs"
           before_id="$(gh api "${runs_endpoint}?event=workflow_dispatch&per_page=1" --jq '.workflow_runs[0].id // 0')"
 
           gh api \
             --method POST \
             "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_path}/dispatches" \
-            --input <(jq -n '{
-              ref: "master",
-              inputs: {
-                focus: "proxy",
-                risk_ceiling: "medium",
-                allow_parallel: "false"
-              }
-            }')
+            --input <(jq -n '{ref: "master"}')
 
           for attempt in $(seq 1 20); do
             runs_json="$(gh api "${runs_endpoint}?event=workflow_dispatch&per_page=1")"
@@ -80,7 +73,7 @@ jobs:
             run_url="$(jq -r '.workflow_runs[0].html_url // empty' <<< "${runs_json}")"
 
             if [ -n "${run_id:-}" ] && [ "${run_id}" != "${before_id}" ]; then
-              echo "Verified next-task workflow_dispatch run: id=${run_id} status=${run_status} conclusion=${run_conclusion:-none}"
+              echo "Verified durable reconciler workflow_dispatch run: id=${run_id} status=${run_status} conclusion=${run_conclusion:-none}"
               echo "Run URL: ${run_url}"
 
               if [ "${run_status}" = "in_progress" ]; then
@@ -90,7 +83,7 @@ jobs:
                 if [ "${run_conclusion}" = "success" ]; then
                   exit 0
                 fi
-                echo "::error::Dispatched next-task run ${run_id} completed as ${run_conclusion:-unknown}."
+                echo "::error::Dispatched durable reconciler run ${run_id} completed as ${run_conclusion:-unknown}."
                 exit 1
               fi
             fi

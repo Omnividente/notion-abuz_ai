@@ -23,6 +23,11 @@ class AutomationMetaAutomergeWorkflowTest(unittest.TestCase):
         self.assertIn("Automation meta PRs may only change agent_tasks.json", self.text)
         self.assertIn("python3 scripts/validate_agent_tasks.py agent_tasks.json", self.text)
 
+    def test_queue_mutation_wakes_only_authoritative_reconciler(self) -> None:
+        self.assertIn('workflow_path="jules_unattended_monitor.yml"', self.text)
+        self.assertNotIn('workflow_path="jules_next_task.yml"', self.text)
+        self.assertNotIn('workflow_path="jules_recovery_router.yml"', self.text)
+
 
 if __name__ == "__main__":
     unittest.main()

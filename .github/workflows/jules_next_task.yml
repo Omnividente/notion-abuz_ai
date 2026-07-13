@@ -1,31 +1,23 @@
-name: 2. Trigger Next Proxy Improvement Task
+name: 2. Execute Leased Jules Task
 
 on:
-  schedule:
-    - cron: "17 * * * *"
-  pull_request:
-    types: [closed]
-    branches: [master]
   workflow_dispatch:
     inputs:
       task_id:
-        description: "Optional exact task id from agent_tasks.json"
-        required: false
+        description: "Exact task id selected by the durable reconciler"
+        required: true
+        type: string
+      lease_key:
+        description: "Persistent dispatch lease key from automation-state-v2"
+        required: true
         type: string
       focus:
-        description: "Task focus for replenishment when no task_id is set"
+        description: "Task focus passed to the Jules prompt renderer"
         required: false
         default: "proxy"
-        type: choice
-        options:
-          - proxy
-          - openai-compatible
-          - anthropic-compatible
-          - dashboard
-          - tests
-          - docs
+        type: string
       risk_ceiling:
-        description: "Maximum risk Jules may implement autonomously"
+        description: "Maximum accepted task risk"
         required: false
         default: "medium"
         type: choice
@@ -34,578 +26,91 @@ on:
           - medium
           - high
       allow_parallel:
-        description: "Allow dispatching even when an autonomous PR is open"
+        description: "Compatibility input; parallel dispatch is intentionally disabled"
         required: false
         default: "false"
         type: choice
         options:
           - "false"
-          - "true"
-      recovery_session_id:
-        description: "Optional failed Jules session id that caused this retry"
+      recovery_pr_number:
+        description: "Existing PR number to recover in place; empty for a new task"
         required: false
+        default: ""
+        type: string
+      recovery_pr_head:
+        description: "Expected head SHA for the existing recovery PR"
+        required: false
+        default: ""
         type: string
       recovery_reason:
-        description: "Optional reason for retrying after a failed Jules session"
+        description: "Sanitized failed-check context for in-place PR recovery"
         required: false
+        default: ""
         type: string
 
 permissions:
-  actions: write
-  contents: write
-  pull-requests: write
+  contents: read
 
+# This workflow is an executor, not a scheduler. The durable reconciler creates
+# the lease first and both workflows share this single mutation gate.
 concurrency:
-  group: notion-abuz-jules-dispatch
+  group: notion-abuz-autonomy-mutation
   cancel-in-progress: false
 
 jobs:
-  next-task:
+  execute:
     runs-on: ubuntu-latest
-    if: >
-      vars.JULES_LOOP_ENABLED != 'false' &&
-      (github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'schedule' ||
-      (github.event.pull_request.merged == true &&
-       !contains(github.event.pull_request.labels.*.name, 'stop-loop') &&
-       (github.event.pull_request.user.login == 'google-jules[bot]' ||
-        contains(github.event.pull_request.body || '', 'PR created automatically by Jules') ||
-        contains(github.event.pull_request.body || '', 'jules.google.com/task') ||
-        startsWith(github.event.pull_request.head.ref, 'jules-') ||
-        startsWith(github.event.pull_request.head.ref, 'jules/'))))
+    timeout-minutes: 10
+    if: github.ref == 'refs/heads/master' && vars.JULES_LOOP_ENABLED != 'false'
+    permissions:
+      contents: write
 
     steps:
-      # Workflow reruns preserve the original event SHA. Always read the current
-      # manifest/control-plane state so a rerun cannot redispatch a completed task.
       - uses: actions/checkout@v5
         with:
           ref: master
+          fetch-depth: 0
 
-      - name: Detect stopped autonomous task ids
-        id: stopped-task-ids
+      - name: Validate executor and durable state primitives
+        run: |
+          python3 -m py_compile \
+            .github/scripts/autonomy_state.py \
+            .github/scripts/jules_task_executor.py \
+            .github/scripts/render-jules-next-task-prompt.py
+
+      - name: Execute exact durable lease
+        id: execute
         env:
           GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-        run: |
-          set -euo pipefail
-
-          curl -fsS \
-            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
-            -o /tmp/open-prs-for-selector.json
-
-          python3 - <<'PY'
-          import json
-          import os
-          import re
-          from pathlib import Path
-
-          manifest = json.loads(Path("agent_tasks.json").read_text(encoding="utf-8"))
-          task_ids = [
-              str(task.get("id", ""))
-              for task in manifest.get("tasks", [])
-              if isinstance(task, dict) and task.get("id")
-          ]
-          pulls = json.loads(Path("/tmp/open-prs-for-selector.json").read_text(encoding="utf-8"))
-          stop_labels = {"human-review", "no-automerge", "stop-loop"}
-          task_re = re.compile(r'(?i)(?:selected\s+task\s+id|task_id|\"task_id\")\s*[:=]\s*\"?([a-z0-9][a-z0-9_.-]{2,})\"?')
-          excluded = []
-          seen = set()
-
-          def pr_task_id(pr):
-              fields = [
-                  str(pr.get("body") or ""),
-                  str(pr.get("title") or ""),
-                  str((pr.get("head") or {}).get("ref") or ""),
-              ]
-              for field in fields:
-                  match = task_re.search(field)
-                  if match:
-                      return match.group(1)
-              for task_id in task_ids:
-                  if task_id and any(task_id in field for field in fields):
-                      return task_id
-              return ""
-
-          for pr in pulls:
-              labels = {
-                  str(label.get("name", ""))
-                  for label in pr.get("labels", [])
-                  if isinstance(label, dict)
-              }
-              if not labels.intersection(stop_labels):
-                  continue
-              task_id = pr_task_id(pr)
-              if task_id and task_id not in seen:
-                  seen.add(task_id)
-                  excluded.append(task_id)
-
-          output_path = Path(os.environ["GITHUB_OUTPUT"])
-          with output_path.open("a", encoding="utf-8") as output:
-              output.write(f"task_ids={','.join(excluded)}\n")
-              output.write(f"count={len(excluded)}\n")
-
-          print(f"Stopped autonomous task ids excluded from selector: {', '.join(excluded) or 'none'}")
-          PY
-
-      - name: Select autonomous task
-        id: select-task
-        env:
-          TASK_ID: ${{ inputs.task_id || '' }}
-          FOCUS: ${{ inputs.focus || 'proxy' }}
-          RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
-          EXCLUDED_TASK_IDS: ${{ steps.stopped-task-ids.outputs.task_ids || '' }}
-        run: |
-          set -euo pipefail
-
-          args=(--manifest agent_tasks.json --risk-ceiling "${RISK_CEILING}" --focus "${FOCUS}" --json)
-          if [ -n "${TASK_ID}" ]; then
-            args+=(--task-id "${TASK_ID}")
-          fi
-          if [ -n "${EXCLUDED_TASK_IDS}" ]; then
-            IFS=',' read -r -a excluded_task_ids <<< "${EXCLUDED_TASK_IDS}"
-            for excluded_task_id in "${excluded_task_ids[@]}"; do
-              if [ -n "${excluded_task_id}" ]; then
-                args+=(--exclude-task-id "${excluded_task_id}")
-              fi
-            done
-          fi
-
-          selector_status=0
-          python3 scripts/select_agent_task.py "${args[@]}" > /tmp/selected-task.json || selector_status=$?
-          cat /tmp/selected-task.json
-
-          python3 - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          data = json.loads(Path("/tmp/selected-task.json").read_text(encoding="utf-8"))
-          manifest = json.loads(Path("agent_tasks.json").read_text(encoding="utf-8"))
-          policy = manifest.get("replenishment_policy") or {}
-          minimum_todo_tasks = policy.get("minimum_todo_tasks")
-          if not isinstance(minimum_todo_tasks, int):
-              minimum_todo_tasks = 0
-          try:
-              todo_count = int(data.get("todo_count") or 0)
-          except (TypeError, ValueError):
-              todo_count = 0
-          below_minimum = minimum_todo_tasks > 0 and todo_count < minimum_todo_tasks
-          output_path = Path(os.environ["GITHUB_OUTPUT"])
-
-          def write_output(key, value):
-              text = "" if value is None else str(value)
-              with output_path.open("a", encoding="utf-8") as output:
-                  if "\n" in text:
-                      output.write(f"{key}<<EOF\n{text}\nEOF\n")
-                  else:
-                      output.write(f"{key}={text}\n")
-
-          write_output("selected", str(data.get("selected", False)).lower())
-          write_output("task_id", data.get("task_id", ""))
-          write_output("title", data.get("title", ""))
-          write_output("score", data.get("score", 0))
-          write_output("reason", data.get("reason", "") or data.get("error", ""))
-          write_output("reason_code", data.get("reason_code", ""))
-          write_output("todo_count", data.get("todo_count", 0))
-          write_output("minimum_todo_tasks", minimum_todo_tasks)
-          write_output("below_minimum", str(below_minimum).lower())
-          write_output("eligible_count", data.get("eligible_count", 0))
-          write_output("rejected_count", data.get("rejected_count", 0))
-          PY
-
-          if [ "${selector_status}" -ne 0 ]; then
-            echo "::warning::Task selector returned ${selector_status}; skipping Jules dispatch."
-          fi
-
-      - name: Skip when no eligible autonomous task exists
-        if: steps.select-task.outputs.selected != 'true'
-        run: |
-          echo "No eligible autonomous task selected; skipping Jules dispatch."
-          echo "Reason: ${{ steps.select-task.outputs.reason }}"
-          echo "Reason code: ${{ steps.select-task.outputs.reason_code }}"
-          echo "Todo count: ${{ steps.select-task.outputs.todo_count }}"
-          echo "Eligible count: ${{ steps.select-task.outputs.eligible_count }}"
-          echo "Rejected count: ${{ steps.select-task.outputs.rejected_count }}"
-
-      - name: Dispatch automation health recovery for starved queue
-        if: >
-          (steps.select-task.outputs.selected != 'true' &&
-           (steps.select-task.outputs.reason_code == 'no_eligible_autonomous_task' ||
-            steps.select-task.outputs.reason_code == 'no_todo_tasks')) ||
-          steps.select-task.outputs.below_minimum == 'true'
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-        run: |
-          set -euo pipefail
-
-          runs_file="/tmp/automation-health-runs.json"
-          curl -fsS \
-            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/automation_health.yml/runs?per_page=10" \
-            -o "${runs_file}"
-
-          recent="$(python3 - "${runs_file}" <<'PY'
-          import json
-          import sys
-          from datetime import datetime, timedelta, timezone
-
-          path = sys.argv[1]
-          data = json.load(open(path, encoding="utf-8"))
-          cutoff = datetime.now(timezone.utc) - timedelta(minutes=15)
-
-          def parse_time(value):
-              if not value:
-                  return None
-              return datetime.fromisoformat(value.replace("Z", "+00:00"))
-
-          for run in data.get("workflow_runs", []):
-              if run.get("event") != "workflow_dispatch":
-                  continue
-              created = parse_time(run.get("created_at"))
-              if created is not None and created >= cutoff:
-                  print("true")
-                  break
-          else:
-              print("false")
-          PY
-          )"
-
-          if [ "${recent}" = "true" ]; then
-            echo "Recent Automation Health workflow_dispatch exists; skipping duplicate recovery dispatch."
-            exit 0
-          fi
-
-          body="$(jq -n '{ref: "master", inputs: {mode: "enforce"}}')"
-          curl -fsS \
-            -X POST \
-            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -H "Content-Type: application/json" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/automation_health.yml/dispatches" \
-            -d "${body}"
-
-          echo "Dispatched Automation Health in enforce mode."
-          echo "Reason code: ${{ steps.select-task.outputs.reason_code }}"
-          echo "Todo count: ${{ steps.select-task.outputs.todo_count }}"
-          echo "Minimum todo tasks: ${{ steps.select-task.outputs.minimum_todo_tasks }}"
-
-      - name: Detect open autonomous PRs
-        id: open-prs
-        if: steps.select-task.outputs.selected == 'true'
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-        run: |
-          set -euo pipefail
-
-          curl -fsS \
-            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
-            -o /tmp/open-prs.json
-
-          count="$(python3 .github/scripts/count-autonomous-prs.py /tmp/open-prs.json)"
-
-          echo "count=${count}" >> "$GITHUB_OUTPUT"
-          echo "Open autonomous PRs: ${count}"
-
-      - name: Skip when an autonomous PR is already open
-        if: >
-          steps.select-task.outputs.selected == 'true' &&
-          steps.open-prs.outputs.count != '0' &&
-          (inputs.allow_parallel || 'false') != 'true'
-        run: |
-          echo "An autonomous PR is already open; skipping Jules dispatch."
-          echo "Set allow_parallel=true for a manual override."
-
-      - name: Trigger Google Jules via official API
-        if: >
-          steps.select-task.outputs.selected == 'true' &&
-          ((inputs.allow_parallel || 'false') == 'true' ||
-           steps.open-prs.outputs.count == '0')
-        env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
           JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-          TASK_ID: ${{ steps.select-task.outputs.task_id }}
-          FOCUS: ${{ inputs.focus || 'proxy' }}
-          RISK_CEILING: ${{ inputs.risk_ceiling || 'medium' }}
-          SELECTED_TASK_TITLE: ${{ steps.select-task.outputs.title }}
-          SELECTED_TASK_SCORE: ${{ steps.select-task.outputs.score }}
-          SELECTED_TASK_REASON: ${{ steps.select-task.outputs.reason }}
-          RECOVERY_SESSION_ID: ${{ inputs.recovery_session_id || '' }}
+          RECOVERY_PR_NUMBER: ${{ inputs.recovery_pr_number || '0' }}
+          RECOVERY_PR_HEAD: ${{ inputs.recovery_pr_head || '' }}
           RECOVERY_REASON: ${{ inputs.recovery_reason || '' }}
         run: |
           set -euo pipefail
+          python3 .github/scripts/jules_task_executor.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --manifest agent_tasks.json \
+            --task-id "${{ inputs.task_id }}" \
+            --lease-key "${{ inputs.lease_key }}" \
+            --focus "${{ inputs.focus || 'proxy' }}" \
+            --risk-ceiling "${{ inputs.risk_ceiling || 'medium' }}" \
+            --recovery-pr-number "${RECOVERY_PR_NUMBER}" \
+            --recovery-pr-head "${RECOVERY_PR_HEAD}" \
+            --recovery-reason "${RECOVERY_REASON}" \
+            --state-branch automation-state-v2 \
+            --ledger-path autonomy/ledger.json
 
-          if [ -z "${JULES_API_KEY:-}" ] && [ -z "${JULES_API_KEY_BACKUP:-}" ]; then
-            echo "::error::Missing repository secret JULES_API_KEY or JULES_API_KEY_BACKUP."
-            exit 1
-          fi
-
-          PROMPT="$(python3 .github/scripts/render-jules-next-task-prompt.py \
-            --template .github/prompts/jules_next_task_prompt.txt \
-            --repository "$GITHUB_REPOSITORY" \
-            --focus "$FOCUS" \
-            --task-id "$TASK_ID" \
-            --selected-task-title "$SELECTED_TASK_TITLE" \
-            --selected-task-score "$SELECTED_TASK_SCORE" \
-            --selected-task-reason "$SELECTED_TASK_REASON" \
-            --recovery-session-id "$RECOVERY_SESSION_ID" \
-            --recovery-reason "$RECOVERY_REASON" \
-            --risk-ceiling "$RISK_CEILING")"
-
-          request_body="$(jq -n \
-            --arg prompt "$PROMPT" \
-            --arg source "sources/github/${{ github.repository }}" \
-            '{
-              "prompt": $prompt,
-              "sourceContext": {
-                "source": $source,
-                "githubRepoContext": {"startingBranch": "master"}
-              },
-              "automationMode": "AUTO_CREATE_PR",
-              "requirePlanApproval": false,
-              "title": "notion-manager proxy improvement"
-            }')"
-
-          key_labels=()
-          key_values=()
-          if [ -n "${JULES_API_KEY:-}" ]; then
-            key_labels+=("primary")
-            key_values+=("${JULES_API_KEY}")
-          fi
-          if [ -n "${JULES_API_KEY_BACKUP:-}" ]; then
-            key_labels+=("backup")
-            key_values+=("${JULES_API_KEY_BACKUP}")
-          fi
-
-          active_existing=0
-          source="sources/github/${{ github.repository }}"
-          recent_map_response="/tmp/jules-recent-session-task-map.json"
-          recent_map_status="$(curl -sS \
-            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -o "$recent_map_response" \
-            -w "%{http_code}" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/variables/JULES_RECENT_SESSION_TASKS" || echo "000")"
-
-          if [[ ! "$recent_map_status" =~ ^2[0-9][0-9]$ ]]; then
-            echo "::warning::Could not read JULES_RECENT_SESSION_TASKS; active Jules sessions without task ids will still block dispatch."
-            echo '{}' > "$recent_map_response"
-          fi
-
-          recent_task_lease_active="$(python3 - "$recent_map_response" "$TASK_ID" <<'PY'
-          import json
-          import sys
-          from datetime import datetime, timedelta, timezone
-
-          path, task_id = sys.argv[1:3]
-          try:
-              response = json.load(open(path, encoding="utf-8"))
-              value = response.get("value", "{}") if isinstance(response, dict) else "{}"
-              mapping = json.loads(value) if isinstance(value, str) else value
-          except (OSError, TypeError, ValueError, json.JSONDecodeError):
-              mapping = {}
-
-          cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
-          active = False
-          if isinstance(mapping, dict):
-              for item in mapping.values():
-                  if not isinstance(item, dict) or item.get("task_id") != task_id:
-                      continue
-                  raw_time = item.get("updateTime")
-                  try:
-                      updated = datetime.fromisoformat(str(raw_time).replace("Z", "+00:00"))
-                  except (TypeError, ValueError):
-                      continue
-                  if updated >= cutoff:
-                      active = True
-                      break
-          print("true" if active else "false")
-          PY
-          )"
-
-          if [ "$recent_task_lease_active" = "true" ] && [ -z "$RECOVERY_SESSION_ID" ]; then
-            echo "A recent Jules dispatch lease already exists for task ${TASK_ID}; skipping eventual-consistency duplicate."
-            exit 0
-          fi
-
-          for i in "${!key_labels[@]}"; do
-            label="${key_labels[$i]}"
-            key="${key_values[$i]}"
-            sessions_out="/tmp/jules-sessions-${label}.json"
-            filtered_out="/tmp/jules-active-filtered-${label}.json"
-            status="$(curl -sS 'https://jules.googleapis.com/v1alpha/sessions?pageSize=100' \
-              -H "X-Goog-Api-Key: ${key}" \
-              -o "$sessions_out" \
-              -w "%{http_code}" || echo "000")"
-
-            if [[ ! "$status" =~ ^2[0-9][0-9]$ ]]; then
-              echo "::warning::Could not check active Jules sessions with ${label} key; HTTP ${status}."
-              continue
-            fi
-
-            python3 .github/scripts/filter-active-jules-sessions.py \
-              --sessions "$sessions_out" \
-              --manifest agent_tasks.json \
-              --recent-map "$recent_map_response" \
-              --source "$source" \
-              --stopped-task-ids "${{ steps.stopped-task-ids.outputs.task_ids || '' }}" \
-              --json > "$filtered_out"
-
-            count="$(jq -r '.blocking_count' "$filtered_out")"
-            ignored="$(jq -r '.ignored_count' "$filtered_out")"
-            if [ "${ignored}" -gt 0 ]; then
-              echo "Ignored ${ignored} inactive Jules session(s) for ${source} with ${label} key:"
-              jq -r '.ignored_sessions[] | "- " + .session_id + " task=" + (.task_id // "") + " reason=" + .reason' "$filtered_out"
-            fi
-
-            if [ "${count}" -gt "${active_existing}" ]; then
-              active_existing="${count}"
-            fi
-          done
-
-          if [ "${active_existing}" -gt 0 ]; then
-            echo "Found ${active_existing} blocking active Jules session(s) for ${source}; running one recovery observation before skipping duplicate dispatch."
-            monitor_output="${RUNNER_TEMP}/jules-active-recovery-output.txt"
-            : > "${monitor_output}"
-            GITHUB_OUTPUT="${monitor_output}" \
-              LOOKBACK_HOURS="24" \
-              MIN_USER_REPLY_INTERVAL_MINUTES="0" \
-              STALE_AWAITING_FEEDBACK_MINUTES="10" \
-              MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS="1" \
-              STALE_IN_PROGRESS_MINUTES="45" \
-              NO_AGENT_IN_PROGRESS_MINUTES="4" \
-              NO_AGENT_STALE_IN_PROGRESS_MINUTES="5" \
-              MAX_STALE_IN_PROGRESS_ESCALATIONS="1" \
-              bash .github/scripts/jules-unattended-monitor.sh
-            echo "Active-session recovery observation:"
-            sed -E 's/(token|cookie|password|secret|authorization)=[^ ]+/\\1=[REDACTED]/Ig' "${monitor_output}"
-            recovery_output() {
-              sed -n "s/^${1}=//p" "${monitor_output}" | tail -n 1
-            }
-            recovery_action="$(recovery_output failed_recovery_action)"
-            if [ "${recovery_action}" = "block" ]; then
-              failed_task_id="$(recovery_output failed_task_id)"
-              failed_sessions="$(recovery_output failed_sessions)"
-              if [ -z "${failed_task_id}" ] || [ -z "${failed_sessions}" ]; then
-                echo "::error::Recovery requested a block without task/session identity."
-                exit 1
-              fi
-              echo "Persisting terminal recovery transition for task ${failed_task_id}."
-              python3 .github/scripts/block-failed-agent-task.py \
-                --manifest agent_tasks.json \
-                --task-id "${failed_task_id}" \
-                --failed-sessions "${failed_sessions}"
-            fi
-            echo "Skipping new dispatch to avoid duplicate sessions."
-            exit 0
-          fi
-
-          success=false
-          for i in "${!key_labels[@]}"; do
-            label="${key_labels[$i]}"
-            key="${key_values[$i]}"
-            out="/tmp/jules-response-${label}.json"
-            status="$(curl -sS 'https://jules.googleapis.com/v1alpha/sessions' \
-              -X POST \
-              -H "Content-Type: application/json" \
-              -H "X-Goog-Api-Key: ${key}" \
-              -o "$out" \
-              -w "%{http_code}" \
-              -d "$request_body" || echo "000")"
-
-            if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
-              cp "$out" /tmp/jules-response.json
-              echo "Jules API key used: ${label}"
-              success=true
-              break
-            fi
-
-            echo "::warning::Jules API request with ${label} key failed with HTTP ${status}."
-            if jq -e '.error' "$out" >/dev/null 2>&1; then
-              jq '{error: {code: .error.code, status: .error.status, message: .error.message}}' "$out" || true
-            else
-              head -c 1000 "$out" || true
-              echo
-            fi
-          done
-
-          if [ "$success" != "true" ]; then
-            echo "::error::All configured Jules API keys failed."
-            exit 1
-          fi
-
-          echo "Jules API response summary:"
-          jq '{name, id, title, state, createTime, updateTime, webUrl, url}' /tmp/jules-response.json
-
-          session_id="$(jq -r '.id // (.name // "" | split("/")[-1])' /tmp/jules-response.json)"
-          if [ -n "${session_id}" ] && [ "${session_id}" != "null" ]; then
-            current_var="/tmp/jules-session-task-var.json"
-            current_map="/tmp/jules-session-task-map.json"
-            write_response="/tmp/jules-session-task-var-write.json"
-            status="$(curl -sS \
-              -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -o "$current_var" \
-              -w "%{http_code}" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/variables/JULES_RECENT_SESSION_TASKS" || echo "000")"
-
-            if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
-              jq -r '.value // "{}"' "$current_var" > "$current_map"
-            else
-              echo '{}' > "$current_map"
-            fi
-
-            updated_map="$(jq -c \
-              --arg session_id "$session_id" \
-              --arg task_id "$TASK_ID" \
-              --arg update_time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              '. + {($session_id): {task_id: $task_id, updateTime: $update_time}}
-               | to_entries
-               | sort_by(.value.updateTime)
-               | reverse
-               | .[:30]
-               | from_entries' "$current_map")"
-
-            body="$(jq -n --arg name "JULES_RECENT_SESSION_TASKS" --arg value "$updated_map" '{name: $name, value: $value}')"
-            if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
-              write_status="$(curl -sS \
-                -X PATCH \
-                -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                -H "Content-Type: application/json" \
-                -o "$write_response" \
-                -w "%{http_code}" \
-                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/variables/JULES_RECENT_SESSION_TASKS" \
-                -d "$body" || echo "000")"
-            else
-              write_status="$(curl -sS \
-                -X POST \
-                -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                -H "Content-Type: application/json" \
-                -o "$write_response" \
-                -w "%{http_code}" \
-                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/variables" \
-                -d "$body" || echo "000")"
-            fi
-
-            if [[ "$write_status" =~ ^2[0-9][0-9]$ ]]; then
-              echo "Recorded Jules session task mapping for ${session_id}."
-            else
-              echo "::warning::Could not record Jules session task mapping for ${session_id}; HTTP ${write_status}."
-              head -c 1000 "$write_response" || true
-              echo
-            fi
-          fi
+      - name: Append executor summary
+        if: always()
+        env:
+          SUMMARY_JSON: ${{ steps.execute.outputs.summary }}
+        run: |
+          {
+            echo "## Leased Jules Task Executor"
+            echo
+            echo '```json'
+            printf '%s\n' "${SUMMARY_JSON:-{}}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

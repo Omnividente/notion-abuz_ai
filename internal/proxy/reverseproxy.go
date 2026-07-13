@@ -25,7 +25,6 @@ const (
 	msgstoreOrigin = "https://msgstore.www.notion.so"
 )
 
-
 func isUpstreamTimeout(err error) bool {
 	if err == nil {
 		return false

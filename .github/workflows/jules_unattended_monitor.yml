@@ -1,226 +1,131 @@
-name: 3. Jules Unattended Monitor
+name: 3. Jules Durable Reconciler
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # Avoid the busiest top-of-hour/common-boundary minute. GitHub documents
+    # that scheduled events can be delayed or dropped under scheduler load.
+    - cron: "3/5 * * * *"
   workflow_dispatch:
     inputs:
-      lookback_hours:
-        description: "Recent Jules session lookback window"
+      stale_minutes:
+        description: "Minutes without an agent/PR/check progress delta before recovery"
         required: false
-        default: "24"
+        default: "20"
         type: string
-      dispatch_if_idle:
-        description: "Start a new Jules task when no active session or autonomous PR exists"
+      max_recoveries:
+        description: "Maximum verified recovery messages without agent progress"
         required: false
-        default: "true"
-        type: choice
-        options:
-          - "true"
-          - "false"
-      idle_dispatch_minutes:
-        description: "Minimum minutes since the last Jules trigger before idle dispatch"
-        required: false
-        default: "15"
+        default: "2"
         type: string
+  push:
+    branches: [master]
+    paths:
+      - ".github/scripts/autonomy_reconciler.py"
+      - ".github/scripts/autonomy_state.py"
+      - ".github/scripts/jules_task_executor.py"
+      - ".github/scripts/autonomy_reconciler_test.py"
+      - ".github/workflows/jules_next_task.yml"
+      - ".github/workflows/jules_unattended_monitor.yml"
+      - ".github/workflows/jules_recovery_router.yml"
+      - ".github/workflows/jules_burst_monitor.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - ".github/scripts/autonomy_reconciler.py"
+      - ".github/scripts/autonomy_state.py"
+      - ".github/scripts/jules_task_executor.py"
+      - ".github/scripts/autonomy_reconciler_test.py"
+      - ".github/workflows/jules_next_task.yml"
+      - ".github/workflows/jules_unattended_monitor.yml"
+      - ".github/workflows/jules_recovery_router.yml"
+      - ".github/workflows/jules_burst_monitor.yml"
 
+# PR checks are pure/read-only. The operational job below receives its own
+# write permissions only on trusted master events.
 permissions:
-  actions: write
-  contents: write
-  issues: write
-  pull-requests: write
-
-concurrency:
-  group: notion-abuz-jules-recovery
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  monitor:
+  validate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    if: vars.JULES_LOOP_ENABLED != 'false'
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate durable reconciler without operational credentials
+        run: |
+          python3 -m py_compile \
+            .github/scripts/autonomy_state.py \
+            .github/scripts/autonomy_reconciler.py \
+            .github/scripts/jules_task_executor.py \
+            .github/scripts/autonomy_reconciler_test.py
+          python3 -m unittest discover \
+            -s .github/scripts \
+            -p 'autonomy_reconciler_test.py' \
+            -v
+
+  reconcile:
+    if: >-
+      github.event_name != 'pull_request' &&
+      github.ref == 'refs/heads/master' &&
+      vars.JULES_LOOP_ENABLED != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      actions: write
+      checks: read
+      contents: write
+      issues: write
+      pull-requests: write
+    concurrency:
+      group: notion-abuz-autonomy-mutation
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: master
+          fetch-depth: 0
 
-      - name: Continue waiting Jules sessions
-        id: jules-monitor
+      - name: Validate authoritative reconciler
+        run: |
+          python3 -m py_compile \
+            .github/scripts/autonomy_state.py \
+            .github/scripts/autonomy_reconciler.py \
+            .github/scripts/jules_task_executor.py
+          python3 -m unittest discover \
+            -s .github/scripts \
+            -p 'autonomy_reconciler_test.py' \
+            -v
+
+      - name: Reconcile task, session, PR and checks
+        id: reconcile
         env:
+          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
           JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-          LOOKBACK_HOURS: ${{ inputs.lookback_hours || '24' }}
-          MIN_USER_REPLY_INTERVAL_MINUTES: "2"
-          STALE_AWAITING_FEEDBACK_MINUTES: "10"
-          MAX_STALE_AWAITING_FEEDBACK_ESCALATIONS: "1"
-          STALE_IN_PROGRESS_MINUTES: "45"
-          NO_AGENT_STALE_IN_PROGRESS_MINUTES: ${{ vars.JULES_NO_AGENT_STALE_IN_PROGRESS_MINUTES || '5' }}
-          MAX_STALE_IN_PROGRESS_ESCALATIONS: "1"
-        run: bash .github/scripts/jules-unattended-monitor.sh
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/autonomy_reconciler.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --manifest agent_tasks.json \
+            --state-branch automation-state-v2 \
+            --ledger-path autonomy/ledger.json \
+            --stale-minutes "${{ inputs.stale_minutes || '20' }}" \
+            --max-recoveries "${{ inputs.max_recoveries || '2' }}" \
+            --apply
 
-      - name: Append Jules monitor summary
+      - name: Append durable reconciler summary
+        if: always()
+        env:
+          SUMMARY_JSON: ${{ steps.reconcile.outputs.summary }}
         run: |
           {
-            echo "## Jules Unattended Monitor"
+            echo "## Jules Durable Reconciler"
             echo
-            echo "- Active sessions: \`${{ steps.jules-monitor.outputs.active_sessions }}\`"
-            echo "- Touched sessions: \`${{ steps.jules-monitor.outputs.touched_sessions }}\`"
-            echo "- Stale waiting sessions: \`${{ steps.jules-monitor.outputs.stale_waiting_count }}\`"
-            echo "- Stale session details: \`${{ steps.jules-monitor.outputs.stale_waiting_sessions }}\`"
-            echo "- Stale in-progress sessions: \`${{ steps.jules-monitor.outputs.stale_in_progress_count }}\`"
-            echo "- Stale in-progress details: \`${{ steps.jules-monitor.outputs.stale_in_progress_sessions }}\`"
-            echo "- Skipped stopped sessions: \`${{ steps.jules-monitor.outputs.skipped_stopped_count }}\`"
-            echo "- Skipped stopped details: \`${{ steps.jules-monitor.outputs.skipped_stopped_sessions }}\`"
-            echo "- Skipped inactive manifest sessions: \`${{ steps.jules-monitor.outputs.skipped_inactive_count }}\`"
-            echo "- Skipped inactive manifest details: \`${{ steps.jules-monitor.outputs.skipped_inactive_sessions }}\`"
-            echo "- Skipped unknown in-progress sessions: \`${{ steps.jules-monitor.outputs.skipped_unknown_in_progress_count }}\`"
-            echo "- Skipped unknown in-progress details: \`${{ steps.jules-monitor.outputs.skipped_unknown_in_progress_sessions }}\`"
-            echo "- Wait reasons: \`${{ steps.jules-monitor.outputs.wait_reason }}\`"
-            echo "- Prompt actions: \`${{ steps.jules-monitor.outputs.prompt_action }}\`"
-            echo "- Prompt task ids: \`${{ steps.jules-monitor.outputs.prompt_task_id }}\`"
-            echo "- Continue attempts: \`${{ steps.jules-monitor.outputs.continue_attempts }}\`"
-            echo "- Failed recovery action: \`${{ steps.jules-monitor.outputs.failed_recovery_action }}\`"
+            echo '```json'
+            printf '%s\n' "${SUMMARY_JSON:-{}}"
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Open ready Jules PRs
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-          JULES_SESSION_IDS: ${{ steps.jules-monitor.outputs.session_ids }}
-        run: python3 .github/scripts/open-ready-jules-prs.py
-
-      - name: Detect open autonomous PRs
-        id: open-prs
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-        run: |
-          set -euo pipefail
-
-          curl -fsS \
-            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
-            -o /tmp/open-prs.json
-
-          count="$(python3 .github/scripts/count-autonomous-prs.py /tmp/open-prs.json)"
-
-          echo "count=${count}" >> "$GITHUB_OUTPUT"
-          echo "Open autonomous PRs: ${count}"
-
-      - name: Block task after repeated failed Jules sessions
-        if: >
-          steps.jules-monitor.outputs.failed_recovery_action == 'block'
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-        run: |
-          set -euo pipefail
-
-          python3 .github/scripts/block-failed-agent-task.py \
-            --manifest agent_tasks.json \
-            --task-id "${{ steps.jules-monitor.outputs.failed_task_id }}" \
-            --failed-sessions "${{ steps.jules-monitor.outputs.failed_sessions }}"
-
-      - name: Check Jules trigger cooldown
-        id: cooldown
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-          IDLE_DISPATCH_MINUTES: ${{ inputs.idle_dispatch_minutes || '15' }}
-        run: |
-          set -euo pipefail
-
-          curl -fsS \
-            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/jules_next_task.yml/runs?per_page=5" \
-            -o /tmp/jules-trigger-runs.json
-
-          should_dispatch="$(python3 - <<'PY'
-          import json
-          import os
-          from datetime import datetime, timezone
-
-          idle_minutes = int(os.environ.get("IDLE_DISPATCH_MINUTES", "90"))
-
-          with open("/tmp/jules-trigger-runs.json", "r", encoding="utf-8") as f:
-              runs = json.load(f).get("workflow_runs", [])
-
-          if not runs:
-              print("true")
-              raise SystemExit
-
-          latest = runs[0].get("created_at")
-          latest_dt = datetime.fromisoformat(latest.replace("Z", "+00:00"))
-          age_minutes = (datetime.now(timezone.utc) - latest_dt).total_seconds() / 60
-          print("true" if age_minutes >= idle_minutes else "false")
-          PY
-          )"
-
-          echo "should_dispatch=${should_dispatch}" >> "$GITHUB_OUTPUT"
-          echo "Cooldown allows idle dispatch: ${should_dispatch}"
-
-      - name: Dispatch retry for failed Jules task
-        if: >
-          steps.jules-monitor.outputs.failed_recovery_action == 'retry' &&
-          steps.jules-monitor.outputs.active_sessions == '0' &&
-          steps.open-prs.outputs.count == '0' &&
-          steps.cooldown.outputs.should_dispatch == 'true'
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-        run: |
-          set -euo pipefail
-
-          body="$(jq -n \
-            --arg task_id "${{ steps.jules-monitor.outputs.failed_task_id }}" \
-            --arg recovery_session_id "${{ steps.jules-monitor.outputs.failed_session_id }}" \
-            --arg recovery_reason "${{ steps.jules-monitor.outputs.failed_recovery_reason }}" \
-            '{
-              ref: "master",
-              inputs: {
-                task_id: $task_id,
-                focus: "proxy",
-                risk_ceiling: "medium",
-                allow_parallel: "false",
-                recovery_session_id: $recovery_session_id,
-                recovery_reason: $recovery_reason
-              }
-            }')"
-
-          curl -fsS \
-            -X POST \
-            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/jules_next_task.yml/dispatches" \
-            -d "$body"
-
-          echo "Dispatched retry for failed Jules task ${{ steps.jules-monitor.outputs.failed_task_id }}."
-
-      - name: Dispatch next Jules task when idle
-        if: >
-          (inputs.dispatch_if_idle || 'true') == 'true' &&
-          steps.jules-monitor.outputs.failed_recovery_action == 'none' &&
-          steps.jules-monitor.outputs.active_sessions == '0' &&
-          steps.open-prs.outputs.count == '0' &&
-          steps.cooldown.outputs.should_dispatch == 'true'
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-        run: |
-          set -euo pipefail
-
-          body="$(jq -n '{
-            ref: "master",
-            inputs: {
-              focus: "proxy",
-              risk_ceiling: "medium"
-            }
-          }')"
-
-          curl -fsS \
-            -X POST \
-            -H "Authorization: Bearer ${GITHUB_API_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/jules_next_task.yml/dispatches" \
-            -d "$body"
-
-          echo "Dispatched the next Jules task because the loop was idle."
