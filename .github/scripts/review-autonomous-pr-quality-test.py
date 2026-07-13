@@ -165,6 +165,96 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
         self.assertEqual(decision.recommendation, "Autonomous PR quality gate passed.")
         self.assertTrue(decision.evidence["present"])
 
+    def test_glob_allowed_paths_cover_runtime_and_tests(self) -> None:
+        before_task = task(
+            "runtime-fix",
+            status="todo",
+            allowed_paths=["internal/proxy/*.go", "agent_tasks.json"],
+        )
+        after_task = task(
+            "runtime-fix",
+            status="done",
+            allowed_paths=["internal/proxy/*.go", "agent_tasks.json"],
+        )
+
+        decision = self.evaluate(
+            manifest([before_task]),
+            manifest([after_task]),
+            changed_files=[
+                "internal/proxy/anthropic.go",
+                "internal/proxy/anthropic_bridge_test.go",
+                "agent_tasks.json",
+            ],
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body("runtime-fix"),
+        )
+
+        self.assertTrue(decision.passed)
+
+    def test_file_outside_task_allowed_paths_fails(self) -> None:
+        before = manifest([task("runtime-fix", status="todo")])
+        after = manifest([task("runtime-fix", status="done")])
+        changed_files = [
+            "internal/proxy/anthropic.go",
+            ".github/scripts/jules_recovery_prompt.py",
+            "agent_tasks.json",
+        ]
+
+        decision = self.evaluate(
+            before,
+            after,
+            changed_files=changed_files,
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body(
+                "runtime-fix",
+                evidence_files=changed_files,
+            ),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(
+            any(
+                "outside task runtime-fix allowed_paths" in reason
+                and ".github/scripts/jules_recovery_prompt.py" in reason
+                for reason in decision.reasons
+            )
+        )
+
+    def test_pr_cannot_self_expand_allowed_paths(self) -> None:
+        before_task = task(
+            "runtime-fix",
+            status="todo",
+            allowed_paths=["internal/proxy/*.go", "agent_tasks.json"],
+        )
+        after_task = task(
+            "runtime-fix",
+            status="done",
+            allowed_paths=[
+                "internal/proxy/*.go",
+                ".github/scripts/*.py",
+                "agent_tasks.json",
+            ],
+        )
+        changed_files = [
+            "internal/proxy/anthropic.go",
+            ".github/scripts/jules_recovery_prompt.py",
+            "agent_tasks.json",
+        ]
+
+        decision = self.evaluate(
+            manifest([before_task]),
+            manifest([after_task]),
+            changed_files=changed_files,
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body(
+                "runtime-fix",
+                evidence_files=changed_files,
+            ),
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("outside task runtime-fix allowed_paths" in reason for reason in decision.reasons))
+
     def test_followup_code_identifiers_do_not_trigger_repeated_followup_failure(self) -> None:
         before = manifest([task("runtime-fix", status="todo")])
         after = manifest([task("runtime-fix", status="done")])
