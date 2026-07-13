@@ -2652,9 +2652,18 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 49,
+  "revision": 50,
   "schema": 2,
   "sessions": {
+    "10084739906341150041": {
+      "last_observed_at": "2026-07-13T23:00:46Z",
+      "lease_key": "68f137f852425e66a6fd2263",
+      "recovery_pr_head": "fea5a6fc9ab0d29131c72a297d4b413bac37919e",
+      "recovery_pr_number": 604,
+      "session_state": "STATE_UNSPECIFIED",
+      "state_version": 1,
+      "task_id": "docs-routing-contract-behavior"
+    },
     "10318837510805541745": {
       "activity_fingerprint": "419480cbc36620b19f8b0c28",
       "last_observed_at": "2026-07-13T23:00:07Z",
@@ -3182,13 +3191,13 @@
     "docs-routing-contract-behavior": {
       "current_evidence_fingerprint": "a2faccb6404eb7fe35c9f9f0",
       "deferred_at": "2026-07-13T22:47:47Z",
-      "dispatch_completed_at": "2026-07-13T22:11:59Z",
+      "dispatch_completed_at": "2026-07-13T23:00:46Z",
       "dispatch_generation": 3,
       "dispatch_key": "68f137f852425e66a6fd2263",
       "dispatch_requested_at": "2026-07-13T23:00:18Z",
       "last_observed_at": "2026-07-13T23:00:17Z",
       "last_progress_at": "2026-07-13T23:00:17Z",
-      "lease_expires_at": "2026-07-13T23:45:45Z",
+      "lease_expires_at": "2026-07-13T23:45:46Z",
       "pr_number": 604,
       "pr_recoveries": 2,
       "pr_recovery_evidence_key": "80f77eabf35a3613b1718ab6",
@@ -3199,10 +3208,10 @@
       "recovery_pr_number": 604,
       "recovery_reason": "failed checks on existing PR: test-and-merge",
       "session_create_requested_at": "2026-07-13T23:00:45Z",
-      "session_id": null,
-      "session_name": "sessions/2103514512702002509",
-      "session_state": "COMPLETED",
-      "state": "session_create_requested",
+      "session_id": "10084739906341150041",
+      "session_name": "sessions/10084739906341150041",
+      "session_state": "STATE_UNSPECIFIED",
+      "state": "session_created",
       "task_fingerprint": "d3f183e601ca151df61ad610",
       "terminal_evidence_key": "9a498681c441502b3bded849",
       "terminal_session_id": "2103514512702002509",
@@ -3277,5 +3286,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:00:45Z"
+  "updated_at": "2026-07-13T23:00:46Z"
 }
