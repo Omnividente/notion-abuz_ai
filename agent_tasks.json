@@ -8503,7 +8503,7 @@
     },
     {
       "id": "docs-routing-contract-behavior",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Document runtime routing contract and fixture behavior",
