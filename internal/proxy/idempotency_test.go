@@ -6,10 +6,14 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestIdempotencyMiddlewareConcurrentDuplicate(t *testing.T) {
 	inferenceIdempotency = sync.Map{}
+	idempotencyMetricsMu.Lock()
+	idempotencyMetrics = make(map[string]int)
+	idempotencyMetricsMu.Unlock()
 	var handled atomic.Int32
 	start := make(chan struct{})
 	handler := IdempotencyMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +71,17 @@ func TestIdempotencyMiddlewareConcurrentDuplicate(t *testing.T) {
 	}
 	if success != 1 || duplicates != workers-1 || handled.Load() != 1 {
 		t.Fatalf("success=%d duplicates=%d handled=%d", success, duplicates, handled.Load())
+	}
+
+	metrics := GetIdempotencyMetrics()
+	if metrics["in_flight_conflict"] != workers-1 {
+		t.Fatalf("expected in_flight_conflict=%d, got %d", workers-1, metrics["in_flight_conflict"])
+	}
+	if metrics["first_execution"] != 1 {
+		t.Fatalf("expected first_execution=1, got %d", metrics["first_execution"])
+	}
+	if GetIdempotencyEntryCount() != 1 {
+		t.Fatalf("expected 1 entry, got %d", GetIdempotencyEntryCount())
 	}
 }
 
@@ -140,6 +155,12 @@ func TestIdempotencyMiddlewareReplayNonStreaming(t *testing.T) {
 	if handled.Load() != 1 {
 		t.Fatalf("handled = %d, expected 1", handled.Load())
 	}
+
+	metrics := GetIdempotencyMetrics()
+	// Count may be higher if previous tests ran, just ensure > 0
+	if metrics["completed_replay"] == 0 {
+		t.Fatalf("expected completed_replay to be incremented")
+	}
 }
 
 func TestIdempotencyMiddlewareStreaming(t *testing.T) {
@@ -182,5 +203,72 @@ func TestIdempotencyMiddlewareStreaming(t *testing.T) {
 
 	if handled.Load() != 1 {
 		t.Fatalf("handled = %d, expected 1", handled.Load())
+	}
+
+	metrics := GetIdempotencyMetrics()
+	// Count may be higher if previous tests ran, just ensure > 0
+	if metrics["completed_replay"] == 0 {
+		t.Fatalf("expected completed_replay to be incremented")
+	}
+}
+
+func TestIdempotencyMiddlewareExpiry(t *testing.T) {
+	inferenceIdempotency = sync.Map{}
+	idempotencyMetricsMu.Lock()
+	idempotencyMetrics = make(map[string]int)
+	idempotencyMetricsMu.Unlock()
+
+	var handled atomic.Int32
+	handler := IdempotencyMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handled.Add(1)
+		w.WriteHeader(http.StatusCreated)
+	}))
+
+	// First execution
+	req1 := httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	req1.Header.Set("Idempotency-Key", "test-expiry")
+	rec1 := httptest.NewRecorder()
+	handler.ServeHTTP(rec1, req1)
+
+	if rec1.Code != http.StatusCreated {
+		t.Fatalf("first request code = %d", rec1.Code)
+	}
+
+	metrics := GetIdempotencyMetrics()
+	if metrics["first_execution"] != 1 {
+		t.Fatalf("expected first_execution=1, got %d", metrics["first_execution"])
+	}
+
+	// Manually expire the entry
+	scoped := "/v1/messages:test-expiry"
+	actual, loaded := inferenceIdempotency.Load(scoped)
+	if !loaded {
+		t.Fatalf("expected entry to be loaded")
+	}
+	entry := actual.(*idempotencyEntry)
+	entry.mu.Lock()
+	entry.expires = time.Now().Add(-1 * time.Minute)
+	entry.mu.Unlock()
+
+	// Second execution, should trigger expiry and re-execute
+	req2 := httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	req2.Header.Set("Idempotency-Key", "test-expiry")
+	rec2 := httptest.NewRecorder()
+	handler.ServeHTTP(rec2, req2)
+
+	if rec2.Code != http.StatusCreated {
+		t.Fatalf("second request code = %d", rec2.Code)
+	}
+
+	if handled.Load() != 2 {
+		t.Fatalf("handled = %d, expected 2", handled.Load())
+	}
+
+	metrics = GetIdempotencyMetrics()
+	if metrics["expiry"] != 1 {
+		t.Fatalf("expected expiry=1, got %d", metrics["expiry"])
+	}
+	if metrics["first_execution"] != 2 {
+		t.Fatalf("expected first_execution=2, got %d", metrics["first_execution"])
 	}
 }

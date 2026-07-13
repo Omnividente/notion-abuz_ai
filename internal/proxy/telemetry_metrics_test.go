@@ -32,23 +32,33 @@ func TestHandleAdminMetrics(t *testing.T) {
 		t.Errorf("expected 200 OK, got %d", rr.Code)
 	}
 
-	var res map[string]map[string]int
+	var res map[string]interface{}
 	if err := json.NewDecoder(rr.Body).Decode(&res); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	metrics := res["context_loss"]
-	if metrics["tool_schema_simplification_recursion_limit"] != 1 {
-		t.Errorf("expected tool_schema_simplification_recursion_limit to be 1, got %d", metrics["tool_schema_simplification_recursion_limit"])
+	metrics := res["context_loss"].(map[string]interface{})
+	if metrics["tool_schema_simplification_recursion_limit"].(float64) != 1 {
+		t.Errorf("expected tool_schema_simplification_recursion_limit to be 1, got %v", metrics["tool_schema_simplification_recursion_limit"])
 	}
 
-	toolModeLossMetrics := res["tool_mode_loss"]
-	if toolModeLossMetrics["unparseable_json_candidate_blocks"] != 1 {
-		t.Errorf("expected unparseable_json_candidate_blocks to be 1, got %d", toolModeLossMetrics["unparseable_json_candidate_blocks"])
+	toolModeLossMetrics := res["tool_mode_loss"].(map[string]interface{})
+	if toolModeLossMetrics["unparseable_json_candidate_blocks"].(float64) != 1 {
+		t.Errorf("expected unparseable_json_candidate_blocks to be 1, got %v", toolModeLossMetrics["unparseable_json_candidate_blocks"])
 	}
 
 	requestContractMetrics := res["request_contract"]
 	if requestContractMetrics == nil {
 		t.Errorf("expected request_contract to be present in response")
+	}
+
+	idempotencyMetrics := res["idempotency"]
+	if idempotencyMetrics == nil {
+		t.Errorf("expected idempotency to be present in response")
+	}
+
+	idempotencyEntries := res["idempotency_entries"]
+	if idempotencyEntries == nil {
+		t.Errorf("expected idempotency_entries to be present in response")
 	}
 }

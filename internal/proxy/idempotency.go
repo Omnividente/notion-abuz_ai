@@ -91,6 +91,7 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 				existing.mu.RUnlock()
 
 				if expired && inferenceIdempotency.CompareAndSwap(scoped, existing, entry) {
+					RecordIdempotencyMetric("expiry")
 					loaded = false
 				} else {
 					existing.mu.RLock()
@@ -101,6 +102,7 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 					existing.mu.RUnlock()
 
 					if st == statusCompleted {
+						RecordIdempotencyMetric("completed_replay")
 						for k, v := range headers {
 							for _, val := range v {
 								w.Header().Add(k, val)
@@ -110,6 +112,12 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 						w.WriteHeader(statusCode)
 						w.Write(body)
 						return
+					}
+
+					if st == statusStreaming {
+						RecordIdempotencyMetric("streaming_non_replay")
+					} else {
+						RecordIdempotencyMetric("in_flight_conflict")
 					}
 
 					w.Header().Set("Content-Type", "application/json")
@@ -127,6 +135,7 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 		}
 
 		if loaded {
+			RecordIdempotencyMetric("in_flight_conflict")
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("X-Idempotency-Status", "duplicate")
 			w.WriteHeader(http.StatusConflict)
@@ -138,6 +147,8 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 			})
 			return
 		}
+
+		RecordIdempotencyMetric("first_execution")
 
 		capturer := &responseCapturer{ResponseWriter: w}
 		next.ServeHTTP(capturer, r)
@@ -165,4 +176,13 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 		}
 		entry.mu.Unlock()
 	})
+}
+
+func GetIdempotencyEntryCount() int {
+	count := 0
+	inferenceIdempotency.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
+	return count
 }
