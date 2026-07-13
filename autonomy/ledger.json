@@ -1097,6 +1097,14 @@
       "task_id": "proxy-improve-rproxy-timeout-handling",
       "verified_at": "2026-07-13T20:19:20Z"
     },
+    "51bc0f215a62e07b371fe1d6": {
+      "kind": "terminal_manifest_session_cleanup",
+      "sent_at": "2026-07-13T23:51:58Z",
+      "session_id": "9254984749467847325",
+      "state_version": 2,
+      "task_id": "docs-idempotency-replay-behavior",
+      "verified_at": null
+    },
     "538844c6914b17e70064e0fe": {
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
       "delivery_attempts": 1,
@@ -2937,7 +2945,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 66,
+  "revision": 67,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3463,12 +3471,18 @@
       "task_id": "scripts-audit-python-lint-dedupe-task-2"
     },
     "9254984749467847325": {
-      "last_observed_at": "2026-07-13T23:43:27Z",
+      "activity_fingerprint": "cf1cbb66a638b4860a516671",
+      "last_observed_at": "2026-07-13T23:51:58Z",
+      "last_progress_at": "2026-07-13T23:51:58Z",
       "lease_key": "a1c74deb92df31cfb169a15a",
+      "pr_fingerprint": "ccfc6431e25216c212945eb2",
+      "progress_fingerprint": "ca70ee6192d9173ff458855e",
+      "recoveries_without_progress": 0,
       "recovery_pr_head": "ec4a1b2604020183319a80d35ec48700ceb95f52",
       "recovery_pr_number": 607,
-      "session_state": "STATE_UNSPECIFIED",
-      "state_version": 1,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-13T23:51:29.869028Z",
+      "state_version": 2,
       "task_id": "docs-idempotency-replay-behavior"
     },
     "9780256794307111476": {
@@ -3616,5 +3630,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:43:27Z"
+  "updated_at": "2026-07-13T23:51:58Z"
 }
