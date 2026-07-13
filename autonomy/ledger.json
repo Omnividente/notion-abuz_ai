@@ -775,6 +775,17 @@
       "task_id": "docs-routing-contract-behavior",
       "verified_at": "2026-07-13T22:35:50Z"
     },
+    "c41c6aed44f795f02686416c": {
+      "activity_fingerprint": "e281d9cdd23f4b4663d0ff45",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-13T22:58:55Z",
+      "packet_hash": "3a8878df8f6b0c79095f0446",
+      "sent_at": "2026-07-13T22:54:12Z",
+      "session_id": "2103514512702002509",
+      "state_version": 10,
+      "task_id": "docs-routing-contract-behavior",
+      "verified_at": null
+    },
     "legacy-01fba5268ce233391de6bb86": {
       "kind": "legacy_router_action",
       "reason": "Create diagnostic task for stopped conflict-recovery loop on PR #502",
@@ -2539,7 +2550,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 43,
+  "revision": 44,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2812,20 +2823,21 @@
       "task_id": "scripts-audit-python-lint-dedupe-task-4"
     },
     "2103514512702002509": {
-      "activity_fingerprint": "0cd32d3020ff58c07422266f",
-      "last_observed_at": "2026-07-13T22:48:04Z",
-      "last_progress_at": "2026-07-13T22:48:04Z",
+      "activity_fingerprint": "e281d9cdd23f4b4663d0ff45",
+      "last_observed_at": "2026-07-13T22:54:12Z",
+      "last_progress_at": "2026-07-13T22:54:12Z",
       "last_verified_message_key": "b8bb647254f9975bea54a807",
       "lease_key": "b2cfdf21b087f58b892e5976",
+      "pending_message_key": "c41c6aed44f795f02686416c",
       "post_send_activity_fingerprint": "7db7ca1cb1b5f156fe7b069f",
-      "pr_fingerprint": "ad89354242268f799d49cc0b",
-      "progress_fingerprint": "b5ffc11ee82222a6de8fb715",
+      "pr_fingerprint": "3ecbeca2367bd5d59ac16f49",
+      "progress_fingerprint": "7346e37d74d477417236a576",
       "recoveries_without_progress": 0,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_state": "FAILED",
-      "session_update_at": "2026-07-13T22:47:45.227295Z",
-      "state_version": 9,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-13T22:53:56.212522Z",
+      "state_version": 10,
       "task_id": "docs-routing-contract-behavior",
       "terminal_reason": "Jules session ended in FAILED without an open PR"
     },
@@ -3171,5 +3183,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T22:48:27Z"
+  "updated_at": "2026-07-13T22:54:12Z"
 }
