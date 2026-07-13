@@ -1029,6 +1029,44 @@
       "run_attempt": "1",
       "run_id": "29293449150",
       "source_fingerprint": "8cc67ac8c6e031ce7faea0a7"
+    },
+    {
+      "actions": [
+        {
+          "action": "comment_pr_recovery",
+          "key": "9c27611c81dc6ac0b5a67b2e",
+          "pr_number": 607,
+          "task_id": "docs-idempotency-replay-behavior"
+        },
+        {
+          "action": "dispatch_in_place_pr_recovery",
+          "dispatch_key": "a1c74deb92df31cfb169a15a",
+          "generation": 2,
+          "pr_number": 607,
+          "task_id": "docs-idempotency-replay-behavior"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-13T23:43:00Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-upload-request-context-cancellation",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 461,
+      "open_autonomous_prs": 1,
+      "pending_leases": [
+        "docs-idempotency-replay-behavior"
+      ],
+      "progress": [
+        {
+          "kind": "pr_delta",
+          "pr_number": 607,
+          "task_id": "docs-idempotency-replay-behavior"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29293801267",
+      "source_fingerprint": "b7ac355b4bd906e3942fe519"
     }
   ],
   "messages": {
@@ -2899,7 +2937,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 63,
+  "revision": 64,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3569,5 +3607,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:42:59Z"
+  "updated_at": "2026-07-13T23:43:00Z"
 }
