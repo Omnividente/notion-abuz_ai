@@ -68,6 +68,25 @@ def pr_recovery_fingerprints(
     return evidence_key, digest("pr-session-recovery", evidence_key, terminal_key)
 
 
+def terminal_session_is_superseded(
+    task_state: dict[str, Any],
+    *,
+    task_id: str,
+    session_id: str,
+    session_state: str,
+    active_task_ids: set[str],
+) -> bool:
+    """Keep a historical terminal row from replacing the active task owner."""
+
+    current_owner = str(task_state.get("session_id") or "")
+    return bool(
+        session_state in TERMINAL
+        and task_id in active_task_ids
+        and current_owner
+        and current_owner != session_id
+    )
+
+
 def reconcile(args: argparse.Namespace) -> int:
     github_token = os.environ.get("GITHUB_API_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
     jules_keys = [x for x in (os.environ.get("JULES_API_KEY"), os.environ.get("JULES_API_KEY_BACKUP")) if x]
@@ -449,12 +468,21 @@ def reconcile(args: argparse.Namespace) -> int:
         ledger["sessions"][session_id] = record
         if task_id and not terminated and not task_terminal_in_manifest:
             task_state = dict(ledger["tasks"].get(task_state_id, {}))
-            task_state["current_evidence_fingerprint"] = progress_fp
-            if state in ACTIVE:
-                task_state.update({"state": "active", "session_id": session_id, "pr_number": (pr or {}).get("number"), "last_observed_at": iso()})
-            elif task_state.get("state") != "deferred":
-                task_state.update({"state": state.lower(), "session_id": session_id, "pr_number": (pr or {}).get("number"), "last_observed_at": iso()})
-            ledger["tasks"][task_state_id] = task_state
+            if terminal_session_is_superseded(
+                task_state,
+                task_id=str(task_id),
+                session_id=session_id,
+                session_state=state,
+                active_task_ids=active_task_ids,
+            ):
+                record["ignored_reason"] = f"superseded_by_active_session:{task_state.get('session_id')}"
+            else:
+                task_state["current_evidence_fingerprint"] = progress_fp
+                if state in ACTIVE:
+                    task_state.update({"state": "active", "session_id": session_id, "session_name": session_name, "session_state": state, "pr_number": (pr or {}).get("number"), "last_observed_at": iso()})
+                elif task_state.get("state") != "deferred":
+                    task_state.update({"state": state.lower(), "session_id": session_id, "session_name": session_name, "session_state": state, "pr_number": (pr or {}).get("number"), "last_observed_at": iso()})
+                ledger["tasks"][task_state_id] = task_state
 
     for task_id, pr in pr_by_task.items():
         if task_id in active_task_ids:

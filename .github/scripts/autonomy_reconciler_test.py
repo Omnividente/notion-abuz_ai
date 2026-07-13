@@ -90,6 +90,31 @@ class ReconcilerTests(unittest.TestCase):
         )
         self.assertNotEqual(evidence_after, changed_evidence)
 
+    def test_historical_terminal_session_cannot_replace_active_task_owner(self):
+        task_state = {
+            "state": "active",
+            "session_id": "5079834960180138219",
+            "session_name": "sessions/5079834960180138219",
+        }
+        self.assertTrue(
+            M.terminal_session_is_superseded(
+                task_state,
+                task_id="proxy-improve-rproxy-timeout-handling",
+                session_id="13525775686702804526",
+                session_state="COMPLETED",
+                active_task_ids={"proxy-improve-rproxy-timeout-handling"},
+            )
+        )
+        self.assertFalse(
+            M.terminal_session_is_superseded(
+                task_state,
+                task_id="proxy-improve-rproxy-timeout-handling",
+                session_id="5079834960180138219",
+                session_state="IN_PROGRESS",
+                active_task_ids={"proxy-improve-rproxy-timeout-handling"},
+            )
+        )
+
     def test_unchanged_failed_checks_do_not_repeat_recovery_message(self):
         self.assertEqual(
             M.should_recover_session(
