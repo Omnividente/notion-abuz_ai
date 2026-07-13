@@ -19,8 +19,11 @@ Do not ask whether to finalize or whether anything else needs review.
 If the task is complete, open the PR immediately and label it "jules".
 If you would normally ask the user for a choice, make the decision yourself
 using the policy below and continue.
-If a proposed change is outside the selected task, exclude it from the PR,
-add or keep a follow-up todo task, and finish the current task.
+If evidence places the root cause outside allowed_paths, do not ask the user
+and do not create a manifest-only recovery follow-up. Emit one structured
+`AUTONOMY_SCOPE_REQUEST` activity containing exact paths, reproduced evidence,
+risk and the smallest proposed expansion; the durable reconciler will decide
+whether the same task can be safely re-leased with broader scope.
 If research or tests reveal a new bounded compatibility problem, create a
 follow-up todo task for it instead of waiting for human prioritization.
 If you are uncertain whether to implement a step, prefer the smaller
@@ -30,9 +33,9 @@ reproduction, log inspection, or artifact inspection. If it is safe,
 non-destructive, inside the selected task scope and allowed_paths, run it.
 If a reproduction requires live secrets, real credentials, production
 access, critical risk, unguarded high-risk, or destructive action, do
-not ask the user inside the Jules session. Instead update the selected
-task to blocked with the exact missing evidence or permission and open
-one manifest-only PR. If the selected task is bounded high-risk legacy,
+not ask the user inside the Jules session and do not open a manifest-only
+recovery PR. Emit `AUTONOMY_DEFER_REQUEST` with the exact retry condition,
+required evidence and earliest recheck time. If the selected task is bounded high-risk legacy,
 offline, or lab work, continue only inside allowed_paths with concrete
 CI/smoke/artifact/self-hosted evidence and rollback notes.
 Only wait for user input when the task is blocked by missing permissions,
@@ -47,9 +50,10 @@ First inspect repository state, current agent_tasks.json, local live-smoke
 artifacts/check logs available in the repository, and the selected task's
 acceptance criteria. Implement the smallest safe recovery step inside
 allowed_paths. If the same blocker still prevents progress, do not create
-a broad or micro test-only workaround. Instead update the selected task to
-blocked with a concrete blocked_reason that names the missing evidence or
-repeated failure, then open one manifest-only PR.
+a broad or micro test-only workaround and do not create a new recovery task.
+Emit `AUTONOMY_DEFER_REQUEST` for the same TASK_ID with concrete missing
+evidence, retry condition and recheck time; the durable reconciler owns the
+terminal session/task/lease transition.
 If Recovery reason says "auto-answer", treat it as an explicit user
 answer. Continue with the safe local/offline reproduction path named in
 that reason. Do not ask the same question again.
@@ -98,13 +102,16 @@ TASK LOOP:
 2. Validate agent_tasks.json mentally against scripts/validate_agent_tasks.py before editing it.
 3. TASK_ID was selected before this session by scripts/select_agent_task.py.
 4. Implement only the selected TASK_ID. Do not switch to the first todo task.
-5. If there are fewer than the manifest minimum todo tasks, add a small batch of new low/medium-risk tasks before finishing.
+5. If there are fewer than the manifest minimum todo tasks, add at most the configured batch_size of evidence-backed runtime/project tasks before finishing. Never replenish with automation-health, recovery, manifest-only, placeholder, dummy, quota, or test-only filler tasks.
 6. Implement exactly ONE complete task in one PR.
 7. Stay inside the selected task's allowed_paths. You may edit agent_tasks.json only to update task status or add follow-up tasks.
 8. Update agent_tasks.json: set the completed task status to "done"
    only after every acceptance criterion is satisfied by direct code,
    test, doc, artifact, or diagnostic evidence in this PR.
-9. Add any discovered bugs or safe improvements as new "todo" tasks with allowed_paths and acceptance criteria.
+   If current code already satisfies acceptance, record
+   `completion_mode: verified_no_change` with exact file/line and command
+   evidence; never label that case blocked.
+9. Add a discovered bug or safe improvement as a new "todo" task only when it has concrete runtime, issue, check, transcript, smoke, or failed-session evidence and the useful queue is below max_todo_tasks. Do not add a duplicate or speculative micro-task.
 10. Before opening the PR, sync with the latest master/default branch.
 11. If master changed during the session, rebase or merge latest master
     before PR creation. For agent_tasks.json conflicts, preserve the
@@ -116,8 +123,8 @@ TASK LOOP:
 RESEARCH AND DISCOVERY POLICY:
 Some tasks are investigative. Do not only execute literal user bullet
 points when code, tests, docs, or CI reveal a broader compatibility gap.
-Convert concrete findings into durable low/medium-risk todo tasks even
-when the queue is not below the replenishment threshold. Each generated
+Convert concrete findings into durable low/medium-risk todo tasks only
+when they are non-duplicative and the useful queue remains bounded. Each generated
 task must be non-duplicative, fit one PR, stay below max_todo_tasks, and
 include precise allowed_paths and acceptance criteria. If a discovered
 fix is required for the selected task and remains inside allowed_paths,

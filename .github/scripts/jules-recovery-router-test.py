@@ -19,6 +19,8 @@ UNATTENDED_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_unat
 CI_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "ci.yml"
 AUTOMERGE_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_automerge.yml"
 NEXT_TASK_WORKFLOW_PATH = Path(__file__).parents[1] / "workflows" / "jules_next_task.yml"
+RECONCILER_PATH = Path(__file__).with_name("autonomy_reconciler.py")
+STATE_PATH = Path(__file__).with_name("autonomy_state.py")
 SPEC = importlib.util.spec_from_file_location("jules_recovery_router", SCRIPT_PATH)
 router = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -352,110 +354,92 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertEqual(actions[0].type, "dispatch_workflow")
         self.assertEqual(actions[0].payload["workflow"], "jules_next_task.yml")
 
-    def test_workflow_reruns_router_after_pr_checks_finish(self) -> None:
-        text = WORKFLOW_PATH.read_text(encoding="utf-8")
-
-        self.assertIn("workflow_run:", text)
-        self.assertIn("- CI", text)
-        self.assertIn("- RDSH Local Live Smoke", text)
-        self.assertIn("- 1. Auto-Validate and Merge Jules PRs", text)
-        self.assertIn("- 4. Advisory Critic Review", text)
-        self.assertIn("- completed", text)
-
-    def test_workflow_can_push_manifest_only_recovery_prs(self) -> None:
-        text = WORKFLOW_PATH.read_text(encoding="utf-8")
-        script_text = SCRIPT_PATH.read_text(encoding="utf-8")
-
-        self.assertIn("contents: write", text)
-        self.assertIn("pull-requests: write", text)
-        self.assertIn("create-circuit-breaker-followup-task-pr.py", script_text)
-
-    def test_control_plane_concurrency_is_serialized_by_mutation_domain(self) -> None:
-        recovery_paths = (
-            WORKFLOW_PATH,
-            BURST_WORKFLOW_PATH,
-            WORKFLOW_PATH.parent / "jules_unattended_monitor.yml",
-        )
-        for path in recovery_paths:
+    def test_legacy_router_and_burst_have_no_automatic_wake_or_mutation(self) -> None:
+        for path in (WORKFLOW_PATH, BURST_WORKFLOW_PATH):
             text = path.read_text(encoding="utf-8")
-            self.assertIn("group: notion-abuz-jules-recovery", text)
-            self.assertIn("cancel-in-progress: false", text)
+            self.assertIn("workflow_dispatch:", text)
+            self.assertNotIn("workflow_run:", text)
+            self.assertNotIn("schedule:", text)
+            self.assertNotIn("pull_request_target:", text)
+            self.assertNotIn("contents: write", text)
+            self.assertNotIn("pull-requests: write", text)
+            self.assertNotIn("JULES_API_KEY", text)
+            self.assertNotIn("jules-recovery-router.py", text)
+            self.assertNotIn("jules-unattended-monitor.sh", text)
 
-        next_task_text = NEXT_TASK_WORKFLOW_PATH.read_text(encoding="utf-8")
-        self.assertIn("group: notion-abuz-jules-dispatch", next_task_text)
-        self.assertIn("cancel-in-progress: false", next_task_text)
-
-
-    def test_pull_request_target_router_executes_trusted_base_workflow(self) -> None:
-        text = WORKFLOW_PATH.read_text(encoding="utf-8")
-
-        self.assertIn("RECOVERY_ROUTER_MODE: ${{ inputs.mode || 'act' }}", text)
-        self.assertIn('--mode "${RECOVERY_ROUTER_MODE}"', text)
-        self.assertIn('echo "- Mode:', text)
-        self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", text)
-        self.assertNotIn("github.event.pull_request.head.sha", text)
-        self.assertNotIn("github.event.pull_request.head.ref", text)
-
-    def test_next_task_dispatches_health_for_no_todo_and_no_eligible_queues(self) -> None:
-        text = NEXT_TASK_WORKFLOW_PATH.read_text(encoding="utf-8")
-
-        self.assertIn("Dispatch automation health recovery for starved queue", text)
-        self.assertIn("steps.select-task.outputs.reason_code == 'no_eligible_autonomous_task'", text)
-        self.assertIn("steps.select-task.outputs.reason_code == 'no_todo_tasks'", text)
-        self.assertIn("actions/workflows/automation_health.yml/dispatches", text)
-
-    def test_burst_monitor_dispatches_next_after_touching_last_session(self) -> None:
-        text = BURST_WORKFLOW_PATH.read_text(encoding="utf-8")
-
-        self.assertIn('touched_sessions="$(get_output touched_sessions "$output_file")"', text)
-        self.assertIn('echo "Touched Jules sessions: ${touched_sessions:-0}"', text)
-        self.assertIn('if [ "${touched_sessions:-0}" != "0" ]; then', text)
-        self.assertIn('saw_active_sessions="1"', text)
-
-    def test_burst_monitor_runtime_is_bounded(self) -> None:
-        text = BURST_WORKFLOW_PATH.read_text(encoding="utf-8")
-
-        self.assertIn('default: "10"', text)
-        self.assertIn('default: "30"', text)
-        self.assertIn("group: notion-abuz-jules-recovery", text)
-        self.assertIn("cancel-in-progress: false", text)
-        self.assertIn("timeout-minutes: 10", text)
-        self.assertIn("vars.JULES_BURST_MONITOR_CYCLES || '10'", text)
-        self.assertIn("vars.JULES_BURST_MONITOR_INTERVAL_SECONDS || '30'", text)
-        self.assertIn("STALE_IN_PROGRESS_MINUTES", text)
-        self.assertIn("NO_AGENT_IN_PROGRESS_MINUTES", text)
-        self.assertIn("vars.JULES_BURST_NO_AGENT_IN_PROGRESS_MINUTES || '4'", text)
-        self.assertIn("NO_AGENT_STALE_IN_PROGRESS_MINUTES", text)
-        self.assertIn("vars.JULES_BURST_NO_AGENT_STALE_IN_PROGRESS_MINUTES || '5'", text)
-        self.assertIn("stale_in_progress_count", text)
-        self.assertIn("Stale in-progress sessions", text)
-        self.assertIn("Active Jules sessions remain after ${cycles} burst passes", text)
-
-    def test_burst_monitor_reports_actionable_final_status(self) -> None:
-        text = BURST_WORKFLOW_PATH.read_text(encoding="utf-8")
-
-        self.assertIn("classify_burst_status()", text)
-        self.assertIn("explain_final_burst_status()", text)
-        self.assertIn('skipped_stopped_count="$(get_output skipped_stopped_count "$output_file")"', text)
-        self.assertIn('skipped_stopped_sessions="$(get_output skipped_stopped_sessions "$output_file")"', text)
-        self.assertIn('echo "Skipped stopped sessions: ${skipped_stopped_count:-0} ${skipped_stopped_sessions:-}"', text)
-        self.assertIn('echo "Burst status: ${burst_status}"', text)
-        self.assertIn("recovery_prompted", text)
-        self.assertIn("recovery_signal_pending", text)
-        self.assertIn("fresh_active_with_stopped_sessions_skipped", text)
-        self.assertIn("fresh_active_no_recovery_signal", text)
-        self.assertIn("latest activity is still fresh and no recovery prompt was needed", text)
-
-    def test_unattended_monitor_summarizes_stale_in_progress_sessions(self) -> None:
+    def test_authoritative_reconciler_has_minimal_wakes_and_trusted_act(self) -> None:
         text = UNATTENDED_WORKFLOW_PATH.read_text(encoding="utf-8")
+        self.assertIn('cron: "*/5 * * * *"', text)
+        self.assertIn("workflow_dispatch:", text)
+        self.assertIn("pull_request:", text)
+        self.assertNotIn("workflow_run:", text)
+        self.assertNotIn("pull_request_target:", text)
+        self.assertIn("github.event_name == 'pull_request'", text)
+        self.assertIn("github.event_name != 'pull_request'", text)
+        self.assertIn("github.ref == 'refs/heads/master'", text)
+        self.assertIn("Reconcile task, session, PR and checks", text)
 
-        self.assertIn("STALE_IN_PROGRESS_MINUTES", text)
-        self.assertIn("NO_AGENT_STALE_IN_PROGRESS_MINUTES", text)
-        self.assertIn("vars.JULES_NO_AGENT_STALE_IN_PROGRESS_MINUTES || '5'", text)
-        self.assertIn("stale_in_progress_count", text)
-        self.assertIn("stale_in_progress_sessions", text)
-        self.assertIn("skipped_stopped_count", text)
-        self.assertIn("skipped_stopped_sessions", text)
+    def test_control_plane_concurrency_is_one_mutation_domain(self) -> None:
+        expected = "group: notion-abuz-autonomy-mutation"
+        for path in (UNATTENDED_WORKFLOW_PATH, NEXT_TASK_WORKFLOW_PATH):
+            text = path.read_text(encoding="utf-8")
+            self.assertIn(expected, text)
+            self.assertIn("cancel-in-progress: false", text)
+        for path in (WORKFLOW_PATH, BURST_WORKFLOW_PATH):
+            self.assertNotIn("concurrency:", path.read_text(encoding="utf-8"))
+
+    def test_next_task_is_only_an_exact_leased_executor(self) -> None:
+        text = NEXT_TASK_WORKFLOW_PATH.read_text(encoding="utf-8")
+        self.assertIn("task_id:", text)
+        self.assertIn("lease_key:", text)
+        self.assertIn("Execute exact durable lease", text)
+        self.assertIn("github.ref == 'refs/heads/master'", text)
+        self.assertNotIn("select_agent_task.py", text)
+        self.assertNotIn("automation_health.yml/dispatches", text)
+        self.assertIn("recovery_pr_number:", text)
+        self.assertIn("--recovery-pr-head", text)
+
+    def test_failed_open_project_pr_gets_bounded_in_place_recovery(self) -> None:
+        text = RECONCILER_PATH.read_text(encoding="utf-8")
+        self.assertIn("dispatch_in_place_pr_recovery", text)
+        self.assertIn("pr_recovery_dispatch_requested", text)
+        self.assertIn("bounded in-place PR recovery exhausted", text)
+        self.assertIn('"recovery_pr_number": str(pr_number)', text)
+
+    def test_no_eligible_queue_never_creates_manifest_only_meta_task(self) -> None:
+        text = RECONCILER_PATH.read_text(encoding="utf-8")
+        self.assertIn('"mode": "shadow"', text)
+        self.assertIn("no manifest-only recovery task was created", text)
+        self.assertNotIn('{"mode": "enforce"}', text)
+
+    def test_pull_request_validation_is_pure_and_read_only(self) -> None:
+        text = UNATTENDED_WORKFLOW_PATH.read_text(encoding="utf-8")
+        validate = text.split("  validate:", 1)[1].split("  reconcile:", 1)[0]
+        self.assertIn("contents: read", validate)
+        self.assertNotIn("JULES_API_KEY", validate)
+        self.assertNotIn("--apply", validate)
+
+    def test_quality_gate_reads_but_never_writes_durable_scope_approval(self) -> None:
+        text = AUTOMERGE_WORKFLOW_PATH.read_text(encoding="utf-8")
+        self.assertIn("Read durable scope approvals", text)
+        self.assertIn("contents/autonomy/ledger.json?ref=automation-state-v2", text)
+        self.assertIn("--scope-ledger /tmp/autonomy-ledger.json", text)
+        self.assertNotIn("PUT /repos/${GITHUB_REPOSITORY}/contents/autonomy/ledger.json", text)
+
+    def test_durable_monitor_exposes_stale_and_bounded_recovery_controls(self) -> None:
+        text = UNATTENDED_WORKFLOW_PATH.read_text(encoding="utf-8")
+        self.assertIn("stale_minutes:", text)
+        self.assertIn("max_recoveries:", text)
+        self.assertIn("--state-branch automation-state-v2", text)
+        self.assertIn("--ledger-path autonomy/ledger.json", text)
+        self.assertIn("--apply", text)
+
+    def test_legacy_variable_is_read_once_and_never_written(self) -> None:
+        text = STATE_PATH.read_text(encoding="utf-8")
+        self.assertIn('LEGACY_LEDGER_VARIABLE = "JULES_RECOVERY_ROUTER_LEDGER"', text)
+        self.assertIn('"mode": "read_once_bounded_audit"', text)
+        self.assertIn("contents/{urllib.parse.quote(self.path", text)
+        self.assertNotIn("actions/variables/{LEGACY_LEDGER_VARIABLE}\", method=\"PATCH\"", text)
 
     def test_go_formatting_failures_report_actionable_file_list(self) -> None:
         for path in (CI_WORKFLOW_PATH, AUTOMERGE_WORKFLOW_PATH):
