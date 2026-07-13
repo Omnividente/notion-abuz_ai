@@ -324,7 +324,9 @@ func HandleAdminSettings(configPath string, auth *DashboardAuth) http.HandlerFun
 				DebugLogging          *bool   `json:"debug_logging"`
 				NotionProxy           *string `json:"notion_proxy"`
 			}
-			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			dec := json.NewDecoder(r.Body)
+			dec.DisallowUnknownFields()
+			if err := dec.Decode(&body); err != nil {
 				http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
 				return
 			}

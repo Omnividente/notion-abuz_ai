@@ -8681,7 +8681,7 @@
     },
     {
       "id": "proxy-admin-settings-validation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Validate config types in HandleAdminSettings",
@@ -8708,6 +8708,22 @@
       ],
       "acceptance": [
         "Package-level comments or function documentation clearly describe the tool mode loss tracking."
+      ]
+    },
+    {
+      "id": "proxy-admin-settings-tests-isolation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Fix flaky TestProxyTimeoutHandling timeout tests",
+      "description": "TestProxyTimeoutHandling fails occasionally as it seems to be simulating a transient failure, which flakes in standard `go test` runs. Isolate or fix this flaky test to improve CI reliability.",
+      "allowed_paths": [
+        "internal/proxy",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "TestProxyTimeoutHandling passes consistently.",
+        "Alternatively, marked skipped in short mode if it takes too long."
       ]
     }
   ]
