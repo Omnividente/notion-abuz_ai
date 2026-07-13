@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -61,11 +62,154 @@ def pr_recovery_fingerprints(
         "pr-recovery-evidence",
         pr_number,
         head_sha,
+        pr_mergeability(pr),
         checks.get("fingerprint"),
         task_fingerprint(task),
     )
     terminal_key = latest_terminal_recovery_fingerprint(ledger, task_id, pr_number)
     return evidence_key, digest("pr-session-recovery", evidence_key, terminal_key)
+
+
+def pr_mergeability(pr: dict[str, Any] | None) -> str:
+    """Normalize the mergeability fields returned by the pull detail API."""
+
+    state = str((pr or {}).get("mergeable_state") or "").lower()
+    if state not in {"", "unknown"}:
+        return state
+    # A false mergeable value is definitive conflict evidence even if a proxy
+    # or fixture omitted GitHub's companion mergeable_state field.
+    if (pr or {}).get("mergeable") is False:
+        return "dirty"
+    if (pr or {}).get("mergeable") is True:
+        return "clean"
+    return state
+
+
+def pr_is_dirty(pr: dict[str, Any] | None) -> bool:
+    """Return whether GitHub reports an open PR as conflicting with its base."""
+
+    return pr_mergeability(pr) == "dirty"
+
+
+def hydrate_pull_details(
+    api: API,
+    repo: str,
+    pulls: list[dict[str, Any]],
+    *,
+    mergeability_attempts: int = 3,
+    retry_delay_seconds: float = 1.0,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Hydrate list-pulls rows with the fields only exposed by pull details.
+
+    GitHub's list endpoint is useful for discovery but does not expose the
+    computed ``mergeable``/``mergeable_state`` result. Recovery decisions must
+    therefore use ``GET /pulls/{number}`` for every autonomous open PR.
+    """
+
+    hydrated: list[dict[str, Any]] = []
+    failures: list[str] = []
+    for summary in pulls:
+        number = int(summary.get("number") or 0)
+        if not number:
+            failures.append("open autonomous PR row has no PR number")
+            hydrated.append(summary)
+            continue
+        merged = summary
+        for attempt in range(max(1, mergeability_attempts)):
+            try:
+                _, detail = api.gh(f"/repos/{repo}/pulls/{number}")
+            except Exception as exc:
+                failures.append(
+                    f"failed to hydrate open autonomous PR #{number}: {sanitize(exc, 500)}"
+                )
+                break
+            if isinstance(detail, dict):
+                merged = {**merged, **detail}
+            if pr_mergeability(merged) not in {"", "unknown"}:
+                break
+            if attempt + 1 < max(1, mergeability_attempts) and retry_delay_seconds > 0:
+                time.sleep(retry_delay_seconds)
+        else:
+            failures.append(
+                f"mergeability unresolved for open autonomous PR #{number} "
+                f"after {max(1, mergeability_attempts)} detail attempts"
+            )
+        hydrated.append(merged)
+    return hydrated, failures
+
+
+def settle_terminal_manifest_task(
+    task_state: dict[str, Any], manifest_status: str
+) -> tuple[dict[str, Any], bool]:
+    """Retire stale dispatch leases after a task becomes terminal in master."""
+
+    result = dict(task_state)
+    terminal_state = f"manifest_{manifest_status}"
+    changed = bool(
+        result.get("state") != terminal_state
+        or result.get("session_id")
+        or result.get("lease_expires_at")
+        or result.get("dispatch_key")
+    )
+    for field in (
+        "dispatch_error",
+        "dispatch_key",
+        "dispatch_requested_at",
+        "lease_expires_at",
+        "recovery_reason",
+        "retry_at",
+        "session_create_requested_at",
+        "session_id",
+        "session_name",
+    ):
+        result.pop(field, None)
+    result["state"] = terminal_state
+    result["manifest_status"] = manifest_status
+    return result, changed
+
+
+def pr_requires_recovery(pr: dict[str, Any], checks: dict[str, Any]) -> bool:
+    """Treat a merge conflict as actionable even when GitHub creates no checks."""
+
+    return pr_is_dirty(pr) or bool(checks.get("failed"))
+
+
+def open_pr_task_state(task_state: dict[str, Any], pr_number: int) -> dict[str, Any]:
+    """Make an open PR authoritative over an earlier terminal/no-PR defer."""
+
+    result = dict(task_state)
+    for field in (
+        "deferred_at",
+        "deferred_evidence_fingerprint",
+        "deferred_task_fingerprint",
+        "evidence_requirement",
+        "next_review_at",
+        "reason",
+        "retry_at",
+        "retry_condition",
+        "terminal_evidence_key",
+        "terminal_session_id",
+        "terminal_session_state",
+    ):
+        result.pop(field, None)
+    result["pr_number"] = pr_number
+    return result
+
+
+def terminal_task_needs_outcome(
+    session_state: str,
+    task: dict[str, Any] | None,
+    pr: dict[str, Any] | None,
+    task_terminal_in_manifest: bool,
+) -> bool:
+    """Only a terminal session with no task PR needs a no-PR outcome."""
+
+    return bool(
+        session_state in TERMINAL
+        and task
+        and not pr
+        and not task_terminal_in_manifest
+    )
 
 
 def terminal_session_is_superseded(
@@ -224,7 +368,10 @@ def reconcile(args: argparse.Namespace) -> int:
             return False
 
     pulls = paginate_gh(api, f"/repos/{repo}/pulls?state=open")
-    autonomous = [pr for pr in pulls if is_autonomous_pr(pr)]
+    autonomous, hydration_errors = hydrate_pull_details(
+        api, repo, [pr for pr in pulls if is_autonomous_pr(pr)]
+    )
+    errors.extend(hydration_errors)
     pr_by_task = {task_id_from_pr(pr, list(tasks)): pr for pr in autonomous if task_id_from_pr(pr, list(tasks))}
     check_cache: dict[tuple[int, str], dict[str, Any]] = {}
 
@@ -256,7 +403,12 @@ def reconcile(args: argparse.Namespace) -> int:
         task = tasks.get(str(task_id))
         pr = pr_by_task.get(str(task_id))
         checks = checks_for(pr)
-        pr_fp = digest((pr or {}).get("number"), ((pr or {}).get("head") or {}).get("sha"), checks.get("fingerprint"))
+        pr_fp = digest(
+            (pr or {}).get("number"),
+            ((pr or {}).get("head") or {}).get("sha"),
+            pr_mergeability(pr),
+            checks.get("fingerprint"),
+        )
         version = state_version(previous, state, str(summary.get("fingerprint")), pr_fp)
         progress_fp = digest(summary.get("agent_fingerprint"), ((pr or {}).get("head") or {}).get("sha"), checks.get("fingerprint"), (task or {}).get("status"), state)
         delta = bool(previous.get("progress_fingerprint") and previous.get("progress_fingerprint") != progress_fp)
@@ -492,6 +644,7 @@ def reconcile(args: argparse.Namespace) -> int:
             failed = bool(checks.get("failed"))
             recover_now, recovery_trigger = should_recover_session(
                 failed_checks=failed,
+                blocked_pr=pr_is_dirty(pr),
                 previous_pr_fingerprint=previous.get("pr_fingerprint"),
                 current_pr_fingerprint=pr_fp,
                 stale=stale,
@@ -541,6 +694,8 @@ def reconcile(args: argparse.Namespace) -> int:
                     wait_reason = (
                         "new_failed_checks"
                         if recovery_trigger == "new_failed_check_evidence"
+                        else "dirty_pr_needs_master_sync"
+                        if recovery_trigger == "new_pr_blocker_evidence"
                         else "autonomous_resolution_of_user_feedback"
                         if recovery_trigger == "awaiting_user_feedback"
                         else f"no_progress_for_{int(minutes_since(latest, current))}_minutes"
@@ -575,12 +730,8 @@ def reconcile(args: argparse.Namespace) -> int:
                             except Exception as exc:
                                 ledger["messages"][send_key]["delivery_error"] = sanitize(exc, 500)
                                 errors.append(f"recovery delivery failed for {session_id}: {sanitize(exc, 600)}")
-        if (
-            state in TERMINAL
-            and task_id
-            and task
-            and not recovering_open_pr
-            and not task_terminal_in_manifest
+        if task_id and terminal_task_needs_outcome(
+            state, task, pr, task_terminal_in_manifest
         ):
             task_state = dict(ledger["tasks"].get(task_state_id, {}))
             if not terminal_session_is_superseded(
@@ -651,8 +802,14 @@ def reconcile(args: argparse.Namespace) -> int:
         checks = checks_for(pr)
         pr_number = int(pr.get("number") or 0)
         task = tasks.get(task_id) or {}
-        task_state = dict(ledger["tasks"].get(task_id, {}))
-        pr_progress_fp = digest(((pr.get("head") or {}).get("sha") or ""), checks.get("fingerprint"), pr.get("mergeable_state"))
+        task_state = open_pr_task_state(
+            dict(ledger["tasks"].get(task_id, {})), pr_number
+        )
+        pr_progress_fp = digest(
+            ((pr.get("head") or {}).get("sha") or ""),
+            checks.get("fingerprint"),
+            pr_mergeability(pr),
+        )
         recovery_evidence_key, recovery_key = pr_recovery_fingerprints(
             ledger, task_id, task, pr, checks
         )
@@ -699,11 +856,28 @@ def reconcile(args: argparse.Namespace) -> int:
         if pr_delta or pr_initial_recent:
             task_state["last_progress_at"] = iso()
             progress.append({"task_id": task_id, "pr_number": pr_number, "kind": "pr_delta" if pr_delta else "initial_recent_pr"})
-        if checks.get("failed"):
-            key = digest("pr-recovery", pr_number, ((pr.get("head") or {}).get("sha") or ""), checks.get("fingerprint"))
+        if pr_requires_recovery(pr, checks):
+            dirty_pr = pr_is_dirty(pr)
+            key = digest(
+                "pr-recovery",
+                pr_number,
+                ((pr.get("head") or {}).get("sha") or ""),
+                pr_mergeability(pr),
+                checks.get("fingerprint"),
+            )
             if key not in ledger["messages"]:
-                packet = build_packet(tasks.get(task_id), {"task_id": task_id, "last_jules_message": "No active Jules session is visible for this open PR."}, int(task_state.get("pr_recoveries") or 0), False, "failed_checks_without_active_session", pr, checks)
-                body = f"<!-- {TOKEN} key={key} -->\n\nВнешний reconciler обнаружил failed checks без активной Jules session. Recovery будет привязан к этой ветке: исправь этот же PR и не создавай новый PR.\n\n```json\n{json.dumps(packet, ensure_ascii=False, indent=2, sort_keys=True)}\n```"
+                wait_reason = (
+                    "dirty_pr_without_active_session"
+                    if dirty_pr
+                    else "failed_checks_without_active_session"
+                )
+                packet = build_packet(tasks.get(task_id), {"task_id": task_id, "last_jules_message": "No active Jules session is visible for this open PR."}, int(task_state.get("pr_recoveries") or 0), False, wait_reason, pr, checks)
+                blocker_text = (
+                    "конфликт ветки с текущим master"
+                    if dirty_pr
+                    else "упавшие проверки"
+                )
+                body = f"<!-- {TOKEN} key={key} -->\n\nВнешний reconciler обнаружил {blocker_text} без активной Jules session. Recovery будет привязан к этой ветке: синхронизируй текущий master, исправь этот же PR и не создавай новый PR.\n\n```json\n{json.dumps(packet, ensure_ascii=False, indent=2, sort_keys=True)}\n```"
                 ledger["messages"][key] = {"kind": "pr_recovery", "task_id": task_id, "pr_number": pr_number, "sent_at": iso(), "verified_at": None, "packet_hash": digest(packet)}
                 task_state["pr_recoveries"] = int(task_state.get("pr_recoveries") or 0) + 1
                 ledger["tasks"][task_id] = task_state
@@ -768,7 +942,12 @@ def reconcile(args: argparse.Namespace) -> int:
                     generation = int(task_state.get("dispatch_generation") or 0) + 1
                     dispatch_key = digest("pr-recovery-dispatch", task_id, pr_number, recovery_key, generation)
                     failed_names = [str(row.get("name") or "failed check") for row in checks.get("failed", []) if isinstance(row, dict)]
-                    recovery_reason = sanitize("failed checks on existing PR: " + ", ".join(failed_names), 500)
+                    reason_parts = []
+                    if dirty_pr:
+                        reason_parts.append("dirty PR must sync current master")
+                    if failed_names:
+                        reason_parts.append("failed checks: " + ", ".join(failed_names))
+                    recovery_reason = sanitize("; ".join(reason_parts), 500)
                     task_state.update(
                         {
                             "state": "pr_recovery_dispatch_requested",
@@ -850,6 +1029,30 @@ def reconcile(args: argparse.Namespace) -> int:
                 errors.append("no eligible project task; a shadow evidence report was requested and no manifest-only recovery task was created")
 
     fresh = fresh_current_work
+    for task_id, task in tasks.items():
+        manifest_status = str(task.get("status") or "")
+        if (
+            manifest_status not in {"done", "stopped", "retired"}
+            or task_id in pr_by_task
+            or task_id in active_task_ids
+        ):
+            continue
+        previous_task_state = ledger["tasks"].get(task_id)
+        if not isinstance(previous_task_state, dict):
+            continue
+        settled, changed = settle_terminal_manifest_task(
+            previous_task_state, manifest_status
+        )
+        ledger["tasks"][task_id] = settled
+        if changed:
+            actions.append(
+                {
+                    "action": "settle_terminal_manifest_task",
+                    "task_id": task_id,
+                    "manifest_status": manifest_status,
+                }
+            )
+
     pending_leases = sorted(
         task_id
         for task_id, row in ledger["tasks"].items()

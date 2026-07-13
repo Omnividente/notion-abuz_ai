@@ -57,6 +57,8 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         create = self.executor.index('api.jules(key, "sessions", method="POST"')
         self.assertLess(precommit, create)
         self.assertIn("refusing duplicate dispatch; active Jules sessions exist", self.executor)
+        self.assertIn('"duplicate_dispatch_suppressed": True', self.executor)
+        self.assertIn("existing_active_session_for_task", self.executor)
         self.assertIn("validate_lease", self.executor)
 
     def test_executor_recovers_failed_open_pr_in_place(self) -> None:

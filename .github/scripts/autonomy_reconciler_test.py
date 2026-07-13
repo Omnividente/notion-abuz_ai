@@ -235,6 +235,171 @@ class ReconcilerTests(unittest.TestCase):
             )[0]
         )
 
+    def test_dirty_pr_is_immediate_recovery_evidence_without_checks(self):
+        dirty = {"number": 607, "head": {"sha": "head"}, "mergeable_state": "dirty"}
+        clean = {**dirty, "mergeable_state": "clean"}
+        conflict_without_state = {"number": 607, "mergeable": False}
+        checks = {"failed": [], "fingerprint": "no-checks"}
+        self.assertTrue(M.pr_requires_recovery(dirty, checks))
+        self.assertTrue(M.pr_requires_recovery(conflict_without_state, checks))
+        self.assertFalse(M.pr_requires_recovery(clean, checks))
+        self.assertEqual(
+            M.should_recover_session(
+                failed_checks=False,
+                blocked_pr=True,
+                previous_pr_fingerprint="old",
+                current_pr_fingerprint="dirty",
+                stale=False,
+            ),
+            (True, "new_pr_blocker_evidence"),
+        )
+        self.assertEqual(
+            M.should_recover_session(
+                failed_checks=False,
+                blocked_pr=True,
+                previous_pr_fingerprint="dirty",
+                current_pr_fingerprint="dirty",
+                stale=False,
+            ),
+            (False, "unchanged"),
+        )
+
+    def test_listed_autonomous_pr_is_hydrated_before_mergeability_decision(self):
+        class FakeAPI:
+            def __init__(self):
+                self.calls = []
+
+            def gh(self, path, **kwargs):
+                self.calls.append(path)
+                self.assert_no_list_endpoint(path)
+                return 200, {
+                    "number": 607,
+                    "head": {"sha": "head", "ref": "jules-docs"},
+                    "mergeable": False,
+                    "mergeable_state": "dirty",
+                }
+
+            @staticmethod
+            def assert_no_list_endpoint(path):
+                if "?state=open" in path:
+                    raise AssertionError("hydrate must call the pull detail endpoint")
+
+        api = FakeAPI()
+        listed = [{"number": 607, "head": {"sha": "head", "ref": "jules-docs"}}]
+        hydrated, failures = M.hydrate_pull_details(api, "o/r", listed)
+        self.assertEqual(failures, [])
+        self.assertEqual(api.calls, ["/repos/o/r/pulls/607"])
+        self.assertEqual(M.pr_mergeability(hydrated[0]), "dirty")
+        self.assertTrue(M.pr_requires_recovery(hydrated[0], {"failed": []}))
+
+    def test_unknown_mergeability_is_retried_in_the_same_cycle(self):
+        class FakeAPI:
+            def __init__(self):
+                self.calls = 0
+
+            def gh(self, path, **kwargs):
+                self.calls += 1
+                if self.calls == 1:
+                    return 200, {
+                        "number": 607,
+                        "mergeable": None,
+                        "mergeable_state": "unknown",
+                    }
+                return 200, {
+                    "number": 607,
+                    "mergeable": False,
+                    "mergeable_state": "dirty",
+                }
+
+        api = FakeAPI()
+        hydrated, failures = M.hydrate_pull_details(
+            api,
+            "o/r",
+            [{"number": 607}],
+            retry_delay_seconds=0,
+        )
+        self.assertEqual(failures, [])
+        self.assertEqual(api.calls, 2)
+        self.assertEqual(M.pr_mergeability(hydrated[0]), "dirty")
+
+    def test_unresolved_mergeability_is_an_explicit_error(self):
+        class FakeAPI:
+            def __init__(self):
+                self.calls = 0
+
+            def gh(self, path, **kwargs):
+                self.calls += 1
+                return 200, {
+                    "number": 607,
+                    "mergeable": None,
+                    "mergeable_state": "unknown",
+                }
+
+        api = FakeAPI()
+        _, failures = M.hydrate_pull_details(
+            api,
+            "o/r",
+            [{"number": 607}],
+            mergeability_attempts=3,
+            retry_delay_seconds=0,
+        )
+        self.assertEqual(api.calls, 3)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("mergeability unresolved", failures[0])
+
+    def test_terminal_manifest_task_retires_stale_dispatch_lease(self):
+        stale = {
+            "state": "session_created",
+            "dispatch_key": "old-lease",
+            "dispatch_requested_at": "2026-07-13T23:00:18Z",
+            "lease_expires_at": "2026-07-13T23:45:46Z",
+            "session_id": "10084739906341150041",
+            "session_name": "sessions/10084739906341150041",
+        }
+        settled, changed = M.settle_terminal_manifest_task(stale, "done")
+        self.assertTrue(changed)
+        self.assertEqual(settled["state"], "manifest_done")
+        self.assertEqual(settled["manifest_status"], "done")
+        self.assertNotIn("dispatch_key", settled)
+        self.assertNotIn("lease_expires_at", settled)
+        self.assertNotIn("session_id", settled)
+        repeated, changed_again = M.settle_terminal_manifest_task(settled, "done")
+        self.assertFalse(changed_again)
+        self.assertEqual(repeated, settled)
+
+    def test_open_pr_supersedes_terminal_no_pr_defer(self):
+        stale = {
+            "state": "deferred",
+            "retry_at": "2026-07-14T00:14:10Z",
+            "next_review_at": "2026-07-14T00:14:10Z",
+            "reason": "session completed without PR",
+            "terminal_session_id": "18011490522809812243",
+            "terminal_session_state": "COMPLETED",
+        }
+        recovered = M.open_pr_task_state(stale, 607)
+        self.assertEqual(recovered["pr_number"], 607)
+        self.assertNotIn("retry_at", recovered)
+        self.assertNotIn("terminal_session_id", recovered)
+        task = {"id": "docs", "status": "todo"}
+        self.assertFalse(
+            M.terminal_task_needs_outcome(
+                "COMPLETED", task, {"number": 607}, False
+            )
+        )
+        self.assertTrue(
+            M.terminal_task_needs_outcome("COMPLETED", task, None, False)
+        )
+
+    def test_pr_recovery_fingerprint_includes_dirty_state(self):
+        task = {"id": "docs", "status": "todo", "allowed_paths": ["docs/api.md"]}
+        checks = {"fingerprint": "none"}
+        dirty = {"number": 607, "head": {"sha": "same"}, "mergeable_state": "dirty"}
+        clean = {**dirty, "mergeable_state": "clean"}
+        self.assertNotEqual(
+            M.pr_recovery_fingerprints({"sessions": {}}, "docs", task, dirty, checks),
+            M.pr_recovery_fingerprints({"sessions": {}}, "docs", task, clean, checks),
+        )
+
     def test_each_user_feedback_question_is_resolved_once(self):
         self.assertTrue(
             M.user_feedback_needs_resolution(
@@ -424,6 +589,69 @@ class ReconcilerTests(unittest.TestCase):
             E.validate_lease(expired, "runtime-fix", "lease", current)
         recovery = {"tasks": {"runtime-fix": {"state": "pr_recovery_dispatch_requested", "dispatch_key": "recovery", "lease_expires_at": "2026-07-13T10:30:00Z"}}}
         self.assertEqual(E.validate_lease(recovery, "runtime-fix", "recovery", current)["dispatch_key"], "recovery")
+
+    def test_executor_adopts_same_task_active_session_without_second_dispatch(self):
+        current = datetime(2026, 7, 13, 10, 0, tzinfo=timezone.utc)
+        task_state = {
+            "state": "pr_recovery_dispatch_requested",
+            "dispatch_key": "recovery",
+            "terminal_session_id": "session-1",
+            "retry_at": "2026-07-13T11:00:00Z",
+            "reason": "terminal session",
+        }
+        ledger = {
+            "tasks": {"runtime-fix": task_state},
+            "sessions": {
+                "session-1": {
+                    "task_id": "runtime-fix",
+                    "session_state": "FAILED",
+                    "state_version": 4,
+                }
+            },
+        }
+        active = [{"name": "sessions/session-1", "state": "IN_PROGRESS"}]
+        existing = E.existing_active_session_for_task(active, ledger, "runtime-fix", task_state)
+        self.assertEqual(E.session_id(existing), "session-1")
+        self.assertEqual(E.session_id({"id": "sessions/session-1"}), "session-1")
+
+        result = E.adopt_existing_active_session(
+            ledger,
+            "runtime-fix",
+            task_state,
+            existing,
+            lease_key="recovery",
+            recovery_pr_number=604,
+            recovery_pr_head="head",
+            current=current,
+            session_lease_minutes=45,
+        )
+        self.assertTrue(result["duplicate_dispatch_suppressed"])
+        self.assertEqual(ledger["tasks"]["runtime-fix"]["state"], "active")
+        self.assertEqual(ledger["tasks"]["runtime-fix"]["session_id"], "session-1")
+        self.assertEqual(ledger["tasks"]["runtime-fix"]["recovery_pr_number"], 604)
+        self.assertEqual(ledger["tasks"]["runtime-fix"]["lease_expires_at"], "2026-07-13T10:45:00Z")
+        self.assertNotIn("retry_at", ledger["tasks"]["runtime-fix"])
+        self.assertNotIn("terminal_session_id", ledger["tasks"]["runtime-fix"])
+        self.assertEqual(ledger["sessions"]["session-1"]["state_version"], 5)
+
+    def test_executor_still_rejects_foreign_or_ambiguous_active_sessions(self):
+        task_state = {"terminal_session_id": "session-1"}
+        foreign = [{"name": "sessions/other", "state": "IN_PROGRESS"}]
+        with self.assertRaisesRegex(RuntimeError, "refusing duplicate dispatch"):
+            E.existing_active_session_for_task(foreign, {"sessions": {}}, "runtime-fix", task_state)
+
+        duplicate = [
+            {"name": "sessions/session-1", "state": "IN_PROGRESS"},
+            {"name": "sessions/session-2", "state": "PLANNING"},
+        ]
+        ledger = {
+            "sessions": {
+                "session-1": {"task_id": "runtime-fix"},
+                "session-2": {"task_id": "runtime-fix"},
+            }
+        }
+        with self.assertRaisesRegex(RuntimeError, "multiple active Jules sessions"):
+            E.existing_active_session_for_task(duplicate, ledger, "runtime-fix", task_state)
 
 
 if __name__ == "__main__":
