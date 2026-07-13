@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -201,7 +202,7 @@ func TestEnsureComplexToolCallRefusalLoggedAsDecision(t *testing.T) {
 	acc := &Account{UserEmail: "test_complex@test.com"}
 	messages := []ChatMessage{{Role: "user", Content: "test_complex"}}
 
-	_ = handleAnthropicNonStream(
+	_ = handleAnthropicNonStream(&http.Request{Method: "POST", URL: &url.URL{Path: "/v1/messages"}},
 		httptest.NewRecorder(), acc, messages, "claude-3-opus", "req_test_complex",
 		true, false, false, nil, false, nil, nil, nil,
 	)

@@ -248,7 +248,7 @@ func (rp *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (rp *ReverseProxy) proxyHTML(w http.ResponseWriter, r *http.Request, sess *ProxySession) {
 	targetURL := notionOrigin + r.URL.RequestURI()
 
-	req, err := http.NewRequest("GET", targetURL, nil)
+	req, err := http.NewRequestWithContext(r.Context(), "GET", targetURL, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -311,7 +311,7 @@ func (rp *ReverseProxy) proxyHTML(w http.ResponseWriter, r *http.Request, sess *
 func (rp *ReverseProxy) proxyAPI(w http.ResponseWriter, r *http.Request, sess *ProxySession) {
 	targetURL := notionOrigin + r.URL.RequestURI()
 
-	req, err := http.NewRequest(r.Method, targetURL, r.Body)
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -359,7 +359,7 @@ func (rp *ReverseProxy) proxyAPI(w http.ResponseWriter, r *http.Request, sess *P
 func (rp *ReverseProxy) proxyGeneric(w http.ResponseWriter, r *http.Request, sess *ProxySession) {
 	targetURL := notionOrigin + r.URL.RequestURI()
 
-	req, err := http.NewRequest(r.Method, targetURL, r.Body)
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -396,7 +396,7 @@ func (rp *ReverseProxy) proxyWithCookies(w http.ResponseWriter, r *http.Request,
 		targetURL += "?" + r.URL.RawQuery
 	}
 
-	req, err := http.NewRequest(r.Method, targetURL, r.Body)
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -432,7 +432,7 @@ func (rp *ReverseProxy) proxyWithCookies(w http.ResponseWriter, r *http.Request,
 func rpProxyPassthrough(w http.ResponseWriter, r *http.Request, targetOrigin string) {
 	targetURL := targetOrigin + r.URL.RequestURI()
 
-	req, err := http.NewRequest(r.Method, targetURL, nil)
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -599,7 +599,7 @@ func (rp *ReverseProxy) proxyMsgstoreHTTP(w http.ResponseWriter, r *http.Request
 		targetURL += "?" + r.URL.RawQuery
 	}
 
-	req, err := http.NewRequest(r.Method, targetURL, r.Body)
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

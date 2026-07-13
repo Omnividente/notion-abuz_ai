@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -126,7 +127,7 @@ func TestDoneTextIdentityDrift_DetectionRuntime(t *testing.T) {
 	acc := &Account{TokenV2: "test"}
 	msgs := []ChatMessage{{Role: "user", Content: "test"}}
 
-	err := handleAnthropicStream(rec, acc, msgs, "claude-3-5-sonnet-latest", "test-req-1", true, false, true, nil, false, nil, nil, nil)
+	err := handleAnthropicStream(&http.Request{Method: "POST", URL: &url.URL{Path: "/v1/messages"}}, rec, acc, msgs, "claude-3-5-sonnet-latest", "test-req-1", true, false, true, nil, false, nil, nil, nil)
 
 	if err != ErrToolBridgeNoTool {
 		t.Errorf("Expected ErrToolBridgeNoTool, got: %v", err)

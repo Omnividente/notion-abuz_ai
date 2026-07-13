@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -44,7 +45,7 @@ func TestAnthropicStreaming_FinalAnswerIdentityDriftWithTools(t *testing.T) {
 	messages := []ChatMessage{{Role: "user", Content: "Hello"}}
 	var enableWorkspaceSearch = true
 
-	err := handleAnthropicStream(mf, &Account{}, messages, "claude-3-5-sonnet", "req-1", true, false, false, &enableWorkspaceSearch, false, nil, nil, nil)
+	err := handleAnthropicStream(&http.Request{Method: "POST", URL: &url.URL{Path: "/v1/messages"}}, mf, &Account{}, messages, "claude-3-5-sonnet", "req-1", true, false, false, &enableWorkspaceSearch, false, nil, nil, nil)
 
 	if err != ErrToolBridgeNoTool {
 		t.Fatalf("expected ErrToolBridgeNoTool, got %v", err)
@@ -89,7 +90,7 @@ func TestEnsureNotionPersonaLeakageLoggedAsDecision(t *testing.T) {
 	messages := []ChatMessage{{Role: "user", Content: "test"}}
 
 	// Ensure that it runs inference via NonStream (or Stream) and logs the decision
-	_ = handleAnthropicNonStream(
+	_ = handleAnthropicNonStream(&http.Request{Method: "POST", URL: &url.URL{Path: "/v1/messages"}},
 		httptest.NewRecorder(),
 		acc,
 		messages,
@@ -145,7 +146,7 @@ func TestEnsureToolCallRefusalLoggedAsDecision(t *testing.T) {
 	acc := &Account{UserEmail: "test2@test.com"}
 	messages := []ChatMessage{{Role: "user", Content: "test2"}}
 
-	_ = handleAnthropicNonStream(
+	_ = handleAnthropicNonStream(&http.Request{Method: "POST", URL: &url.URL{Path: "/v1/messages"}},
 		httptest.NewRecorder(), acc, messages, "claude-3-opus", "req_test_2",
 		true, false, false, nil, false, nil, nil, nil,
 	)
@@ -208,7 +209,7 @@ func TestEnsureMCPServerRefusalLoggedAsDecision(t *testing.T) {
 	acc := &Account{UserEmail: "test4@test.com"}
 	messages := []ChatMessage{{Role: "user", Content: "test4"}}
 
-	_ = handleAnthropicNonStream(
+	_ = handleAnthropicNonStream(&http.Request{Method: "POST", URL: &url.URL{Path: "/v1/messages"}},
 		httptest.NewRecorder(), acc, messages, "claude-3-opus", "req_test_4",
 		true, false, false, nil, false, nil, nil, nil,
 	)
@@ -275,7 +276,7 @@ func TestEnsureSystemPromptLeakageLoggedAsDecision(t *testing.T) {
 	acc := &Account{UserEmail: "test3@test.com"}
 	messages := []ChatMessage{{Role: "user", Content: "test3"}}
 
-	_ = handleAnthropicNonStream(
+	_ = handleAnthropicNonStream(&http.Request{Method: "POST", URL: &url.URL{Path: "/v1/messages"}},
 		httptest.NewRecorder(), acc, messages, "claude-3-opus", "req_test_3",
 		true, false, false, nil, false, nil, nil, nil,
 	)
@@ -400,7 +401,7 @@ func TestAnthropicStreaming_PrematureCloseRecovery(t *testing.T) {
 	rr := httptest.NewRecorder()
 	mf := &mockFlusher{rr}
 
-	err := streamAnthropicTextResponse(mf, acc, messages, "claude-3-5-sonnet-20241022", "req-1", false, false, outputConfig, CallOptions{})
+	err := streamAnthropicTextResponse(&http.Request{Method: "POST", URL: &url.URL{Path: "/v1/messages"}}, mf, acc, messages, "claude-3-5-sonnet-20241022", "req-1", false, false, outputConfig, CallOptions{})
 	if err != nil {
 		t.Errorf("expected no error to be returned when partial stream fails, got %v", err)
 	}
@@ -461,7 +462,7 @@ func TestHandleAnthropicStream_PrematureCloseRecovery(t *testing.T) {
 	rr := httptest.NewRecorder()
 	mf := &mockFlusher{rr}
 
-	err := handleAnthropicStream(mf, acc, messages, "claude-3-5-sonnet-20241022", "req-1", true, false, false, nil, false, nil, outputConfig, nil)
+	err := handleAnthropicStream(&http.Request{Method: "POST", URL: &url.URL{Path: "/v1/messages"}}, mf, acc, messages, "claude-3-5-sonnet-20241022", "req-1", true, false, false, nil, false, nil, outputConfig, nil)
 	if err != nil {
 		t.Errorf("expected no error to be returned when partial stream fails, got %v", err)
 	}

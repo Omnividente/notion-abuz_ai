@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -238,7 +239,7 @@ func notionAPICallRaw(client *http.Client, acc *Account, endpoint string, body i
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", NotionAPIBase+endpoint, bytes.NewReader(bodyBytes))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", NotionAPIBase+endpoint, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -281,7 +282,7 @@ func uploadToS3(_ *http.Client, postURL string, fields map[string]string, data [
 	}
 	writer.Close()
 
-	req, err := http.NewRequest("POST", postURL, &buf)
+	req, err := http.NewRequestWithContext(context.Background(), "POST", postURL, &buf)
 	if err != nil {
 		return fmt.Errorf("create S3 request: %w", err)
 	}
