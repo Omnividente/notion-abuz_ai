@@ -8663,7 +8663,7 @@
     },
     {
       "id": "proxy-admin-dashboard-stats",
-      "status": "todo",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Expose basic proxy active session counts to admin dashboard",
@@ -8676,7 +8676,8 @@
       "acceptance": [
         "A new /admin/stats endpoint exposes proxy-specific active states (like idempotency entries count).",
         "Admin authentication is enforced for the new endpoint."
-      ]
+      ],
+      "blocked_reason": "The task requires exposing active tracked proxy sessions or idempotency entries count. Idempotency entries are already exposed in the existing `/admin/metrics` endpoint via `GetIdempotencyEntryCount()`. Exposing real 'active tracked proxy sessions' requires access to the `SessionManager` which is instantiated in `cmd/notion-manager/main.go` and held within `ReverseProxy`. Neither of these files are within the `allowed_paths` (`internal/proxy/handler.go`, `internal/proxy/admin.go`, `agent_tasks.json`). Since a runtime change is unnecessary for idempotency entries and impossible for session counts without modifying disallowed paths, this task is blocked."
     },
     {
       "id": "proxy-admin-settings-validation",
@@ -8692,6 +8693,21 @@
       "acceptance": [
         "Dashboard settings updates reject invalid types with a 400 Bad Request.",
         "Valid settings are successfully persisted."
+      ]
+    },
+    {
+      "id": "proxy-tools-mode-loss-documentation",
+      "title": "Document tool mode loss tracking fallback scenarios",
+      "description": "Add package-level comments documenting the tracking of tool mode loss (e.g. `xml_array_fallback_direct`) to provide better context for developers debugging metrics exposed by /admin/metrics.",
+      "area": "proxy",
+      "risk": "low",
+      "status": "todo",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Package-level comments or function documentation clearly describe the tool mode loss tracking."
       ]
     }
   ]
