@@ -1103,7 +1103,7 @@
       "pr_number": 607,
       "sent_at": "2026-07-13T23:42:57Z",
       "task_id": "docs-idempotency-replay-behavior",
-      "verified_at": null
+      "verified_at": "2026-07-13T23:42:59Z"
     },
     "a6e87bef21cba883a71fd8a4": {
       "kind": "terminal_manifest_session_cleanup",
@@ -2899,7 +2899,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 62,
+  "revision": 63,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3462,22 +3462,26 @@
     "docs-idempotency-replay-behavior": {
       "current_evidence_fingerprint": "325d6bf4b25b60fbb083a4de",
       "dispatch_completed_at": "2026-07-13T23:03:45Z",
-      "dispatch_generation": 1,
-      "dispatch_key": "84a1ed014b2e2201dbdbbb37",
-      "dispatch_requested_at": "2026-07-13T23:03:15Z",
+      "dispatch_generation": 2,
+      "dispatch_key": "a1c74deb92df31cfb169a15a",
+      "dispatch_requested_at": "2026-07-13T23:42:59Z",
       "last_observed_at": "2026-07-13T23:42:57Z",
       "last_progress_at": "2026-07-13T23:42:57Z",
-      "lease_expires_at": "2026-07-13T23:48:45Z",
+      "lease_expires_at": "2026-07-14T00:12:03Z",
       "pr_number": 607,
       "pr_recoveries": 1,
+      "pr_recovery_evidence_key": "42fa38450bfaff62b9e653da",
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "38704ec0562747cf536fa8d9",
       "progress_fingerprint": "10f95eafe5fdcfb7075158bd",
-      "recovery_pr_head": null,
-      "recovery_pr_number": null,
+      "recovery_pr_head": "ec4a1b2604020183319a80d35ec48700ceb95f52",
+      "recovery_pr_number": 607,
+      "recovery_reason": "dirty PR must sync current master",
       "session_create_requested_at": "2026-07-13T23:03:43Z",
       "session_id": null,
       "session_name": "sessions/18011490522809812243",
       "session_state": "COMPLETED",
-      "state": "pr_open_without_active_session",
+      "state": "pr_recovery_dispatch_requested",
       "task_fingerprint": "803bad5827c5785e890b04f4"
     },
     "docs-routing-contract-behavior": {
@@ -3565,5 +3569,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:42:57Z"
+  "updated_at": "2026-07-13T23:42:59Z"
 }
