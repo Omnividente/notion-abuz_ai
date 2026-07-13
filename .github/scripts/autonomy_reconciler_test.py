@@ -235,6 +235,66 @@ class ReconcilerTests(unittest.TestCase):
             )[0]
         )
 
+    def test_dirty_pr_is_immediate_recovery_evidence_without_checks(self):
+        dirty = {"number": 607, "head": {"sha": "head"}, "mergeable_state": "dirty"}
+        clean = {**dirty, "mergeable_state": "clean"}
+        checks = {"failed": [], "fingerprint": "no-checks"}
+        self.assertTrue(M.pr_requires_recovery(dirty, checks))
+        self.assertFalse(M.pr_requires_recovery(clean, checks))
+        self.assertEqual(
+            M.should_recover_session(
+                failed_checks=False,
+                blocked_pr=True,
+                previous_pr_fingerprint="old",
+                current_pr_fingerprint="dirty",
+                stale=False,
+            ),
+            (True, "new_pr_blocker_evidence"),
+        )
+        self.assertEqual(
+            M.should_recover_session(
+                failed_checks=False,
+                blocked_pr=True,
+                previous_pr_fingerprint="dirty",
+                current_pr_fingerprint="dirty",
+                stale=False,
+            ),
+            (False, "unchanged"),
+        )
+
+    def test_open_pr_supersedes_terminal_no_pr_defer(self):
+        stale = {
+            "state": "deferred",
+            "retry_at": "2026-07-14T00:14:10Z",
+            "next_review_at": "2026-07-14T00:14:10Z",
+            "reason": "session completed without PR",
+            "terminal_session_id": "18011490522809812243",
+            "terminal_session_state": "COMPLETED",
+        }
+        recovered = M.open_pr_task_state(stale, 607)
+        self.assertEqual(recovered["pr_number"], 607)
+        self.assertNotIn("retry_at", recovered)
+        self.assertNotIn("terminal_session_id", recovered)
+        task = {"id": "docs", "status": "todo"}
+        self.assertFalse(
+            M.terminal_task_needs_outcome(
+                "COMPLETED", task, {"number": 607}, False
+            )
+        )
+        self.assertTrue(
+            M.terminal_task_needs_outcome("COMPLETED", task, None, False)
+        )
+
+    def test_pr_recovery_fingerprint_includes_dirty_state(self):
+        task = {"id": "docs", "status": "todo", "allowed_paths": ["docs/api.md"]}
+        checks = {"fingerprint": "none"}
+        dirty = {"number": 607, "head": {"sha": "same"}, "mergeable_state": "dirty"}
+        clean = {**dirty, "mergeable_state": "clean"}
+        self.assertNotEqual(
+            M.pr_recovery_fingerprints({"sessions": {}}, "docs", task, dirty, checks),
+            M.pr_recovery_fingerprints({"sessions": {}}, "docs", task, clean, checks),
+        )
+
     def test_each_user_feedback_question_is_resolved_once(self):
         self.assertTrue(
             M.user_feedback_needs_resolution(

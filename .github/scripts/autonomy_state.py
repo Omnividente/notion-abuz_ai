@@ -182,6 +182,7 @@ def no_op_violation(*, work: bool, actions: int, progress: int, fresh: bool, blo
 def should_recover_session(
     *,
     failed_checks: bool,
+    blocked_pr: bool = False,
     previous_pr_fingerprint: Any,
     current_pr_fingerprint: str,
     stale: bool,
@@ -189,6 +190,15 @@ def should_recover_session(
 ) -> tuple[bool, str]:
     if awaiting_user_feedback:
         return True, "awaiting_user_feedback"
+    new_blocker_evidence = bool(
+        blocked_pr
+        and (
+            not previous_pr_fingerprint
+            or str(previous_pr_fingerprint) != current_pr_fingerprint
+        )
+    )
+    if new_blocker_evidence:
+        return True, "new_pr_blocker_evidence"
     new_failed_evidence = bool(
         failed_checks
         and (
