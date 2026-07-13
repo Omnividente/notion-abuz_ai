@@ -579,6 +579,17 @@
       "task_id": "proxy-improve-rproxy-timeout-handling",
       "verified_at": "2026-07-13T21:31:38Z"
     },
+    "b8bb647254f9975bea54a807": {
+      "activity_fingerprint": "5886b41fe4e7931eeca5c4c8",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-13T22:40:24Z",
+      "packet_hash": "a8411e4e5ae1548b5406a706",
+      "sent_at": "2026-07-13T22:35:47Z",
+      "session_id": "2103514512702002509",
+      "state_version": 6,
+      "task_id": "docs-routing-contract-behavior",
+      "verified_at": null
+    },
     "legacy-01fba5268ce233391de6bb86": {
       "kind": "legacy_router_action",
       "reason": "Create diagnostic task for stopped conflict-recovery loop on PR #502",
@@ -2351,7 +2362,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 36,
+  "revision": 37,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2624,18 +2635,19 @@
       "task_id": "scripts-audit-python-lint-dedupe-task-4"
     },
     "2103514512702002509": {
-      "activity_fingerprint": "45215c70b718fc2325e2ce16",
-      "last_observed_at": "2026-07-13T22:32:29Z",
-      "last_progress_at": "2026-07-13T22:32:29Z",
+      "activity_fingerprint": "5886b41fe4e7931eeca5c4c8",
+      "last_observed_at": "2026-07-13T22:35:47Z",
+      "last_progress_at": "2026-07-13T22:35:47Z",
       "lease_key": "b2cfdf21b087f58b892e5976",
-      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
-      "progress_fingerprint": "e69461d53893126b3921a82e",
+      "pending_message_key": "b8bb647254f9975bea54a807",
+      "pr_fingerprint": "4f91d8b583ec393c50d62af3",
+      "progress_fingerprint": "bf3a2cb01f7f0ef1de843f34",
       "recoveries_without_progress": 0,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
       "session_state": "IN_PROGRESS",
-      "session_update_at": "2026-07-13T22:32:08.676257Z",
-      "state_version": 5,
+      "session_update_at": "2026-07-13T22:35:17.619032Z",
+      "state_version": 6,
       "task_id": "docs-routing-contract-behavior"
     },
     "2335830168077339062": {
@@ -2962,5 +2974,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T22:32:50Z"
+  "updated_at": "2026-07-13T22:35:47Z"
 }
