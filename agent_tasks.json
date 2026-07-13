@@ -8793,7 +8793,7 @@
     },
     {
       "id": "proxy-improve-rproxy-timeout-handling",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Improve reverse proxy timeout response codes",
@@ -8804,6 +8804,21 @@
       ],
       "acceptance": [
         "When client.Do returns a context deadline exceeded or i/o timeout error, the reverse proxy returns http.StatusGatewayTimeout instead of http.StatusBadGateway."
+      ]
+    },
+    {
+      "id": "proxy-improve-rproxy-error-logging",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Improve reverse proxy error logging for HTTP requests",
+      "description": "The reverse proxy logs upstream errors for proxyGeneric and proxyWithCookies using `req.URL.Host`, which is often empty for proxyWithCookies and proxyGeneric as they construct requests with new paths and headers. We should ensure the target URL host is accurately logged to aid in debugging upstream failures.",
+      "allowed_paths": [
+        "internal/proxy/reverseproxy.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "When a reverse proxy function creates a new HTTP request from the incoming request and client.Do fails, the logged error properly includes the target URL host instead of just the original request's host."
       ]
     }
   ]
