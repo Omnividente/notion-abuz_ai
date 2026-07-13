@@ -8820,7 +8820,7 @@
     },
     {
       "id": "proxy-improve-rproxy-error-logging",
-      "status": "todo",
+      "status": "deferred",
       "area": "proxy",
       "risk": "low",
       "title": "Improve reverse proxy error logging for HTTP requests",
@@ -8831,7 +8831,55 @@
       ],
       "acceptance": [
         "When a reverse proxy function creates a new HTTP request from the incoming request and client.Do fails, the logged error properly includes the target URL host instead of just the original request's host."
-      ]
+      ],
+      "deferred_reason": "Jules session 251585469516720548 ended FAILED without a PR. Inspection of master a5477179a0fdc58802a2a8c040741fa90075b3df found that the affected reverse-proxy functions construct absolute target URLs and already log req.URL.Host, so the claimed empty-host failure is not currently reproduced.",
+      "retry_condition": "Reactivate only when a failed log artifact or focused offline reproduction shows an empty or incorrect req.URL.Host on current master.",
+      "retry_at": "2026-07-20T00:00:00Z",
+      "source_session_id": "251585469516720548"
+    },
+    {
+      "id": "proxy-upload-request-context-cancellation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "medium",
+      "title": "Propagate request cancellation through attachment uploads",
+      "description": "Offline code-path reproduction on master a5477179a0fdc58802a2a8c040741fa90075b3df: HandleAnthropicMessages owns r.Context(), but UploadFileToNotion has no context parameter; notionAPICallRaw and uploadToS3 create requests with context.Background(), while pollTaskCompletion sleeps and retries independently. A disconnected or cancelled Claude Code request can therefore continue the five-step Notion/S3 upload flow and issue later network requests until fixed timeouts expire.",
+      "allowed_paths": [
+        "internal/proxy/upload.go",
+        "internal/proxy/upload_test.go",
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "UploadFileToNotion accepts the caller context and every Notion request, S3 request, poll wait, and poll retry derives from that context.",
+        "Cancellation returns context.Canceled or context.DeadlineExceeded promptly and prevents every later upload or polling request from starting.",
+        "HandleAnthropicMessages passes r.Context() into the attachment upload flow without changing successful upload behavior.",
+        "Focused offline httptest coverage cancels during the multi-step flow, proves no later request is emitted, and performs no live network calls."
+      ],
+      "source_reference": "internal/proxy/anthropic.go:1247; internal/proxy/upload.go:26,242,285,306-340 on master a5477179a0fdc58802a2a8c040741fa90075b3df",
+      "discovery_evidence": {
+        "kind": "offline code-path reproduction",
+        "observed_at": "2026-07-13T23:08:00Z",
+        "summary": "The inbound HTTP request context is discarded before all attachment-upload network and polling operations."
+      }
+    },
+    {
+      "id": "docs-ask-mode-override-wording",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Align ASK mode override wording with OR semantics",
+      "description": "Evidence on master a5477179a0fdc58802a2a8c040741fa90075b3df: docs/api.md correctly says ask_mode_default and the per-request -ask suffix are OR-combined and that the suffix cannot disable a global default, while docs/configuration.md and docs/dashboard.md say the suffix 'overrides' the default. That wording can make operators expect a per-request opt-out that the runtime does not provide.",
+      "allowed_paths": [
+        "docs/configuration.md",
+        "docs/dashboard.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Configuration and dashboard documentation state that the -ask suffix enables ASK mode for one request but cannot disable ask_mode_default when the global default is true.",
+        "The wording is consistent with the OR-style matrix already documented in docs/api.md and does not claim a nonexistent per-request opt-out."
+      ],
+      "source_reference": "docs/api.md:69-95; docs/configuration.md:39; docs/dashboard.md:87 on master a5477179a0fdc58802a2a8c040741fa90075b3df"
     }
   ]
 }
