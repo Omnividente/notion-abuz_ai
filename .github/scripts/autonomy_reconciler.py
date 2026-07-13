@@ -61,7 +61,7 @@ def pr_recovery_fingerprints(
         "pr-recovery-evidence",
         pr_number,
         head_sha,
-        str(pr.get("mergeable_state") or ""),
+        pr_mergeability(pr),
         checks.get("fingerprint"),
         task_fingerprint(task),
     )
@@ -69,10 +69,83 @@ def pr_recovery_fingerprints(
     return evidence_key, digest("pr-session-recovery", evidence_key, terminal_key)
 
 
+def pr_mergeability(pr: dict[str, Any] | None) -> str:
+    """Normalize the mergeability fields returned by the pull detail API."""
+
+    state = str((pr or {}).get("mergeable_state") or "").lower()
+    if state not in {"", "unknown"}:
+        return state
+    # A false mergeable value is definitive conflict evidence even if a proxy
+    # or fixture omitted GitHub's companion mergeable_state field.
+    if (pr or {}).get("mergeable") is False:
+        return "dirty"
+    return state
+
+
 def pr_is_dirty(pr: dict[str, Any] | None) -> bool:
     """Return whether GitHub reports an open PR as conflicting with its base."""
 
-    return str((pr or {}).get("mergeable_state") or "").lower() == "dirty"
+    return pr_mergeability(pr) == "dirty"
+
+
+def hydrate_pull_details(
+    api: API, repo: str, pulls: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Hydrate list-pulls rows with the fields only exposed by pull details.
+
+    GitHub's list endpoint is useful for discovery but does not expose the
+    computed ``mergeable``/``mergeable_state`` result. Recovery decisions must
+    therefore use ``GET /pulls/{number}`` for every autonomous open PR.
+    """
+
+    hydrated: list[dict[str, Any]] = []
+    failures: list[str] = []
+    for summary in pulls:
+        number = int(summary.get("number") or 0)
+        if not number:
+            failures.append("open autonomous PR row has no PR number")
+            hydrated.append(summary)
+            continue
+        try:
+            _, detail = api.gh(f"/repos/{repo}/pulls/{number}")
+        except Exception as exc:
+            failures.append(
+                f"failed to hydrate open autonomous PR #{number}: {sanitize(exc, 500)}"
+            )
+            hydrated.append(summary)
+            continue
+        hydrated.append({**summary, **detail} if isinstance(detail, dict) else summary)
+    return hydrated, failures
+
+
+def settle_terminal_manifest_task(
+    task_state: dict[str, Any], manifest_status: str
+) -> tuple[dict[str, Any], bool]:
+    """Retire stale dispatch leases after a task becomes terminal in master."""
+
+    result = dict(task_state)
+    terminal_state = f"manifest_{manifest_status}"
+    changed = bool(
+        result.get("state") != terminal_state
+        or result.get("session_id")
+        or result.get("lease_expires_at")
+        or result.get("dispatch_key")
+    )
+    for field in (
+        "dispatch_error",
+        "dispatch_key",
+        "dispatch_requested_at",
+        "lease_expires_at",
+        "recovery_reason",
+        "retry_at",
+        "session_create_requested_at",
+        "session_id",
+        "session_name",
+    ):
+        result.pop(field, None)
+    result["state"] = terminal_state
+    result["manifest_status"] = manifest_status
+    return result, changed
 
 
 def pr_requires_recovery(pr: dict[str, Any], checks: dict[str, Any]) -> bool:
@@ -275,7 +348,10 @@ def reconcile(args: argparse.Namespace) -> int:
             return False
 
     pulls = paginate_gh(api, f"/repos/{repo}/pulls?state=open")
-    autonomous = [pr for pr in pulls if is_autonomous_pr(pr)]
+    autonomous, hydration_errors = hydrate_pull_details(
+        api, repo, [pr for pr in pulls if is_autonomous_pr(pr)]
+    )
+    errors.extend(hydration_errors)
     pr_by_task = {task_id_from_pr(pr, list(tasks)): pr for pr in autonomous if task_id_from_pr(pr, list(tasks))}
     check_cache: dict[tuple[int, str], dict[str, Any]] = {}
 
@@ -310,7 +386,7 @@ def reconcile(args: argparse.Namespace) -> int:
         pr_fp = digest(
             (pr or {}).get("number"),
             ((pr or {}).get("head") or {}).get("sha"),
-            (pr or {}).get("mergeable_state"),
+            pr_mergeability(pr),
             checks.get("fingerprint"),
         )
         version = state_version(previous, state, str(summary.get("fingerprint")), pr_fp)
@@ -709,7 +785,11 @@ def reconcile(args: argparse.Namespace) -> int:
         task_state = open_pr_task_state(
             dict(ledger["tasks"].get(task_id, {})), pr_number
         )
-        pr_progress_fp = digest(((pr.get("head") or {}).get("sha") or ""), checks.get("fingerprint"), pr.get("mergeable_state"))
+        pr_progress_fp = digest(
+            ((pr.get("head") or {}).get("sha") or ""),
+            checks.get("fingerprint"),
+            pr_mergeability(pr),
+        )
         recovery_evidence_key, recovery_key = pr_recovery_fingerprints(
             ledger, task_id, task, pr, checks
         )
@@ -762,7 +842,7 @@ def reconcile(args: argparse.Namespace) -> int:
                 "pr-recovery",
                 pr_number,
                 ((pr.get("head") or {}).get("sha") or ""),
-                str(pr.get("mergeable_state") or ""),
+                pr_mergeability(pr),
                 checks.get("fingerprint"),
             )
             if key not in ledger["messages"]:
@@ -929,6 +1009,30 @@ def reconcile(args: argparse.Namespace) -> int:
                 errors.append("no eligible project task; a shadow evidence report was requested and no manifest-only recovery task was created")
 
     fresh = fresh_current_work
+    for task_id, task in tasks.items():
+        manifest_status = str(task.get("status") or "")
+        if (
+            manifest_status not in {"done", "stopped", "retired"}
+            or task_id in pr_by_task
+            or task_id in active_task_ids
+        ):
+            continue
+        previous_task_state = ledger["tasks"].get(task_id)
+        if not isinstance(previous_task_state, dict):
+            continue
+        settled, changed = settle_terminal_manifest_task(
+            previous_task_state, manifest_status
+        )
+        ledger["tasks"][task_id] = settled
+        if changed:
+            actions.append(
+                {
+                    "action": "settle_terminal_manifest_task",
+                    "task_id": task_id,
+                    "manifest_status": manifest_status,
+                }
+            )
+
     pending_leases = sorted(
         task_id
         for task_id, row in ledger["tasks"].items()
