@@ -48,6 +48,47 @@ class ReconcilerTests(unittest.TestCase):
     def test_active_is_not_progress(self):
         self.assertTrue(M.no_op_violation(work=True, actions=0, progress=0, fresh=False))
         self.assertFalse(M.no_op_violation(work=True, actions=0, progress=1, fresh=False))
+        self.assertFalse(M.no_op_violation(work=True, actions=0, progress=0, fresh=False, blocked=1))
+
+    def test_terminal_no_change_session_advances_bounded_pr_recovery_once(self):
+        task = {
+            "id": "proxy-improve-rproxy-timeout-handling",
+            "status": "deferred",
+            "risk": "low",
+            "allowed_paths": ["internal/proxy/reverseproxy.go", "agent_tasks.json"],
+        }
+        pr = {"number": 596, "head": {"sha": "1144d"}}
+        checks = {"fingerprint": "same-red-checks"}
+        evidence_before, recovery_before = M.pr_recovery_fingerprints(
+            {"sessions": {}}, task["id"], task, pr, checks
+        )
+        live_terminal = {
+            "sessions": {
+                "13525775686702804526": {
+                    "task_id": task["id"],
+                    "recovery_pr_number": 596,
+                    "session_state": "COMPLETED",
+                    "state_version": 4,
+                    "progress_fingerprint": "terminal-without-pr-change",
+                    "session_update_at": "2026-07-13T20:52:56Z",
+                }
+            }
+        }
+        evidence_after, recovery_after = M.pr_recovery_fingerprints(
+            live_terminal, task["id"], task, pr, checks
+        )
+        self.assertEqual(evidence_before, evidence_after)
+        self.assertNotEqual(recovery_before, recovery_after)
+        self.assertEqual(
+            (evidence_after, recovery_after),
+            M.pr_recovery_fingerprints(live_terminal, task["id"], task, pr, checks),
+        )
+
+        changed_pr = {"number": 596, "head": {"sha": "new-head"}}
+        changed_evidence, _ = M.pr_recovery_fingerprints(
+            live_terminal, task["id"], task, changed_pr, checks
+        )
+        self.assertNotEqual(evidence_after, changed_evidence)
 
     def test_unchanged_failed_checks_do_not_repeat_recovery_message(self):
         self.assertEqual(
