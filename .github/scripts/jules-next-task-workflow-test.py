@@ -48,6 +48,12 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("# Workflow reruns preserve the original event SHA.", self.text)
         self.assertIn("      - uses: actions/checkout@v5\n        with:\n          ref: master", self.text)
 
+    def test_scheduled_wake_prevents_idle_todo_queue(self) -> None:
+        self.assertIn('cron: "17 * * * *"', self.text)
+        self.assertIn("github.event_name == 'schedule'", self.text)
+        self.assertIn("group: notion-abuz-jules-dispatch", self.text)
+        self.assertIn("cancel-in-progress: false", self.text)
+
     def test_meta_merges_use_only_explicit_dispatch_path(self) -> None:
         self.assertNotIn("automation-health-meta-", self.text)
         self.assertNotIn("automation-circuit-breaker-followup-", self.text)
