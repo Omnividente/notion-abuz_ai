@@ -1,6 +1,8 @@
 name: 2. Trigger Next Proxy Improvement Task
 
 on:
+  schedule:
+    - cron: "17 * * * *"
   pull_request:
     types: [closed]
     branches: [master]
@@ -63,6 +65,7 @@ jobs:
     if: >
       vars.JULES_LOOP_ENABLED != 'false' &&
       (github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
       (github.event.pull_request.merged == true &&
        !contains(github.event.pull_request.labels.*.name, 'stop-loop') &&
        (github.event.pull_request.user.login == 'google-jules[bot]' ||
