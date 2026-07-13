@@ -2411,15 +2411,29 @@ def prune_ledger(ledger: dict[str, Any], *, now: datetime, keep_days: int = 14) 
     if not isinstance(entries, dict):
         entries = {}
     cutoff = now - timedelta(days=keep_days)
-    kept: dict[str, Any] = {}
+    kept_actions: dict[str, Any] = {}
     for key, value in entries.items():
         if not isinstance(value, dict):
             continue
         timestamp = parse_time(str(value.get("time") or ""))
         if timestamp and timestamp >= cutoff:
-            kept[str(key)] = value
-    sessions = ledger.get("sessions") if isinstance(ledger.get("sessions"), dict) else {}
-    return {"version": 2, "actions": kept, "sessions": sessions}
+            kept_actions[str(key)] = value
+
+    sessions = ledger.get("sessions") or {}
+    if not isinstance(sessions, dict):
+        sessions = {}
+    kept_sessions: dict[str, Any] = {}
+    session_cutoff = now - timedelta(days=keep_days)
+    for session_id, snapshot in sessions.items():
+        if not isinstance(snapshot, dict):
+            continue
+        # Only keep sessions updated recently, or still active.
+        # But for safety and to prevent unbounded growth, just drop any session untouched for `keep_days`
+        obs_time = parse_time(str(snapshot.get("observed_at") or ""))
+        if obs_time and obs_time >= session_cutoff:
+            kept_sessions[str(session_id)] = snapshot
+
+    return {"version": 2, "actions": kept_actions, "sessions": kept_sessions}
 
 
 def record_action(ledger: dict[str, Any], action: RecoveryAction, *, now: datetime) -> dict[str, Any]:
