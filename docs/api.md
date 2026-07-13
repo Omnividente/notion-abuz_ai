@@ -24,6 +24,16 @@ If the alias exists, the request is routed to the configured Notion internal mod
 
 **Security Warning**: Never commit your real `config.yaml` or account data (`.json` files) to version control, as they contain sensitive secrets.
 
+## Coding Assistant Routing
+
+The proxy implements dedicated routing logic (`isCodingAssistantRequest`) to determine if a request originates from an autonomous coding assistant (such as Claude Code, Cursor, etc.). It inspects the `system` and `developer` message content for specific keywords:
+- **English:** `claude code`, `cursor`, `coding assistant`, `software engineer`, `repository`, `files`, `tests`, `patches`, `tools`, `developer`, `script`, `programming`, `coder`
+- **Russian:** `репозитор`, `программ`, `исходн`, `патч`, `тест`, `инструмент`, `разработчик`, `скрипт`, `кодер`
+
+If a coding assistant request is detected, the proxy explicitly bypasses generic Notion agent fallbacks. This strict coding mode prevents Notion persona leakage, preserves JSON tool-call mode, ensures proper tool-result continuation, and avoids final-answer identity drift (answering as if the user is inside Notion).
+
+The project maintains test coverage for this contract (e.g., in `internal/proxy/routing_live_fixtures_test.go`), using real-world session transcripts as fixtures. These automated assertions ensure that complex multi-turn inputs reliably trigger the correct routing logic and prevent unexpected regressions.
+
 ## Authentication
 
 For API endpoints such as `/v1/messages` and `/v1/chat/completions`, send the API key the same way you would talk to Anthropic or OpenAI:
