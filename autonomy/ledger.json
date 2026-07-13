@@ -1813,7 +1813,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 3,
+  "revision": 4,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2230,7 +2230,7 @@
       "dispatch_key": "407c00e6d03af2dd3cfbcd72",
       "dispatch_requested_at": "2026-07-13T20:19:20Z",
       "last_observed_at": "2026-07-13T20:19:18Z",
-      "lease_expires_at": "2026-07-13T20:48:24Z",
+      "lease_expires_at": "2026-07-13T21:04:47Z",
       "pr_number": 596,
       "pr_recoveries": 1,
       "pr_session_recoveries": 1,
@@ -2239,8 +2239,9 @@
       "recovery_pr_head": "1144d779d577a2ee583b851874fe3e7444b371e7",
       "recovery_pr_number": 596,
       "recovery_reason": "failed checks on existing PR: validate, route, test-and-merge",
+      "session_create_requested_at": "2026-07-13T20:19:47Z",
       "session_id": null,
-      "state": "pr_recovery_dispatch_requested"
+      "state": "session_create_requested"
     },
     "str": {
       "current_evidence_fingerprint": "46707c0db20cb0828843411c",
@@ -2250,5 +2251,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T20:19:22Z"
+  "updated_at": "2026-07-13T20:19:47Z"
 }
