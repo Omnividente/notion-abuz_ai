@@ -2937,7 +2937,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 64,
+  "revision": 65,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3505,7 +3505,7 @@
       "dispatch_requested_at": "2026-07-13T23:42:59Z",
       "last_observed_at": "2026-07-13T23:42:57Z",
       "last_progress_at": "2026-07-13T23:42:57Z",
-      "lease_expires_at": "2026-07-14T00:12:03Z",
+      "lease_expires_at": "2026-07-14T00:28:25Z",
       "pr_number": 607,
       "pr_recoveries": 1,
       "pr_recovery_evidence_key": "42fa38450bfaff62b9e653da",
@@ -3515,11 +3515,11 @@
       "recovery_pr_head": "ec4a1b2604020183319a80d35ec48700ceb95f52",
       "recovery_pr_number": 607,
       "recovery_reason": "dirty PR must sync current master",
-      "session_create_requested_at": "2026-07-13T23:03:43Z",
+      "session_create_requested_at": "2026-07-13T23:43:25Z",
       "session_id": null,
       "session_name": "sessions/18011490522809812243",
       "session_state": "COMPLETED",
-      "state": "pr_recovery_dispatch_requested",
+      "state": "session_create_requested",
       "task_fingerprint": "803bad5827c5785e890b04f4"
     },
     "docs-routing-contract-behavior": {
@@ -3607,5 +3607,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:43:00Z"
+  "updated_at": "2026-07-13T23:43:25Z"
 }
