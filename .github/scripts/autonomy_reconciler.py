@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -79,6 +80,8 @@ def pr_mergeability(pr: dict[str, Any] | None) -> str:
     # or fixture omitted GitHub's companion mergeable_state field.
     if (pr or {}).get("mergeable") is False:
         return "dirty"
+    if (pr or {}).get("mergeable") is True:
+        return "clean"
     return state
 
 
@@ -89,7 +92,12 @@ def pr_is_dirty(pr: dict[str, Any] | None) -> bool:
 
 
 def hydrate_pull_details(
-    api: API, repo: str, pulls: list[dict[str, Any]]
+    api: API,
+    repo: str,
+    pulls: list[dict[str, Any]],
+    *,
+    mergeability_attempts: int = 3,
+    retry_delay_seconds: float = 1.0,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """Hydrate list-pulls rows with the fields only exposed by pull details.
 
@@ -106,15 +114,27 @@ def hydrate_pull_details(
             failures.append("open autonomous PR row has no PR number")
             hydrated.append(summary)
             continue
-        try:
-            _, detail = api.gh(f"/repos/{repo}/pulls/{number}")
-        except Exception as exc:
+        merged = summary
+        for attempt in range(max(1, mergeability_attempts)):
+            try:
+                _, detail = api.gh(f"/repos/{repo}/pulls/{number}")
+            except Exception as exc:
+                failures.append(
+                    f"failed to hydrate open autonomous PR #{number}: {sanitize(exc, 500)}"
+                )
+                break
+            if isinstance(detail, dict):
+                merged = {**merged, **detail}
+            if pr_mergeability(merged) not in {"", "unknown"}:
+                break
+            if attempt + 1 < max(1, mergeability_attempts) and retry_delay_seconds > 0:
+                time.sleep(retry_delay_seconds)
+        else:
             failures.append(
-                f"failed to hydrate open autonomous PR #{number}: {sanitize(exc, 500)}"
+                f"mergeability unresolved for open autonomous PR #{number} "
+                f"after {max(1, mergeability_attempts)} detail attempts"
             )
-            hydrated.append(summary)
-            continue
-        hydrated.append({**summary, **detail} if isinstance(detail, dict) else summary)
+        hydrated.append(merged)
     return hydrated, failures
 
 

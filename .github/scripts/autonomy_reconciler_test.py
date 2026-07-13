@@ -292,6 +292,61 @@ class ReconcilerTests(unittest.TestCase):
         self.assertEqual(M.pr_mergeability(hydrated[0]), "dirty")
         self.assertTrue(M.pr_requires_recovery(hydrated[0], {"failed": []}))
 
+    def test_unknown_mergeability_is_retried_in_the_same_cycle(self):
+        class FakeAPI:
+            def __init__(self):
+                self.calls = 0
+
+            def gh(self, path, **kwargs):
+                self.calls += 1
+                if self.calls == 1:
+                    return 200, {
+                        "number": 607,
+                        "mergeable": None,
+                        "mergeable_state": "unknown",
+                    }
+                return 200, {
+                    "number": 607,
+                    "mergeable": False,
+                    "mergeable_state": "dirty",
+                }
+
+        api = FakeAPI()
+        hydrated, failures = M.hydrate_pull_details(
+            api,
+            "o/r",
+            [{"number": 607}],
+            retry_delay_seconds=0,
+        )
+        self.assertEqual(failures, [])
+        self.assertEqual(api.calls, 2)
+        self.assertEqual(M.pr_mergeability(hydrated[0]), "dirty")
+
+    def test_unresolved_mergeability_is_an_explicit_error(self):
+        class FakeAPI:
+            def __init__(self):
+                self.calls = 0
+
+            def gh(self, path, **kwargs):
+                self.calls += 1
+                return 200, {
+                    "number": 607,
+                    "mergeable": None,
+                    "mergeable_state": "unknown",
+                }
+
+        api = FakeAPI()
+        _, failures = M.hydrate_pull_details(
+            api,
+            "o/r",
+            [{"number": 607}],
+            mergeability_attempts=3,
+            retry_delay_seconds=0,
+        )
+        self.assertEqual(api.calls, 3)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("mergeability unresolved", failures[0])
+
     def test_terminal_manifest_task_retires_stale_dispatch_lease(self):
         stale = {
             "state": "session_created",
