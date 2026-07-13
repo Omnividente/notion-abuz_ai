@@ -10,7 +10,7 @@
 Admin endpoints live under `/admin/*` and use a separate session-cookie auth model (see [Dashboard](dashboard.md)). Key routes include:
 - `/admin/accounts`, `/admin/accounts/add`, `/admin/accounts/delete`, `/admin/accounts/{email}`
 - `/admin/models`, `/admin/stats`, `/admin/metrics`, `/admin/settings`, `/admin/refresh`
-- `/admin/register`, `/admin/register/start`, `/admin/register/providers`, `/admin/register/jobs`
+- `/admin/register`, `/admin/register/start`, `/admin/register/providers`, `/admin/register/jobs`, `/admin/register/jobs/{id}/events`
 
 OpenAI-compatible clients like OpenCode can connect to the proxy and expect a
 near-native experience.
