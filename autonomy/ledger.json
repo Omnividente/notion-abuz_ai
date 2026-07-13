@@ -866,6 +866,14 @@
       "task_id": "proxy-improve-rproxy-timeout-handling",
       "verified_at": "2026-07-13T21:31:38Z"
     },
+    "a6e87bef21cba883a71fd8a4": {
+      "kind": "terminal_manifest_session_cleanup",
+      "sent_at": "2026-07-13T23:02:53Z",
+      "session_id": "2103514512702002509",
+      "state_version": 12,
+      "task_id": "docs-routing-contract-behavior",
+      "verified_at": null
+    },
     "b8bb647254f9975bea54a807": {
       "activity_fingerprint": "5886b41fe4e7931eeca5c4c8",
       "delivery_attempts": 1,
@@ -2652,7 +2660,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 50,
+  "revision": 51,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -2935,19 +2943,19 @@
     },
     "2103514512702002509": {
       "activity_fingerprint": "e2033aef3b3f2cfa811da77b",
-      "last_observed_at": "2026-07-13T22:59:57Z",
-      "last_progress_at": "2026-07-13T22:59:57Z",
+      "last_observed_at": "2026-07-13T23:02:53Z",
+      "last_progress_at": "2026-07-13T23:02:53Z",
       "last_verified_message_key": "c41c6aed44f795f02686416c",
       "lease_key": "b2cfdf21b087f58b892e5976",
       "post_send_activity_fingerprint": "ceade303ff98d8beadbdc6b7",
-      "pr_fingerprint": "43cdf7e8ef5f2e32a3cf48de",
-      "progress_fingerprint": "a2faccb6404eb7fe35c9f9f0",
+      "pr_fingerprint": "eb1bf158a710f7b14e1d83a5",
+      "progress_fingerprint": "f689aa1f1fd5ba34d932ab03",
       "recoveries_without_progress": 0,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_state": "COMPLETED",
-      "session_update_at": "2026-07-13T22:59:20.925087Z",
-      "state_version": 11,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-13T23:02:27.640531Z",
+      "state_version": 12,
       "task_id": "docs-routing-contract-behavior",
       "terminal_reason": "Jules session ended in FAILED without an open PR"
     },
@@ -3286,5 +3294,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:00:46Z"
+  "updated_at": "2026-07-13T23:02:53Z"
 }
