@@ -29,23 +29,6 @@ class ReconcilerTests(unittest.TestCase):
         self.assertEqual(summary["task_id"], "runtime-fix")
         self.assertIn("a" * 24, summary["token_keys"])
 
-    def test_activity_summary_extracts_structured_verified_no_change(self):
-        rows = [
-            {
-                "originator": "agent",
-                "createTime": "2026-07-13T10:00:00Z",
-                "message": (
-                    'task_id: runtime-fix AUTONOMY_VERIFIED_NO_CHANGE '
-                    '{"reason":"already correct","paths":["internal/proxy/x.go:10-20"],'
-                    '"evidence":"go test ./internal/proxy passed"}'
-                ),
-            }
-        ]
-        request = M.activity_summary(rows)["verified_no_change"]
-        self.assertEqual(request["reason"], "already correct")
-        self.assertEqual(request["paths"], ["internal/proxy/x.go:10-20"])
-        self.assertIn("go test", request["evidence"])
-
     def test_session_inspection_keeps_all_active_and_bounds_terminal_history(self):
         rows = [("k", {"name": f"sessions/{i}", "state": "COMPLETED", "updateTime": f"2026-07-13T09:{i:02d}:00Z"}) for i in range(20)]
         rows.append(("k", {"name": "sessions/active", "state": "IN_PROGRESS", "updateTime": "2020-01-01T00:00:00Z"}))
@@ -106,81 +89,6 @@ class ReconcilerTests(unittest.TestCase):
             live_terminal, task["id"], task, changed_pr, checks
         )
         self.assertNotEqual(evidence_after, changed_evidence)
-
-    def test_failed_and_stopped_sessions_become_actionable_deferred_tasks(self):
-        task = {
-            "id": "runtime-fix",
-            "status": "todo",
-            "risk": "low",
-            "allowed_paths": ["internal/proxy/runtime.go", "agent_tasks.json"],
-        }
-        current = datetime(2026, 7, 13, 10, 0, tzinfo=timezone.utc)
-        for terminal_state in ("FAILED", "STOPPED"):
-            with self.subTest(terminal_state=terminal_state):
-                deferred, outcome, created = M.terminal_task_outcome(
-                    {"state": "active", "session_id": "s"},
-                    task=task,
-                    session_id="s",
-                    session_state=terminal_state,
-                    progress_fingerprint="terminal-evidence",
-                    verified_no_change=None,
-                    current=current,
-                    defer_minutes=60,
-                )
-                self.assertEqual(outcome, "deferred")
-                self.assertTrue(created)
-                self.assertEqual(deferred["state"], "deferred")
-                self.assertIsNone(deferred["session_id"])
-                self.assertIn(terminal_state, deferred["reason"])
-                self.assertTrue(deferred["retry_condition"])
-                self.assertTrue(deferred["evidence_requirement"])
-                self.assertEqual(deferred["next_review_at"], "2026-07-13T11:00:00Z")
-                repeated, repeated_outcome, repeated_created = M.terminal_task_outcome(
-                    deferred,
-                    task=task,
-                    session_id="s",
-                    session_state=terminal_state,
-                    progress_fingerprint="terminal-evidence",
-                    verified_no_change=None,
-                    current=current,
-                    defer_minutes=60,
-                )
-                self.assertEqual(repeated_outcome, "deferred")
-                self.assertFalse(repeated_created)
-                self.assertEqual(repeated["next_review_at"], deferred["next_review_at"])
-
-    def test_structured_no_change_is_terminal_until_task_evidence_changes(self):
-        task = {
-            "id": "runtime-fix",
-            "status": "todo",
-            "risk": "low",
-            "allowed_paths": ["internal/proxy/runtime.go", "agent_tasks.json"],
-            "description": "original acceptance",
-        }
-        current = datetime(2026, 7, 13, 10, 0, tzinfo=timezone.utc)
-        completed, outcome, created = M.terminal_task_outcome(
-            {"state": "active", "session_id": "s"},
-            task=task,
-            session_id="s",
-            session_state="COMPLETED",
-            progress_fingerprint="verified-evidence",
-            verified_no_change={
-                "reason": "runtime already satisfies acceptance",
-                "paths": ["internal/proxy/runtime.go:10-20"],
-                "evidence": "go test ./internal/proxy passed",
-            },
-            current=current,
-            defer_minutes=60,
-        )
-        self.assertEqual(outcome, "verified_no_change")
-        self.assertTrue(created)
-        self.assertEqual(completed["completion_mode"], "verified_no_change")
-        self.assertIsNone(M.choose_task({"tasks": [task]}, {"tasks": {"runtime-fix": completed}}, current))
-        changed = {**task, "description": "new reproduced evidence"}
-        self.assertEqual(
-            M.choose_task({"tasks": [changed]}, {"tasks": {"runtime-fix": completed}}, current)["id"],
-            "runtime-fix",
-        )
 
     def test_historical_terminal_session_cannot_replace_active_task_owner(self):
         task_state = {
@@ -370,11 +278,9 @@ class ReconcilerTests(unittest.TestCase):
         current = datetime(2026, 7, 13, 10, 0, tzinfo=timezone.utc)
         tasks = {f"old-{i}": {"updated_at": "2020-01-01T00:00:00Z"} for i in range(M.LEDGER_MAX_TASKS + 20)}
         tasks["runtime"] = {"state": "pr_recovery_dispatch_requested", "dispatch_requested_at": M.iso(current)}
-        tasks["verified"] = {"state": "verified_no_change", "verified_at": "2020-01-01T00:00:00Z"}
         tasks["__scheduler__"] = {"last_dispatched_kind": "runtime", "last_dispatched_at": M.iso(current)}
         pruned = M.prune_ledger({"sessions": {}, "tasks": tasks, "messages": {}, "cycles": []}, current=current)
         self.assertIn("runtime", pruned["tasks"])
-        self.assertIn("verified", pruned["tasks"])
         self.assertIn("__scheduler__", pruned["tasks"])
 
     def test_legacy_ledger_migration_is_bounded_and_read_only(self):

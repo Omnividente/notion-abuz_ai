@@ -110,11 +110,7 @@ TASK LOOP:
    test, doc, artifact, or diagnostic evidence in this PR.
    If current code already satisfies acceptance, record
    `completion_mode: verified_no_change` with exact file/line and command
-   evidence; never label that case blocked. Also emit one activity in the
-   exact form
-   `AUTONOMY_VERIFIED_NO_CHANGE {"reason":"...","paths":["path:line-line"],"evidence":"commands and results"}`
-   before completing, so the durable reconciler can verify a no-PR terminal
-   outcome without interpreting free-form prose.
+   evidence; never label that case blocked.
 9. Add a discovered bug or safe improvement as a new "todo" task only when it has concrete runtime, issue, check, transcript, smoke, or failed-session evidence and the useful queue is below max_todo_tasks. Do not add a duplicate or speculative micro-task.
 10. Before opening the PR, sync with the latest master/default branch.
 11. If master changed during the session, rebase or merge latest master
