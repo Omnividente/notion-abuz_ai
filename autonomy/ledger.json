@@ -660,7 +660,7 @@
       "pr_number": 604,
       "sent_at": "2026-07-13T22:48:24Z",
       "task_id": "docs-routing-contract-behavior",
-      "verified_at": null
+      "verified_at": "2026-07-13T22:48:25Z"
     },
     "47a9203e09b4c48d400c6307": {
       "kind": "pr_recovery",
@@ -2467,7 +2467,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 41,
+  "revision": 42,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -3000,27 +3000,31 @@
       "deferred_evidence_fingerprint": "b5ffc11ee82222a6de8fb715",
       "deferred_task_fingerprint": "d3f183e601ca151df61ad610",
       "dispatch_completed_at": "2026-07-13T22:11:59Z",
-      "dispatch_generation": 1,
-      "dispatch_key": "b2cfdf21b087f58b892e5976",
-      "dispatch_requested_at": "2026-07-13T22:11:34Z",
+      "dispatch_generation": 2,
+      "dispatch_key": "c03cfac175ba1858a82ab728",
+      "dispatch_requested_at": "2026-07-13T22:48:25Z",
       "evidence_requirement": "new reproducible task evidence, a corrected task definition, or a project-relevant commit/PR",
       "last_observed_at": "2026-07-13T22:48:24Z",
       "last_progress_at": "2026-07-13T22:48:24Z",
-      "lease_expires_at": "2026-07-13T22:56:59Z",
+      "lease_expires_at": "2026-07-13T23:17:47Z",
       "next_review_at": "2026-07-13T23:47:47Z",
       "pr_number": 604,
       "pr_recoveries": 1,
+      "pr_recovery_evidence_key": "58239477a59b135f31ddba62",
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "eaf3dd825889bf00da18c00c",
       "progress_fingerprint": "6428aa5ef7ad1a27799d2466",
       "reason": "Jules session ended in FAILED without an open PR",
-      "recovery_pr_head": null,
-      "recovery_pr_number": null,
+      "recovery_pr_head": "cad5092caa160accf3aab16bf434fa58b19613b4",
+      "recovery_pr_number": 604,
+      "recovery_reason": "failed checks on existing PR: test-and-merge",
       "retry_at": "2026-07-13T23:47:47Z",
       "retry_condition": "task definition, terminal session, PR or check evidence changes after next_review_at",
       "session_create_requested_at": "2026-07-13T22:11:57Z",
       "session_id": null,
       "session_name": null,
       "session_state": "IN_PROGRESS",
-      "state": "pr_open_without_active_session",
+      "state": "pr_recovery_dispatch_requested",
       "task_fingerprint": "d3f183e601ca151df61ad610",
       "terminal_evidence_key": "9a498681c441502b3bded849",
       "terminal_session_id": "2103514512702002509",
@@ -3095,5 +3099,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T22:48:24Z"
+  "updated_at": "2026-07-13T22:48:25Z"
 }
