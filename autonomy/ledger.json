@@ -2222,7 +2222,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 31,
+  "revision": 32,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2494,6 +2494,15 @@
       "state_version": 1,
       "task_id": "scripts-audit-python-lint-dedupe-task-4"
     },
+    "2103514512702002509": {
+      "last_observed_at": "2026-07-13T22:11:59Z",
+      "lease_key": "b2cfdf21b087f58b892e5976",
+      "recovery_pr_head": null,
+      "recovery_pr_number": null,
+      "session_state": "STATE_UNSPECIFIED",
+      "state_version": 1,
+      "task_id": "docs-routing-contract-behavior"
+    },
     "2335830168077339062": {
       "activity_fingerprint": "04ca53a98a162d3f32117891",
       "last_observed_at": "2026-07-13T22:11:28Z",
@@ -2731,14 +2740,18 @@
       "last_dispatched_task_id": "docs-routing-contract-behavior"
     },
     "docs-routing-contract-behavior": {
+      "dispatch_completed_at": "2026-07-13T22:11:59Z",
       "dispatch_generation": 1,
       "dispatch_key": "b2cfdf21b087f58b892e5976",
       "dispatch_requested_at": "2026-07-13T22:11:34Z",
-      "lease_expires_at": "2026-07-13T22:56:57Z",
+      "lease_expires_at": "2026-07-13T22:56:59Z",
       "recovery_pr_head": null,
       "recovery_pr_number": null,
       "session_create_requested_at": "2026-07-13T22:11:57Z",
-      "state": "session_create_requested",
+      "session_id": "2103514512702002509",
+      "session_name": "sessions/2103514512702002509",
+      "session_state": "STATE_UNSPECIFIED",
+      "state": "session_created",
       "task_fingerprint": "d3f183e601ca151df61ad610"
     },
     "proxy-improve-rproxy-error-logging": {
@@ -2799,5 +2812,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T22:11:57Z"
+  "updated_at": "2026-07-13T22:11:59Z"
 }
