@@ -1922,7 +1922,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 12,
+  "revision": 13,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2295,6 +2295,15 @@
       "state_version": 1,
       "task_id": ""
     },
+    "5079834960180138219": {
+      "last_observed_at": "2026-07-13T21:04:02Z",
+      "lease_key": "1acade129ff933f6244aefb9",
+      "recovery_pr_head": "1144d779d577a2ee583b851874fe3e7444b371e7",
+      "recovery_pr_number": 596,
+      "session_state": "STATE_UNSPECIFIED",
+      "state_version": 1,
+      "task_id": "proxy-improve-rproxy-timeout-handling"
+    },
     "6888614032956265246": {
       "activity_fingerprint": "43465356d695efe137bc3d02",
       "last_observed_at": "2026-07-13T21:03:20Z",
@@ -2392,12 +2401,12 @@
   "tasks": {
     "proxy-improve-rproxy-timeout-handling": {
       "current_evidence_fingerprint": "1d04b9047d84a7b61aa7ee6b",
-      "dispatch_completed_at": "2026-07-13T20:19:49Z",
+      "dispatch_completed_at": "2026-07-13T21:04:02Z",
       "dispatch_generation": 2,
       "dispatch_key": "1acade129ff933f6244aefb9",
       "dispatch_requested_at": "2026-07-13T21:03:31Z",
       "last_observed_at": "2026-07-13T21:03:31Z",
-      "lease_expires_at": "2026-07-13T21:48:59Z",
+      "lease_expires_at": "2026-07-13T21:49:02Z",
       "pr_number": 596,
       "pr_recoveries": 1,
       "pr_recovery_evidence_key": "99b87ac3da8b9fbb48b03bc9",
@@ -2408,10 +2417,10 @@
       "recovery_pr_number": 596,
       "recovery_reason": "failed checks on existing PR: validate, route, test-and-merge",
       "session_create_requested_at": "2026-07-13T21:03:59Z",
-      "session_id": null,
-      "session_name": "sessions/13525775686702804526",
+      "session_id": "5079834960180138219",
+      "session_name": "sessions/5079834960180138219",
       "session_state": "STATE_UNSPECIFIED",
-      "state": "session_create_requested"
+      "state": "session_created"
     },
     "str": {
       "current_evidence_fingerprint": "46707c0db20cb0828843411c",
@@ -2421,5 +2430,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T21:03:59Z"
+  "updated_at": "2026-07-13T21:04:02Z"
 }
