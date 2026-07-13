@@ -314,8 +314,14 @@ def reconcile(args: argparse.Namespace) -> int:
             latest = latest_observed
             stale = minutes_since(latest, current) >= args.stale_minutes
             failed = bool(checks.get("failed"))
+            recover_now, recovery_trigger = should_recover_session(
+                failed_checks=failed,
+                previous_pr_fingerprint=previous.get("pr_fingerprint"),
+                current_pr_fingerprint=pr_fp,
+                stale=stale,
+            )
             attempts = int(record.get("recoveries_without_progress") or 0)
-            if not pending_key and (failed or stale):
+            if not pending_key and recover_now:
                 if attempts >= args.max_recoveries:
                     retry_at = current + timedelta(minutes=args.defer_minutes)
                     task_state = dict(ledger["tasks"].get(task_state_id, {}))
@@ -351,7 +357,11 @@ def reconcile(args: argparse.Namespace) -> int:
                         except Exception as exc:
                             errors.append(f"terminate/defer failed for {session_id}: {sanitize(exc, 600)}")
                 else:
-                    wait_reason = "failed_checks" if failed else f"no_progress_for_{int(minutes_since(latest, current))}_minutes"
+                    wait_reason = (
+                        "new_failed_checks"
+                        if recovery_trigger == "new_failed_check_evidence"
+                        else f"no_progress_for_{int(minutes_since(latest, current))}_minutes"
+                    )
                     packet_task = dict(task or {})
                     scope_override = (ledger.get("tasks") or {}).get(task_state_id, {}).get("scope_override")
                     if isinstance(scope_override, list):

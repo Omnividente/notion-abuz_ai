@@ -170,6 +170,27 @@ def no_op_violation(*, work: bool, actions: int, progress: int, fresh: bool) -> 
     return work and actions == 0 and progress == 0 and not fresh
 
 
+def should_recover_session(
+    *,
+    failed_checks: bool,
+    previous_pr_fingerprint: Any,
+    current_pr_fingerprint: str,
+    stale: bool,
+) -> tuple[bool, str]:
+    new_failed_evidence = bool(
+        failed_checks
+        and (
+            not previous_pr_fingerprint
+            or str(previous_pr_fingerprint) != current_pr_fingerprint
+        )
+    )
+    if new_failed_evidence:
+        return True, "new_failed_check_evidence"
+    if stale:
+        return True, "stale_without_agent_progress"
+    return False, "unchanged"
+
+
 def is_autonomous_pr(pr: dict[str, Any]) -> bool:
     body = str(pr.get("body") or "")
     head = str((pr.get("head") or {}).get("ref") or "")
