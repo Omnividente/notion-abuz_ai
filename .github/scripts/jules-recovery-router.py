@@ -2406,7 +2406,7 @@ def load_ledger(client: GitHubClient) -> dict[str, Any]:
     return ledger
 
 
-def prune_ledger(ledger: dict[str, Any], *, now: datetime, keep_days: int = 14) -> dict[str, Any]:
+def prune_ledger(ledger: dict[str, Any], *, now: datetime, keep_days: int = 7) -> dict[str, Any]:
     entries = ledger.get("actions") or {}
     if not isinstance(entries, dict):
         entries = {}

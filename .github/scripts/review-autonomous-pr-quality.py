@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from fnmatch import fnmatchcase
 import json
 import os
 import re
@@ -256,6 +257,30 @@ def diff_numstat_between(base: str, head: str) -> dict[str, tuple[int, int]]:
 
 def normalize_path(path: str) -> str:
     return path.replace("\\", "/").lower()
+
+
+def normalized_allowed_paths(task: dict[str, Any]) -> list[str]:
+    allowed_paths = task.get("allowed_paths")
+    if not isinstance(allowed_paths, list):
+        return []
+    return [
+        normalize_path(str(pattern)).removeprefix("./").strip()
+        for pattern in allowed_paths
+        if str(pattern).strip()
+    ]
+
+
+def path_matches_allowed_paths(path: str, allowed_paths: list[str]) -> bool:
+    normalized = normalize_path(path).removeprefix("./")
+    if is_manifest_path(normalized):
+        # Every autonomous completion needs a durable state transition.
+        return True
+    for pattern in allowed_paths:
+        if pattern.endswith("/") and normalized.startswith(pattern):
+            return True
+        if fnmatchcase(normalized, pattern):
+            return True
+    return False
 
 
 def is_manifest_path(path: str) -> bool:
@@ -629,6 +654,30 @@ def evaluate_quality(
     scratch_files = [path for path in changed_files if is_scratch_file(path)]
     generated_artifact_files = [path for path in changed_files if is_generated_artifact_file(path)]
     autofill_evidence_block = ""
+
+    completed_changes = done_changes + blocked_changes
+    if len(completed_changes) == 1:
+        completed_change = completed_changes[0]
+        # Scope is immutable during the PR: use the task definition from the
+        # base manifest so a stale or compromised change cannot authorize
+        # itself by broadening allowed_paths in the same commit.
+        scope_task = task_map(before_manifest).get(completed_change.task_id) or completed_change.task
+        allowed_paths = normalized_allowed_paths(scope_task)
+        if not allowed_paths:
+            reasons.append(
+                f"Task {completed_change.task_id} has no usable allowed_paths scope."
+            )
+        else:
+            out_of_scope_files = [
+                path
+                for path in changed_files
+                if not path_matches_allowed_paths(path, allowed_paths)
+            ]
+            if out_of_scope_files:
+                reasons.append(
+                    f"Autonomous PR changes files outside task {completed_change.task_id} allowed_paths: "
+                    + ", ".join(sorted(out_of_scope_files))
+                )
 
     if scratch_files:
         reasons.append(
