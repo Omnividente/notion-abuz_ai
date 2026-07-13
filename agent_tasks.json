@@ -8621,6 +8621,28 @@
       ],
       "source_reference": "Blocked task proxy-audit-context-cancellation",
       "stopped_reason": "Duplicate of completed recovery investigation automation-recovery-followup-9e86197f for the same source_reference; reactivate the original task instead of creating another follow-up."
+    },
+    {
+      "id": "proxy-idempotency-cache-observability",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Expose bounded idempotency replay cache metrics",
+      "description": "Add low-cardinality counters and current-entry visibility for idempotency execution, replay, conflict, streaming rejection, and expiry so operators can verify exactly-once behavior without retaining keys, credentials, cookies, or payloads.",
+      "allowed_paths": [
+        "internal/proxy/idempotency.go",
+        "internal/proxy/idempotency_test.go",
+        "internal/proxy/telemetry_metrics.go",
+        "internal/proxy/telemetry_metrics_test.go",
+        "internal/proxy/handler.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Metrics distinguish first execution, completed replay, in-flight conflict, streaming non-replay, and expiry.",
+        "Metric labels are bounded and never include Idempotency-Key values or request/response payloads.",
+        "Concurrent and expiry tests verify counters and current cache entry count.",
+        "The metrics are exposed through the existing admin metrics contract."
+      ]
     }
   ]
 }
