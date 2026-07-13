@@ -162,11 +162,21 @@ def open_block_pr(
         "minimum_todo_tasks", 5
     )
 
-    if todo_count < minimum_todo_tasks:
-        import hashlib
+    source_reference = f"Blocked task {task_id}"
+    existing_followup = next(
+        (
+            task
+            for task in tasks
+            if isinstance(task, dict)
+            and str(task.get("id", "")).startswith("automation-recovery-followup-")
+            and task.get("source_reference") == source_reference
+        ),
+        None,
+    )
+    if todo_count < minimum_todo_tasks and existing_followup is None:
         import datetime
+        import hashlib
 
-    while todo_count < minimum_todo_tasks:
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         h = hashlib.sha256(f"{task_id}-{todo_count}-{now}".encode("utf-8")).hexdigest()[
             :8
@@ -185,10 +195,14 @@ def open_block_pr(
                 "The root cause is identified using CI logs, local live smoke, or captured Claude Code transcripts.",
                 "A fix is proposed or the task is closed if obsolete.",
             ],
-            "source_reference": f"Blocked task {task_id}",
+            "source_reference": source_reference,
         }
         tasks.append(new_task)
-        todo_count += 1
+    elif todo_count < minimum_todo_tasks:
+        print(
+            "Recovery follow-up already exists for "
+            f"{source_reference!r}; not creating a duplicate."
+        )
     write_manifest(manifest_path, manifest)
 
     run(["git", "config", "user.name", "github-actions[bot]"])
