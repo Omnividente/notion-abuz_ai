@@ -268,6 +268,17 @@
       "task_id": "proxy-improve-rproxy-timeout-handling",
       "verified_at": "2026-07-13T20:21:57Z"
     },
+    "7c7b11315778c2fd1dfba80e": {
+      "activity_fingerprint": "6b290b517723d77fbad6f140",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-13T21:36:13Z",
+      "packet_hash": "d46cd097e7838fe6703321b8",
+      "sent_at": "2026-07-13T21:31:35Z",
+      "session_id": "5079834960180138219",
+      "state_version": 5,
+      "task_id": "proxy-improve-rproxy-timeout-handling",
+      "verified_at": null
+    },
     "legacy-01fba5268ce233391de6bb86": {
       "kind": "legacy_router_action",
       "reason": "Create diagnostic task for stopped conflict-recovery loop on PR #502",
@@ -2040,7 +2051,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 19,
+  "revision": 20,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2416,10 +2427,11 @@
     },
     "5079834960180138219": {
       "activity_fingerprint": "6b290b517723d77fbad6f140",
-      "last_observed_at": "2026-07-13T21:26:37Z",
+      "last_observed_at": "2026-07-13T21:31:35Z",
       "last_progress_at": "2026-07-13T21:26:37Z",
       "last_verified_message_key": "1e2a8a7d2727e5b3f752729b",
       "lease_key": "1acade129ff933f6244aefb9",
+      "pending_message_key": "7c7b11315778c2fd1dfba80e",
       "post_send_activity_fingerprint": "234aeb07ef3715a2d3bd9439",
       "pr_fingerprint": "7132fdb907d1bdcef4286af1",
       "progress_fingerprint": "168dcc1b3d5d9c37ef7495dc",
@@ -2427,7 +2439,7 @@
       "recovery_pr_head": "1144d779d577a2ee583b851874fe3e7444b371e7",
       "recovery_pr_number": 596,
       "session_state": "AWAITING_USER_FEEDBACK",
-      "session_update_at": "2026-07-13T21:26:10.668247Z",
+      "session_update_at": "2026-07-13T21:29:11.743541Z",
       "state_version": 5,
       "task_id": "proxy-improve-rproxy-timeout-handling"
     },
@@ -2559,5 +2571,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T21:27:02Z"
+  "updated_at": "2026-07-13T21:31:35Z"
 }
