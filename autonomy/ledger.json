@@ -800,7 +800,7 @@
       "pr_number": 604,
       "sent_at": "2026-07-13T23:00:17Z",
       "task_id": "docs-routing-contract-behavior",
-      "verified_at": null
+      "verified_at": "2026-07-13T23:00:18Z"
     },
     "7c7b11315778c2fd1dfba80e": {
       "activity_fingerprint": "6b290b517723d77fbad6f140",
@@ -2599,7 +2599,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 46,
+  "revision": 47,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -3130,26 +3130,26 @@
       "current_evidence_fingerprint": "a2faccb6404eb7fe35c9f9f0",
       "deferred_at": "2026-07-13T22:47:47Z",
       "dispatch_completed_at": "2026-07-13T22:11:59Z",
-      "dispatch_generation": 2,
-      "dispatch_key": "c03cfac175ba1858a82ab728",
-      "dispatch_requested_at": "2026-07-13T22:48:25Z",
+      "dispatch_generation": 3,
+      "dispatch_key": "68f137f852425e66a6fd2263",
+      "dispatch_requested_at": "2026-07-13T23:00:18Z",
       "last_observed_at": "2026-07-13T23:00:17Z",
       "last_progress_at": "2026-07-13T23:00:17Z",
-      "lease_expires_at": "2026-07-13T23:17:47Z",
+      "lease_expires_at": "2026-07-13T23:29:38Z",
       "pr_number": 604,
       "pr_recoveries": 2,
-      "pr_recovery_evidence_key": "58239477a59b135f31ddba62",
-      "pr_session_recoveries": 0,
-      "pr_session_recovery_key": "eaf3dd825889bf00da18c00c",
+      "pr_recovery_evidence_key": "80f77eabf35a3613b1718ab6",
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "f694e4985e66637ba3c9328b",
       "progress_fingerprint": "a9aa1c468a07a03cc60afc97",
-      "recovery_pr_head": "cad5092caa160accf3aab16bf434fa58b19613b4",
+      "recovery_pr_head": "fea5a6fc9ab0d29131c72a297d4b413bac37919e",
       "recovery_pr_number": 604,
       "recovery_reason": "failed checks on existing PR: test-and-merge",
       "session_create_requested_at": "2026-07-13T22:11:57Z",
       "session_id": null,
       "session_name": "sessions/2103514512702002509",
       "session_state": "COMPLETED",
-      "state": "pr_open_without_active_session",
+      "state": "pr_recovery_dispatch_requested",
       "task_fingerprint": "d3f183e601ca151df61ad610",
       "terminal_evidence_key": "9a498681c441502b3bded849",
       "terminal_session_id": "2103514512702002509",
@@ -3224,5 +3224,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:00:17Z"
+  "updated_at": "2026-07-13T23:00:18Z"
 }
