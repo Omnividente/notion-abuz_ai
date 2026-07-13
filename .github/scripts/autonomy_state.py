@@ -184,7 +184,10 @@ def should_recover_session(
     previous_pr_fingerprint: Any,
     current_pr_fingerprint: str,
     stale: bool,
+    awaiting_user_feedback: bool = False,
 ) -> tuple[bool, str]:
+    if awaiting_user_feedback:
+        return True, "awaiting_user_feedback"
     new_failed_evidence = bool(
         failed_checks
         and (
@@ -197,6 +200,18 @@ def should_recover_session(
     if stale:
         return True, "stale_without_agent_progress"
     return False, "unchanged"
+
+
+def user_feedback_needs_resolution(
+    record: dict[str, Any], session_state: str, agent_fingerprint: str
+) -> bool:
+    """Resolve each distinct Jules question once without requiring a human."""
+
+    return bool(
+        session_state == "AWAITING_USER_FEEDBACK"
+        and agent_fingerprint
+        and record.get("resolved_feedback_agent_fingerprint") != agent_fingerprint
+    )
 
 
 def is_autonomous_pr(pr: dict[str, Any]) -> bool:
