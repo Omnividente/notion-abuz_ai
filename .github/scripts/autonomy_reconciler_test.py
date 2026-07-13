@@ -425,6 +425,69 @@ class ReconcilerTests(unittest.TestCase):
         recovery = {"tasks": {"runtime-fix": {"state": "pr_recovery_dispatch_requested", "dispatch_key": "recovery", "lease_expires_at": "2026-07-13T10:30:00Z"}}}
         self.assertEqual(E.validate_lease(recovery, "runtime-fix", "recovery", current)["dispatch_key"], "recovery")
 
+    def test_executor_adopts_same_task_active_session_without_second_dispatch(self):
+        current = datetime(2026, 7, 13, 10, 0, tzinfo=timezone.utc)
+        task_state = {
+            "state": "pr_recovery_dispatch_requested",
+            "dispatch_key": "recovery",
+            "terminal_session_id": "session-1",
+            "retry_at": "2026-07-13T11:00:00Z",
+            "reason": "terminal session",
+        }
+        ledger = {
+            "tasks": {"runtime-fix": task_state},
+            "sessions": {
+                "session-1": {
+                    "task_id": "runtime-fix",
+                    "session_state": "FAILED",
+                    "state_version": 4,
+                }
+            },
+        }
+        active = [{"name": "sessions/session-1", "state": "IN_PROGRESS"}]
+        existing = E.existing_active_session_for_task(active, ledger, "runtime-fix", task_state)
+        self.assertEqual(E.session_id(existing), "session-1")
+        self.assertEqual(E.session_id({"id": "sessions/session-1"}), "session-1")
+
+        result = E.adopt_existing_active_session(
+            ledger,
+            "runtime-fix",
+            task_state,
+            existing,
+            lease_key="recovery",
+            recovery_pr_number=604,
+            recovery_pr_head="head",
+            current=current,
+            session_lease_minutes=45,
+        )
+        self.assertTrue(result["duplicate_dispatch_suppressed"])
+        self.assertEqual(ledger["tasks"]["runtime-fix"]["state"], "active")
+        self.assertEqual(ledger["tasks"]["runtime-fix"]["session_id"], "session-1")
+        self.assertEqual(ledger["tasks"]["runtime-fix"]["recovery_pr_number"], 604)
+        self.assertEqual(ledger["tasks"]["runtime-fix"]["lease_expires_at"], "2026-07-13T10:45:00Z")
+        self.assertNotIn("retry_at", ledger["tasks"]["runtime-fix"])
+        self.assertNotIn("terminal_session_id", ledger["tasks"]["runtime-fix"])
+        self.assertEqual(ledger["sessions"]["session-1"]["state_version"], 5)
+
+    def test_executor_still_rejects_foreign_or_ambiguous_active_sessions(self):
+        task_state = {"terminal_session_id": "session-1"}
+        foreign = [{"name": "sessions/other", "state": "IN_PROGRESS"}]
+        with self.assertRaisesRegex(RuntimeError, "refusing duplicate dispatch"):
+            E.existing_active_session_for_task(foreign, {"sessions": {}}, "runtime-fix", task_state)
+
+        duplicate = [
+            {"name": "sessions/session-1", "state": "IN_PROGRESS"},
+            {"name": "sessions/session-2", "state": "PLANNING"},
+        ]
+        ledger = {
+            "sessions": {
+                "session-1": {"task_id": "runtime-fix"},
+                "session-2": {"task_id": "runtime-fix"},
+            }
+        }
+        with self.assertRaisesRegex(RuntimeError, "multiple active Jules sessions"):
+            E.existing_active_session_for_task(duplicate, ledger, "runtime-fix", task_state)
+
 
 if __name__ == "__main__":
     unittest.main()

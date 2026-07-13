@@ -48,6 +48,127 @@ def validate_lease(ledger: dict[str, Any], task_id: str, lease_key: str, current
     return task_state
 
 
+def session_id(session: dict[str, Any]) -> str:
+    identity = str(session.get("id") or session.get("name") or "")
+    return identity.rsplit("/", 1)[-1]
+
+
+def existing_active_session_for_task(
+    active: list[dict[str, Any]],
+    ledger: dict[str, Any],
+    task_id: str,
+    task_state: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Return one already-active owner for this task, rejecting unsafe ambiguity."""
+
+    if not active:
+        return None
+
+    known_ids = {
+        str(identity)
+        for identity, row in (ledger.get("sessions") or {}).items()
+        if isinstance(row, dict) and str(row.get("task_id") or "") == task_id
+    }
+    known_ids.update(
+        str(task_state.get(field) or "")
+        for field in ("session_id", "terminal_session_id")
+        if task_state.get(field)
+    )
+
+    by_id = {session_id(row): row for row in active if session_id(row)}
+    same_task = [row for identity, row in by_id.items() if identity in known_ids]
+    foreign = [row for identity, row in by_id.items() if identity not in known_ids]
+    if len(same_task) == 1 and not foreign:
+        return same_task[0]
+
+    identities = [str(row.get("name") or session_id(row) or "unknown") for row in by_id.values()]
+    if len(same_task) > 1:
+        raise RuntimeError(
+            f"refusing ambiguous duplicate dispatch; task {task_id} has multiple active Jules sessions: "
+            + ", ".join(identities)
+        )
+    raise RuntimeError(f"refusing duplicate dispatch; active Jules sessions exist: {', '.join(identities)}")
+
+
+def adopt_existing_active_session(
+    ledger: dict[str, Any],
+    task_id: str,
+    task_state: dict[str, Any],
+    session: dict[str, Any],
+    *,
+    lease_key: str,
+    recovery_pr_number: int,
+    recovery_pr_head: str,
+    current: datetime,
+    session_lease_minutes: int,
+) -> dict[str, Any]:
+    """Bind a raced dispatch lease to its existing session without a second POST."""
+
+    identity = session_id(session)
+    if not identity:
+        raise RuntimeError("active Jules session has no identity")
+    name = str(session.get("name") or f"sessions/{identity}")
+    state = str(session.get("state") or "STATE_UNSPECIFIED")
+    expires_at = iso(current + timedelta(minutes=session_lease_minutes))
+    for field in (
+        "deferred_at",
+        "deferred_evidence_fingerprint",
+        "deferred_task_fingerprint",
+        "evidence_requirement",
+        "next_review_at",
+        "reason",
+        "retry_at",
+        "retry_condition",
+        "terminal_evidence_key",
+        "terminal_session_id",
+        "terminal_session_state",
+    ):
+        task_state.pop(field, None)
+    task_state.update(
+        {
+            "state": "active",
+            "session_id": identity,
+            "session_name": name,
+            "session_state": state,
+            "dispatch_completed_at": iso(current),
+            "lease_expires_at": expires_at,
+            "recovery_pr_number": recovery_pr_number or None,
+            "recovery_pr_head": recovery_pr_head or None,
+            "duplicate_dispatch_suppressed_at": iso(current),
+        }
+    )
+    ledger.setdefault("tasks", {})[task_id] = task_state
+
+    record = dict((ledger.get("sessions") or {}).get(identity, {}))
+    previous_state = str(record.get("session_state") or "")
+    record.pop("terminal_reason", None)
+    record.update(
+        {
+            "task_id": task_id,
+            "session_state": state,
+            "last_observed_at": iso(current),
+            "lease_key": lease_key,
+            "recovery_pr_number": recovery_pr_number or None,
+            "recovery_pr_head": recovery_pr_head or None,
+        }
+    )
+    if state != previous_state:
+        record["state_version"] = int(record.get("state_version") or 0) + 1
+    else:
+        record.setdefault("state_version", 1)
+    ledger.setdefault("sessions", {})[identity] = record
+    return {
+        "task_id": task_id,
+        "session_id": identity,
+        "session_name": name,
+        "session_state": state,
+        "lease_key": lease_key,
+        "recovery_pr_number": recovery_pr_number or None,
+        "recovery_pr_head": recovery_pr_head or None,
+        "duplicate_dispatch_suppressed": True,
+    }
+
+
 def render_prompt(args: argparse.Namespace, task: dict[str, Any]) -> str:
     command = [
         sys.executable,
@@ -132,9 +253,25 @@ def execute(args: argparse.Namespace) -> int:
 
     source = f"sources/github/{args.repo}"
     active = [session for _, session in list_sessions(api, source) if str(session.get("state") or "") in ACTIVE]
-    if active:
-        identities = [str(session.get("name") or session.get("id") or "unknown") for session in active]
-        raise RuntimeError(f"refusing duplicate dispatch; active Jules sessions exist: {', '.join(identities)}")
+    existing = existing_active_session_for_task(active, ledger, args.task_id, task_state)
+    if existing is not None:
+        current = now()
+        result = adopt_existing_active_session(
+            ledger,
+            args.task_id,
+            task_state,
+            existing,
+            lease_key=args.lease_key,
+            recovery_pr_number=args.recovery_pr_number,
+            recovery_pr_head=args.recovery_pr_head,
+            current=current,
+            session_lease_minutes=args.session_lease_minutes,
+        )
+        store.save(ledger, ledger_sha)
+        print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+        output("session_id", result["session_id"])
+        output("summary", result)
+        return 0
 
     # Persist the task identity before the external create-session side effect.
     # If finalization later loses a CAS race, the next reconciler still has an
