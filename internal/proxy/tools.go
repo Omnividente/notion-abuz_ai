@@ -36,6 +36,24 @@ func recordSessionFallbackMetric(reason string) {
 	log.Printf("[metrics] session_fallback: %s (total: %d)", reason, count)
 }
 
+// recordToolModeLossMetric increments the counter for specific tool mode loss scenarios.
+// Tool mode loss happens when the upstream model fails to use native JSON tool-calling
+// and instead falls back to outputting tool calls in the raw text response, which we
+// then have to manually parse and extract.
+//
+// Tracked fallback scenarios include:
+// - xml_wrapper_fallback: The model returned tool calls wrapped in an XML tag (e.g. <tool_call>).
+// - markdown_fence_fallback: The model returned JSON tool calls inside markdown code blocks.
+// - unparseable_json_candidate_blocks: A JSON candidate was found but could not be parsed.
+// - unparseable_json_candidate_truncated: A JSON candidate was truncated and could not be parsed.
+// - xml_array_fallback_direct: The model returned a JSON array of tool calls directly in text.
+// - xml_array_fallback_wrapper: The model returned tool calls wrapped in an object containing a JSON array (e.g., {"tool_calls": [...]}).
+// - xml_object_fallback_wrapper: The model returned a single tool call wrapped in an object (e.g., {"tool_call": {...}}).
+// - xml_object_fallback_direct: The model returned a single tool call object directly in text.
+// - suggestion_mode_trigger: The proxy triggered an artificial tool call based on detected suggestions.
+//
+// These metrics are exposed via /admin/metrics to help developers monitor Claude Code
+// compatibility bridge reliability and debug when the model drops out of native tool mode.
 func recordToolModeLossMetric(reason string) {
 	toolModeLossMetricsMu.Lock()
 	toolModeLossMetrics[reason]++

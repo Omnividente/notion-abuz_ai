@@ -8701,7 +8701,7 @@
       "description": "Add package-level comments documenting the tracking of tool mode loss (e.g. `xml_array_fallback_direct`) to provide better context for developers debugging metrics exposed by /admin/metrics.",
       "area": "proxy",
       "risk": "low",
-      "status": "todo",
+      "status": "done",
       "allowed_paths": [
         "internal/proxy/tools.go",
         "agent_tasks.json"
@@ -8724,6 +8724,21 @@
       "acceptance": [
         "TestProxyTimeoutHandling passes consistently.",
         "Alternatively, marked skipped in short mode if it takes too long."
+      ]
+    },
+    {
+      "id": "proxy-improve-flaky-timeout-tests-doc",
+      "title": "Document reason for transient flakes in TestProxyTimeoutHandling",
+      "description": "Add comments to TestProxyTimeoutHandling indicating it simulates transient timeouts and is known to be flaky in standard runs to help future maintainers.",
+      "area": "proxy",
+      "risk": "low",
+      "status": "todo",
+      "allowed_paths": [
+        "internal/proxy/proxy_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "TestProxyTimeoutHandling has documentation explaining its flakiness."
       ]
     }
   ]
