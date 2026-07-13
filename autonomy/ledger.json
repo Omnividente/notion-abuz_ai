@@ -640,6 +640,78 @@
       "run_attempt": "6",
       "run_id": "29289794593",
       "source_fingerprint": "f47c7f00ba3b9623a5494558"
+    },
+    {
+      "actions": [
+        {
+          "action": "defer_terminal_session",
+          "evidence_requirement": "new reproducible task evidence, a corrected task definition, or a project-relevant commit/PR",
+          "next_review_at": "2026-07-13T23:47:47Z",
+          "reason": "Jules session ended in FAILED without an open PR",
+          "retry_condition": "task definition, terminal session, PR or check evidence changes after next_review_at",
+          "session_id": "2103514512702002509",
+          "task_id": "docs-routing-contract-behavior",
+          "terminal_state": "FAILED"
+        },
+        {
+          "action": "comment_pr_recovery",
+          "key": "344c8e343c8d6c8b67e09fac",
+          "pr_number": 604,
+          "task_id": "docs-routing-contract-behavior"
+        },
+        {
+          "action": "dispatch_in_place_pr_recovery",
+          "dispatch_key": "c03cfac175ba1858a82ab728",
+          "generation": 2,
+          "pr_number": 604,
+          "task_id": "docs-routing-contract-behavior"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-13T22:48:27Z",
+      "blocked": [
+        {
+          "evidence_requirement": "new reproducible task evidence, a corrected task definition, or a project-relevant commit/PR",
+          "next_review_at": "2026-07-13T23:47:47Z",
+          "reason": "Jules session ended in FAILED without an open PR",
+          "retry_condition": "task definition, terminal session, PR or check evidence changes after next_review_at",
+          "session_id": "2103514512702002509",
+          "task_id": "docs-routing-contract-behavior",
+          "terminal_state": "FAILED"
+        },
+        {
+          "evidence_requirement": "new reproducible task evidence, a corrected task definition, or a project-relevant commit/PR",
+          "next_review_at": "2026-07-13T23:25:02Z",
+          "reason": "Jules session ended in FAILED without an open PR",
+          "retry_condition": "task definition, terminal session, PR or check evidence changes after next_review_at",
+          "session_id": "251585469516720548",
+          "task_id": "proxy-improve-rproxy-error-logging",
+          "terminal_state": "FAILED"
+        }
+      ],
+      "eligible_task_id": "docs-idempotency-replay-behavior",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 461,
+      "open_autonomous_prs": 1,
+      "pending_leases": [
+        "docs-routing-contract-behavior"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "2103514512702002509",
+          "task_id": "docs-routing-contract-behavior"
+        },
+        {
+          "kind": "initial_recent_pr",
+          "pr_number": 604,
+          "task_id": "docs-routing-contract-behavior"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29291027010",
+      "source_fingerprint": "433225ff4cad31df7742ad54"
     }
   ],
   "messages": {
@@ -2467,7 +2539,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 42,
+  "revision": 43,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -3099,5 +3171,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T22:48:25Z"
+  "updated_at": "2026-07-13T22:48:27Z"
 }
