@@ -375,6 +375,37 @@
       "run_attempt": "3",
       "run_id": "29287793678",
       "source_fingerprint": "913bc3ba98cc0a8f879691a8"
+    },
+    {
+      "actions": [
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "b2cfdf21b087f58b892e5976",
+          "generation": 1,
+          "task_id": "docs-routing-contract-behavior"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-13T22:11:35Z",
+      "blocked": [],
+      "eligible_task_id": "docs-routing-contract-behavior",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 460,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "docs-routing-contract-behavior"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "251585469516720548",
+          "task_id": "proxy-improve-rproxy-error-logging"
+        }
+      ],
+      "run_attempt": "4",
+      "run_id": "29287793678",
+      "source_fingerprint": "513f98ad5c849511c3ee9898"
     }
   ],
   "messages": {
@@ -2191,7 +2222,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 29,
+  "revision": 30,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2765,5 +2796,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T22:11:34Z"
+  "updated_at": "2026-07-13T22:11:35Z"
 }
