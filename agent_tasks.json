@@ -8556,7 +8556,7 @@
     },
     {
       "id": "docs-idempotency-replay-behavior",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Document idempotency response replay behavior",

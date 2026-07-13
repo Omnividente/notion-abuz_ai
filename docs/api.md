@@ -47,6 +47,13 @@ For API endpoints such as `/v1/messages` and `/v1/chat/completions`, send the AP
 The accepted key is `proxy.api_key` in `config.yaml` (env override
 `PROXY_API_KEY`).
 
+## Idempotency
+
+The proxy supports `Idempotency-Key` headers for all `POST` requests under the `/v1/` path to ensure that repeated submissions are processed safely.
+
+- **Non-streaming responses:** Completed non-streaming requests replay their response. A successful replay includes `X-Idempotency-Status: replayed`. Sensitive headers such as `Authorization` and `Set-Cookie` are omitted from cached replay responses.
+- **Streaming responses:** Streaming responses are not replayed. Reusing a key for a response that is in flight or was streamed returns a `409 Conflict` duplicate error with `X-Idempotency-Status: duplicate`.
+
 ## Standard request
 
 ```bash
