@@ -369,7 +369,8 @@ class RecoveryRouterTest(unittest.TestCase):
 
     def test_authoritative_reconciler_has_minimal_wakes_and_trusted_act(self) -> None:
         text = UNATTENDED_WORKFLOW_PATH.read_text(encoding="utf-8")
-        self.assertIn('cron: "*/5 * * * *"', text)
+        self.assertIn('cron: "3/5 * * * *"', text)
+        self.assertNotIn('cron: "*/5 * * * *"', text)
         self.assertIn("workflow_dispatch:", text)
         self.assertIn("pull_request:", text)
         self.assertNotIn("workflow_run:", text)

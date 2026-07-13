@@ -2,7 +2,9 @@ name: 3. Jules Durable Reconciler
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # Avoid the busiest top-of-hour/common-boundary minute. GitHub documents
+    # that scheduled events can be delayed or dropped under scheduler load.
+    - cron: "3/5 * * * *"
   workflow_dispatch:
     inputs:
       stale_minutes:
