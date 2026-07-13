@@ -272,3 +272,39 @@ func TestIdempotencyMiddlewareExpiry(t *testing.T) {
 		t.Fatalf("expected first_execution=2, got %d", metrics["first_execution"])
 	}
 }
+
+func TestIdempotencyMiddlewareCaseInsensitivity(t *testing.T) {
+	inferenceIdempotency = sync.Map{}
+	var handled atomic.Int32
+	handler := IdempotencyMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handled.Add(1)
+		w.WriteHeader(http.StatusCreated)
+	}))
+
+	// Test with lower-case uncanonicalized key
+	req1 := httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	req1.Header["idempotency-key"] = []string{"test-lower"}
+	rec1 := httptest.NewRecorder()
+	handler.ServeHTTP(rec1, req1)
+
+	if rec1.Code != http.StatusCreated {
+		t.Fatalf("first request code = %d", rec1.Code)
+	}
+
+	// Test duplicate with UPPER-CASE uncanonicalized key
+	req2 := httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	req2.Header["IDEMPOTENCY-KEY"] = []string{"test-lower"}
+	rec2 := httptest.NewRecorder()
+	handler.ServeHTTP(rec2, req2)
+
+	if rec2.Code != http.StatusCreated {
+		t.Fatalf("second request code = %d", rec2.Code)
+	}
+	if rec2.Header().Get("X-Idempotency-Status") != "replayed" {
+		t.Fatalf("second request missing replayed header")
+	}
+
+	if handled.Load() != 1 {
+		t.Fatalf("handled = %d, expected 1", handled.Load())
+	}
+}

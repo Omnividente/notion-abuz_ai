@@ -72,7 +72,15 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+		var key string
+		for k, v := range r.Header {
+			if strings.EqualFold(k, "idempotency-key") {
+				if len(v) > 0 {
+					key = strings.TrimSpace(v[0])
+					break
+				}
+			}
+		}
 		if key == "" {
 			next.ServeHTTP(w, r)
 			return

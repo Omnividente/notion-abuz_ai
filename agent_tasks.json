@@ -8646,7 +8646,7 @@
     },
     {
       "id": "proxy-idempotency-key-case-insensitivity",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Make Idempotency-Key header lookup case-insensitive",
@@ -8659,6 +8659,23 @@
       "acceptance": [
         "The middleware correctly finds idempotency keys sent as 'idempotency-key', 'IDEMPOTENCY-KEY', or other case variations.",
         "A test confirms idempotency behavior works regardless of the header's casing."
+      ]
+    },
+    {
+      "id": "proxy-admin-dashboard-stats",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Expose basic proxy active session counts to admin dashboard",
+      "description": "Add an admin endpoint that exposes the number of active tracked proxy sessions or idempotency entries to help debug pool exhaustion and state.",
+      "allowed_paths": [
+        "internal/proxy/handler.go",
+        "internal/proxy/admin.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A new /admin/stats endpoint exposes proxy-specific active states (like idempotency entries count).",
+        "Admin authentication is enforced for the new endpoint."
       ]
     }
   ]
