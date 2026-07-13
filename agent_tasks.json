@@ -8743,7 +8743,7 @@
     },
     {
       "id": "audit-proxy-timeout-configuration",
-      "status": "done",
+      "status": "blocked",
       "area": "proxy",
       "risk": "low",
       "title": "Audit proxy timeout configuration for upstream requests",
@@ -8755,7 +8755,8 @@
       "acceptance": [
         "Proxy timeout logic is audited and verified to not leak connections."
       ],
-      "resolution": "Audit completed. No changes required. Reverse proxy correctly relies on r.Context() and HTTP client timeout settings."
+      "resolution": "Audit completed. No changes required. Reverse proxy correctly relies on r.Context() and HTTP client timeout settings.",
+      "blocked_reason": "Requires live smoke or local check. Temporarily blocked as Jules session resolved followup 53bd4476 first."
     },
     {
       "id": "automation-recovery-followup-53bd4476",
