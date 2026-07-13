@@ -2727,7 +2727,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 54,
+  "revision": 55,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3275,8 +3275,11 @@
       "dispatch_generation": 1,
       "dispatch_key": "84a1ed014b2e2201dbdbbb37",
       "dispatch_requested_at": "2026-07-13T23:03:15Z",
-      "lease_expires_at": "2026-07-13T23:32:39Z",
-      "state": "dispatch_requested",
+      "lease_expires_at": "2026-07-13T23:48:43Z",
+      "recovery_pr_head": null,
+      "recovery_pr_number": null,
+      "session_create_requested_at": "2026-07-13T23:03:43Z",
+      "state": "session_create_requested",
       "task_fingerprint": "803bad5827c5785e890b04f4"
     },
     "docs-routing-contract-behavior": {
@@ -3377,5 +3380,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:03:17Z"
+  "updated_at": "2026-07-13T23:03:43Z"
 }
