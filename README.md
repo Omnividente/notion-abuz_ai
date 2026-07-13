@@ -43,8 +43,8 @@
 
 - **Панель управления (Dashboard)** по адресу `/dashboard/` — полностью русифицированный киберпанк-интерфейс, графики потребления токенов, логгер и форма массовой регистрации.
 - **Обратный прокси (Reverse Proxy)** для полноценного веб-интерфейса Notion AI по адресу `/ai`.
-- **API Шлюз** — `POST /v1/messages` (совместимый с Anthropic), `POST /v1/chat/completions` (OpenAI), `POST /v1/responses` и `GET /v1/models` (с поддержкой новейших **Opus 4.8** и **GPT-5.5** прямо из коробки!).
-- **Массовый регистратор** по адресу `POST /admin/register/start`.
+- **API Шлюз** — `POST /v1/messages` (совместимый с Anthropic), `POST /v1/chat/completions` (OpenAI), `POST /v1/responses`, `GET /v1/models` и `GET /models` (с поддержкой новейших **Opus 4.8** и **GPT-5.5** прямо из коробки!).
+- **Массовый регистратор** по адресу `POST /admin/register/start` (события SSE: `GET /admin/register/jobs/{id}/events`).
 - **Health Check** по адресу `GET /health` — мониторинг состояния пула аккаунтов (см. [Health Check & Observability](docs/health.md)).
 
 > **⚠️ Предупреждение о безопасности (Security Warning)**: Никогда не сохраняйте в систему контроля версий (git) реальные файлы `config.yaml` или данные аккаунтов (`.json` файлы из папки `accounts/`). Они содержат конфиденциальные токены доступа.

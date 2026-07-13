@@ -8539,7 +8539,7 @@
     },
     {
       "id": "docs-update-readme-proxy-endpoints",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Update README with accurate proxy endpoints",
@@ -8739,6 +8739,21 @@
       ],
       "acceptance": [
         "TestProxyTimeoutHandling has documentation explaining its flakiness."
+      ]
+    },
+    {
+      "id": "audit-proxy-timeout-configuration",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit proxy timeout configuration for upstream requests",
+      "description": "Ensure that the proxy handles upstream timeouts gracefully and correctly propagates context cancellation.",
+      "allowed_paths": [
+        "internal/proxy/reverseproxy.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Proxy timeout logic is audited and verified to not leak connections."
       ]
     }
   ]
