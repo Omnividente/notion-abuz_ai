@@ -8503,7 +8503,7 @@
     },
     {
       "id": "docs-routing-contract-behavior",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Document runtime routing contract and fixture behavior",
@@ -8831,6 +8831,22 @@
       ],
       "acceptance": [
         "When a reverse proxy function creates a new HTTP request from the incoming request and client.Do fails, the logged error properly includes the target URL host instead of just the original request's host."
+      ]
+    },
+    {
+      "id": "docs-api-ask-mode-matrix",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Clarify ASK mode logic in API docs",
+      "description": "The current API documentation says that ASK mode is disabled by default but doesn't explicitly describe the interaction between `ask_mode_default` and the per-request `-ask` model suffix when BOTH are present. Clarify that it functions as a logical OR (if either is true, ASK mode is used).",
+      "allowed_paths": [
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The interaction between global `ask_mode_default` and the `-ask` suffix is explicitly described as a logical OR.",
+        "The explanation is clear enough for a developer to understand the fallback."
       ]
     }
   ]
