@@ -753,6 +753,59 @@
       "run_attempt": "1",
       "run_id": "29291349517",
       "source_fingerprint": "23f99da5a9e74003f27f81c7"
+    },
+    {
+      "actions": [
+        {
+          "action": "comment_pr_recovery",
+          "key": "721278a883e5ed060da9636b",
+          "pr_number": 604,
+          "task_id": "docs-routing-contract-behavior"
+        },
+        {
+          "action": "dispatch_in_place_pr_recovery",
+          "dispatch_key": "68f137f852425e66a6fd2263",
+          "generation": 3,
+          "pr_number": 604,
+          "task_id": "docs-routing-contract-behavior"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-13T23:00:20Z",
+      "blocked": [
+        {
+          "evidence_requirement": "new reproducible task evidence, a corrected task definition, or a project-relevant commit/PR",
+          "next_review_at": "2026-07-13T23:25:02Z",
+          "reason": "Jules session ended in FAILED without an open PR",
+          "retry_condition": "task definition, terminal session, PR or check evidence changes after next_review_at",
+          "session_id": "251585469516720548",
+          "task_id": "proxy-improve-rproxy-error-logging",
+          "terminal_state": "FAILED"
+        }
+      ],
+      "eligible_task_id": "docs-idempotency-replay-behavior",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 461,
+      "open_autonomous_prs": 1,
+      "pending_leases": [
+        "docs-routing-contract-behavior"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "2103514512702002509",
+          "task_id": "docs-routing-contract-behavior"
+        },
+        {
+          "kind": "pr_delta",
+          "pr_number": 604,
+          "task_id": "docs-routing-contract-behavior"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29291642030",
+      "source_fingerprint": "04fe37b8008f114c3ceb0293"
     }
   ],
   "messages": {
@@ -2599,7 +2652,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 47,
+  "revision": 48,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -3224,5 +3277,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:00:18Z"
+  "updated_at": "2026-07-13T23:00:20Z"
 }
