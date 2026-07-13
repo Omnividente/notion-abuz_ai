@@ -49,6 +49,7 @@
 - operational intent сохраняется CAS-checkpoint до approve/sendMessage/comment/delete/session-create; потеря финального save не разрешает повтор side effect;
 - idempotency key строится из `session_id`, `state_version` и `activity_fingerprint`, но progress fingerprint учитывает только agent activity, PR head и checks — собственный recovery prompt не сбрасывает счётчик;
 - после `sendMessage` orchestrator перечитывает activities и подтверждает доставку/изменение состояния;
+- red checks запускают message recovery только при новом PR/check fingerprint; неизменный failure не создаёт repeated message на каждом цикле, а stale recovery остаётся отдельным trigger;
 - active session не считается progress: delta требует новой activity, commit, PR head, checks или terminal transition;
 - после bounded recovery без delta session завершается, а task сохраняет `deferred` ledger-state с retry condition, evidence requirement и next review time; один таймер без нового evidence не делает task eligible;
 - failed checks, annotations, changed paths и bounded sanitized activity excerpts включаются в recovery packet;

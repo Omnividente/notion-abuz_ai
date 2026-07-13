@@ -49,6 +49,34 @@ class ReconcilerTests(unittest.TestCase):
         self.assertTrue(M.no_op_violation(work=True, actions=0, progress=0, fresh=False))
         self.assertFalse(M.no_op_violation(work=True, actions=0, progress=1, fresh=False))
 
+    def test_unchanged_failed_checks_do_not_repeat_recovery_message(self):
+        self.assertEqual(
+            M.should_recover_session(
+                failed_checks=True,
+                previous_pr_fingerprint="same",
+                current_pr_fingerprint="same",
+                stale=False,
+            ),
+            (False, "unchanged"),
+        )
+        self.assertEqual(
+            M.should_recover_session(
+                failed_checks=True,
+                previous_pr_fingerprint="old",
+                current_pr_fingerprint="new",
+                stale=False,
+            )[1],
+            "new_failed_check_evidence",
+        )
+        self.assertTrue(
+            M.should_recover_session(
+                failed_checks=True,
+                previous_pr_fingerprint="same",
+                current_pr_fingerprint="same",
+                stale=True,
+            )[0]
+        )
+
     def test_packet_is_sanitized_and_complete(self):
         task = {"id": "t", "risk": "medium", "acceptance": ["works"], "allowed_paths": ["internal/proxy/x.go"]}
         packet = M.build_packet(task, {"last_jules_message": "Authorization: Bearer abcdefghijklmnop", "task_id": "t"}, 1, False, "waiting", None, {"failed": [], "pending": [], "passed": []})
