@@ -1,5 +1,37 @@
 {
-  "cycles": [],
+  "cycles": [
+    {
+      "actions": [
+        {
+          "action": "comment_pr_recovery",
+          "key": "47a9203e09b4c48d400c6307",
+          "pr_number": 596,
+          "task_id": "proxy-improve-rproxy-timeout-handling"
+        },
+        {
+          "action": "dispatch_in_place_pr_recovery",
+          "dispatch_key": "407c00e6d03af2dd3cfbcd72",
+          "generation": 1,
+          "pr_number": 596,
+          "task_id": "proxy-improve-rproxy-timeout-handling"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-13T20:19:22Z",
+      "eligible_task_id": "docs-routing-contract-behavior",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 457,
+      "open_autonomous_prs": 1,
+      "pending_leases": [
+        "proxy-improve-rproxy-timeout-handling"
+      ],
+      "progress": [],
+      "run_attempt": "1",
+      "run_id": "29281849580",
+      "source_fingerprint": "ee1806d058ad943cad76f33b"
+    }
+  ],
   "messages": {
     "47a9203e09b4c48d400c6307": {
       "kind": "pr_recovery",
@@ -1781,7 +1813,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 2,
+  "revision": 3,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2218,5 +2250,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T20:19:20Z"
+  "updated_at": "2026-07-13T20:19:22Z"
 }
