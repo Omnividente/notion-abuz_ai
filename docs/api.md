@@ -51,8 +51,8 @@ The accepted key is `proxy.api_key` in `config.yaml` (env override
 
 The proxy supports `Idempotency-Key` headers for all `POST` requests under the `/v1/` path to ensure that repeated submissions are processed safely.
 
-- **Non-streaming Responses**: Completed non-streaming requests replay their response. When a duplicate request is successfully replayed, the response includes `X-Idempotency-Status: replayed`. Sensitive headers like `Authorization` and `Set-Cookie` are sanitized and omitted from the cached replayed response.
-- **Streaming Responses**: Streaming responses are not replayed. If a duplicate request attempts to reuse a key that was previously streamed or is currently in flight, the proxy returns a `409 Conflict` duplicate error with the header `X-Idempotency-Status: duplicate`.
+- **Non-streaming responses:** Completed non-streaming requests replay their response. A successful replay includes `X-Idempotency-Status: replayed`. Sensitive headers such as `Authorization` and `Set-Cookie` are omitted from cached replay responses.
+- **Streaming responses:** Streaming responses are not replayed. Reusing a key for a response that is in flight or was streamed returns a `409 Conflict` duplicate error with `X-Idempotency-Status: duplicate`.
 
 ## Standard request
 
