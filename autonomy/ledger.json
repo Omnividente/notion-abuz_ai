@@ -806,6 +806,65 @@
       "run_attempt": "1",
       "run_id": "29291642030",
       "source_fingerprint": "04fe37b8008f114c3ceb0293"
+    },
+    {
+      "actions": [
+        {
+          "action": "terminate_terminal_task_session",
+          "manifest_status": "done",
+          "session_id": "2103514512702002509",
+          "task_id": "docs-routing-contract-behavior"
+        },
+        {
+          "action": "terminate_terminal_task_session",
+          "manifest_status": "done",
+          "session_id": "10084739906341150041",
+          "task_id": "docs-routing-contract-behavior"
+        },
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "84a1ed014b2e2201dbdbbb37",
+          "generation": 1,
+          "task_id": "docs-idempotency-replay-behavior"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-13T23:03:17Z",
+      "blocked": [
+        {
+          "evidence_requirement": "new reproducible task evidence, a corrected task definition, or a project-relevant commit/PR",
+          "next_review_at": "2026-07-13T23:25:02Z",
+          "reason": "Jules session ended in FAILED without an open PR",
+          "retry_condition": "task definition, terminal session, PR or check evidence changes after next_review_at",
+          "session_id": "251585469516720548",
+          "task_id": "proxy-improve-rproxy-error-logging",
+          "terminal_state": "FAILED"
+        }
+      ],
+      "eligible_task_id": "docs-idempotency-replay-behavior",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 462,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "docs-idempotency-replay-behavior",
+        "docs-routing-contract-behavior"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "2103514512702002509",
+          "task_id": "docs-routing-contract-behavior"
+        },
+        {
+          "kind": "initial_recent_activity",
+          "session_id": "10084739906341150041",
+          "task_id": "docs-routing-contract-behavior"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29291803902",
+      "source_fingerprint": "81156e89ae14c25c33bdf625"
     }
   ],
   "messages": {
@@ -2668,7 +2727,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 53,
+  "revision": 54,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3318,5 +3377,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:03:15Z"
+  "updated_at": "2026-07-13T23:03:17Z"
 }
