@@ -170,6 +170,7 @@ def validate_manifest(data: dict[str, Any]) -> list[str]:
         raise ValidationError("tasks must be a non-empty array")
 
     seen_ids: set[str] = set()
+    recovery_followup_sources: dict[str, str] = {}
     todo_count = 0
     for index, task in enumerate(tasks):
         status = validate_task(task, index, seen_ids)
@@ -184,6 +185,21 @@ def validate_manifest(data: dict[str, Any]) -> list[str]:
             require_string(task.get("deferred_reason"), f"task {task.get('id')}.deferred_reason")
             require_string(task.get("retry_condition"), f"task {task.get('id')}.retry_condition")
             require_string(task.get("retry_at"), f"task {task.get('id')}.retry_at")
+
+        task_id = str(task.get("id", ""))
+        if task_id.startswith("automation-recovery-followup-") and status != "stopped":
+            source_reference = require_string(
+                task.get("source_reference"),
+                f"task {task_id}.source_reference",
+            )
+            previous = recovery_followup_sources.get(source_reference)
+            if previous is not None:
+                raise ValidationError(
+                    "duplicate recovery follow-ups for "
+                    f"{source_reference}: {previous}, {task_id}; "
+                    "transition the existing task instead"
+                )
+            recovery_followup_sources[source_reference] = task_id
 
     if todo_count < minimum_todo_tasks:
         warnings.append(
