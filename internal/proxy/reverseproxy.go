@@ -265,6 +265,7 @@ func (rp *ReverseProxy) proxyHTML(w http.ResponseWriter, r *http.Request, sess *
 	client := getChromeHTTPClient(30 * time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -272,6 +273,7 @@ func (rp *ReverseProxy) proxyHTML(w http.ResponseWriter, r *http.Request, sess *
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Printf("[rproxy] upstream read error (%s): %v", req.URL.Host, err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -345,6 +347,7 @@ func (rp *ReverseProxy) proxyAPI(w http.ResponseWriter, r *http.Request, sess *P
 	client := getChromeHTTPClient(0)
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -379,6 +382,7 @@ func (rp *ReverseProxy) proxyGeneric(w http.ResponseWriter, r *http.Request, ses
 	client := getChromeHTTPClient(30 * time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -418,6 +422,7 @@ func (rp *ReverseProxy) proxyWithCookies(w http.ResponseWriter, r *http.Request,
 	client := getChromeHTTPClient(0)
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -451,6 +456,7 @@ func rpProxyPassthrough(w http.ResponseWriter, r *http.Request, targetOrigin str
 	client := getChromeHTTPClient(30 * time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -621,6 +627,7 @@ func (rp *ReverseProxy) proxyMsgstoreHTTP(w http.ResponseWriter, r *http.Request
 	// Use SHARED client with CookieJar — AWS ALB sticky session requires AWSALBAPP-0 cookie
 	resp, err := rp.msgClient.Do(req)
 	if err != nil {
+		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
