@@ -2652,7 +2652,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 48,
+  "revision": 49,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -3188,7 +3188,7 @@
       "dispatch_requested_at": "2026-07-13T23:00:18Z",
       "last_observed_at": "2026-07-13T23:00:17Z",
       "last_progress_at": "2026-07-13T23:00:17Z",
-      "lease_expires_at": "2026-07-13T23:29:38Z",
+      "lease_expires_at": "2026-07-13T23:45:45Z",
       "pr_number": 604,
       "pr_recoveries": 2,
       "pr_recovery_evidence_key": "80f77eabf35a3613b1718ab6",
@@ -3198,11 +3198,11 @@
       "recovery_pr_head": "fea5a6fc9ab0d29131c72a297d4b413bac37919e",
       "recovery_pr_number": 604,
       "recovery_reason": "failed checks on existing PR: test-and-merge",
-      "session_create_requested_at": "2026-07-13T22:11:57Z",
+      "session_create_requested_at": "2026-07-13T23:00:45Z",
       "session_id": null,
       "session_name": "sessions/2103514512702002509",
       "session_state": "COMPLETED",
-      "state": "pr_recovery_dispatch_requested",
+      "state": "session_create_requested",
       "task_fingerprint": "d3f183e601ca151df61ad610",
       "terminal_evidence_key": "9a498681c441502b3bded849",
       "terminal_session_id": "2103514512702002509",
@@ -3277,5 +3277,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T23:00:20Z"
+  "updated_at": "2026-07-13T23:00:45Z"
 }
