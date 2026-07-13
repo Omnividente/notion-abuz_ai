@@ -151,6 +151,7 @@ def activity_summary(activities: list[dict[str, Any]]) -> dict[str, Any]:
         "recent_activity": recent_activity[-8:],
         "defer_request": structured_request(activity_texts, "AUTONOMY_DEFER_REQUEST"),
         "scope_request": structured_request(activity_texts, "AUTONOMY_SCOPE_REQUEST"),
+        "verified_no_change": structured_request(activity_texts, "AUTONOMY_VERIFIED_NO_CHANGE"),
         "count": len(rows),
     }
 
@@ -302,6 +303,11 @@ def choose_task(manifest: dict[str, Any], ledger: dict[str, Any], current: datet
         lease_until = parse_time(override.get("lease_expires_at"))
         if retry_at and retry_at > current or lease_until and lease_until > current:
             continue
+        if (
+            override.get("state") == "verified_no_change"
+            and task_fingerprint(task) == str(override.get("completed_task_fingerprint") or "")
+        ):
+            continue
         if override.get("state") == "deferred":
             evidence_changed = (
                 task_fingerprint(task) != str(override.get("deferred_task_fingerprint") or "")
@@ -410,7 +416,7 @@ def prune_ledger(ledger: dict[str, Any], *, current: datetime | None = None) -> 
         dict(ledger.get("tasks") or {}),
         current=current,
         limit=LEDGER_MAX_TASKS,
-        keep_states={"active", "dispatch_requested", "pr_recovery_dispatch_requested", "session_create_requested", "session_created", "dispatch_failed", "deferred"},
+        keep_states={"active", "dispatch_requested", "pr_recovery_dispatch_requested", "session_create_requested", "session_created", "dispatch_failed", "deferred", "verified_no_change"},
     )
     pruned["messages"] = bounded_rows(
         dict(ledger.get("messages") or {}),
