@@ -238,8 +238,10 @@ class ReconcilerTests(unittest.TestCase):
     def test_dirty_pr_is_immediate_recovery_evidence_without_checks(self):
         dirty = {"number": 607, "head": {"sha": "head"}, "mergeable_state": "dirty"}
         clean = {**dirty, "mergeable_state": "clean"}
+        conflict_without_state = {"number": 607, "mergeable": False}
         checks = {"failed": [], "fingerprint": "no-checks"}
         self.assertTrue(M.pr_requires_recovery(dirty, checks))
+        self.assertTrue(M.pr_requires_recovery(conflict_without_state, checks))
         self.assertFalse(M.pr_requires_recovery(clean, checks))
         self.assertEqual(
             M.should_recover_session(
@@ -261,6 +263,54 @@ class ReconcilerTests(unittest.TestCase):
             ),
             (False, "unchanged"),
         )
+
+    def test_listed_autonomous_pr_is_hydrated_before_mergeability_decision(self):
+        class FakeAPI:
+            def __init__(self):
+                self.calls = []
+
+            def gh(self, path, **kwargs):
+                self.calls.append(path)
+                self.assert_no_list_endpoint(path)
+                return 200, {
+                    "number": 607,
+                    "head": {"sha": "head", "ref": "jules-docs"},
+                    "mergeable": False,
+                    "mergeable_state": "dirty",
+                }
+
+            @staticmethod
+            def assert_no_list_endpoint(path):
+                if "?state=open" in path:
+                    raise AssertionError("hydrate must call the pull detail endpoint")
+
+        api = FakeAPI()
+        listed = [{"number": 607, "head": {"sha": "head", "ref": "jules-docs"}}]
+        hydrated, failures = M.hydrate_pull_details(api, "o/r", listed)
+        self.assertEqual(failures, [])
+        self.assertEqual(api.calls, ["/repos/o/r/pulls/607"])
+        self.assertEqual(M.pr_mergeability(hydrated[0]), "dirty")
+        self.assertTrue(M.pr_requires_recovery(hydrated[0], {"failed": []}))
+
+    def test_terminal_manifest_task_retires_stale_dispatch_lease(self):
+        stale = {
+            "state": "session_created",
+            "dispatch_key": "old-lease",
+            "dispatch_requested_at": "2026-07-13T23:00:18Z",
+            "lease_expires_at": "2026-07-13T23:45:46Z",
+            "session_id": "10084739906341150041",
+            "session_name": "sessions/10084739906341150041",
+        }
+        settled, changed = M.settle_terminal_manifest_task(stale, "done")
+        self.assertTrue(changed)
+        self.assertEqual(settled["state"], "manifest_done")
+        self.assertEqual(settled["manifest_status"], "done")
+        self.assertNotIn("dispatch_key", settled)
+        self.assertNotIn("lease_expires_at", settled)
+        self.assertNotIn("session_id", settled)
+        repeated, changed_again = M.settle_terminal_manifest_task(settled, "done")
+        self.assertFalse(changed_again)
+        self.assertEqual(repeated, settled)
 
     def test_open_pr_supersedes_terminal_no_pr_defer(self):
         stale = {
