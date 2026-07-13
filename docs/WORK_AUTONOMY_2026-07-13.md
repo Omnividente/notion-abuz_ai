@@ -50,6 +50,8 @@
 - idempotency key строится из `session_id`, `state_version` и `activity_fingerprint`, но progress fingerprint учитывает только agent activity, PR head и checks — собственный recovery prompt не сбрасывает счётчик;
 - после `sendMessage` orchestrator перечитывает activities и подтверждает доставку/изменение состояния;
 - red checks запускают message recovery только при новом PR/check fingerprint; неизменный failure не создаёт repeated message на каждом цикле, а stale recovery остаётся отдельным trigger;
+- terminal recovery session без commit/check delta становится отдельным bounded-attempt evidence: тот же failed PR получает следующую in-place session, а не навсегда застревает на старом PR/check fingerprint; после лимита состояние устойчиво переходит в `deferred` и публикует `reason`, `retry_condition`, `evidence_requirement` и `next_review_at` вместо silent no-op;
+- budget in-place recovery сбрасывается только при новом PR head, check fingerprint или task definition; повторное чтение одного terminal session не создаёт новую попытку;
 - active session не считается progress: delta требует новой activity, commit, PR head, checks или terminal transition;
 - после bounded recovery без delta session завершается, а task сохраняет `deferred` ledger-state с retry condition, evidence requirement и next review time; один таймер без нового evidence не делает task eligible;
 - failed checks, annotations, changed paths и bounded sanitized activity excerpts включаются в recovery packet;
@@ -79,3 +81,5 @@
 ## Live acceptance
 
 Merge запускает первый reconciler cycle через `push`, затем schedule идёт каждые пять минут. Архитектурный PR не считается полностью доказанным до наблюдения минимум 12 последовательных unattended scheduled cycles. Каждый цикл должен оставить bounded durable ledger evidence и не может быть успешным no-op при наличии actionable work. Отдельно требуются два runtime task → Jules → code/test diff → PR → checks → merge цикла; RDSH Local Live Smoke остаётся PR-code evidence, а не production deployment evidence.
+
+Post-merge run `29282405208`, attempt 2, дал дополнительный terminal fixture: recovery session `13525775686702804526` перешла в `COMPLETED`, но PR #596 сохранил прежний head и failed checks. Старый ключ, состоявший только из PR SHA и check fingerprint, не разрешал следующую bounded attempt. Этот live blocker является основанием для terminal-session fingerprint и теста `test_terminal_no_change_session_advances_bounded_pr_recovery_once`; сам manual rerun не засчитывается как scheduled acceptance cycle.

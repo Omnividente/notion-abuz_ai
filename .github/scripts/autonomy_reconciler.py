@@ -13,6 +13,61 @@ from typing import Any
 from autonomy_state import *  # noqa: F403 - workflow-local module with explicit __all__
 
 
+def latest_terminal_recovery_fingerprint(
+    ledger: dict[str, Any], task_id: str, pr_number: int
+) -> str:
+    """Return a stable fingerprint for the latest terminal recovery session."""
+
+    candidates: list[tuple[Any, str]] = []
+    for session_id, row in (ledger.get("sessions") or {}).items():
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("task_id") or "") != task_id:
+            continue
+        if int(row.get("recovery_pr_number") or 0) != pr_number:
+            continue
+        state = str(row.get("session_state") or "")
+        if state not in TERMINAL:
+            continue
+        observed = parse_time(
+            row.get("session_update_at")
+            or row.get("last_progress_at")
+            or row.get("last_observed_at")
+        )
+        signal = digest(
+            "terminal-pr-recovery",
+            session_id,
+            state,
+            row.get("state_version"),
+            row.get("progress_fingerprint"),
+            row.get("session_update_at"),
+        )
+        candidates.append((observed or parse_time("1970-01-01T00:00:00Z"), signal))
+    return max(candidates, default=(None, ""), key=lambda item: item[0])[1]
+
+
+def pr_recovery_fingerprints(
+    ledger: dict[str, Any],
+    task_id: str,
+    task: dict[str, Any],
+    pr: dict[str, Any],
+    checks: dict[str, Any],
+) -> tuple[str, str]:
+    """Separate external PR evidence from the bounded attempt fingerprint."""
+
+    pr_number = int(pr.get("number") or 0)
+    head_sha = str(((pr.get("head") or {}).get("sha") or ""))
+    evidence_key = digest(
+        "pr-recovery-evidence",
+        pr_number,
+        head_sha,
+        checks.get("fingerprint"),
+        task_fingerprint(task),
+    )
+    terminal_key = latest_terminal_recovery_fingerprint(ledger, task_id, pr_number)
+    return evidence_key, digest("pr-session-recovery", evidence_key, terminal_key)
+
+
 def reconcile(args: argparse.Namespace) -> int:
     github_token = os.environ.get("GITHUB_API_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
     jules_keys = [x for x in (os.environ.get("JULES_API_KEY"), os.environ.get("JULES_API_KEY_BACKUP")) if x]
@@ -29,6 +84,7 @@ def reconcile(args: argparse.Namespace) -> int:
     current = now()
     actions: list[dict[str, Any]] = []
     progress: list[dict[str, Any]] = []
+    blocked: list[dict[str, Any]] = []
     errors: list[str] = []
     fresh_current_work = False
     mutation_blocked = False
@@ -86,7 +142,7 @@ def reconcile(args: argparse.Namespace) -> int:
         delta = bool(previous.get("progress_fingerprint") and previous.get("progress_fingerprint") != progress_fp)
         latest_observed = summary.get("latest_agent_at") or session.get("updateTime") or session.get("createTime")
         initial_recent = state in ACTIVE and not previous.get("progress_fingerprint") and minutes_since(latest_observed, current) < args.fresh_progress_minutes
-        record = {**previous, "task_id": task_id, "session_state": state, "state_version": version, "activity_fingerprint": summary.get("fingerprint"), "pr_fingerprint": pr_fp, "progress_fingerprint": progress_fp, "last_observed_at": iso()}
+        record = {**previous, "task_id": task_id, "session_state": state, "state_version": version, "activity_fingerprint": summary.get("fingerprint"), "pr_fingerprint": pr_fp, "progress_fingerprint": progress_fp, "last_observed_at": iso(), "session_update_at": session.get("updateTime") or previous.get("session_update_at")}
         # Keep the in-memory ledger pointing at this record before any
         # side-effect checkpoint. Subsequent mutations are then durable intents.
         ledger["sessions"][session_id] = record
@@ -405,8 +461,34 @@ def reconcile(args: argparse.Namespace) -> int:
             continue
         checks = checks_for(pr)
         pr_number = int(pr.get("number") or 0)
+        task = tasks.get(task_id) or {}
         task_state = dict(ledger["tasks"].get(task_id, {}))
         pr_progress_fp = digest(((pr.get("head") or {}).get("sha") or ""), checks.get("fingerprint"), pr.get("mergeable_state"))
+        recovery_evidence_key, recovery_key = pr_recovery_fingerprints(
+            ledger, task_id, task, pr, checks
+        )
+        previous_recovery_evidence_key = str(task_state.get("pr_recovery_evidence_key") or "")
+        recovery_evidence_changed = bool(
+            previous_recovery_evidence_key
+            and previous_recovery_evidence_key != recovery_evidence_key
+        )
+        if recovery_evidence_changed:
+            task_state["pr_session_recoveries"] = 0
+            for field in (
+                "retry_at",
+                "next_review_at",
+                "retry_condition",
+                "evidence_requirement",
+                "deferred_evidence_fingerprint",
+                "deferred_task_fingerprint",
+                "reason",
+            ):
+                task_state.pop(field, None)
+        deferred_unchanged = bool(
+            task_state.get("state") == "deferred"
+            and previous_recovery_evidence_key == recovery_evidence_key
+            and task_state.get("pr_session_recovery_key") == recovery_key
+        )
         pr_delta = bool(task_state.get("progress_fingerprint") and task_state.get("progress_fingerprint") != pr_progress_fp)
         pr_initial_recent = not task_state.get("progress_fingerprint") and minutes_since(pr.get("updated_at") or pr.get("created_at"), current) < args.fresh_progress_minutes
         fresh_current_work = fresh_current_work or minutes_since(pr.get("updated_at") or pr.get("created_at"), current) < args.stale_minutes
@@ -423,7 +505,7 @@ def reconcile(args: argparse.Namespace) -> int:
             and (parse_time(task_state.get("retry_at")) or current) <= current
         )
         task_state.update({"pr_number": pr_number, "session_id": None, "progress_fingerprint": pr_progress_fp, "last_observed_at": iso()})
-        if not pending_pr_recovery:
+        if not pending_pr_recovery and not deferred_unchanged:
             task_state["state"] = "pr_open_without_active_session"
         if pr_delta or pr_initial_recent:
             task_state["last_progress_at"] = iso()
@@ -445,9 +527,19 @@ def reconcile(args: argparse.Namespace) -> int:
                     except Exception as exc:
                         ledger["messages"][key]["delivery_error"] = sanitize(exc, 500)
                         errors.append(f"PR recovery comment failed for {pr_number}: {sanitize(exc, 600)}")
-            recovery_key = digest("pr-session-recovery", pr_number, ((pr.get("head") or {}).get("sha") or ""), checks.get("fingerprint"))
             attempts = int(task_state.get("pr_session_recoveries") or 0)
-            if (
+            if deferred_unchanged:
+                blocked.append(
+                    {
+                        "task_id": task_id,
+                        "pr_number": pr_number,
+                        "reason": task_state.get("reason") or "bounded in-place PR recovery exhausted",
+                        "retry_condition": task_state.get("retry_condition") or "new PR, check or task evidence",
+                        "evidence_requirement": task_state.get("evidence_requirement") or "new commit or check evidence on the existing PR",
+                        "next_review_at": task_state.get("next_review_at"),
+                    }
+                )
+            elif (
                 not mutation_blocked
                 and blocking_active == 0
                 and not pending_pr_recovery
@@ -464,13 +556,25 @@ def reconcile(args: argparse.Namespace) -> int:
                             "state": "deferred",
                             "retry_at": iso(retry_at),
                             "next_review_at": iso(retry_at),
-                            "retry_condition": "PR head or failed-check fingerprint changes",
-                            "evidence_requirement": "new commit or check evidence on the existing PR",
+                            "retry_condition": "PR head, failed-check fingerprint or task definition changes",
+                            "evidence_requirement": "new commit, check result or concrete task evidence on the existing PR",
                             "deferred_evidence_fingerprint": pr_progress_fp,
+                            "deferred_task_fingerprint": task_fingerprint(task),
+                            "pr_recovery_evidence_key": recovery_evidence_key,
+                            "pr_session_recovery_key": recovery_key,
                             "reason": "bounded in-place PR recovery exhausted",
                         }
                     )
-                    errors.append(f"PR #{pr_number} exhausted bounded in-place recovery; waiting for new head/check evidence")
+                    blocked_row = {
+                        "task_id": task_id,
+                        "pr_number": pr_number,
+                        "reason": task_state["reason"],
+                        "retry_condition": task_state["retry_condition"],
+                        "evidence_requirement": task_state["evidence_requirement"],
+                        "next_review_at": task_state["next_review_at"],
+                    }
+                    blocked.append(blocked_row)
+                    actions.append({"action": "defer_pr_recovery", **blocked_row})
                 else:
                     generation = int(task_state.get("dispatch_generation") or 0) + 1
                     dispatch_key = digest("pr-recovery-dispatch", task_id, pr_number, recovery_key, generation)
@@ -483,6 +587,7 @@ def reconcile(args: argparse.Namespace) -> int:
                             "dispatch_generation": generation,
                             "lease_expires_at": iso(current + timedelta(minutes=args.lease_minutes)),
                             "dispatch_requested_at": iso(),
+                            "pr_recovery_evidence_key": recovery_evidence_key,
                             "pr_session_recovery_key": recovery_key,
                             "pr_session_recoveries": attempts + 1,
                             "recovery_pr_number": pr_number,
@@ -564,7 +669,13 @@ def reconcile(args: argparse.Namespace) -> int:
         and (parse_time(row.get("lease_expires_at")) or current) > current
     )
     work = bool(blocking_active or autonomous or eligible or pending_leases)
-    if no_op_violation(work=work, actions=len(actions), progress=len(progress), fresh=fresh):
+    if no_op_violation(
+        work=work,
+        actions=len(actions),
+        progress=len(progress),
+        fresh=fresh,
+        blocked=len(blocked),
+    ):
         errors.append("work exists but cycle produced no action or progress delta")
     source_fingerprint = digest(
         sorted((sid, row.get("session_state"), row.get("activity_fingerprint"), row.get("pr_fingerprint")) for sid, row in ledger["sessions"].items() if isinstance(row, dict)),
@@ -572,7 +683,7 @@ def reconcile(args: argparse.Namespace) -> int:
         str((eligible or {}).get("id") or ""),
         pending_leases,
     )
-    cycle = {"at": iso(), "run_id": os.environ.get("GITHUB_RUN_ID"), "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"), "source_fingerprint": source_fingerprint, "listed_sessions": len(session_rows), "inspected_sessions": len(inspected_sessions), "active_sessions": blocking_active, "open_autonomous_prs": len(autonomous), "eligible_task_id": str((eligible or {}).get("id") or ""), "pending_leases": pending_leases, "actions": actions, "progress": progress, "errors": errors}
+    cycle = {"at": iso(), "run_id": os.environ.get("GITHUB_RUN_ID"), "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"), "source_fingerprint": source_fingerprint, "listed_sessions": len(session_rows), "inspected_sessions": len(inspected_sessions), "active_sessions": blocking_active, "open_autonomous_prs": len(autonomous), "eligible_task_id": str((eligible or {}).get("id") or ""), "pending_leases": pending_leases, "actions": actions, "progress": progress, "blocked": blocked, "errors": errors}
     ledger["cycles"] = ledger.get("cycles", [])[-49:] + [cycle]
     if args.apply and not mutation_blocked:
         try:
@@ -581,7 +692,7 @@ def reconcile(args: argparse.Namespace) -> int:
             errors.append(f"final durable ledger save failed; prior intents remain authoritative: {sanitize(exc, 700)}")
     elif args.apply and mutation_blocked:
         errors.append("final ledger save skipped after a failed pre-action checkpoint; no unexecuted intent was committed")
-    result = {"repo": repo, "default_branch": default_branch, "state_branch": args.state_branch, "ledger_revision": ledger.get("revision"), "migration": ledger.get("migration"), "source_fingerprint": source_fingerprint, "listed_sessions": len(session_rows), "inspected_sessions": len(inspected_sessions), "active_sessions": blocking_active, "open_autonomous_prs": len(autonomous), "eligible_task_id": str((eligible or {}).get("id") or ""), "eligible_task_kind": task_kind(eligible or {}), "pending_leases": pending_leases, "actions": actions, "progress": progress, "fresh_progress": fresh, "errors": errors}
+    result = {"repo": repo, "default_branch": default_branch, "state_branch": args.state_branch, "ledger_revision": ledger.get("revision"), "migration": ledger.get("migration"), "source_fingerprint": source_fingerprint, "listed_sessions": len(session_rows), "inspected_sessions": len(inspected_sessions), "active_sessions": blocking_active, "open_autonomous_prs": len(autonomous), "eligible_task_id": str((eligible or {}).get("id") or ""), "eligible_task_kind": task_kind(eligible or {}), "pending_leases": pending_leases, "actions": actions, "progress": progress, "blocked": blocked, "fresh_progress": fresh, "errors": errors}
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     output("summary", result)
     output("healthy", str(not errors).lower())

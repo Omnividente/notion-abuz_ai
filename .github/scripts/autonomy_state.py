@@ -166,8 +166,16 @@ def message_key(session_id: str, version: int, activity_fp: str) -> str:
     return digest(session_id, version, activity_fp)
 
 
-def no_op_violation(*, work: bool, actions: int, progress: int, fresh: bool) -> bool:
-    return work and actions == 0 and progress == 0 and not fresh
+def no_op_violation(*, work: bool, actions: int, progress: int, fresh: bool, blocked: int = 0) -> bool:
+    """Reject silent no-ops while allowing an explicit blocked report.
+
+    A durable, evidence-bound defer is not progress, but it is also not silent:
+    the reconciler emits an actionable blocked row with the retry condition and
+    required evidence. Treating that row as an error on every scheduled cycle
+    would turn a bounded defer into another recovery event storm.
+    """
+
+    return work and actions == 0 and progress == 0 and not fresh and blocked == 0
 
 
 def should_recover_session(
