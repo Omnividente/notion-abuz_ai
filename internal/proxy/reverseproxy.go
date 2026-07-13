@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -23,6 +24,20 @@ const (
 	notionOrigin   = "https://www.notion.so"
 	msgstoreOrigin = "https://msgstore.www.notion.so"
 )
+
+func isUpstreamTimeout(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+	return false
+}
 
 // Strip analytics/tracking script/noscript tags from HTML
 var reAnalyticsScript = regexp.MustCompile(`(?s)<(?:script|noscript)[^>]*>.*?(?:googletagmanager\.com|customer\.io|gtag/js).*?</(?:script|noscript)>`)
@@ -266,7 +281,11 @@ func (rp *ReverseProxy) proxyHTML(w http.ResponseWriter, r *http.Request, sess *
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		if isUpstreamTimeout(err) {
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
 		return
 	}
 	defer resp.Body.Close()
@@ -274,7 +293,11 @@ func (rp *ReverseProxy) proxyHTML(w http.ResponseWriter, r *http.Request, sess *
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("[rproxy] upstream read error (%s): %v", req.URL.Host, err)
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		if isUpstreamTimeout(err) {
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
 		return
 	}
 
@@ -348,7 +371,11 @@ func (rp *ReverseProxy) proxyAPI(w http.ResponseWriter, r *http.Request, sess *P
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		if isUpstreamTimeout(err) {
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
 		return
 	}
 	defer resp.Body.Close()
@@ -383,7 +410,11 @@ func (rp *ReverseProxy) proxyGeneric(w http.ResponseWriter, r *http.Request, ses
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		if isUpstreamTimeout(err) {
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
 		return
 	}
 	defer resp.Body.Close()
@@ -423,7 +454,11 @@ func (rp *ReverseProxy) proxyWithCookies(w http.ResponseWriter, r *http.Request,
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		if isUpstreamTimeout(err) {
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
 		return
 	}
 	defer resp.Body.Close()
@@ -457,7 +492,11 @@ func rpProxyPassthrough(w http.ResponseWriter, r *http.Request, targetOrigin str
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		if isUpstreamTimeout(err) {
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
 		return
 	}
 	defer resp.Body.Close()
@@ -628,7 +667,11 @@ func (rp *ReverseProxy) proxyMsgstoreHTTP(w http.ResponseWriter, r *http.Request
 	resp, err := rp.msgClient.Do(req)
 	if err != nil {
 		log.Printf("[rproxy] upstream error (%s): %v", req.URL.Host, err)
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		if isUpstreamTimeout(err) {
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
 		return
 	}
 	defer resp.Body.Close()
