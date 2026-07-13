@@ -86,6 +86,9 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("running one recovery observation", self.text)
         self.assertIn("bash .github/scripts/jules-unattended-monitor.sh", self.text)
         self.assertIn('MAX_STALE_IN_PROGRESS_ESCALATIONS="1"', self.text)
+        self.assertIn("recovery_action=\"$(recovery_output failed_recovery_action)\"", self.text)
+        self.assertIn("block-failed-agent-task.py", self.text)
+        self.assertIn("--failed-sessions", self.text)
         self.assertIn("Skipping new dispatch to avoid duplicate sessions.", self.text)
 
     def test_thin_queue_dispatches_automation_health_even_when_task_selected(self) -> None:

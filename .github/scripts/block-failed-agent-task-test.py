@@ -125,6 +125,56 @@ class BlockFailedAgentTaskTest(unittest.TestCase):
             module.request = original_request
             Path(tmp_path).unlink()
 
+    def test_existing_source_reference_is_not_duplicated(self) -> None:
+        import json
+        import subprocess
+        import tempfile
+
+        manifest_data = {
+            "replenishment_policy": {"minimum_todo_tasks": 3},
+            "tasks": [
+                {"id": "failing-task", "status": "todo"},
+                {
+                    "id": "automation-recovery-followup-existing",
+                    "status": "done",
+                    "source_reference": "Blocked task failing-task",
+                },
+            ],
+        }
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as tmp:
+            json.dump(manifest_data, tmp)
+            tmp_path = tmp.name
+
+        original_run, original_request = module.run, module.request
+        module.run = lambda cmd, **kwargs: subprocess.CompletedProcess(
+            args=cmd, returncode=0, stdout="", stderr=""
+        )
+        module.request = lambda method, path, **kwargs: (
+            [] if method == "GET" else {"number": 123} if "pulls" in path else None
+        )
+        try:
+            self.assertEqual(
+                module.open_block_pr(
+                    manifest_path=Path(tmp_path),
+                    task_id="failing-task",
+                    failed_sessions=["session-stale"],
+                    token="dummy",
+                    repo="org/repo",
+                    api_url="http://dummy",
+                ),
+                0,
+            )
+            tasks = json.loads(Path(tmp_path).read_text())["tasks"]
+            followups = [
+                task
+                for task in tasks
+                if task.get("source_reference") == "Blocked task failing-task"
+            ]
+            self.assertEqual(len(followups), 1)
+        finally:
+            module.run, module.request = original_run, original_request
+            Path(tmp_path).unlink()
+
 
 if __name__ == "__main__":
     unittest.main()
