@@ -1,103 +1,22 @@
-name: Jules Recovery Router
+name: "Retired: Jules Recovery Router"
 
+# Compatibility workflow kept only so old run links remain understandable.
+# It has no schedule, workflow_run, pull_request_target, Jules credentials, or
+# write permission. Operational recovery belongs exclusively to
+# jules_unattended_monitor.yml.
 on:
-  schedule:
-    - cron: "*/5 * * * *"
-  workflow_run:
-    workflows:
-      - 2. Trigger Next Proxy Improvement Task
-      - 3. Jules Unattended Monitor
-      - 3b. Jules Burst Monitor
-      - CI
-      - RDSH Local Live Smoke
-      - 1. Auto-Validate and Merge Jules PRs
-      - 4. Advisory Critic Review
-    types:
-      - completed
-  pull_request_target:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
-      - unlabeled
-      - ready_for_review
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "plan only or execute one recovery action"
-        required: false
-        default: "act"
-        type: choice
-        options:
-          - plan
-          - act
-      health_mode:
-        description: "Automation Health recovery mode when no eligible task exists"
-        required: false
-        default: "enforce"
-        type: choice
-        options:
-          - disabled
-          - shadow
-          - enforce
 
 permissions:
-  actions: write
-  contents: write
-  issues: write
-  pull-requests: write
-
-concurrency:
-  group: notion-abuz-jules-recovery
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  route:
+  retired:
     runs-on: ubuntu-latest
-    if: >-
-      ${{
-        (github.event_name != 'pull_request_target' ||
-         github.event.pull_request.head.repo.full_name == github.repository) &&
-        (github.event_name != 'workflow_run' ||
-         github.event.workflow_run.conclusion != 'cancelled')
-      }}
+    timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Route autonomous recovery
-        id: router
-        env:
-          GITHUB_API_TOKEN: ${{ secrets.PAT || github.token }}
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-          JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
-          RECOVERY_ROUTER_HEALTH_MODE: ${{ inputs.health_mode || vars.RECOVERY_ROUTER_HEALTH_MODE || 'enforce' }}
-          RECOVERY_ROUTER_MODE: ${{ inputs.mode || 'act' }}
+      - name: Explain authoritative replacement
         run: |
-          set -euo pipefail
-          python3 .github/scripts/jules-recovery-router.py \
-            --mode "${RECOVERY_ROUTER_MODE}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --health-mode "${RECOVERY_ROUTER_HEALTH_MODE}" \
-            --jules-lookback-hours "24" \
-            --github-output "$GITHUB_OUTPUT" \
-            --json | tee recovery-router.json
+          echo "Jules Recovery Router is retired."
+          echo "Use the scheduled Jules Durable Reconciler in jules_unattended_monitor.yml."
 
-      - name: Upload recovery router report
-        uses: actions/upload-artifact@v4
-        with:
-          name: recovery-router
-          path: recovery-router.json
-
-      - name: Append summary
-        run: |
-          {
-            echo "## Jules Recovery Router"
-            echo
-            echo "- Planned actions: \`${{ steps.router.outputs.actions_planned }}\`"
-            echo "- Executed actions: \`${{ steps.router.outputs.actions_executed }}\`"
-            echo "- First action: \`${{ steps.router.outputs.first_action }}\`"
-            echo "- Mode: \`${{ inputs.mode || 'act' }}\`"
-          } >> "$GITHUB_STEP_SUMMARY"

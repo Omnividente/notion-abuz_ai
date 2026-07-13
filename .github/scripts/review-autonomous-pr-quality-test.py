@@ -107,6 +107,7 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
         pr_body: str = "",
         numstat: dict[str, tuple[int, int]] | None = None,
         allow_evidence_autofill: bool = False,
+        scope_ledger: dict | None = None,
     ):
         return quality.evaluate_quality(
             before_manifest=before,
@@ -117,6 +118,7 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
             pr_title=pr_title,
             pr_body=pr_body,
             allow_evidence_autofill=allow_evidence_autofill,
+            scope_ledger=scope_ledger,
         )
 
     def test_blocks_116_style_test_only_observability_completion(self) -> None:
@@ -254,6 +256,78 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
 
         self.assertFalse(decision.passed)
         self.assertTrue(any("outside task runtime-fix allowed_paths" in reason for reason in decision.reasons))
+
+    def test_reconciler_approved_scope_expansion_passes_read_only_gate(self) -> None:
+        before_task = task(
+            "runtime-fix",
+            status="todo",
+            allowed_paths=["internal/proxy/anthropic.go", "agent_tasks.json"],
+        )
+        expanded = [
+            "internal/proxy/anthropic.go",
+            "internal/proxy/anthropic_bridge_test.go",
+            "agent_tasks.json",
+        ]
+        after_task = task("runtime-fix", status="done", allowed_paths=expanded)
+        ledger = {
+            "tasks": {
+                "runtime-fix": {
+                    "scope_decision": "approved_same_task",
+                    "scope_override": expanded,
+                    "scope_risk": "medium",
+                    "scope_evidence": "reproduced failure requires a regression fixture",
+                    "scope_approved_at": "2026-07-13T18:30:00Z",
+                    "scope_task_fingerprint": quality.scope_task_fingerprint(before_task),
+                }
+            }
+        }
+        decision = self.evaluate(
+            manifest([before_task]),
+            manifest([after_task]),
+            changed_files=expanded,
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body("runtime-fix", evidence_files=expanded),
+            scope_ledger=ledger,
+        )
+
+        self.assertTrue(decision.passed)
+        self.assertTrue(any("Applied durable scope approval" in warning for warning in decision.warnings))
+
+    def test_stale_scope_approval_cannot_authorize_expansion(self) -> None:
+        before_task = task(
+            "runtime-fix",
+            status="todo",
+            allowed_paths=["internal/proxy/anthropic.go", "agent_tasks.json"],
+        )
+        expanded = [
+            "internal/proxy/anthropic.go",
+            "internal/proxy/anthropic_bridge_test.go",
+            "agent_tasks.json",
+        ]
+        ledger = {
+            "tasks": {
+                "runtime-fix": {
+                    "scope_decision": "approved_same_task",
+                    "scope_override": expanded,
+                    "scope_risk": "medium",
+                    "scope_evidence": "old evidence",
+                    "scope_approved_at": "2026-07-13T18:30:00Z",
+                    "scope_task_fingerprint": "stale-fingerprint",
+                }
+            }
+        }
+        decision = self.evaluate(
+            manifest([before_task]),
+            manifest([task("runtime-fix", status="done", allowed_paths=expanded)]),
+            changed_files=expanded,
+            diff_text='+ logger.Printf("[bridge] decision: workspace reframing")',
+            pr_body=evidence_body("runtime-fix", evidence_files=expanded),
+            scope_ledger=ledger,
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("outside task runtime-fix allowed_paths" in reason for reason in decision.reasons))
+        self.assertTrue(any("Ignored durable scope approval" in warning for warning in decision.warnings))
 
     def test_followup_code_identifiers_do_not_trigger_repeated_followup_failure(self) -> None:
         before = manifest([task("runtime-fix", status="todo")])

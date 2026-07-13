@@ -114,6 +114,24 @@ jobs:
             exit 1
           fi
 
+      - name: Read durable scope approvals
+        env:
+          GH_TOKEN: ${{ secrets.PAT || github.token }}
+        run: |
+          set -euo pipefail
+          printf '{"tasks":{}}\n' > /tmp/autonomy-ledger.json
+          if gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${GITHUB_REPOSITORY}/contents/autonomy/ledger.json?ref=automation-state-v2" \
+            > /tmp/autonomy-ledger-response.json 2>/tmp/autonomy-ledger-read.err; then
+            jq -r '.content' /tmp/autonomy-ledger-response.json \
+              | tr -d '\n' \
+              | base64 --decode \
+              > /tmp/autonomy-ledger.json
+          else
+            echo "::notice::No readable durable ledger yet; immutable base scope remains authoritative."
+          fi
+
       - name: Review autonomous PR quality
         id: quality
         env:
@@ -128,6 +146,7 @@ jobs:
             --head "${{ steps.quality-refs.outputs.head_ref }}" \
             --pr-title "${PR_TITLE}" \
             --pr-body-file /tmp/pr-body.md \
+            --scope-ledger /tmp/autonomy-ledger.json \
             --report /tmp/autonomous-pr-quality.md \
             --allow-evidence-autofill \
             --autofill-evidence-file /tmp/autonomous-autofill-evidence.md \
@@ -215,20 +234,14 @@ jobs:
             echo "Created autonomous quality-fix request comment."
           fi
 
-          dispatch_body="$(jq -n '{
-            ref: "master",
-            inputs: {
-              mode: "act",
-              health_mode: "enforce"
-            }
-          }')"
+          dispatch_body="$(jq -n '{ref: "master"}')"
 
           gh api \
             -X POST \
-            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_recovery_router.yml/dispatches" \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_unattended_monitor.yml/dispatches" \
             --input <(printf '%s' "$dispatch_body") \
             >/dev/null
-          echo "Dispatched Jules Recovery Router for immediate quality-fix recovery."
+          echo "Dispatched authoritative durable reconciler for quality-fix recovery."
 
           echo "::error::Autonomous PR quality gate failed: ${{ steps.quality.outputs.summary }}"
           exit 1
@@ -308,19 +321,12 @@ jobs:
         run: |
           gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
 
-      - name: Wake next Jules cycle after token-authenticated merge
+      - name: Wake authoritative reconciler after token-authenticated merge
         if: success()
         env:
           GH_TOKEN: ${{ secrets.PAT }}
         run: |
           gh api \
             --method POST \
-            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_next_task.yml/dispatches" \
-            --input <(jq -n '{
-              ref: "master",
-              inputs: {
-                focus: "proxy",
-                risk_ceiling: "medium",
-                allow_parallel: "false"
-              }
-            }')
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_unattended_monitor.yml/dispatches" \
+            --input <(jq -n '{ref: "master"}')
