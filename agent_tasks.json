@@ -8606,7 +8606,7 @@
     },
     {
       "id": "automation-recovery-followup-0ee67904",
-      "status": "todo",
+      "status": "stopped",
       "area": "automation",
       "risk": "low",
       "title": "Investigate root cause of Jules failure for proxy-audit-context-cancellation",
@@ -8619,7 +8619,8 @@
         "The root cause is identified using CI logs, local live smoke, or captured Claude Code transcripts.",
         "A fix is proposed or the task is closed if obsolete."
       ],
-      "source_reference": "Blocked task proxy-audit-context-cancellation"
+      "source_reference": "Blocked task proxy-audit-context-cancellation",
+      "stopped_reason": "Duplicate of completed recovery investigation automation-recovery-followup-9e86197f for the same source_reference; reactivate the original task instead of creating another follow-up."
     }
   ]
 }
