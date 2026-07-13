@@ -76,6 +76,8 @@ now = int(os.environ["FAKE_NOW_EPOCH"])
 scenario = os.environ.get("FAKE_SCENARIO", "repeat_feedback")
 if scenario == "routine_question":
     session_name = "sessions/test-routine"
+elif scenario == "finalize_question":
+    session_name = "sessions/test-finalize-question"
 elif scenario == "in_progress_stale":
     session_name = "sessions/test-in-progress-stale"
 elif scenario == "in_progress_long_running_fresh":
@@ -180,6 +182,23 @@ elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "
                         f"selected task id: {task_id}\n"
                         "Should I run local tests before opening the PR? "
                         "ghp_abcdef1234567890"
+                    )
+                },
+            }
+        ]
+    }
+elif method == "GET" and f"/{session_name}/activities?" in url and scenario == "finalize_question":
+    payload = {
+        "activities": [
+            {
+                "originator": "AGENT",
+                "createTime": iso(now - 300),
+                "message": {
+                    "text": (
+                        f"selected task id: {task_id}\n"
+                        "Все тесты и сборка проходят успешно, код-ревью пройдено. "
+                        "Я готов открыть PR с выполненными изменениями. "
+                        "Подскажите, нужно ли мне прямо сейчас отправить PR?"
                     )
                 },
             }
@@ -528,6 +547,35 @@ class JulesUnattendedMonitorTest(unittest.TestCase):
             self.assertIn("choose_safe_next_step", outputs["prompt_action"])
             self.assertIn(TASK_ID, outputs["prompt_task_id"])
             self.assertIn("0/2", outputs["continue_attempts"])
+
+    def test_completed_russian_pr_question_is_classified_as_finalize(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result, output_path, send_body = self.run_monitor(
+                tmp_path, scenario="finalize_question"
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            )
+            self.assertIn(
+                "Sent dynamic autonomous finalize recovery message", result.stdout
+            )
+            prompt = json.loads(send_body.read_text(encoding="utf-8"))["prompt"]
+            self.assertIn("wait_reason: finalize", prompt)
+            self.assertIn("prompt_action: finalize_pr", prompt)
+            self.assertIn("Финализируй задачу", prompt)
+
+            outputs = dict(
+                line.split("=", 1)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+                if "=" in line
+            )
+            self.assertIn("finalize", outputs["wait_reason"])
+            self.assertIn("finalize_pr", outputs["prompt_action"])
+            self.assertEqual(outputs["touched_sessions"], "1")
 
     def test_dynamic_prompt_includes_failed_pr_context_when_available(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
