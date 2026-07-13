@@ -8556,7 +8556,7 @@
     },
     {
       "id": "docs-idempotency-replay-behavior",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Document idempotency response replay behavior",
@@ -8831,6 +8831,40 @@
       ],
       "acceptance": [
         "When a reverse proxy function creates a new HTTP request from the incoming request and client.Do fails, the logged error properly includes the target URL host instead of just the original request's host."
+      ]
+    },
+    {
+      "id": "docs-api-error-normalization-expanded",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Expand Error Normalization documentation in API docs",
+      "description": "The Error Normalization section in api.md is a bit brief. We should expand it to mention specific HTTP status codes and provide a small JSON example of what normalized Anthropic vs OpenAI errors look like for clients.",
+      "allowed_paths": [
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The Error Normalization section in api.md includes a JSON example of normalized errors.",
+        "Specific HTTP status code mappings for proxy normalizations are clearly stated."
+      ]
+    },
+    {
+      "id": "audit-proxy-admin-settings-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Audit admin settings validation test coverage",
+      "description": "Audit the tests in proxy_test.go or admin_test.go to ensure that HandleAdminSettings properly covers type validation (e.g., rejecting string values for boolean fields) introduced in recent updates.",
+      "allowed_paths": [
+        "internal/proxy/admin_test.go",
+        "internal/proxy/proxy_test.go",
+        "internal/proxy/handler.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Tests verify that HandleAdminSettings correctly rejects mismatched types with 400 Bad Request.",
+        "Tests verify valid inputs are successfully saved."
       ]
     }
   ]
