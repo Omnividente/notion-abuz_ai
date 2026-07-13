@@ -247,7 +247,7 @@ func renderAnthropicCitationText(rawText string, knownURLs []string, knownDocs [
 // It replaces inline citations [^{{URL}}] with [N] in real-time using
 // a buffered state machine, emits thinking blocks as they arrive,
 // then appends a Sources section.
-func streamWebSearch(w http.ResponseWriter, flusher http.Flusher, acc *Account, query string, model string, requestID string, blockIndex *int, hasThinking bool) (*UsageInfo, error) {
+func streamWebSearch(r *http.Request, w http.ResponseWriter, flusher http.Flusher, acc *Account, query string, model string, requestID string, blockIndex *int, hasThinking bool) (*UsageInfo, error) {
 	var finalUsage *UsageInfo
 	var thinkingBlocks []ThinkingBlock
 	var streamedText strings.Builder
@@ -262,6 +262,7 @@ func streamWebSearch(w http.ResponseWriter, flusher http.Flusher, acc *Account, 
 		{Role: "user", Content: query},
 	}
 	callOpts := CallOptions{
+		Context:           r.Context(),
 		EnableWebSearch:   true,
 		ThinkingBlocks:    &thinkingBlocks,
 		KnownCitationURLs: &knownCitationURLs,
@@ -1262,14 +1263,14 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 				// Researcher mode — always use thinking blocks for research progress
 				hasThinking = true
 				if req.Stream {
-					reqErr = handleResearcherStream(w, acc, requestMessages, model, requestID, hasThinking)
+					reqErr = handleResearcherStream(r, w, acc, requestMessages, model, requestID, hasThinking)
 				} else {
-					reqErr = handleResearcherNonStream(w, acc, requestMessages, model, requestID, hasThinking)
+					reqErr = handleResearcherNonStream(r, w, acc, requestMessages, model, requestID, hasThinking)
 				}
 			} else if req.Stream {
-				reqErr = handleAnthropicStreamWithContract(w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, req.Mode, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
+				reqErr = handleAnthropicStreamWithContract(r, w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, req.Mode, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
 			} else {
-				reqErr = handleAnthropicNonStreamWithContract(w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, req.Mode, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
+				reqErr = handleAnthropicNonStreamWithContract(r, w, acc, requestMessages, model, requestID, hasTools, isCodingAssistant, req.Mode, hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, uploadedAttachments, req.OutputConfig, currentSession)
 			}
 
 			// Trigger an async live quota refresh after every call so the next
@@ -1629,7 +1630,7 @@ func extractFileFromSource(source map[string]interface{}, blockKind string) *Fil
 	}
 }
 
-func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasThinking bool, disableBuiltin bool, outputConfig *AnthropicOutputConfig, callOpts CallOptions) error {
+func streamAnthropicTextResponse(r *http.Request, w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasThinking bool, disableBuiltin bool, outputConfig *AnthropicOutputConfig, callOpts CallOptions) error {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		writeAnthropicError(w, requestID, http.StatusInternalServerError, "streaming not supported", "api_error")
@@ -1909,11 +1910,11 @@ func streamAnthropicTextResponse(w http.ResponseWriter, acc *Account, messages [
 
 // handleAnthropicStream handles streaming Anthropic response
 
-func handleAnthropicStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
-	return handleAnthropicStreamWithContract(w, acc, messages, model, requestID, hasTools, isCodingAssistantRequest(messages), "", hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, attachments, outputConfig, session)
+func handleAnthropicStream(r *http.Request, w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
+	return handleAnthropicStreamWithContract(r, w, acc, messages, model, requestID, hasTools, isCodingAssistantRequest(messages), "", hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, attachments, outputConfig, session)
 }
 
-func handleAnthropicStreamWithContract(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, mode string, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
+func handleAnthropicStreamWithContract(r *http.Request, w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, mode string, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
 	var fullContent strings.Builder
 	var finalUsage *UsageInfo
 	defer func() {
@@ -1931,6 +1932,7 @@ func handleAnthropicStreamWithContract(w http.ResponseWriter, acc *Account, mess
 	log.Printf("[route] request contract: coding_assistant=%v client_tools=%v direct=%v", isCodingAssistant, hasTools, disableBuiltin)
 
 	callOpts := CallOptions{
+		Context:               r.Context(),
 		ThinkingBlocks:        &thinkingBlocks,
 		EnableWebSearch:       enableWebSearch,
 		EnableWorkspaceSearch: enableWorkspaceSearch,
@@ -1944,7 +1946,7 @@ func handleAnthropicStreamWithContract(w http.ResponseWriter, acc *Account, mess
 	}
 
 	if !hasTools {
-		return streamAnthropicTextResponse(w, acc, messages, model, requestID, hasThinking, disableBuiltin, outputConfig, callOpts)
+		return streamAnthropicTextResponse(r, w, acc, messages, model, requestID, hasThinking, disableBuiltin, outputConfig, callOpts)
 	}
 
 	callOpts.NativeToolUses = &nativeToolUses
@@ -2141,7 +2143,7 @@ func handleAnthropicStreamWithContract(w http.ResponseWriter, acc *Account, mess
 		// Stream WebSearch results in real-time (after text blocks, before tool_use)
 		if webSearchQuery != "" {
 			log.Printf("[bridge] WebSearch intercepted — streaming via Notion native search: %q", webSearchQuery)
-			searchUsage, searchErr := streamWebSearch(w, flusher, acc, webSearchQuery, model, requestID, &blockIndex, hasThinking)
+			searchUsage, searchErr := streamWebSearch(r, w, flusher, acc, webSearchQuery, model, requestID, &blockIndex, hasThinking)
 			if searchErr != nil {
 				log.Printf("[bridge] WebSearch streaming failed: %v", searchErr)
 				sendAnthropicSSE(w, flusher, "error", map[string]interface{}{
@@ -2222,11 +2224,11 @@ func handleAnthropicStreamWithContract(w http.ResponseWriter, acc *Account, mess
 }
 
 // handleAnthropicNonStream handles non-streaming Anthropic response
-func handleAnthropicNonStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
-	return handleAnthropicNonStreamWithContract(w, acc, messages, model, requestID, hasTools, isCodingAssistantRequest(messages), "", hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, attachments, outputConfig, session)
+func handleAnthropicNonStream(r *http.Request, w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
+	return handleAnthropicNonStreamWithContract(r, w, acc, messages, model, requestID, hasTools, isCodingAssistantRequest(messages), "", hasThinking, enableWebSearch, enableWorkspaceSearch, useReadOnlyMode, attachments, outputConfig, session)
 }
 
-func handleAnthropicNonStreamWithContract(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, mode string, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
+func handleAnthropicNonStreamWithContract(r *http.Request, w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasTools bool, isCodingAssistant bool, mode string, hasThinking bool, enableWebSearch bool, enableWorkspaceSearch *bool, useReadOnlyMode bool, attachments []UploadedAttachment, outputConfig *AnthropicOutputConfig, session *Session) error {
 	var fullContent strings.Builder
 	var finalUsage *UsageInfo
 	defer func() {
@@ -2245,6 +2247,7 @@ func handleAnthropicNonStreamWithContract(w http.ResponseWriter, acc *Account, m
 	log.Printf("[route] request contract: coding_assistant=%v client_tools=%v direct=%v", isCodingAssistant, hasTools, disableBuiltin)
 
 	callOpts := CallOptions{
+		Context:               r.Context(),
 		ThinkingBlocks:        &thinkingBlocks,
 		EnableWebSearch:       enableWebSearch,
 		EnableWorkspaceSearch: enableWorkspaceSearch,
@@ -2603,7 +2606,7 @@ func generateFakeSignature() string {
 //
 // SSE headers are deferred until the first actual data arrives, so that quota-
 // exhaustion retries don't produce duplicate headers.
-func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasThinking bool) error {
+func handleResearcherStream(r *http.Request, w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasThinking bool) error {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		writeAnthropicError(w, requestID, http.StatusInternalServerError, "streaming not supported", "api_error")
@@ -2707,6 +2710,7 @@ func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []Chat
 	}
 
 	callOpts := CallOptions{
+		Context:      r.Context(),
 		IsResearcher: true,
 		RequestID:    requestID,
 	}
@@ -2850,7 +2854,7 @@ func handleResearcherStream(w http.ResponseWriter, acc *Account, messages []Chat
 
 // handleResearcherNonStream handles non-streaming Anthropic response for researcher mode.
 // Collects all content first, then returns a complete JSON response.
-func handleResearcherNonStream(w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasThinking bool) error {
+func handleResearcherNonStream(r *http.Request, w http.ResponseWriter, acc *Account, messages []ChatMessage, model, requestID string, hasThinking bool) error {
 	var fullContent strings.Builder
 	var finalUsage *UsageInfo
 	defer func() {
@@ -2861,6 +2865,7 @@ func handleResearcherNonStream(w http.ResponseWriter, acc *Account, messages []C
 	var thinkingBlocks []ThinkingBlock
 
 	callOpts := CallOptions{
+		Context:        r.Context(),
 		IsResearcher:   true,
 		ThinkingBlocks: &thinkingBlocks,
 		RequestID:      requestID,

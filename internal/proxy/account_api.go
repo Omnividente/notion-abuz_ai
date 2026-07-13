@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,7 +20,7 @@ func DiscoverAccountFromToken(tokenV2 string) (*Account, error) {
 	client := getChromeHTTPClient(AppConfig.APITimeoutDuration())
 
 	// Step 1: Call loadUserContent to get user/space info
-	req, err := http.NewRequest("POST", NotionAPIBase+"/loadUserContent", bytes.NewReader([]byte("{}")))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", NotionAPIBase+"/loadUserContent", bytes.NewReader([]byte("{}")))
 	if err != nil {
 		return nil, fmt.Errorf("create loadUserContent request: %w", err)
 	}

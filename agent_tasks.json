@@ -8573,7 +8573,7 @@
     },
     {
       "id": "proxy-audit-context-cancellation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Audit HTTP request context cancellation handling",
@@ -8676,6 +8676,22 @@
       "acceptance": [
         "A new /admin/stats endpoint exposes proxy-specific active states (like idempotency entries count).",
         "Admin authentication is enforced for the new endpoint."
+      ]
+    },
+    {
+      "id": "proxy-admin-settings-validation",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Validate config types in HandleAdminSettings",
+      "description": "HandleAdminSettings updates config.yaml but does not strictly validate the type of incoming values (e.g. ensuring bools aren't strings) before writing to YAML. Add basic validation for known settings to prevent dashboard users from corrupting config.yaml with malformed payloads.",
+      "allowed_paths": [
+        "internal/proxy/handler.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Dashboard settings updates reject invalid types with a 400 Bad Request.",
+        "Valid settings are successfully persisted."
       ]
     }
   ]

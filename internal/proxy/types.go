@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
 	"time"
@@ -242,6 +243,7 @@ type CitationCandidate struct {
 
 // CallOptions holds optional parameters for CallInference
 type CallOptions struct {
+	Context               context.Context // downstream request context
 	NativeToolUses        *[]AgentValueEntry
 	ThinkingBlocks        *[]ThinkingBlock
 	EnableWebSearch       bool                  // force useWebSearch=true in Notion config

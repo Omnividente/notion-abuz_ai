@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1395,7 +1396,11 @@ func CallInference(acc *Account, messages []ChatMessage, model string, disableBu
 	}
 	LogNotionRequestJSON(requestID, fmt.Sprintf("POST /runInferenceTranscript account=%s model=%s", acc.UserEmail, notionModel), reqBody)
 
-	req, err := http.NewRequest("POST", NotionAPIBase+"/runInferenceTranscript", bytes.NewReader(bodyBytes))
+	ctx := context.Background()
+	if opt.Context != nil {
+		ctx = opt.Context
+	}
+	req, err := http.NewRequestWithContext(ctx, "POST", NotionAPIBase+"/runInferenceTranscript", bytes.NewReader(bodyBytes))
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}
@@ -1658,7 +1663,7 @@ func setNotionHeaders(req *http.Request, acc *Account) {
 // FetchModels calls Notion's getAvailableModels API to get the current model list
 func FetchModels(acc *Account) ([]ModelEntry, error) {
 	body, _ := json.Marshal(map[string]string{"spaceId": acc.SpaceID})
-	req, err := http.NewRequest("POST", NotionAPIBase+"/getAvailableModels", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", NotionAPIBase+"/getAvailableModels", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -1750,7 +1755,7 @@ func CheckQuota(acc *Account) (*QuotaInfo, error) {
 	client := getChromeHTTPClient(AppConfig.APITimeoutDuration())
 
 	// --- V1: get isEligible + researchModeUsage ---
-	reqV1, err := http.NewRequest("POST", NotionAPIBase+"/getAIUsageEligibility", bytes.NewReader(body))
+	reqV1, err := http.NewRequestWithContext(context.Background(), "POST", NotionAPIBase+"/getAIUsageEligibility", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("create V1 request: %w", err)
 	}
@@ -1772,7 +1777,7 @@ func CheckQuota(acc *Account) (*QuotaInfo, error) {
 
 	// --- V2: get premium credits ---
 	body2, _ := json.Marshal(map[string]string{"spaceId": acc.SpaceID})
-	reqV2, err := http.NewRequest("POST", NotionAPIBase+"/getAIUsageEligibilityV2", bytes.NewReader(body2))
+	reqV2, err := http.NewRequestWithContext(context.Background(), "POST", NotionAPIBase+"/getAIUsageEligibilityV2", bytes.NewReader(body2))
 	if err != nil {
 		return nil, fmt.Errorf("create V2 request: %w", err)
 	}
@@ -1839,7 +1844,7 @@ func CheckQuota(acc *Account) (*QuotaInfo, error) {
 // account.
 func CheckUserWorkspace(acc *Account) (int, error) {
 	body := []byte(`{}`)
-	req, err := http.NewRequest("POST", NotionAPIBase+"/loadUserContent", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", NotionAPIBase+"/loadUserContent", bytes.NewReader(body))
 	if err != nil {
 		return 0, fmt.Errorf("create request: %w", err)
 	}
@@ -3201,7 +3206,11 @@ func callResearcherInference(acc *Account, messages []ChatMessage, cb StreamCall
 	}
 	LogNotionRequestJSON(requestID, fmt.Sprintf("POST /runInferenceTranscript researcher account=%s", acc.UserEmail), reqBody)
 
-	req, err := http.NewRequest("POST", NotionAPIBase+"/runInferenceTranscript", bytes.NewReader(bodyBytes))
+	ctx := context.Background()
+	if opt.Context != nil {
+		ctx = opt.Context
+	}
+	req, err := http.NewRequestWithContext(ctx, "POST", NotionAPIBase+"/runInferenceTranscript", bytes.NewReader(bodyBytes))
 	if err != nil {
 		return fmt.Errorf("create researcher request: %w", err)
 	}
