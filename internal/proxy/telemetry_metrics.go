@@ -8,6 +8,8 @@ import (
 var (
 	requestContractMetricsMu sync.Mutex
 	requestContractMetrics   = make(map[string]int)
+	idempotencyMetricsMu     sync.Mutex
+	idempotencyMetrics       = make(map[string]int)
 )
 
 func RecordRequestContractMetric(reason string) {
@@ -46,6 +48,25 @@ func GetToolModeLossMetrics() map[string]int {
 
 	out := make(map[string]int, len(toolModeLossMetrics))
 	for k, v := range toolModeLossMetrics {
+		out[k] = v
+	}
+	return out
+}
+
+func RecordIdempotencyMetric(reason string) {
+	idempotencyMetricsMu.Lock()
+	idempotencyMetrics[reason]++
+	count := idempotencyMetrics[reason]
+	idempotencyMetricsMu.Unlock()
+	log.Printf("[metrics] idempotency: %s (total: %d)", reason, count)
+}
+
+func GetIdempotencyMetrics() map[string]int {
+	idempotencyMetricsMu.Lock()
+	defer idempotencyMetricsMu.Unlock()
+
+	out := make(map[string]int, len(idempotencyMetrics))
+	for k, v := range idempotencyMetrics {
 		out[k] = v
 	}
 	return out

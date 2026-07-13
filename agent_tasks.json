@@ -8624,7 +8624,7 @@
     },
     {
       "id": "proxy-idempotency-cache-observability",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Expose bounded idempotency replay cache metrics",
@@ -8642,6 +8642,23 @@
         "Metric labels are bounded and never include Idempotency-Key values or request/response payloads.",
         "Concurrent and expiry tests verify counters and current cache entry count.",
         "The metrics are exposed through the existing admin metrics contract."
+      ]
+    },
+    {
+      "id": "proxy-idempotency-key-case-insensitivity",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Make Idempotency-Key header lookup case-insensitive",
+      "description": "Ensure that the IdempotencyMiddleware extracts the idempotency key using HTTP-standard case-insensitivity, instead of assuming exact title case 'Idempotency-Key'.",
+      "allowed_paths": [
+        "internal/proxy/idempotency.go",
+        "internal/proxy/idempotency_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "The middleware correctly finds idempotency keys sent as 'idempotency-key', 'IDEMPOTENCY-KEY', or other case variations.",
+        "A test confirms idempotency behavior works regardless of the header's casing."
       ]
     }
   ]
