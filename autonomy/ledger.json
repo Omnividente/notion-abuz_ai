@@ -131,6 +131,17 @@
     }
   ],
   "messages": {
+    "1e2a8a7d2727e5b3f752729b": {
+      "activity_fingerprint": "cf1cbb66a638b4860a516671",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-13T21:12:29Z",
+      "packet_hash": "fced92704eb19ef3d355fd54",
+      "sent_at": "2026-07-13T21:07:46Z",
+      "session_id": "5079834960180138219",
+      "state_version": 2,
+      "task_id": "proxy-improve-rproxy-timeout-handling",
+      "verified_at": null
+    },
     "47a9203e09b4c48d400c6307": {
       "kind": "pr_recovery",
       "packet_hash": "ee33925bc87f1cb476c88031",
@@ -1922,7 +1933,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 13,
+  "revision": 14,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2296,12 +2307,19 @@
       "task_id": ""
     },
     "5079834960180138219": {
-      "last_observed_at": "2026-07-13T21:04:02Z",
+      "activity_fingerprint": "cf1cbb66a638b4860a516671",
+      "last_observed_at": "2026-07-13T21:07:46Z",
+      "last_progress_at": "2026-07-13T21:07:46Z",
       "lease_key": "1acade129ff933f6244aefb9",
+      "pending_message_key": "1e2a8a7d2727e5b3f752729b",
+      "pr_fingerprint": "7132fdb907d1bdcef4286af1",
+      "progress_fingerprint": "29439c384a31176cb76fe958",
+      "recoveries_without_progress": 0,
       "recovery_pr_head": "1144d779d577a2ee583b851874fe3e7444b371e7",
       "recovery_pr_number": 596,
-      "session_state": "STATE_UNSPECIFIED",
-      "state_version": 1,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-13T21:07:04.091733Z",
+      "state_version": 2,
       "task_id": "proxy-improve-rproxy-timeout-handling"
     },
     "6888614032956265246": {
@@ -2430,5 +2448,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T21:04:02Z"
+  "updated_at": "2026-07-13T21:07:46Z"
 }
