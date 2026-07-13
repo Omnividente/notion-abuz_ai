@@ -7,7 +7,7 @@
       "pr_number": 596,
       "sent_at": "2026-07-13T20:19:18Z",
       "task_id": "proxy-improve-rproxy-timeout-handling",
-      "verified_at": null
+      "verified_at": "2026-07-13T20:19:20Z"
     },
     "legacy-01fba5268ce233391de6bb86": {
       "kind": "legacy_router_action",
@@ -1781,7 +1781,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 1,
+  "revision": 2,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2194,12 +2194,21 @@
   },
   "tasks": {
     "proxy-improve-rproxy-timeout-handling": {
+      "dispatch_generation": 1,
+      "dispatch_key": "407c00e6d03af2dd3cfbcd72",
+      "dispatch_requested_at": "2026-07-13T20:19:20Z",
       "last_observed_at": "2026-07-13T20:19:18Z",
+      "lease_expires_at": "2026-07-13T20:48:24Z",
       "pr_number": 596,
       "pr_recoveries": 1,
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "e11794d14ed372e15ec71192",
       "progress_fingerprint": "4944b689addac1b10e2a8bdd",
+      "recovery_pr_head": "1144d779d577a2ee583b851874fe3e7444b371e7",
+      "recovery_pr_number": 596,
+      "recovery_reason": "failed checks on existing PR: validate, route, test-and-merge",
       "session_id": null,
-      "state": "pr_open_without_active_session"
+      "state": "pr_recovery_dispatch_requested"
     },
     "str": {
       "current_evidence_fingerprint": "46707c0db20cb0828843411c",
@@ -2209,5 +2218,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T20:19:18Z"
+  "updated_at": "2026-07-13T20:19:20Z"
 }
