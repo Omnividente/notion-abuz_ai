@@ -2153,7 +2153,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 24,
+  "revision": 25,
   "schema": 2,
   "sessions": {
     "10318837510805541745": {
@@ -2650,8 +2650,11 @@
       "dispatch_generation": 1,
       "dispatch_key": "3f98ff9b9b9fceea224f0ad1",
       "dispatch_requested_at": "2026-07-13T21:51:01Z",
-      "lease_expires_at": "2026-07-13T22:20:12Z",
-      "state": "dispatch_requested",
+      "lease_expires_at": "2026-07-13T22:36:31Z",
+      "recovery_pr_head": null,
+      "recovery_pr_number": null,
+      "session_create_requested_at": "2026-07-13T21:51:31Z",
+      "state": "session_create_requested",
       "task_fingerprint": "063097d793a3013c00f6d174"
     },
     "proxy-improve-rproxy-timeout-handling": {
@@ -2694,5 +2697,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-13T21:51:02Z"
+  "updated_at": "2026-07-13T21:51:31Z"
 }
