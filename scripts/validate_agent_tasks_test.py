@@ -66,6 +66,29 @@ class ValidateAgentTasksTest(unittest.TestCase):
 
         self.assertNotIn("blocked task example-task is missing blocked_reason", warnings)
 
+    def test_duplicate_recovery_followup_source_is_rejected(self) -> None:
+        first = task(status="done")
+        first.update({
+            "id": "automation-recovery-followup-first",
+            "source_reference": "Blocked task runtime-example",
+        })
+        duplicate = task(status="todo")
+        duplicate.update({
+            "id": "automation-recovery-followup-second",
+            "source_reference": "Blocked task runtime-example",
+        })
+        manifest = base_manifest(first)
+        manifest["tasks"].append(duplicate)
+
+        with self.assertRaisesRegex(
+            validate_agent_tasks.ValidationError,
+            "duplicate recovery follow-ups",
+        ):
+            validate_agent_tasks.validate_manifest(manifest)
+
+        duplicate["status"] = "stopped"
+        validate_agent_tasks.validate_manifest(manifest)
+
     def test_deferred_task_requires_retry_contract(self) -> None:
         deferred = task(status="deferred")
         with self.assertRaises(validate_agent_tasks.ValidationError):
