@@ -52,6 +52,8 @@
 - active session не считается progress: delta требует новой activity, commit, PR head, checks или terminal transition;
 - после bounded recovery без delta session завершается, а task сохраняет `deferred` ledger-state с retry condition, evidence requirement и next review time; один таймер без нового evidence не делает task eligible;
 - failed checks, annotations, changed paths и bounded sanitized activity excerpts включаются в recovery packet;
+- check state дедуплицируется по newest workflow/job run; superseded failure на том же SHA не перекрывает свежий success, а recovery packet получает имя реально упавшего Actions step;
+- каждый цикл читает все active sessions, но только bounded recent terminal tail, поэтому сотни исторических sessions не превращаются в сотни Jules API activity calls;
 - PR без активной session reconciler чинит через один deduplicated PR comment, не создавая дублирующий PR/session;
 - failed open project PR без active session получает bounded in-place recovery lease: executor проверяет номер и expected head SHA, стартует с существующей PR branch и запрещает новый PR; `blocked`/`deferred` manifest state не завершает такую recovery session;
 - eligible работа без action/progress завершает workflow ошибкой, а не ложным success;
@@ -71,7 +73,7 @@
 - `python3 -m py_compile` для state, reconciler, leased executor и тестов;
 - `python3 -m unittest -v .github/scripts/autonomy_reconciler_test.py`.
 
-Покрыты state versioning, message idempotency, user-prompt-vs-agent-progress, sanitized packet, evidence-bound deferred retry, bounded migration/pruning, control-plane blocker evidence, запрет двух control dispatch подряд, trusted scope expansion, stale-scope rejection, runtime priority, exact-task execution, lease mismatch и lease expiry. Legacy workflow tests проверяют отсутствие event storm и один mutation domain.
+Покрыты state versioning, message idempotency, user-prompt-vs-agent-progress, sanitized packet, newest-check dedupe и failed-step context, bounded session inspection, evidence-bound deferred retry, bounded migration/pruning, control-plane blocker evidence, запрет двух control dispatch подряд, trusted scope expansion, stale-scope rejection, runtime priority, exact-task execution, lease mismatch и lease expiry. Legacy workflow tests проверяют отсутствие event storm и один mutation domain.
 
 ## Live acceptance
 

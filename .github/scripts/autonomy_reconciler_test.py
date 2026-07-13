@@ -29,6 +29,13 @@ class ReconcilerTests(unittest.TestCase):
         self.assertEqual(summary["task_id"], "runtime-fix")
         self.assertIn("a" * 24, summary["token_keys"])
 
+    def test_session_inspection_keeps_all_active_and_bounds_terminal_history(self):
+        rows = [("k", {"name": f"sessions/{i}", "state": "COMPLETED", "updateTime": f"2026-07-13T09:{i:02d}:00Z"}) for i in range(20)]
+        rows.append(("k", {"name": "sessions/active", "state": "IN_PROGRESS", "updateTime": "2020-01-01T00:00:00Z"}))
+        selected = M.sessions_for_reconcile(rows, {"sessions": {}}, current=datetime(2026, 7, 13, 10, 0, tzinfo=timezone.utc), limit=5)
+        self.assertEqual(len(selected), 5)
+        self.assertIn("sessions/active", [row[1]["name"] for row in selected])
+
     def test_message_key_changes_with_state(self):
         self.assertNotEqual(M.message_key("s", 1, "a"), M.message_key("s", 2, "a"))
         self.assertNotEqual(M.message_key("s", 1, "a"), M.message_key("s", 1, "b"))
@@ -47,6 +54,35 @@ class ReconcilerTests(unittest.TestCase):
         packet = M.build_packet(task, {"last_jules_message": "Authorization: Bearer abcdefghijklmnop", "task_id": "t"}, 1, False, "waiting", None, {"failed": [], "pending": [], "passed": []})
         self.assertEqual(set(packet), {"task_id", "acceptance", "allowed_scope", "risk", "wait_reason", "last_jules_message", "recent_activity", "attempt_count", "progress_delta", "scope_analysis", "pr_context"})
         self.assertNotIn("abcdefghijklmnop", packet["last_jules_message"])
+
+    def test_check_context_uses_latest_workflow_run_and_failed_step(self):
+        class FakeAPI:
+            def gh(self, path, **kwargs):
+                if "/commits/head/check-runs" in path:
+                    return 200, {"check_runs": [
+                        {"id": 1, "name": "validate", "status": "completed", "conclusion": "failure", "details_url": "https://github.com/o/r/actions/runs/10/job/100", "check_suite": {"id": 1}},
+                        {"id": 2, "name": "validate", "status": "completed", "conclusion": "success", "details_url": "https://github.com/o/r/actions/runs/11/job/101", "check_suite": {"id": 2}},
+                        {"id": 3, "name": "validate", "status": "completed", "conclusion": "failure", "details_url": "https://github.com/o/r/actions/runs/12/job/102", "check_suite": {"id": 3}},
+                    ]}
+                if "/pulls/1/files" in path:
+                    return 200, [{"filename": "internal/proxy/reverseproxy.go"}]
+                if path.endswith("/actions/runs/10"):
+                    return 200, {"workflow_id": 7, "name": "CI", "created_at": "2026-07-13T09:00:00Z", "run_attempt": 1}
+                if path.endswith("/actions/runs/11"):
+                    return 200, {"workflow_id": 7, "name": "CI", "created_at": "2026-07-13T09:05:00Z", "run_attempt": 1}
+                if path.endswith("/actions/runs/12"):
+                    return 200, {"workflow_id": 8, "name": "Automerge", "created_at": "2026-07-13T09:06:00Z", "run_attempt": 1}
+                if "/actions/runs/12/jobs" in path:
+                    return 200, {"jobs": [{"id": 102, "name": "validate", "steps": [{"name": "Check Go formatting", "conclusion": "failure"}]}]}
+                if "/check-runs/3/annotations" in path:
+                    return 200, []
+                raise AssertionError(path)
+
+        context = M.check_context(FakeAPI(), "o/r", {"number": 1, "head": {"sha": "head"}})
+        self.assertEqual(len(context["failed"]), 1)
+        self.assertEqual(context["failed"][0]["workflow"], "Automerge")
+        self.assertIn("Check Go formatting", context["failed"][0]["log_excerpt"])
+        self.assertIn("CI / validate", context["passed"])
 
     def test_recovery_user_activity_is_delivery_not_agent_progress(self):
         base = [{"originator": "agent", "createTime": "2026-07-13T10:00:00Z", "message": "working"}]
@@ -115,6 +151,15 @@ class ReconcilerTests(unittest.TestCase):
         self.assertLessEqual(len(pruned["sessions"]), M.LEDGER_MAX_SESSIONS)
         self.assertIn("active-old", pruned["sessions"])
         self.assertEqual(len(pruned["cycles"]), M.LEDGER_MAX_CYCLES)
+
+    def test_pr_recovery_lease_and_scheduler_survive_task_pruning(self):
+        current = datetime(2026, 7, 13, 10, 0, tzinfo=timezone.utc)
+        tasks = {f"old-{i}": {"updated_at": "2020-01-01T00:00:00Z"} for i in range(M.LEDGER_MAX_TASKS + 20)}
+        tasks["runtime"] = {"state": "pr_recovery_dispatch_requested", "dispatch_requested_at": M.iso(current)}
+        tasks["__scheduler__"] = {"last_dispatched_kind": "runtime", "last_dispatched_at": M.iso(current)}
+        pruned = M.prune_ledger({"sessions": {}, "tasks": tasks, "messages": {}, "cycles": []}, current=current)
+        self.assertIn("runtime", pruned["tasks"])
+        self.assertIn("__scheduler__", pruned["tasks"])
 
     def test_legacy_ledger_migration_is_bounded_and_read_only(self):
         class FakeAPI:

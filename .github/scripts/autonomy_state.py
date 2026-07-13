@@ -32,6 +32,7 @@ LEDGER_MAX_SESSIONS = 120
 LEDGER_MAX_TASKS = 220
 LEDGER_MAX_MESSAGES = 240
 LEDGER_MAX_CYCLES = 50
+SESSION_INSPECTION_LIMIT = 40
 LEGACY_LEDGER_VARIABLE = "JULES_RECOVERY_ROUTER_LEDGER"
 TASK_RE = re.compile(r'(?ix)(?:selected\s+task\s+id|task_id|"task_id")\s*[:=]\s*"?([a-z0-9][a-z0-9_.-]{2,})')
 SECRET_PATTERNS = (
@@ -314,6 +315,11 @@ def row_time(row: dict[str, Any]) -> datetime | None:
         "last_observed_at",
         "dispatch_completed_at",
         "dispatch_requested_at",
+        "session_create_requested_at",
+        "scope_approved_at",
+        "last_dispatched_at",
+        "requested_at",
+        "next_review_at",
         "retry_at",
         "time",
         "updated_at",
@@ -360,7 +366,7 @@ def prune_ledger(ledger: dict[str, Any], *, current: datetime | None = None) -> 
         dict(ledger.get("tasks") or {}),
         current=current,
         limit=LEDGER_MAX_TASKS,
-        keep_states={"active", "dispatch_requested", "session_create_requested", "session_created", "deferred"},
+        keep_states={"active", "dispatch_requested", "pr_recovery_dispatch_requested", "session_create_requested", "session_created", "dispatch_failed", "deferred"},
     )
     pruned["messages"] = bounded_rows(
         dict(ledger.get("messages") or {}),
@@ -516,9 +522,51 @@ def list_sessions(api: API, source: str) -> list[tuple[str, dict[str, Any]]]:
     return list(found.values())
 
 
+def sessions_for_reconcile(
+    rows: list[tuple[str, dict[str, Any]]],
+    ledger: dict[str, Any],
+    *,
+    current: datetime | None = None,
+    limit: int = SESSION_INSPECTION_LIMIT,
+) -> list[tuple[str, dict[str, Any]]]:
+    """Inspect every active session and only a bounded recent terminal tail."""
+    current = current or now()
+    ledger_sessions = ledger.get("sessions") if isinstance(ledger.get("sessions"), dict) else {}
+    active: list[tuple[str, dict[str, Any]]] = []
+    terminal: list[tuple[str, dict[str, Any]]] = []
+    for row in rows:
+        session = row[1]
+        state = str(session.get("state") or "")
+        if state in ACTIVE:
+            active.append(row)
+            continue
+        session_id = str(session.get("name") or "").rsplit("/", 1)[-1]
+        previous = ledger_sessions.get(session_id, {}) if isinstance(ledger_sessions, dict) else {}
+        updated = session.get("updateTime") or session.get("createTime")
+        recent = minutes_since(updated, current) <= LEDGER_RETENTION_DAYS * 24 * 60
+        pinned = isinstance(previous, dict) and bool(previous.get("pending_message_key"))
+        if recent or pinned:
+            terminal.append(row)
+    rank = lambda row: str(row[1].get("updateTime") or row[1].get("createTime") or "")
+    active.sort(key=rank, reverse=True)
+    terminal.sort(key=rank, reverse=True)
+    return active + terminal[: max(0, limit - len(active))]
+
+
 def list_activities(api: API, key: str, session_name: str) -> list[dict[str, Any]]:
     _, payload = api.jules(key, f"{session_name}/activities?pageSize=100")
     return [x for x in payload.get("activities", []) if isinstance(x, dict)]
+
+
+ACTION_RUN_RE = re.compile(r"/actions/runs/(\d+)")
+ACTION_JOB_RE = re.compile(r"/job/(\d+)")
+
+
+def action_run_job_ids(details_url: Any) -> tuple[int, int]:
+    text = str(details_url or "")
+    run_match = ACTION_RUN_RE.search(text)
+    job_match = ACTION_JOB_RE.search(text)
+    return (int(run_match.group(1)) if run_match else 0, int(job_match.group(1)) if job_match else 0)
 
 
 def check_context(api: API, repo: str, pr: dict[str, Any] | None) -> dict[str, Any]:
@@ -535,15 +583,50 @@ def check_context(api: API, repo: str, pr: dict[str, Any] | None) -> dict[str, A
             path = sanitize((row or {}).get("filename"), 220) if isinstance(row, dict) else ""
             if path:
                 changed_paths.append(path)
+    raw_checks = [row for row in payload.get("check_runs", []) if isinstance(row, dict)]
+    run_meta: dict[int, dict[str, Any]] = {}
+    for check in raw_checks:
+        run_id, _ = action_run_job_ids(check.get("details_url"))
+        if not run_id or run_id in run_meta:
+            continue
+        try:
+            _, value = api.gh(f"/repos/{repo}/actions/runs/{run_id}")
+            run_meta[run_id] = value if isinstance(value, dict) else {}
+        except Exception as exc:
+            run_meta[run_id] = {"lookup_error": sanitize(exc, 260)}
+
+    # A commit can retain failed check-runs from an older pull_request/labeled
+    # event even after the same workflow/job passes.  Reconcile only the newest
+    # run for each workflow/job identity; otherwise one stale run loops forever.
+    newest: dict[tuple[str, str], tuple[tuple[str, int, int], dict[str, Any]]] = {}
+    for check in raw_checks:
+        name = sanitize(check.get("name") or "unknown", 160)
+        run_id, _ = action_run_job_ids(check.get("details_url"))
+        meta = run_meta.get(run_id, {})
+        suite = check.get("check_suite") or {}
+        workflow_identity = str(meta.get("workflow_id") or f"suite:{suite.get('id') or check.get('id') or 0}")
+        rank = (
+            str(meta.get("run_started_at") or meta.get("created_at") or check.get("started_at") or check.get("created_at") or ""),
+            int(meta.get("run_attempt") or 0),
+            int(check.get("id") or 0),
+        )
+        identity = (workflow_identity, name)
+        if identity not in newest or rank > newest[identity][0]:
+            newest[identity] = (rank, check)
+
     failed, pending, passed, fp = [], [], [], []
-    for check in payload.get("check_runs", []):
+    jobs_cache: dict[int, list[dict[str, Any]]] = {}
+    for _, check in sorted(newest.values(), key=lambda item: item[0]):
         name = sanitize(check.get("name") or "unknown", 160)
         status, conclusion = str(check.get("status") or ""), str(check.get("conclusion") or "")
         output = check.get("output") or {}
-        excerpt = sanitize(" ".join(str(output.get(k) or "") for k in ("title", "summary", "text")), 900)
-        fp.append((name, status, conclusion, str(check.get("details_url") or "")))
+        run_id, job_id = action_run_job_ids(check.get("details_url"))
+        meta = run_meta.get(run_id, {})
+        workflow_name = sanitize(meta.get("name") or "", 160)
+        excerpt_parts = [str(output.get(k) or "") for k in ("title", "summary", "text")]
+        fp.append((meta.get("workflow_id"), workflow_name, name, status, conclusion, run_id, int(meta.get("run_attempt") or 0)))
         if status != "completed" or not conclusion:
-            pending.append(name)
+            pending.append(f"{workflow_name} / {name}" if workflow_name else name)
         elif conclusion in {"failure", "cancelled", "timed_out", "action_required", "startup_failure"}:
             annotations: list[dict[str, Any]] = []
             check_id = int(check.get("id") or 0)
@@ -562,9 +645,33 @@ def check_context(api: API, repo: str, pr: dict[str, Any] | None) -> dict[str, A
                         )
                 except Exception as exc:
                     annotations.append({"path": "", "line": None, "message": "annotation lookup unavailable: " + sanitize(exc, 260)})
+            if run_id:
+                if run_id not in jobs_cache:
+                    try:
+                        _, jobs_payload = api.gh(f"/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100")
+                        jobs_cache[run_id] = [row for row in jobs_payload.get("jobs", []) if isinstance(row, dict)]
+                    except Exception as exc:
+                        jobs_cache[run_id] = []
+                        excerpt_parts.append("job lookup unavailable: " + sanitize(exc, 260))
+                job = next((row for row in jobs_cache[run_id] if int(row.get("id") or 0) == job_id), None)
+                if not job:
+                    job = next((row for row in jobs_cache[run_id] if str(row.get("name") or "") == str(check.get("name") or "")), None)
+                if job:
+                    failed_steps = [
+                        sanitize(step.get("name") or "unknown step", 180)
+                        for step in job.get("steps", [])
+                        if isinstance(step, dict)
+                        and str(step.get("conclusion") or "") in {"failure", "cancelled", "timed_out", "action_required"}
+                    ]
+                    if failed_steps:
+                        excerpt_parts.append("failed steps: " + ", ".join(failed_steps))
+            excerpt = sanitize(" ".join(excerpt_parts), 900)
             failed.append(
                 {
                     "name": name,
+                    "workflow": workflow_name,
+                    "run_id": run_id or None,
+                    "job_id": job_id or None,
                     "conclusion": conclusion,
                     "details_url": sanitize(check.get("details_url") or "", 260),
                     "log_excerpt": excerpt,
@@ -572,7 +679,7 @@ def check_context(api: API, repo: str, pr: dict[str, Any] | None) -> dict[str, A
                 }
             )
         else:
-            passed.append(name)
+            passed.append(f"{workflow_name} / {name}" if workflow_name else name)
     return {
         "failed": failed[:8],
         "pending": sorted(set(pending)),

@@ -31,26 +31,43 @@ def reconcile(args: argparse.Namespace) -> int:
     progress: list[dict[str, Any]] = []
     errors: list[str] = []
     fresh_current_work = False
+    mutation_blocked = False
 
     def checkpoint(reason: str) -> bool:
-        nonlocal ledger_sha
+        nonlocal ledger_sha, mutation_blocked
         if not args.apply:
             return True
+        if mutation_blocked:
+            return False
         try:
             ledger_sha = store.save(ledger, ledger_sha)
             return True
         except Exception as exc:
+            mutation_blocked = True
             errors.append(f"durable checkpoint failed before {reason}: {sanitize(exc, 700)}")
             return False
 
     pulls = paginate_gh(api, f"/repos/{repo}/pulls?state=open")
     autonomous = [pr for pr in pulls if is_autonomous_pr(pr)]
     pr_by_task = {task_id_from_pr(pr, list(tasks)): pr for pr in autonomous if task_id_from_pr(pr, list(tasks))}
+    check_cache: dict[tuple[int, str], dict[str, Any]] = {}
+
+    def checks_for(pr: dict[str, Any] | None) -> dict[str, Any]:
+        cache_key = (
+            int((pr or {}).get("number") or 0),
+            str(((pr or {}).get("head") or {}).get("sha") or ""),
+        )
+        if cache_key not in check_cache:
+            check_cache[cache_key] = check_context(api, repo, pr)
+        return check_cache[cache_key]
+
     active_task_ids: set[str] = set()
     blocking_active = 0
 
     source = f"sources/github/{repo}"
-    for key, session in list_sessions(api, source):
+    session_rows = list_sessions(api, source)
+    inspected_sessions = sessions_for_reconcile(session_rows, ledger, current=current)
+    for key, session in inspected_sessions:
         terminated = False
         state = str(session.get("state") or "STATE_UNSPECIFIED")
         session_name = str(session.get("name") or "")
@@ -62,7 +79,7 @@ def reconcile(args: argparse.Namespace) -> int:
         task_state_id = str(task_id or f"__unknown_session__:{session_id}")
         task = tasks.get(str(task_id))
         pr = pr_by_task.get(str(task_id))
-        checks = check_context(api, repo, pr)
+        checks = checks_for(pr)
         pr_fp = digest((pr or {}).get("number"), ((pr or {}).get("head") or {}).get("sha"), checks.get("fingerprint"))
         version = state_version(previous, state, str(summary.get("fingerprint")), pr_fp)
         progress_fp = digest(summary.get("agent_fingerprint"), ((pr or {}).get("head") or {}).get("sha"), checks.get("fingerprint"), (task or {}).get("status"), state)
@@ -91,24 +108,33 @@ def reconcile(args: argparse.Namespace) -> int:
         )
         if state in ACTIVE and task_terminal_in_manifest:
             cleanup_key = digest("terminal-manifest-session", session_id, task_id, task.get("status"), version)
-            if cleanup_key not in ledger["messages"]:
-                ledger["messages"][cleanup_key] = {
+            cleanup_intent = ledger["messages"].setdefault(
+                cleanup_key,
+                {
                     "kind": "terminal_manifest_session_cleanup",
                     "session_id": session_id,
                     "task_id": task_id,
                     "sent_at": iso(),
                     "verified_at": None,
                     "state_version": version,
-                }
+                },
+            )
+            if cleanup_intent.get("verified_at"):
+                terminated = True
+            else:
                 if checkpoint(f"terminal session cleanup {session_id}"):
                     try:
                         if args.apply:
                             api.jules(key, session_name, method="DELETE", body=None, allow=(404,))
-                        ledger["messages"][cleanup_key]["verified_at"] = iso()
+                        cleanup_intent["verified_at"] = iso()
                         actions.append({"action": "terminate_terminal_task_session", "session_id": session_id, "task_id": task_id, "manifest_status": task.get("status")})
                         terminated = True
                     except Exception as exc:
+                        cleanup_intent["delivery_error"] = sanitize(exc, 500)
                         errors.append(f"terminal session cleanup failed for {session_id}: {sanitize(exc, 600)}")
+            if not terminated:
+                blocking_active += 1
+                active_task_ids.add(str(task_id))
             record["ignored_reason"] = f"manifest_task_{task.get('status')}"
         elif state in ACTIVE:
             blocking_active += 1
@@ -117,26 +143,34 @@ def reconcile(args: argparse.Namespace) -> int:
                 active_task_ids.add(str(task_id))
         if state == "AWAITING_PLAN_APPROVAL" and not task_terminal_in_manifest:
             approval_key = digest("approve-plan", session_id, version, summary.get("agent_fingerprint"))
-            if approval_key not in ledger["messages"]:
-                ledger["messages"][approval_key] = {
+            approval_intent = ledger["messages"].setdefault(
+                approval_key,
+                {
                     "kind": "plan_approval",
                     "session_id": session_id,
                     "task_id": task_id,
                     "sent_at": iso(),
                     "verified_at": None,
-                }
+                },
+            )
+            if not approval_intent.get("verified_at"):
                 if checkpoint(f"plan approval {session_id}"):
                     try:
                         if args.apply:
                             api.jules(key, f"{session_name}:approvePlan", method="POST", body={})
-                        ledger["messages"][approval_key]["verified_at"] = iso()
+                        approval_intent["verified_at"] = iso()
                         actions.append({"action": "approve_plan", "session_id": session_id, "task_id": task_id, "key": approval_key})
                     except Exception as exc:
+                        approval_intent["delivery_error"] = sanitize(exc, 500)
                         errors.append(f"plan approval failed for {session_id}: {sanitize(exc, 600)}")
         elif state in ACTIVE and not task_terminal_in_manifest:
             pending_key = str(record.get("pending_message_key") or "")
             if pending_key:
-                verified, refreshed = verify_message(api, key, session_name, pending_key, str(summary.get("fingerprint")))
+                try:
+                    verified, refreshed = verify_message(api, key, session_name, pending_key, str(summary.get("fingerprint")))
+                except Exception as exc:
+                    verified, refreshed = False, summary
+                    errors.append(f"pending recovery verification failed for {session_id}: {sanitize(exc, 500)}")
                 if verified:
                     record.pop("pending_message_key", None)
                     record["last_verified_message_key"] = pending_key
@@ -144,7 +178,39 @@ def reconcile(args: argparse.Namespace) -> int:
                     summary = refreshed
                     actions.append({"action": "verify_previous_message", "session_id": session_id, "key": pending_key})
                 else:
-                    errors.append(f"unverified prior recovery message for {session_id}; refusing duplicate send")
+                    intent = ledger["messages"].setdefault(pending_key, {"session_id": session_id, "task_id": task_id, "sent_at": iso(), "verified_at": None})
+                    delivery_attempts = int(intent.get("delivery_attempts") or 1)
+                    next_retry = parse_time(intent.get("next_retry_at")) or current
+                    if delivery_attempts >= 2:
+                        record.pop("pending_message_key", None)
+                        record["recoveries_without_progress"] = max(args.max_recoveries, int(record.get("recoveries_without_progress") or 0))
+                        pending_key = ""
+                        errors.append(f"recovery delivery for {session_id} remained unverified after bounded retry; deferring session")
+                    elif next_retry <= current and not mutation_blocked:
+                        retry_packet = build_packet(task, summary, int(record.get("recoveries_without_progress") or 0), False, "retry_unverified_recovery_delivery", pr, checks)
+                        intent["delivery_attempts"] = delivery_attempts + 1
+                        intent["last_attempt_at"] = iso()
+                        intent["next_retry_at"] = iso(current + timedelta(minutes=5))
+                        if checkpoint(f"bounded recovery delivery retry {pending_key}"):
+                            try:
+                                if args.apply:
+                                    api.jules(key, f"{session_name}:sendMessage", method="POST", body={"prompt": recovery_prompt(pending_key, retry_packet)})
+                                    retry_verified, retry_summary = verify_message(api, key, session_name, pending_key, str(summary.get("fingerprint")))
+                                else:
+                                    retry_verified, retry_summary = True, summary
+                                if retry_verified:
+                                    record.pop("pending_message_key", None)
+                                    record["last_verified_message_key"] = pending_key
+                                    intent["verified_at"] = iso()
+                                    summary = retry_summary
+                                    actions.append({"action": "retry_recovery_delivery", "session_id": session_id, "key": pending_key, "verified": True})
+                                else:
+                                    errors.append(f"bounded recovery delivery retry remained unverified for {session_id}")
+                            except Exception as exc:
+                                intent["delivery_error"] = sanitize(exc, 500)
+                                errors.append(f"bounded recovery delivery retry failed for {session_id}: {sanitize(exc, 600)}")
+                    else:
+                        errors.append(f"unverified prior recovery message for {session_id}; waiting for bounded retry window")
             scope_request = summary.get("scope_request") if isinstance(summary.get("scope_request"), dict) else None
             if scope_request:
                 scope_key = digest("scope-request", session_id, scope_request)
@@ -204,36 +270,46 @@ def reconcile(args: argparse.Namespace) -> int:
             defer_request = summary.get("defer_request") if isinstance(summary.get("defer_request"), dict) else None
             if defer_request and not pending_key:
                 defer_key = digest("agent-defer-request", session_id, defer_request)
-                if defer_key not in ledger["messages"]:
-                    requested_review = parse_time(defer_request.get("recheck_at"))
-                    retry_at = requested_review if requested_review and requested_review > current else current + timedelta(minutes=args.defer_minutes)
-                    task_state = dict(ledger["tasks"].get(task_state_id, {}))
-                    task_state.update(
-                        {
-                            "state": "deferred",
-                            "session_id": None,
-                            "retry_at": iso(retry_at),
-                            "next_review_at": iso(retry_at),
-                            "retry_condition": defer_request.get("retry_condition") or "new concrete evidence is available",
-                            "evidence_requirement": defer_request.get("evidence_requirement") or defer_request.get("evidence") or "reproduced evidence",
-                            "deferred_evidence_fingerprint": progress_fp,
-                            "deferred_task_fingerprint": task_fingerprint(task or {}),
-                            "reason": defer_request.get("reason") or "agent requested evidence-bound defer",
-                        }
-                    )
-                    ledger["tasks"][task_state_id] = task_state
-                    ledger["messages"][defer_key] = {"kind": "agent_defer_request", "task_id": task_id, "session_id": session_id, "sent_at": iso(), "verified_at": None, "request": defer_request}
+                requested_review = parse_time(defer_request.get("recheck_at"))
+                requested_retry_at = requested_review if requested_review and requested_review > current else current + timedelta(minutes=args.defer_minutes)
+                defer_intent = ledger["messages"].setdefault(
+                    defer_key,
+                    {"kind": "agent_defer_request", "task_id": task_id, "session_id": session_id, "sent_at": iso(), "verified_at": None, "retry_at": iso(requested_retry_at), "request": defer_request},
+                )
+                retry_at = parse_time(defer_intent.get("retry_at")) or requested_retry_at
+                task_state = dict(ledger["tasks"].get(task_state_id, {}))
+                task_state.update(
+                    {
+                        "state": "deferred",
+                        "session_id": None,
+                        "retry_at": iso(retry_at),
+                        "next_review_at": iso(retry_at),
+                        "retry_condition": defer_request.get("retry_condition") or "new concrete evidence is available",
+                        "evidence_requirement": defer_request.get("evidence_requirement") or defer_request.get("evidence") or "reproduced evidence",
+                        "deferred_evidence_fingerprint": progress_fp,
+                        "deferred_task_fingerprint": task_fingerprint(task or {}),
+                        "reason": defer_request.get("reason") or "agent requested evidence-bound defer",
+                    }
+                )
+                ledger["tasks"][task_state_id] = task_state
+                if defer_intent.get("verified_at"):
+                    blocking_active = max(0, blocking_active - 1)
+                    active_task_ids.discard(str(task_id))
+                    terminated = True
+                    pending_key = defer_key
+                else:
                     if checkpoint(f"agent defer request {session_id}"):
                         try:
                             if args.apply:
                                 api.jules(key, session_name, method="DELETE", body=None, allow=(404,))
-                            ledger["messages"][defer_key]["verified_at"] = iso()
+                            defer_intent["verified_at"] = iso()
                             actions.append({"action": "accept_defer_request", "task_id": task_id, "session_id": session_id, "retry_at": iso(retry_at), "key": defer_key})
                             blocking_active = max(0, blocking_active - 1)
                             active_task_ids.discard(str(task_id))
                             terminated = True
                             pending_key = defer_key
                         except Exception as exc:
+                            defer_intent["delivery_error"] = sanitize(exc, 500)
                             errors.append(f"defer request termination failed for {session_id}: {sanitize(exc, 600)}")
             latest = latest_observed
             stale = minutes_since(latest, current) >= args.stale_minutes
@@ -284,7 +360,7 @@ def reconcile(args: argparse.Namespace) -> int:
                     send_key = message_key(session_id, version, str(summary.get("fingerprint")))
                     if send_key not in ledger["messages"]:
                         record["pending_message_key"] = send_key
-                        ledger["messages"][send_key] = {"session_id": session_id, "task_id": task_id, "state_version": version, "activity_fingerprint": summary.get("fingerprint"), "sent_at": iso(), "verified_at": None, "packet_hash": digest(packet)}
+                        ledger["messages"][send_key] = {"session_id": session_id, "task_id": task_id, "state_version": version, "activity_fingerprint": summary.get("fingerprint"), "sent_at": iso(), "verified_at": None, "packet_hash": digest(packet), "delivery_attempts": 1, "next_retry_at": iso(current + timedelta(minutes=5))}
                         if checkpoint(f"recovery message {send_key}"):
                             try:
                                 if args.apply:
@@ -317,7 +393,7 @@ def reconcile(args: argparse.Namespace) -> int:
     for task_id, pr in pr_by_task.items():
         if task_id in active_task_ids:
             continue
-        checks = check_context(api, repo, pr)
+        checks = checks_for(pr)
         pr_number = int(pr.get("number") or 0)
         task_state = dict(ledger["tasks"].get(task_id, {}))
         pr_progress_fp = digest(((pr.get("head") or {}).get("sha") or ""), checks.get("fingerprint"), pr.get("mergeable_state"))
@@ -362,7 +438,8 @@ def reconcile(args: argparse.Namespace) -> int:
             recovery_key = digest("pr-session-recovery", pr_number, ((pr.get("head") or {}).get("sha") or ""), checks.get("fingerprint"))
             attempts = int(task_state.get("pr_session_recoveries") or 0)
             if (
-                blocking_active == 0
+                not mutation_blocked
+                and blocking_active == 0
                 and not pending_pr_recovery
                 and (
                     task_state.get("pr_session_recovery_key") != recovery_key
@@ -431,7 +508,7 @@ def reconcile(args: argparse.Namespace) -> int:
         ledger["tasks"][task_id] = task_state
 
     eligible = choose_task(manifest, ledger, current)
-    if blocking_active == 0 and not autonomous:
+    if not mutation_blocked and blocking_active == 0 and not autonomous:
         if eligible:
             task_id = str(eligible.get("id") or "")
             task_state = dict(ledger["tasks"].get(task_id, {}))
@@ -485,14 +562,16 @@ def reconcile(args: argparse.Namespace) -> int:
         str((eligible or {}).get("id") or ""),
         pending_leases,
     )
-    cycle = {"at": iso(), "run_id": os.environ.get("GITHUB_RUN_ID"), "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"), "source_fingerprint": source_fingerprint, "active_sessions": blocking_active, "open_autonomous_prs": len(autonomous), "eligible_task_id": str((eligible or {}).get("id") or ""), "pending_leases": pending_leases, "actions": actions, "progress": progress, "errors": errors}
+    cycle = {"at": iso(), "run_id": os.environ.get("GITHUB_RUN_ID"), "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"), "source_fingerprint": source_fingerprint, "listed_sessions": len(session_rows), "inspected_sessions": len(inspected_sessions), "active_sessions": blocking_active, "open_autonomous_prs": len(autonomous), "eligible_task_id": str((eligible or {}).get("id") or ""), "pending_leases": pending_leases, "actions": actions, "progress": progress, "errors": errors}
     ledger["cycles"] = ledger.get("cycles", [])[-49:] + [cycle]
-    if args.apply:
+    if args.apply and not mutation_blocked:
         try:
             ledger_sha = store.save(ledger, ledger_sha)
         except Exception as exc:
             errors.append(f"final durable ledger save failed; prior intents remain authoritative: {sanitize(exc, 700)}")
-    result = {"repo": repo, "default_branch": default_branch, "state_branch": args.state_branch, "ledger_revision": ledger.get("revision"), "migration": ledger.get("migration"), "source_fingerprint": source_fingerprint, "active_sessions": blocking_active, "open_autonomous_prs": len(autonomous), "eligible_task_id": str((eligible or {}).get("id") or ""), "eligible_task_kind": task_kind(eligible or {}), "pending_leases": pending_leases, "actions": actions, "progress": progress, "fresh_progress": fresh, "errors": errors}
+    elif args.apply and mutation_blocked:
+        errors.append("final ledger save skipped after a failed pre-action checkpoint; no unexecuted intent was committed")
+    result = {"repo": repo, "default_branch": default_branch, "state_branch": args.state_branch, "ledger_revision": ledger.get("revision"), "migration": ledger.get("migration"), "source_fingerprint": source_fingerprint, "listed_sessions": len(session_rows), "inspected_sessions": len(inspected_sessions), "active_sessions": blocking_active, "open_autonomous_prs": len(autonomous), "eligible_task_id": str((eligible or {}).get("id") or ""), "eligible_task_kind": task_kind(eligible or {}), "pending_leases": pending_leases, "actions": actions, "progress": progress, "fresh_progress": fresh, "errors": errors}
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     output("summary", result)
     output("healthy", str(not errors).lower())
