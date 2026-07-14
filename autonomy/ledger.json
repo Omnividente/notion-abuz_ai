@@ -1332,6 +1332,36 @@
       "run_attempt": "1",
       "run_id": "29303708556",
       "source_fingerprint": "398f52bac73336fe68076527"
+    },
+    {
+      "actions": [
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "7cd3d6af48f689f18edea8af",
+          "generation": 1,
+          "task_id": "proxy-tools-debug-logging-cleanup"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "automation-executor-completion-reconciler-handoff"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T03:35:29Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-tools-debug-logging-cleanup",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 466,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "proxy-tools-debug-logging-cleanup"
+      ],
+      "progress": [],
+      "run_attempt": "1",
+      "run_id": "29303856493",
+      "source_fingerprint": "f1123df77051caa7f0f3f538"
     }
   ],
   "messages": {
@@ -3210,7 +3240,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 93,
+  "revision": 94,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3857,11 +3887,9 @@
     },
     "automation-executor-completion-reconciler-handoff": {
       "dispatch_generation": 1,
-      "dispatch_key": "1df51edb21c636823f52b948",
-      "dispatch_requested_at": "2026-07-14T03:32:06Z",
       "last_observed_at": "2026-07-14T03:32:04Z",
       "last_progress_at": "2026-07-14T03:32:04Z",
-      "lease_expires_at": "2026-07-14T04:01:14Z",
+      "manifest_status": "done",
       "pr_number": 616,
       "pr_recoveries": 1,
       "pr_recovery_evidence_key": "ce352e67c9a245f297b75312",
@@ -3870,9 +3898,7 @@
       "progress_fingerprint": "b4ff724aba3798d7ebc32325",
       "recovery_pr_head": "4c9edbad203170312ebbefc8e87be8fbd2f5919a",
       "recovery_pr_number": 616,
-      "recovery_reason": "dirty PR must sync current master",
-      "session_id": null,
-      "state": "pr_recovery_dispatch_requested"
+      "state": "manifest_done"
     },
     "docs-idempotency-replay-behavior": {
       "current_evidence_fingerprint": "325d6bf4b25b60fbb083a4de",
@@ -4042,5 +4068,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T03:35:28Z"
+  "updated_at": "2026-07-14T03:35:29Z"
 }
