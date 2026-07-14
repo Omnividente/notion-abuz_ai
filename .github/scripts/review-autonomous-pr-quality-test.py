@@ -525,6 +525,77 @@ class ReviewAutonomousPRQualityTest(unittest.TestCase):
 
         self.assertTrue(decision.passed)
 
+    def test_explicit_logging_test_task_passes_test_only_diff(self) -> None:
+        test_task = task(
+            "proxy-tools-add-unit-tests-for-debug-logging-toggle",
+            status="todo",
+            title="Add unit tests to verify tools.go debug logging obeys DebugLoggingEnabled",
+            description=(
+                "Add targeted tests asserting that the proxy mutes these logs "
+                "when DebugLoggingEnabled returns false."
+            ),
+            allowed_paths=["internal/proxy/tools_test.go", "agent_tasks.json"],
+            acceptance=[
+                "A unit test verifies tool schema simplification logs are muted.",
+                "A unit test verifies JSON tool-call fallback logs are muted.",
+            ],
+        )
+        done_task = {**test_task, "status": "done"}
+        decision = self.evaluate(
+            manifest([test_task]),
+            manifest([done_task]),
+            changed_files=["internal/proxy/tools_test.go", "agent_tasks.json"],
+            diff_text=(
+                "+ var buf bytes.Buffer\n"
+                "+ log.SetOutput(globalLogWriter)\n"
+                "+ if strings.Contains(buf.String(), expectedLog) { t.Fatal() }"
+            ),
+            pr_body=evidence_body(
+                test_task["id"],
+                acceptance=[
+                    "Muted schema logs -> internal/proxy/tools_test.go",
+                    "Muted fallback logs -> internal/proxy/tools_test.go",
+                ],
+                evidence_files=["internal/proxy/tools_test.go", "agent_tasks.json"],
+                micro_pr_justification="The manifest contract is explicitly test-only.",
+            ),
+        )
+
+        self.assertTrue(quality.is_operational_task(done_task))
+        self.assertTrue(quality.is_explicit_test_only_task(done_task))
+        self.assertTrue(decision.passed, decision.reasons)
+
+    def test_test_only_scope_does_not_excuse_runtime_acceptance(self) -> None:
+        runtime_task = task(
+            "logging-runtime-fix",
+            status="todo",
+            title="Fix runtime logging and add tests",
+            description="Change runtime logging behavior and cover it with tests.",
+            allowed_paths=["internal/proxy/tools_test.go", "agent_tasks.json"],
+            acceptance=[
+                "Runtime logging is muted when debug mode is disabled.",
+                "A unit test covers the logging behavior.",
+            ],
+        )
+        decision = self.evaluate(
+            manifest([runtime_task]),
+            manifest([{**runtime_task, "status": "done"}]),
+            changed_files=["internal/proxy/tools_test.go", "agent_tasks.json"],
+            diff_text="+ func TestMutedLogging(t *testing.T) {}",
+            pr_body=evidence_body(
+                runtime_task["id"],
+                acceptance=[
+                    "Runtime logging -> internal/proxy/tools_test.go",
+                    "Test coverage -> internal/proxy/tools_test.go",
+                ],
+                evidence_files=["internal/proxy/tools_test.go", "agent_tasks.json"],
+            ),
+        )
+
+        self.assertFalse(quality.is_explicit_test_only_task(runtime_task))
+        self.assertFalse(decision.passed)
+        self.assertTrue(any("changed only tests" in reason for reason in decision.reasons))
+
     def test_temporary_scratch_markdown_file_fails(self) -> None:
         before = manifest([task("runtime-fix", status="todo")])
         after = manifest([task("runtime-fix", status="done")])
