@@ -1808,6 +1808,17 @@
       "task_id": "docs-routing-contract-behavior",
       "verified_at": "2026-07-13T23:02:55Z"
     },
+    "af87d7d2e6fb3dcdce8988fe": {
+      "activity_fingerprint": "505ed465bf9a6862e95ce548",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-14T04:55:09Z",
+      "packet_hash": "b36632ed179d99512dc8f133",
+      "sent_at": "2026-07-14T04:50:28Z",
+      "session_id": "14674460986994187107",
+      "state_version": 10,
+      "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
+      "verified_at": null
+    },
     "b8bb647254f9975bea54a807": {
       "activity_fingerprint": "5886b41fe4e7931eeca5c4c8",
       "delivery_attempts": 1,
@@ -3594,7 +3605,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 129,
+  "revision": 130,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3766,18 +3777,19 @@
       "task_id": "proxy-tools-mode-loss-documentation"
     },
     "14674460986994187107": {
-      "activity_fingerprint": "984c4d49ab496e9d236f972f",
-      "last_observed_at": "2026-07-14T04:46:22Z",
-      "last_progress_at": "2026-07-14T04:46:22Z",
+      "activity_fingerprint": "505ed465bf9a6862e95ce548",
+      "last_observed_at": "2026-07-14T04:50:28Z",
+      "last_progress_at": "2026-07-14T04:50:28Z",
       "lease_key": "c3c1b984940f8d90103c08c1",
-      "pr_fingerprint": "434a721267ff8827899f1c16",
-      "progress_fingerprint": "c6ee6915d1a7ba635c0cbdf4",
+      "pending_message_key": "af87d7d2e6fb3dcdce8988fe",
+      "pr_fingerprint": "89e10a96f292c0d6946730cd",
+      "progress_fingerprint": "58a5d9c2828a0f83143e7d53",
       "recoveries_without_progress": 0,
       "recovery_pr_head": "458d6e538bffc618531654a53bba15031cdb3bbe",
       "recovery_pr_number": 622,
       "session_state": "IN_PROGRESS",
-      "session_update_at": "2026-07-14T04:45:56.256826Z",
-      "state_version": 9,
+      "session_update_at": "2026-07-14T04:50:05.437531Z",
+      "state_version": 10,
       "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
     },
     "15264337504110031935": {
@@ -4549,5 +4561,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:46:41Z"
+  "updated_at": "2026-07-14T04:50:28Z"
 }
