@@ -9139,6 +9139,32 @@
         "mode": "live early-quality-gate recovery gap",
         "summary": "Protected path rejection remains hard-fail, but now reaches the same deduplicated recovery route as all other autonomous PR quality failures."
       }
+    },
+    {
+      "id": "automation-active-session-pr-branch-sync",
+      "status": "done",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Synchronize behind PR branches while their Jules session is active",
+      "description": "PR #622 was repaired to the intended product-only diff by recovery session 14674460986994187107, then became behind again when automation PR #623 merged. The reconciler only attempted GitHub-native update-branch in the no-active-session PR loop, so the active-session path treated the stale-base quality failure as semantic work and leased another Jules session 17208555400991546940 for the same task. Reuse the durable branch-update operation before active-session recovery and suppress recovery messages while GitHub is updating the branch.",
+      "allowed_paths": [
+        ".github/scripts/autonomy_reconciler.py",
+        ".github/scripts/autonomy_reconciler_test.py",
+        "docs/WORK_AUTONOMY_2026-07-13.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "An open autonomous PR with an active Jules session uses the same durable expected_head_sha update-branch operation as a PR without an active session.",
+        "A checkpoint is persisted before the update-branch mutation, and accepted updates wait up to five minutes for a new head with at most two delivery attempts.",
+        "Accepted or raced branch updates suppress Jules recovery for that cycle, while merge conflict, bounded timeout, or API error remains eligible for semantic recovery.",
+        "Dirty, behind, and branch-sync-conflict evidence all participate in active-session recovery classification.",
+        "Deterministic tests cover checkpoint ordering, accepted-update waiting, conflict fallback, active-loop ordering, and suppression of an extra recovery prompt."
+      ],
+      "source_reference": "PR #622 at head 59425436 after master 2c16af8; quality run 29307014157; recovery executor 29307076904; duplicate session 17208555400991546940",
+      "completion_evidence": {
+        "mode": "live active-session branch-sync gap",
+        "summary": "The authoritative reconciler now performs one durable native branch update before any active-session recovery and leaves Jules only conflict or semantic work."
+      }
     }
   ]
 }

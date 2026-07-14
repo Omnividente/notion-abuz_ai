@@ -557,12 +557,158 @@ class ReconcilerTests(unittest.TestCase):
         self.assertEqual(M.pull_branch_update_outcome(409), "conflict")
         self.assertEqual(M.pull_branch_update_outcome(500), "error")
 
+    def test_reconcile_pull_branch_update_checkpoints_before_put(self):
+        events = []
+
+        class FakeAPI:
+            def gh(self, path, **kwargs):
+                events.append(("api", path, kwargs))
+                return 202, {"message": "Updating pull request branch."}
+
+        ledger = {"messages": {}}
+        current = M.now()
+
+        def checkpoint(reason):
+            events.append(("checkpoint", reason))
+            return True
+
+        result = M.reconcile_pull_branch_update(
+            FakeAPI(),
+            "o/r",
+            {
+                "number": 622,
+                "head": {"sha": "expected-head"},
+                "base": {"sha": "current-base"},
+                "behind_by": 1,
+            },
+            ledger,
+            "runtime-tests",
+            current=current,
+            apply=True,
+            checkpoint=checkpoint,
+        )
+
+        self.assertTrue(result["handled"])
+        self.assertFalse(result["conflict"])
+        self.assertEqual(result["action"]["action"], "update_pr_branch")
+        self.assertEqual(events[0], ("checkpoint", "PR branch update 622"))
+        self.assertEqual(events[1][0], "api")
+        intent = ledger["messages"][result["key"]]
+        self.assertEqual(intent["delivery_attempts"], 1)
+        self.assertIsNotNone(intent["verified_at"])
+
+    def test_reconcile_pull_branch_update_waits_before_retry(self):
+        class FakeAPI:
+            def __init__(self):
+                self.calls = 0
+
+            def gh(self, path, **kwargs):
+                self.calls += 1
+                return 202, {"message": "Updating pull request branch."}
+
+        api = FakeAPI()
+        ledger = {"messages": {}}
+        current = M.now()
+        pr = {
+            "number": 622,
+            "head": {"sha": "expected-head"},
+            "base": {"sha": "current-base"},
+            "behind_by": 1,
+        }
+        first = M.reconcile_pull_branch_update(
+            api,
+            "o/r",
+            pr,
+            ledger,
+            "runtime-tests",
+            current=current,
+            apply=True,
+            checkpoint=lambda _: True,
+        )
+        repeated = M.reconcile_pull_branch_update(
+            api,
+            "o/r",
+            pr,
+            ledger,
+            "runtime-tests",
+            current=current + timedelta(minutes=4),
+            apply=True,
+            checkpoint=lambda _: True,
+        )
+
+        self.assertTrue(first["handled"])
+        self.assertTrue(repeated["handled"])
+        self.assertEqual(api.calls, 1)
+        self.assertIn("waiting for a new head", repeated["blocked"]["reason"])
+
+    def test_reconcile_pull_branch_update_reports_conflict(self):
+        class FakeAPI:
+            @staticmethod
+            def gh(path, **kwargs):
+                return 409, {"message": "Merge conflict"}
+
+        result = M.reconcile_pull_branch_update(
+            FakeAPI(),
+            "o/r",
+            {
+                "number": 622,
+                "head": {"sha": "expected-head"},
+                "base": {"sha": "current-base"},
+                "behind_by": 1,
+            },
+            {"messages": {}},
+            "runtime-tests",
+            current=M.now(),
+            apply=True,
+            checkpoint=lambda _: True,
+        )
+
+        self.assertFalse(result["handled"])
+        self.assertTrue(result["conflict"])
+        self.assertEqual(result["action"]["action"], "pr_branch_update_conflict")
+
+    def test_active_session_branch_sync_suppresses_extra_recovery(self):
+        decision = M.active_session_recovery_decision(
+            failed_checks=True,
+            dirty_pr=False,
+            behind_pr=True,
+            branch_sync_conflict=False,
+            branch_sync_handled=True,
+            previous_pr_fingerprint="old",
+            current_pr_fingerprint="new",
+            stale=True,
+            awaiting_user_feedback=True,
+        )
+        self.assertEqual(decision, (False, "pr_branch_update_in_progress"))
+
+        conflict = M.active_session_recovery_decision(
+            failed_checks=False,
+            dirty_pr=False,
+            behind_pr=True,
+            branch_sync_conflict=True,
+            branch_sync_handled=False,
+            previous_pr_fingerprint="old",
+            current_pr_fingerprint="new",
+            stale=False,
+            awaiting_user_feedback=False,
+        )
+        self.assertEqual(conflict, (True, "new_pr_blocker_evidence"))
+
     def test_branch_update_precedes_in_place_jules_recovery(self):
         source = Path(M.__file__).read_text(encoding="utf-8")
-        pr_loop = source.split("branch_sync_conflict = False", 1)[1]
+        helper = source.split("def reconcile_pull_branch_update", 1)[1].split(
+            "def active_session_recovery_decision", 1
+        )[0]
         self.assertLess(
-            pr_loop.index('checkpoint(f"PR branch update'),
-            pr_loop.index("status, payload = update_pull_branch"),
+            helper.index('checkpoint(f"PR branch update'),
+            helper.index("status, payload = update_pull_branch"),
+        )
+        active_loop = source.split(
+            "elif state in ACTIVE and not task_terminal_in_manifest:", 1
+        )[1].split("if task_id and terminal_task_needs_outcome", 1)[0]
+        self.assertLess(
+            active_loop.index("reconcile_pull_branch_update("),
+            active_loop.index("active_session_recovery_decision("),
         )
         self.assertLess(
             source.index('"action": "update_pr_branch"'),
