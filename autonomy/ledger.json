@@ -1982,7 +1982,7 @@
       "pr_number": 629,
       "sent_at": "2026-07-14T07:30:26Z",
       "task_id": "docs-ask-mode-override-wording",
-      "verified_at": null
+      "verified_at": "2026-07-14T07:30:28Z"
     },
     "a6e87bef21cba883a71fd8a4": {
       "kind": "terminal_manifest_session_cleanup",
@@ -3743,7 +3743,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 170,
+  "revision": 171,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4525,26 +4525,26 @@
     "docs-ask-mode-override-wording": {
       "current_evidence_fingerprint": "19c382aa2f8f359d78d8a7ed",
       "dispatch_completed_at": "2026-07-14T05:46:57Z",
-      "dispatch_generation": 2,
-      "dispatch_key": "d850b2222dac0497f073cc7d",
-      "dispatch_requested_at": "2026-07-14T05:46:29Z",
+      "dispatch_generation": 3,
+      "dispatch_key": "397a63b7ca5a38967b781f3b",
+      "dispatch_requested_at": "2026-07-14T07:30:28Z",
       "last_observed_at": "2026-07-14T07:30:24Z",
       "last_progress_at": "2026-07-14T07:30:24Z",
-      "lease_expires_at": "2026-07-14T06:31:57Z",
+      "lease_expires_at": "2026-07-14T07:59:50Z",
       "pr_number": 629,
       "pr_recoveries": 2,
-      "pr_recovery_evidence_key": "2e029fc38ebf0d5f9a006fb7",
-      "pr_session_recoveries": 0,
-      "pr_session_recovery_key": "77335fe15799a2932a7b6b23",
+      "pr_recovery_evidence_key": "9e32973df514da36e0ad9871",
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "4187a9323abc49c4a4444cbe",
       "progress_fingerprint": "81c4066ea53970c3b1824c04",
-      "recovery_pr_head": "3c635508f966e97f4c6ffe611592e60b8c24ecaa",
+      "recovery_pr_head": "8eda745873fd21447d9dc78165e2e245e6c4b539",
       "recovery_pr_number": 629,
       "recovery_reason": "dirty PR must sync current master",
       "session_create_requested_at": "2026-07-14T05:46:55Z",
       "session_id": null,
       "session_name": "sessions/13893740484827123621",
       "session_state": "COMPLETED",
-      "state": "pr_open_without_active_session",
+      "state": "pr_recovery_dispatch_requested",
       "task_fingerprint": "c1782c6fbea72e811492560c"
     },
     "docs-idempotency-replay-behavior": {
@@ -4770,5 +4770,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T07:30:26Z"
+  "updated_at": "2026-07-14T07:30:28Z"
 }
