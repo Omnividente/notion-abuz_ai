@@ -101,6 +101,22 @@
   },
   "tasks": [
     {
+      "id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add unit tests to verify tools.go debug logging obeys DebugLoggingEnabled",
+      "description": "While debug logging in tools.go has been conditionally wrapped in DebugLoggingEnabled(), there are no targeted tests asserting that the proxy actually mutes these logs when DebugLoggingEnabled() returns false. Add tests to internal/proxy/tools_test.go.",
+      "allowed_paths": [
+        "internal/proxy/tools_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A unit test exists that verifies tool schema simplification logs are muted when DebugLoggingEnabled() is false.",
+        "A unit test exists that verifies JSON tool-call mode fallback logs are muted when DebugLoggingEnabled() is false."
+      ]
+    },
+    {
       "id": "add-audit-proxy-api-observability-metric",
       "status": "done",
       "area": "proxy",
@@ -8955,7 +8971,7 @@
     },
     {
       "id": "proxy-tools-debug-logging-cleanup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Clean up excessive debug logging in tools.go",
