@@ -9245,6 +9245,32 @@
       }
     },
     {
+      "id": "automation-update-branch-422-conflict-classification",
+      "status": "done",
+      "area": "automation",
+      "risk": "low",
+      "title": "Classify update-branch merge conflicts from the GitHub response",
+      "description": "Reconciler run 29308520419 attempted update-branch for PR #622 at head 9ffd977 and GitHub returned HTTP 422 with message 'merge conflict between base and head'. The status-only classifier recorded this as head_raced and verified the intent, delaying semantic conflict recovery. Use the sanitized response message to distinguish a real merge conflict from an expected-head race while preserving bounded fallback behavior.",
+      "allowed_paths": [
+        ".github/scripts/autonomy_reconciler.py",
+        ".github/scripts/autonomy_reconciler_test.py",
+        "docs/WORK_AUTONOMY_2026-07-13.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "HTTP 422 with a GitHub merge-conflict message produces the conflict outcome and remains eligible for immediate semantic recovery.",
+        "HTTP 422 with a modified-head message or no conflict signal preserves the race-safe head_raced outcome.",
+        "HTTP 202, 409, dry-run, and generic error classifications remain unchanged.",
+        "The branch-update helper passes the response payload into classification and still stores only a sanitized bounded message in the ledger.",
+        "Deterministic tests cover the live conflict message and a head-modified race message."
+      ],
+      "source_reference": "PR #622 head 9ffd977; reconciler run 29308520419; ledger intent 214f40c018c866be02c99e17",
+      "completion_evidence": {
+        "mode": "live GitHub update-branch response",
+        "summary": "The durable reconciler now uses GitHub's response message to separate merge conflicts from expected-head races under the shared 422 status."
+      }
+    },
+    {
       "id": "docs-audit-cookie-forwarding",
       "status": "todo",
       "area": "docs",
