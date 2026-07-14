@@ -45,6 +45,7 @@
 - lease сохраняется в ledger до постановки executor workflow в очередь;
 - recovery и dispatch используют один concurrency group `notion-abuz-autonomy-mutation`;
 - `jules_next_task.yml` больше не имеет собственного schedule, selector или recovery loop: он исполняет только точный `task_id` с валидным непросроченным `lease_key`;
+- завершение `2. Execute Leased Jules Task` является единственным `workflow_run` wake для authoritative reconciler: это фиксирует созданную session или executor failure без ожидания ненадёжного schedule, но не возвращает широкую подписку на CI/smoke/critic события;
 - executor повторно проверяет durable lease и отсутствие активной Jules session, затем создаёт session и CAS-записью связывает её с task;
 - operational intent сохраняется CAS-checkpoint до approve/sendMessage/comment/delete/session-create; потеря финального save не разрешает повтор side effect;
 - idempotency key строится из `session_id`, `state_version` и `activity_fingerprint`, но progress fingerprint учитывает только agent activity, PR head и checks — собственный recovery prompt не сбрасывает счётчик;
@@ -83,6 +84,8 @@
 ## Live acceptance
 
 Merge запускает первый reconciler cycle через `push`, затем schedule идёт каждые пять минут со смещением `3/5` (03, 08, 13, ...), чтобы не попадать на top-of-hour/common-boundary scheduler load. GitHub документирует, что `schedule` при высокой нагрузке может задерживаться или отбрасываться и рекомендует выбирать другое время внутри часа. Архитектурный PR не считается полностью доказанным до наблюдения минимум 12 последовательных unattended scheduled cycles. Каждый цикл должен оставить bounded durable ledger evidence и не может быть успешным no-op при наличии actionable work. Отдельно требуются два runtime task → Jules → code/test diff → PR → checks → merge цикла; RDSH Local Live Smoke остаётся PR-code evidence, а не production deployment evidence.
+
+После merge #615 push-run `29303039141` штатно очистил terminal lease, выбрал `proxy-anthropic-sse-cleanup` и dispatch-нул executor `29303069912`; executor создал session `7036873496572403975`. За следующие девять минут ни один ожидаемый schedule event не был доставлен. Поэтому executor completion получил один exact event-driven handoff обратно в reconciler. Он закрывает первичное окно session visibility и failure handoff, но не заменяет schedule для последующего stale-session наблюдения и не отменяет 12-cycle acceptance.
 
 Post-merge run `29282405208`, attempt 2, дал дополнительный terminal fixture: recovery session `13525775686702804526` перешла в `COMPLETED`, но PR #596 сохранил прежний head и failed checks. Старый ключ, состоявший только из PR SHA и check fingerprint, не разрешал следующую bounded attempt. Этот live blocker является основанием для terminal-session fingerprint и теста `test_terminal_no_change_session_advances_bounded_pr_recovery_once`; сам manual rerun не засчитывается как scheduled acceptance cycle.
 
