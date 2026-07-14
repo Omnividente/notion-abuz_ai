@@ -9271,56 +9271,50 @@
       }
     },
     {
-      "id": "docs-audit-cookie-forwarding",
+      "id": "docs-document-proxy-routing-headers",
       "status": "todo",
       "area": "docs",
       "risk": "low",
-      "title": "Document cookie forwarding behavior in the Notion proxy",
-      "description": "The current codebase extracts the active account's FullCookie and injects it into upstream Notion API requests (handled in reverseproxy.go). This behavior should be explicitly documented for operators and developers so they understand how API authentication is managed by the proxy.",
+      "title": "Document proxy routing headers used in API endpoints",
+      "description": "The reverse proxy uses several custom headers for routing and identification. Document these headers in docs/api.md.",
       "allowed_paths": [
         "docs/api.md",
-        "docs/configuration.md",
-        "internal/proxy/proxy.go",
         "agent_tasks.json"
       ],
       "acceptance": [
-        "Documentation clearly states that the proxy extracts FullCookie from the targeted account and injects it into upstream Notion requests.",
-        "The logic for cookie injection is referenced or explained so developers understand how backend Notion API calls are authenticated."
+        "docs/api.md contains a section detailing proxy routing headers.",
+        "Headers like x-notion-client-version and custom routing headers are documented."
       ]
     },
     {
-      "id": "docs-idempotency-cache-behavior",
+      "id": "docs-explain-session-refresh-lifecycle",
       "status": "todo",
       "area": "docs",
       "risk": "low",
-      "title": "Document idempotency cache metrics and sanitization",
-      "description": "The proxy implements an idempotency cache (idempotency.go) that strips sensitive headers (Authorization, Set-Cookie) to prevent leaking credentials across identical requests, and tracks metrics like first_execution and completed_replay. This needs to be documented so operators understand the security and observability of cached responses.",
+      "title": "Explain session refresh lifecycle",
+      "description": "The background refresh mechanism updates quotas and models for pooled accounts. Add a section in docs/configuration.md explaining how refresh intervals and quota rechecks interact.",
       "allowed_paths": [
-        "docs/api.md",
         "docs/configuration.md",
-        "internal/proxy/proxy.go",
         "agent_tasks.json"
       ],
       "acceptance": [
-        "Documentation explains the idempotency cache's behavior, including the sanitization of sensitive headers like Set-Cookie and Authorization.",
-        "Documentation mentions the metrics exposed by the cache (e.g., first_execution, completed_replay, in_flight_conflict)."
+        "docs/configuration.md includes a paragraph explaining the refresh background loop.",
+        "The roles of refresh.interval_minutes and refresh.quota_recheck_minutes are explicitly clarified."
       ]
     },
     {
-      "id": "audit-proxy-context-loss-logging",
+      "id": "test-add-config-validation-coverage",
       "status": "todo",
-      "area": "audit",
+      "area": "tests",
       "risk": "low",
-      "title": "Audit diagnostic logs for context loss metrics in proxy",
-      "description": "In the proxy (tools.go), calls to recordContextLossMetric for read narrowing (e.g., session_continuation_read_narrowing) must be accompanied by a log.Printf('[bridge] diagnostic: ...') statement. Audit the code to ensure this rule is consistently applied.",
+      "title": "Add test coverage for configuration file validation",
+      "description": "Ensure the config loader correctly validates edge cases in config.yaml, such as invalid timeouts or missing required fields.",
       "allowed_paths": [
-        "internal/proxy/tools.go",
-        "internal/proxy/proxy.go",
+        "internal/proxy/config_test.go",
         "agent_tasks.json"
       ],
       "acceptance": [
-        "All instances of recordContextLossMetric related to read narrowing in tools.go are accompanied by a corresponding '[bridge] diagnostic:' log statement.",
-        "If the logging is missing, it is added. If it is already present, the task is marked as done with completion_mode: verified_no_change."
+        "internal/proxy/config_test.go contains at least one test validating missing or malformed config values."
       ]
     }
   ]
