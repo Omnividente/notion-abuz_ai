@@ -2067,7 +2067,7 @@
       "pr_number": 629,
       "sent_at": "2026-07-14T05:46:27Z",
       "task_id": "docs-ask-mode-override-wording",
-      "verified_at": null
+      "verified_at": "2026-07-14T05:46:29Z"
     },
     "f6a989281b2b3fde6225f4d5": {
       "kind": "pr_recovery",
@@ -3745,7 +3745,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 160,
+  "revision": 161,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4510,22 +4510,26 @@
     "docs-ask-mode-override-wording": {
       "current_evidence_fingerprint": "e1705dc57e425d3cdebcb57f",
       "dispatch_completed_at": "2026-07-14T05:33:18Z",
-      "dispatch_generation": 1,
-      "dispatch_key": "27ad877f8ef09d2d2a18c53c",
-      "dispatch_requested_at": "2026-07-14T05:32:54Z",
+      "dispatch_generation": 2,
+      "dispatch_key": "d850b2222dac0497f073cc7d",
+      "dispatch_requested_at": "2026-07-14T05:46:29Z",
       "last_observed_at": "2026-07-14T05:46:26Z",
       "last_progress_at": "2026-07-14T05:46:26Z",
-      "lease_expires_at": "2026-07-14T06:18:18Z",
+      "lease_expires_at": "2026-07-14T06:15:53Z",
       "pr_number": 629,
       "pr_recoveries": 1,
+      "pr_recovery_evidence_key": "2e029fc38ebf0d5f9a006fb7",
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "77335fe15799a2932a7b6b23",
       "progress_fingerprint": "fbe20eabac008cb14551638e",
-      "recovery_pr_head": null,
-      "recovery_pr_number": null,
+      "recovery_pr_head": "3c635508f966e97f4c6ffe611592e60b8c24ecaa",
+      "recovery_pr_number": 629,
+      "recovery_reason": "dirty PR must sync current master",
       "session_create_requested_at": "2026-07-14T05:33:16Z",
       "session_id": null,
       "session_name": "sessions/13893740484827123621",
       "session_state": "COMPLETED",
-      "state": "pr_open_without_active_session",
+      "state": "pr_recovery_dispatch_requested",
       "task_fingerprint": "c1782c6fbea72e811492560c"
     },
     "docs-idempotency-replay-behavior": {
@@ -4751,5 +4755,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T05:46:27Z"
+  "updated_at": "2026-07-14T05:46:29Z"
 }
