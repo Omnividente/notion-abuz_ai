@@ -1529,6 +1529,17 @@
       "task_id": "proxy-improve-rproxy-timeout-handling",
       "verified_at": "2026-07-13T21:07:48Z"
     },
+    "25f6bc49e0ec0df4b7a4b471": {
+      "activity_fingerprint": "36db145f53dbec925d8c0bdd",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-14T04:19:43Z",
+      "packet_hash": "f49505b775e11e3e4a1de84c",
+      "sent_at": "2026-07-14T04:15:08Z",
+      "session_id": "12983952770589851668",
+      "state_version": 5,
+      "task_id": "proxy-anthropic-sse-tests",
+      "verified_at": null
+    },
     "33cab464b35567979dd1b94d": {
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
       "delivery_attempts": 1,
@@ -1538,7 +1549,7 @@
       "session_id": "17485730698808344737",
       "state_version": 2,
       "task_id": "proxy-anthropic-sse-tests",
-      "verified_at": null
+      "verified_at": "2026-07-14T04:15:07Z"
     },
     "344c8e343c8d6c8b67e09fac": {
       "kind": "pr_recovery",
@@ -3404,7 +3415,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 109,
+  "revision": 110,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3479,18 +3490,19 @@
       "task_id": ""
     },
     "12983952770589851668": {
-      "activity_fingerprint": "411577a5e2cafd2e14aa07bf",
-      "last_observed_at": "2026-07-14T04:13:22Z",
-      "last_progress_at": "2026-07-14T04:13:22Z",
+      "activity_fingerprint": "36db145f53dbec925d8c0bdd",
+      "last_observed_at": "2026-07-14T04:15:08Z",
+      "last_progress_at": "2026-07-14T04:15:08Z",
       "lease_key": "a42dc843ee304193852082f3",
-      "pr_fingerprint": "97314fe0df99ac2f1a4f395f",
-      "progress_fingerprint": "b6ee590b837b1e0e6e3bac0c",
+      "pending_message_key": "25f6bc49e0ec0df4b7a4b471",
+      "pr_fingerprint": "5416a16f385178fdb76b56a5",
+      "progress_fingerprint": "af096d4e572f315fd10a567b",
       "recoveries_without_progress": 0,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_state": "COMPLETED",
-      "session_update_at": "2026-07-14T04:12:50.493501Z",
-      "state_version": 4,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-14T04:14:37.405712Z",
+      "state_version": 5,
       "task_id": "proxy-anthropic-sse-tests"
     },
     "13325415678216530585": {
@@ -3704,11 +3716,12 @@
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
       "last_observed_at": "2026-07-14T04:15:04Z",
       "last_progress_at": "2026-07-14T04:15:04Z",
+      "last_verified_message_key": "33cab464b35567979dd1b94d",
       "lease_key": "9c6492336a53f0bbc8450ced",
-      "pending_message_key": "33cab464b35567979dd1b94d",
+      "post_send_activity_fingerprint": "841f8d79249dbc59bda5ca4e",
       "pr_fingerprint": "5416a16f385178fdb76b56a5",
       "progress_fingerprint": "89aebe1f12834966f06d99c9",
-      "recoveries_without_progress": 0,
+      "recoveries_without_progress": 1,
       "recovery_pr_head": "f75d51d6dc155de73351d061510893ee72547f39",
       "recovery_pr_number": 620,
       "session_state": "IN_PROGRESS",
@@ -4186,12 +4199,12 @@
       "task_fingerprint": "9ee3c48afbef2d89c8d192ce"
     },
     "proxy-anthropic-sse-tests": {
-      "current_evidence_fingerprint": "b6ee590b837b1e0e6e3bac0c",
+      "current_evidence_fingerprint": "89aebe1f12834966f06d99c9",
       "dispatch_completed_at": "2026-07-14T04:14:32Z",
       "dispatch_generation": 2,
       "dispatch_key": "9c6492336a53f0bbc8450ced",
       "dispatch_requested_at": "2026-07-14T04:13:56Z",
-      "last_observed_at": "2026-07-14T04:13:54Z",
+      "last_observed_at": "2026-07-14T04:15:07Z",
       "last_progress_at": "2026-07-14T04:13:54Z",
       "lease_expires_at": "2026-07-14T04:59:32Z",
       "pr_number": 620,
@@ -4206,8 +4219,8 @@
       "session_create_requested_at": "2026-07-14T04:14:30Z",
       "session_id": "17485730698808344737",
       "session_name": "sessions/17485730698808344737",
-      "session_state": "STATE_UNSPECIFIED",
-      "state": "session_created",
+      "session_state": "IN_PROGRESS",
+      "state": "active",
       "task_fingerprint": "279d75a055015a2aa90b2db4"
     },
     "proxy-improve-rproxy-error-logging": {
@@ -4308,5 +4321,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:15:04Z"
+  "updated_at": "2026-07-14T04:15:08Z"
 }
