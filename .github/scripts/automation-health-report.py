@@ -27,6 +27,11 @@ ACTIVE_STATES = {
 INACTIVE_TASK_STATUSES = {"blocked", "done"}
 AUTONOMOUS_CONTINUE_TOKEN = "AUTONOMOUS_CONTINUE_TOKEN"
 STALE_AWAITING_FEEDBACK_MINUTES = 10
+EXECUTOR_VISIBILITY_GRACE_MINUTES = 5
+LOOP_OWNER_WORKFLOWS = {
+    "2. Execute Leased Jules Task",
+    "3. Jules Durable Reconciler",
+}
 BLOCKING_LABELS = {"needs-quality-fix", "critic-blocked"}
 TRACKED_LABELS = {"needs-quality-fix", "critic-blocked", "human-review", "no-automerge"}
 STOPPED_AUTONOMOUS_LABELS = {"human-review", "no-automerge", "stop-loop"}
@@ -253,16 +258,20 @@ def is_merged_pr(pr: dict[str, Any]) -> bool:
     return bool(pr.get("merged_at") or pr.get("merged") is True)
 
 
+def is_open_pr(pr: dict[str, Any]) -> bool:
+    return str(pr.get("state") or "").lower() == "open" and not is_merged_pr(pr)
+
+
 def has_unresolved_blocking_label(pr: dict[str, Any]) -> bool:
     if is_stopped_autonomous_pr(pr):
         return False
-    return bool(labels_of(pr).intersection(BLOCKING_LABELS)) and not is_merged_pr(pr)
+    return bool(labels_of(pr).intersection(BLOCKING_LABELS)) and is_open_pr(pr)
 
 
 def has_unresolved_quality_label(pr: dict[str, Any]) -> bool:
     if is_stopped_autonomous_pr(pr):
         return False
-    return "needs-quality-fix" in labels_of(pr) and not is_merged_pr(pr)
+    return "needs-quality-fix" in labels_of(pr) and is_open_pr(pr)
 
 
 def in_window(item_time: datetime | None, now: datetime, hours: int) -> bool:
@@ -558,7 +567,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         unresolved_label_counts[label] = sum(
             1
             for pr in autonomous_pulls
-            if label in labels_of(pr) and not is_merged_pr(pr)
+            if label in labels_of(pr) and is_open_pr(pr)
         )
 
     for hours in (24, 168):
@@ -795,7 +804,7 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         )
 
     for task_id, ids in failed_by_task.items():
-        if len(ids) >= 2 and statuses.get(task_id) != "blocked":
+        if len(ids) >= 2 and statuses.get(task_id) == "todo":
             add_finding_once(
                 findings,
                 Finding(
@@ -860,12 +869,46 @@ def analyze(data: dict[str, Any]) -> dict[str, Any]:
         "windows": windows,
     }
 
+    active_loop_owner_runs = []
+    recent_executor_runs = []
+    for run in workflow_runs:
+        if not isinstance(run, dict):
+            continue
+        name = str(run.get("name") or run.get("workflowName") or "")
+        run_status = str(run.get("status") or "").lower()
+        run_id = run.get("id") or run.get("databaseId")
+        if name in LOOP_OWNER_WORKFLOWS and run_status in {"queued", "in_progress"}:
+            active_loop_owner_runs.append(run_id)
+        if name == "2. Execute Leased Jules Task" and run_status == "completed":
+            updated = parse_time(str(run.get("updated_at") or run.get("updatedAt") or ""))
+            if updated and now - updated < timedelta(minutes=EXECUTOR_VISIBILITY_GRACE_MINUTES):
+                recent_executor_runs.append(run_id)
+    metrics["loop_ownership"] = {
+        "active_workflow_run_ids": active_loop_owner_runs,
+        "recent_executor_run_ids": recent_executor_runs,
+    }
+
+    recovery_needed = bool(
+        selector.get("selected")
+        and not active_product_sessions
+        and not active_open_autonomous
+        and not active_loop_owner_runs
+        and not recent_executor_runs
+        and "jules_api" not in missing_sources
+    )
+    recovery_reason = (
+        "eligible task exists while no active product session or autonomous PR owns the loop"
+        if recovery_needed
+        else ""
+    )
     status = status_from_findings(findings)
     report = {
         "generated_at": iso_now(),
         "status": status,
         "pause_loop": False,
         "create_meta_task": status in {"degraded", "critical"},
+        "recovery_needed": recovery_needed,
+        "recovery_reason": recovery_reason,
         "read_only": True,
         "repository": repo,
         "windows": ["24h", "7d"],
@@ -962,7 +1005,9 @@ def write_markdown(report: dict[str, Any]) -> str:
         lines.append("- None.")
 
     next_action = "No action required."
-    if report["status"] == "critical":
+    if report.get("recovery_needed"):
+        next_action = "Dispatch the durable reconciler if no reconciler run is queued or in progress."
+    elif report["status"] == "critical":
         next_action = "Review critical findings and create or triage an automation meta-task; the loop remains non-stopping."
     elif report["status"] == "degraded":
         next_action = (
@@ -1148,6 +1193,9 @@ def write_outputs(path: str, report: dict[str, Any]) -> None:
         output_file.write(f"pause_loop={str(report['pause_loop']).lower()}\n")
         output_file.write(
             f"create_meta_task={str(report['create_meta_task']).lower()}\n"
+        )
+        output_file.write(
+            f"recovery_needed={str(report['recovery_needed']).lower()}\n"
         )
 
 

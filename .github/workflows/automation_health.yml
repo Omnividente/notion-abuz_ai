@@ -12,7 +12,8 @@ on:
           - shadow
           - enforce
   schedule:
-    - cron: "0 */6 * * *"
+    # Independent fallback for a delayed or dropped durable-reconciler tick.
+    - cron: "7/15 * * * *"
 
 permissions:
   contents: read
@@ -31,6 +32,7 @@ jobs:
       status: ${{ steps.health.outputs.status }}
       pause_loop: ${{ steps.health.outputs.pause_loop }}
       create_meta_task: ${{ steps.health.outputs.create_meta_task }}
+      recovery_needed: ${{ steps.health.outputs.recovery_needed }}
 
     steps:
       - uses: actions/checkout@v5
@@ -59,6 +61,38 @@ jobs:
           path: |
             automation-health.json
             automation-health.md
+
+  recover-idle-loop:
+    needs: report
+    runs-on: ubuntu-latest
+    if: >
+      needs.report.outputs.recovery_needed == 'true' &&
+      vars.JULES_LOOP_ENABLED != 'false'
+    permissions:
+      actions: write
+      contents: read
+
+    steps:
+      - name: Dispatch durable reconciler only when no run is active
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          reconciler_runs="$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_unattended_monitor.yml/runs?per_page=20" \
+            --jq '[.workflow_runs[] | select(.status == "queued" or .status == "in_progress")] | length')"
+          executor_runs="$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_next_task.yml/runs?per_page=20" \
+            --jq '[.workflow_runs[] | select(.status == "queued" or .status == "in_progress")] | length')"
+          active_runs=$((reconciler_runs + executor_runs))
+          if [ "$active_runs" -gt 0 ]; then
+            echo "An active durable reconciler or task executor run already owns recovery; skipping duplicate dispatch."
+            exit 0
+          fi
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/jules_unattended_monitor.yml/dispatches" \
+            -f ref=master
+          echo "Dispatched the durable reconciler for an eligible idle product queue."
 
   meta-task:
     needs: report

@@ -1110,6 +1110,9 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     try:
         return reconcile(parser().parse_args(argv))
+    except TransientAPIError as exc:
+        print(f"TRANSIENT_API_ERROR: {sanitize(exc, 1600)}", file=sys.stderr)
+        return 75
     except Exception as exc:  # workflow boundary: fail closed
         print(f"ERROR: {sanitize(exc, 1600)}", file=sys.stderr)
         return 1
