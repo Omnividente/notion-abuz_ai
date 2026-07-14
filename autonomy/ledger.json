@@ -1976,6 +1976,14 @@
       "task_id": "docs-idempotency-replay-behavior",
       "verified_at": "2026-07-13T23:42:59Z"
     },
+    "a4e4d97d8ef9c704d6d83efd": {
+      "kind": "pr_recovery",
+      "packet_hash": "dbb7459aeb92f0f3e8e6a2e0",
+      "pr_number": 629,
+      "sent_at": "2026-07-14T07:30:26Z",
+      "task_id": "docs-ask-mode-override-wording",
+      "verified_at": null
+    },
     "a6e87bef21cba883a71fd8a4": {
       "kind": "terminal_manifest_session_cleanup",
       "sent_at": "2026-07-13T23:02:53Z",
@@ -2052,10 +2060,14 @@
     },
     "e2eb9f8e8fd1dc92bc8d0ef0": {
       "base_sha": "426a44616c3f2b9dd8af86034f1d6869d32f07d3",
+      "conflict_at": "2026-07-14T07:30:26Z",
       "delivery_attempts": 1,
       "expected_head_sha": "8eda745873fd21447d9dc78165e2e245e6c4b539",
       "kind": "pr_update_branch",
+      "outcome": "conflict",
       "pr_number": 629,
+      "response_message": "merge conflict between base and head",
+      "response_status": 422,
       "sent_at": "2026-07-14T07:30:24Z",
       "task_id": "docs-ask-mode-override-wording",
       "verified_at": null
@@ -2390,14 +2402,6 @@
       "source_key_hash": "30c54fff484a34c4992e1303",
       "type": "add_label",
       "verified_at": "2026-07-04T05:49:58Z"
-    },
-    "legacy-314743733cb6784074f4f500": {
-      "kind": "legacy_router_action",
-      "reason": "PR #230 is dirty/conflicting with master",
-      "sent_at": "2026-07-02T21:27:33Z",
-      "source_key_hash": "314743733cb6784074f4f500",
-      "type": "conflict_recovery",
-      "verified_at": "2026-07-02T21:27:33Z"
     },
     "legacy-31bf2971bb10dadf2003f03c": {
       "kind": "legacy_router_action",
@@ -3739,7 +3743,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 169,
+  "revision": 170,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4524,23 +4528,23 @@
       "dispatch_generation": 2,
       "dispatch_key": "d850b2222dac0497f073cc7d",
       "dispatch_requested_at": "2026-07-14T05:46:29Z",
-      "last_observed_at": "2026-07-14T07:30:06Z",
-      "last_progress_at": "2026-07-14T05:46:26Z",
+      "last_observed_at": "2026-07-14T07:30:24Z",
+      "last_progress_at": "2026-07-14T07:30:24Z",
       "lease_expires_at": "2026-07-14T06:31:57Z",
       "pr_number": 629,
-      "pr_recoveries": 1,
+      "pr_recoveries": 2,
       "pr_recovery_evidence_key": "2e029fc38ebf0d5f9a006fb7",
-      "pr_session_recoveries": 1,
+      "pr_session_recoveries": 0,
       "pr_session_recovery_key": "77335fe15799a2932a7b6b23",
-      "progress_fingerprint": "fbe20eabac008cb14551638e",
+      "progress_fingerprint": "81c4066ea53970c3b1824c04",
       "recovery_pr_head": "3c635508f966e97f4c6ffe611592e60b8c24ecaa",
       "recovery_pr_number": 629,
       "recovery_reason": "dirty PR must sync current master",
       "session_create_requested_at": "2026-07-14T05:46:55Z",
-      "session_id": "13893740484827123621",
+      "session_id": null,
       "session_name": "sessions/13893740484827123621",
       "session_state": "COMPLETED",
-      "state": "completed",
+      "state": "pr_open_without_active_session",
       "task_fingerprint": "c1782c6fbea72e811492560c"
     },
     "docs-idempotency-replay-behavior": {
@@ -4766,5 +4770,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T07:30:24Z"
+  "updated_at": "2026-07-14T07:30:26Z"
 }
