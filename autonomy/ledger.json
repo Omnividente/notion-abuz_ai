@@ -3110,7 +3110,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 82,
+  "revision": 83,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3773,8 +3773,11 @@
       "dispatch_generation": 1,
       "dispatch_key": "1c5a5a935d1889259ccb98c9",
       "dispatch_requested_at": "2026-07-14T00:52:51Z",
-      "lease_expires_at": "2026-07-14T01:22:17Z",
-      "state": "dispatch_requested",
+      "lease_expires_at": "2026-07-14T01:38:18Z",
+      "recovery_pr_head": null,
+      "recovery_pr_number": null,
+      "session_create_requested_at": "2026-07-14T00:53:18Z",
+      "state": "session_create_requested",
       "task_fingerprint": "92bf689e345448aca24d4aad"
     },
     "proxy-anthropic-handler-refactor": {
@@ -3872,5 +3875,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T00:52:53Z"
+  "updated_at": "2026-07-14T00:53:18Z"
 }
