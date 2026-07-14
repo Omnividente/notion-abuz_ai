@@ -17,7 +17,7 @@ func TestUploadFileToNotionContextCancellation(t *testing.T) {
 		if strings.Contains(r.URL.Path, "/getUploadFileUrlForAssistantChatTranscriptUpload") {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(NotionUploadURLResponse{
-				URL: "https://notion.so/attachment:1234:file.txt",
+				URL:                 "https://notion.so/attachment:1234:file.txt",
 				SignedUploadPostURL: "http://" + r.Host + "/s3",
 			})
 			return
