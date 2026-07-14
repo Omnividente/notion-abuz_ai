@@ -1731,6 +1731,16 @@
       "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
       "verified_at": "2026-07-14T04:41:37Z"
     },
+    "1d5c9d7571ee64333732346d": {
+      "base_sha": "6648185ebda5734af693e7b76c60a3813b7b362b",
+      "delivery_attempts": 1,
+      "expected_head_sha": "a4a61c8279352991300dff586845c59dc975fab2",
+      "kind": "pr_update_branch",
+      "pr_number": 622,
+      "sent_at": "2026-07-14T05:11:27Z",
+      "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
+      "verified_at": null
+    },
     "1e2a8a7d2727e5b3f752729b": {
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
       "delivery_attempts": 1,
@@ -2163,14 +2173,6 @@
       "source_key_hash": "256016c414ce0031c30bf458",
       "type": "rerun_workflow",
       "verified_at": "2026-07-07T20:32:36Z"
-    },
-    "legacy-269f07f3db7b84d6175e06f1": {
-      "kind": "legacy_router_action",
-      "reason": "No eligible autonomous task: no eligible todo task matched the risk ceiling and micro-task policy",
-      "sent_at": "2026-07-01T06:34:59Z",
-      "source_key_hash": "269f07f3db7b84d6175e06f1",
-      "type": "dispatch_workflow",
-      "verified_at": "2026-07-01T06:34:59Z"
     },
     "legacy-28afbec942cb3994d85f45f5": {
       "kind": "legacy_router_action",
@@ -3672,7 +3674,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 142,
+  "revision": 143,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3844,21 +3846,21 @@
       "task_id": "proxy-tools-mode-loss-documentation"
     },
     "14674460986994187107": {
-      "activity_fingerprint": "a817c8f12f118e59da9fc84c",
+      "activity_fingerprint": "09172b449dea6275f27c761e",
       "ignored_reason": "superseded_by_active_session:17208555400991546940",
-      "last_observed_at": "2026-07-14T05:04:10Z",
-      "last_progress_at": "2026-07-14T05:04:10Z",
+      "last_observed_at": "2026-07-14T05:11:27Z",
+      "last_progress_at": "2026-07-14T05:11:27Z",
       "last_verified_message_key": "11863f6666f261f0d5749505",
       "lease_key": "c3c1b984940f8d90103c08c1",
       "post_send_activity_fingerprint": "dc014b033dec2afea4558311",
-      "pr_fingerprint": "f8177b0f4e251461238d3e9e",
-      "progress_fingerprint": "432658330a6686be4e9a44cc",
+      "pr_fingerprint": "293176f9791dab1289b7af33",
+      "progress_fingerprint": "a0b11a1dc0cd098359220e64",
       "recoveries_without_progress": 0,
       "recovery_pr_head": "458d6e538bffc618531654a53bba15031cdb3bbe",
       "recovery_pr_number": 622,
-      "session_state": "COMPLETED",
-      "session_update_at": "2026-07-14T05:03:39.489199Z",
-      "state_version": 14,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-14T05:11:09.746225Z",
+      "state_version": 15,
       "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
     },
     "15264337504110031935": {
@@ -4647,5 +4649,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T05:04:29Z"
+  "updated_at": "2026-07-14T05:11:27Z"
 }
