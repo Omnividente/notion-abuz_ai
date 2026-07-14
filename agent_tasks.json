@@ -9016,7 +9016,7 @@
     },
     {
       "id": "proxy-anthropic-sse-tests",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add test coverage for writeAnthropicSSEMessageStart",

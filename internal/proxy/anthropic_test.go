@@ -512,3 +512,49 @@ func TestAnthropicStreaming_InterleavedTextAndThinking_ProperlyCloses(t *testing
 		t.Errorf("Missing content_block_start for thinking block with index 1. Body:\n%s", body)
 	}
 }
+
+func TestWriteAnthropicSSEMessageStart(t *testing.T) {
+	rr := httptest.NewRecorder()
+	mf := &mockFlusher{rr}
+
+	requestID := "req-12345"
+	model := "claude-3-5-sonnet-20241022"
+	inputTokens := 1337
+
+	writeAnthropicSSEMessageStart(rr, mf, requestID, model, inputTokens)
+
+	// Verify headers
+	if rr.Header().Get("Content-Type") != "text/event-stream" {
+		t.Errorf("Expected Content-Type text/event-stream, got %s", rr.Header().Get("Content-Type"))
+	}
+	if rr.Header().Get("Cache-Control") != "no-cache" {
+		t.Errorf("Expected Cache-Control no-cache, got %s", rr.Header().Get("Cache-Control"))
+	}
+	if rr.Header().Get("Connection") != "keep-alive" {
+		t.Errorf("Expected Connection keep-alive, got %s", rr.Header().Get("Connection"))
+	}
+
+	body := rr.Body.String()
+
+	// Verify message_start event
+	if !strings.Contains(body, "event: message_start") {
+		t.Errorf("Missing message_start event. Body:\n%s", body)
+	}
+	if !strings.Contains(body, `"id":"req-12345"`) {
+		t.Errorf("Missing request ID in message. Body:\n%s", body)
+	}
+	if !strings.Contains(body, `"model":"claude-3-5-sonnet-20241022"`) {
+		t.Errorf("Missing model in message. Body:\n%s", body)
+	}
+	if !strings.Contains(body, `"input_tokens":1337`) {
+		t.Errorf("Missing input_tokens in usage. Body:\n%s", body)
+	}
+
+	// Verify ping event
+	if !strings.Contains(body, "event: ping") {
+		t.Errorf("Missing ping event. Body:\n%s", body)
+	}
+	if !strings.Contains(body, `data: {"type":"ping"}`) {
+		t.Errorf("Missing ping data. Body:\n%s", body)
+	}
+}
