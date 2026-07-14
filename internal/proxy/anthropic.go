@@ -1244,7 +1244,7 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 				for i, fa := range fileAttachments {
 					log.Printf("[upload-debug] %s: uploading attachment %d/%d: %s (%s, %d bytes)",
 						requestID, i+1, len(fileAttachments), fa.FileName, fa.ContentType, len(fa.Data))
-					uploaded, err := UploadFileToNotion(acc, &fa)
+					uploaded, err := UploadFileToNotion(r.Context(), acc, &fa)
 					if err != nil {
 						log.Printf("[upload] %s: attachment %d upload failed: %v", requestID, i+1, err)
 						writeAnthropicError(w, requestID, http.StatusBadGateway, "file upload failed: "+err.Error(), "api_error")

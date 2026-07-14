@@ -8839,7 +8839,7 @@
     },
     {
       "id": "proxy-upload-request-context-cancellation",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "medium",
       "title": "Propagate request cancellation through attachment uploads",
@@ -8880,6 +8880,48 @@
         "The wording is consistent with the OR-style matrix already documented in docs/api.md and does not claim a nonexistent per-request opt-out."
       ],
       "source_reference": "docs/api.md:69-95; docs/configuration.md:39; docs/dashboard.md:87 on master a5477179a0fdc58802a2a8c040741fa90075b3df"
+    },
+    {
+      "id": "proxy-upload-debug-logging-cleanup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Clean up excessive debug logging in upload flow",
+      "description": "UploadFileToNotion uses log.Printf with '[upload-debug]' prefixes for step-by-step reporting. These lines spam logs and should use structured conditional logging or be removed to maintain repository hygiene.",
+      "allowed_paths": [
+        "internal/proxy/upload.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Debug log statements in internal/proxy/upload.go are removed or conditionally enabled to reduce log spam."
+      ],
+      "source_reference": "internal/proxy/upload.go",
+      "discovery_evidence": {
+        "kind": "offline code-path reproduction",
+        "observed_at": "2026-07-13T23:08:00Z",
+        "summary": "log.Printf calls are hardcoded unconditionally throughout the flow."
+      }
+    },
+    {
+      "id": "proxy-anthropic-handler-refactor",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Document context cancellation flow in Anthropic Handler",
+      "description": "The HandleAnthropicMessages function handles long-lived requests but lacks inline documentation explaining how context cancellation propagates from the http.Request to underlying helper functions.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Package or function-level comments are added explaining the lifecycle and context cancellation behavior in Anthropic HTTP handling."
+      ],
+      "source_reference": "internal/proxy/anthropic.go",
+      "discovery_evidence": {
+        "kind": "offline code-path reproduction",
+        "observed_at": "2026-07-13T23:08:00Z",
+        "summary": "Missing lifecycle documentation in anthropic.go."
+      }
     }
   ]
 }
