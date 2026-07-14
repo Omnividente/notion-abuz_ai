@@ -3210,7 +3210,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 92,
+  "revision": 93,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3231,7 +3231,7 @@
     },
     "10318837510805541745": {
       "activity_fingerprint": "419480cbc36620b19f8b0c28",
-      "last_observed_at": "2026-07-14T03:31:53Z",
+      "last_observed_at": "2026-07-14T03:35:21Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "9e14154142390aa0bf7f4166",
       "session_state": "COMPLETED",
@@ -3251,7 +3251,7 @@
     },
     "12147200853076583865": {
       "activity_fingerprint": "28bdb45c5fb1f5c6cea3b017",
-      "last_observed_at": "2026-07-14T03:31:58Z",
+      "last_observed_at": "2026-07-14T03:35:25Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "5998e2d3a3c7e085a14148ee",
       "session_state": "COMPLETED",
@@ -3261,7 +3261,7 @@
     },
     "12578984233954560035": {
       "activity_fingerprint": "9489e7adaf61cb6cdace8efe",
-      "last_observed_at": "2026-07-14T03:32:02Z",
+      "last_observed_at": "2026-07-14T03:35:28Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "7a999ad89cf291cdfab44a4a",
       "session_state": "COMPLETED",
@@ -3271,7 +3271,7 @@
     },
     "13325415678216530585": {
       "activity_fingerprint": "0c565a1ffa452f4611abf986",
-      "last_observed_at": "2026-07-14T03:31:45Z",
+      "last_observed_at": "2026-07-14T03:35:16Z",
       "legacy_value_hash": "61f63dc4e7c4be31e36ae1da",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "2d125c0fa5bd9594231e4119",
@@ -3283,7 +3283,7 @@
     },
     "13408458061430646567": {
       "activity_fingerprint": "e8c0af223d6c202185d410e9",
-      "last_observed_at": "2026-07-14T03:32:00Z",
+      "last_observed_at": "2026-07-14T03:35:26Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "35504ad2c3a08088887df19d",
       "session_state": "COMPLETED",
@@ -3311,7 +3311,7 @@
     "13525775686702804526": {
       "activity_fingerprint": "a67d4901494c128c7089c372",
       "ignored_reason": "superseded_by_active_session:5079834960180138219",
-      "last_observed_at": "2026-07-14T03:31:41Z",
+      "last_observed_at": "2026-07-14T03:35:13Z",
       "last_progress_at": "2026-07-13T21:50:34Z",
       "last_verified_message_key": "538844c6914b17e70064e0fe",
       "lease_key": "407c00e6d03af2dd3cfbcd72",
@@ -3328,7 +3328,7 @@
     },
     "14012698769106055432": {
       "activity_fingerprint": "cb9b6083d7a97a7e43a5e01e",
-      "last_observed_at": "2026-07-14T03:31:57Z",
+      "last_observed_at": "2026-07-14T03:35:24Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "0188e396224e99f5e1b078da",
       "session_state": "COMPLETED",
@@ -3338,7 +3338,7 @@
     },
     "14639527114573508776": {
       "activity_fingerprint": "76a72898ab60773f6f4960c2",
-      "last_observed_at": "2026-07-14T03:31:43Z",
+      "last_observed_at": "2026-07-14T03:35:15Z",
       "legacy_value_hash": "bbad0c0fec5dfd69833ef9f0",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "9b462110bdb6689b3fabbee5",
@@ -3370,7 +3370,7 @@
     },
     "15579014809854553056": {
       "activity_fingerprint": "95053d95960c25c43e8ebb40",
-      "last_observed_at": "2026-07-14T03:31:46Z",
+      "last_observed_at": "2026-07-14T03:35:18Z",
       "legacy_value_hash": "7756e4e05022e600923e4264",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "43dcbe528d824f0b4d77c084",
@@ -3382,7 +3382,7 @@
     },
     "15943345035899781060": {
       "activity_fingerprint": "550c333a66be469705178e60",
-      "last_observed_at": "2026-07-14T03:31:52Z",
+      "last_observed_at": "2026-07-14T03:35:21Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "f9ddec00063d538f301df541",
       "session_state": "COMPLETED",
@@ -3392,7 +3392,7 @@
     },
     "16020061950734644024": {
       "activity_fingerprint": "3cf585d0ce633f14cb8af442",
-      "last_observed_at": "2026-07-14T03:31:45Z",
+      "last_observed_at": "2026-07-14T03:35:17Z",
       "legacy_value_hash": "451d4355b1a683b1bfed5a8c",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "932f96a10dad184baa6bd79a",
@@ -3404,7 +3404,7 @@
     },
     "16068529411695161754": {
       "activity_fingerprint": "4682200d2051304b48f15b70",
-      "last_observed_at": "2026-07-14T03:31:56Z",
+      "last_observed_at": "2026-07-14T03:35:24Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "0330ff761ea325a4de00e9f5",
       "session_state": "COMPLETED",
@@ -3414,7 +3414,7 @@
     },
     "1651902015813353891": {
       "activity_fingerprint": "821631296d86085f4639cd7d",
-      "last_observed_at": "2026-07-14T03:31:56Z",
+      "last_observed_at": "2026-07-14T03:35:23Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "ae68b71792d6060ca51e1400",
       "session_state": "COMPLETED",
@@ -3424,7 +3424,7 @@
     },
     "16561484705343060553": {
       "activity_fingerprint": "b73c2fc4bbb219623b0dfcf4",
-      "last_observed_at": "2026-07-14T03:31:41Z",
+      "last_observed_at": "2026-07-14T03:35:14Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "e0a9b5ca54c38bdd6d372231",
       "session_state": "COMPLETED",
@@ -3434,7 +3434,7 @@
     },
     "17021511161889099852": {
       "activity_fingerprint": "856e4164b0ef12d039d4d104",
-      "last_observed_at": "2026-07-14T03:31:51Z",
+      "last_observed_at": "2026-07-14T03:35:20Z",
       "legacy_value_hash": "a27efc77a6d1b7d2c74d7638",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "510a54232dd7229527b8342f",
@@ -3446,7 +3446,7 @@
     },
     "17049109501742459791": {
       "activity_fingerprint": "2f9398b1c590781f1f70ee40",
-      "last_observed_at": "2026-07-14T03:31:44Z",
+      "last_observed_at": "2026-07-14T03:35:16Z",
       "legacy_value_hash": "5ccd42d8558148624b9d0ee7",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "098187287874b23ae0f14efa",
@@ -3468,7 +3468,7 @@
     },
     "17237448907972893226": {
       "activity_fingerprint": "42741c6103091bf49d596096",
-      "last_observed_at": "2026-07-14T03:31:54Z",
+      "last_observed_at": "2026-07-14T03:35:22Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "487aa6548e067db23adc40e2",
       "session_state": "COMPLETED",
@@ -3478,7 +3478,7 @@
     },
     "17569823767226973692": {
       "activity_fingerprint": "7a59b07ce4bdd08c711d17e3",
-      "last_observed_at": "2026-07-14T03:31:49Z",
+      "last_observed_at": "2026-07-14T03:35:20Z",
       "legacy_value_hash": "92a85064b9011e39f1cd4354",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "d2629a753c7f04dcfa573218",
@@ -3500,7 +3500,7 @@
     },
     "18011490522809812243": {
       "activity_fingerprint": "eec135a6a8feaeeda9528e4e",
-      "last_observed_at": "2026-07-14T03:31:39Z",
+      "last_observed_at": "2026-07-14T03:35:12Z",
       "last_progress_at": "2026-07-13T23:52:00Z",
       "lease_key": "84a1ed014b2e2201dbdbbb37",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
@@ -3535,7 +3535,7 @@
     },
     "2335830168077339062": {
       "activity_fingerprint": "04ca53a98a162d3f32117891",
-      "last_observed_at": "2026-07-14T03:31:58Z",
+      "last_observed_at": "2026-07-14T03:35:25Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "116f3d55bb15d92441d15a82",
       "session_state": "COMPLETED",
@@ -3545,7 +3545,7 @@
     },
     "2434856474857685191": {
       "activity_fingerprint": "eb9c95b03481c148c670aa16",
-      "last_observed_at": "2026-07-14T03:31:47Z",
+      "last_observed_at": "2026-07-14T03:35:18Z",
       "legacy_value_hash": "e10929240111a0d64351f76e",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "539f7600ce3cf23e642bb4f4",
@@ -3557,7 +3557,7 @@
     },
     "251585469516720548": {
       "activity_fingerprint": "f38b0ff35a0e98d65c8ba799",
-      "last_observed_at": "2026-07-14T03:31:40Z",
+      "last_observed_at": "2026-07-14T03:35:13Z",
       "last_progress_at": "2026-07-13T23:10:11Z",
       "lease_key": "3f98ff9b9b9fceea224f0ad1",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
@@ -3573,7 +3573,7 @@
     },
     "2807867894850292189": {
       "activity_fingerprint": "db6d8fa99f931a30ef2a7969",
-      "last_observed_at": "2026-07-14T03:31:46Z",
+      "last_observed_at": "2026-07-14T03:35:17Z",
       "legacy_value_hash": "e4092cff16cd48c190b01718",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "110f19e1135689b9c1d9d937",
@@ -3602,7 +3602,7 @@
     },
     "3291409405775447211": {
       "activity_fingerprint": "f995f4ed70ef90411796b054",
-      "last_observed_at": "2026-07-14T03:31:42Z",
+      "last_observed_at": "2026-07-14T03:35:14Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "ae3500794da9dddf5dc3dc5f",
       "session_state": "COMPLETED",
@@ -3612,7 +3612,7 @@
     },
     "4049942339598013592": {
       "activity_fingerprint": "55602941f08aa10afd26dae9",
-      "last_observed_at": "2026-07-14T03:31:38Z",
+      "last_observed_at": "2026-07-14T03:35:12Z",
       "last_progress_at": "2026-07-14T00:22:38Z",
       "lease_key": "36a44ae87b4db33259b50014",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
@@ -3627,7 +3627,7 @@
     },
     "4114921831374104713": {
       "activity_fingerprint": "fde989f34af4fa5067a6254d",
-      "last_observed_at": "2026-07-14T03:31:48Z",
+      "last_observed_at": "2026-07-14T03:35:18Z",
       "legacy_value_hash": "83fa8fee9e1123782d303e6a",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "cb2c5ee148f84d28ed68c11b",
@@ -3639,7 +3639,7 @@
     },
     "421622227324255966": {
       "activity_fingerprint": "06067fb3219321d9c9aa5ac0",
-      "last_observed_at": "2026-07-14T03:31:55Z",
+      "last_observed_at": "2026-07-14T03:35:23Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "6ce24218aa5a6ab4dd3fe5e2",
       "session_state": "COMPLETED",
@@ -3649,7 +3649,7 @@
     },
     "4839394328109958585": {
       "activity_fingerprint": "9602c2e1570200c6cf733962",
-      "last_observed_at": "2026-07-14T03:31:54Z",
+      "last_observed_at": "2026-07-14T03:35:22Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "ef70da58802cde9897922586",
       "session_state": "COMPLETED",
@@ -3668,7 +3668,7 @@
     },
     "5079834960180138219": {
       "activity_fingerprint": "12b7fe8a5b3cdd3b38ba02ba",
-      "last_observed_at": "2026-07-14T03:31:40Z",
+      "last_observed_at": "2026-07-14T03:35:13Z",
       "last_progress_at": "2026-07-13T21:50:34Z",
       "last_verified_message_key": "7c7b11315778c2fd1dfba80e",
       "lease_key": "1acade129ff933f6244aefb9",
@@ -3686,7 +3686,7 @@
     },
     "5105037652831498568": {
       "activity_fingerprint": "6fcc402d48213cbf2dd25412",
-      "last_observed_at": "2026-07-14T03:31:37Z",
+      "last_observed_at": "2026-07-14T03:35:11Z",
       "lease_key": "9324b0fc0acb5dbcc8da67e8",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "e6a4a9bee33cf58f3a532168",
@@ -3699,7 +3699,7 @@
     },
     "6154148538781043324": {
       "activity_fingerprint": "477af033507cb8dc89eaf2c9",
-      "last_observed_at": "2026-07-14T03:31:36Z",
+      "last_observed_at": "2026-07-14T03:35:10Z",
       "lease_key": "1c5a5a935d1889259ccb98c9",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "cde05c2a4fe19e5c518d6eb5",
@@ -3712,7 +3712,7 @@
     },
     "6888614032956265246": {
       "activity_fingerprint": "43465356d695efe137bc3d02",
-      "last_observed_at": "2026-07-14T03:31:52Z",
+      "last_observed_at": "2026-07-14T03:35:21Z",
       "legacy_value_hash": "f0d698f1c900cef45daecaef",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "8d379c31ef85e59cd37d2f38",
@@ -3724,7 +3724,7 @@
     },
     "6896838294581498680": {
       "activity_fingerprint": "83d444d27238a0564d2bdda3",
-      "last_observed_at": "2026-07-14T03:31:43Z",
+      "last_observed_at": "2026-07-14T03:35:15Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "2f5f3920e9b7c7d1cdab9062",
       "session_state": "COMPLETED",
@@ -3734,7 +3734,7 @@
     },
     "7036873496572403975": {
       "activity_fingerprint": "76e9daaa55cd592db4b6b28d",
-      "last_observed_at": "2026-07-14T03:31:36Z",
+      "last_observed_at": "2026-07-14T03:35:10Z",
       "last_progress_at": "2026-07-14T03:31:36Z",
       "lease_key": "e0a2714b9b432c9ab21e6028",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
@@ -3749,7 +3749,7 @@
     },
     "7180636042113331429": {
       "activity_fingerprint": "1007656cbb46587e629ca378",
-      "last_observed_at": "2026-07-14T03:31:50Z",
+      "last_observed_at": "2026-07-14T03:35:20Z",
       "legacy_value_hash": "61cf464769107d9963971d2b",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "1fb6047bc30501b65754435c",
@@ -3761,7 +3761,7 @@
     },
     "7569400473677363375": {
       "activity_fingerprint": "f944a590b05a49835b46d1df",
-      "last_observed_at": "2026-07-14T03:32:01Z",
+      "last_observed_at": "2026-07-14T03:35:27Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "16a5df24f3c3b70966e032fd",
       "session_state": "COMPLETED",
@@ -3771,7 +3771,7 @@
     },
     "7875485511166516611": {
       "activity_fingerprint": "ef7c37a91a5b773f1f4cee55",
-      "last_observed_at": "2026-07-14T03:31:48Z",
+      "last_observed_at": "2026-07-14T03:35:19Z",
       "legacy_value_hash": "083284ba0a801028febcacaf",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "d05f1b603bbb000a0a76807a",
@@ -3809,7 +3809,7 @@
     },
     "9281838579526649140": {
       "activity_fingerprint": "b6f610d500d6a304fb38ef55",
-      "last_observed_at": "2026-07-14T03:31:38Z",
+      "last_observed_at": "2026-07-14T03:35:11Z",
       "lease_key": "789d27b3dfc45bef8128500c",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "f66dd4241eec700ca9acbca1",
@@ -3822,7 +3822,7 @@
     },
     "9780256794307111476": {
       "activity_fingerprint": "618324c358632d0e22fc296f",
-      "last_observed_at": "2026-07-14T03:31:59Z",
+      "last_observed_at": "2026-07-14T03:35:26Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "6c8964ccec31db0b33669426",
       "session_state": "COMPLETED",
@@ -3832,7 +3832,7 @@
     },
     "9859689397548345314": {
       "activity_fingerprint": "4154b942ff6fe85b8fbb0919",
-      "last_observed_at": "2026-07-14T03:32:00Z",
+      "last_observed_at": "2026-07-14T03:35:27Z",
       "pr_fingerprint": "ccfc6431e25216c212945eb2",
       "progress_fingerprint": "6497ee7fe332863da9500077",
       "session_state": "COMPLETED",
@@ -3850,10 +3850,10 @@
   },
   "tasks": {
     "__scheduler__": {
-      "last_dispatch_key": "e0a2714b9b432c9ab21e6028",
-      "last_dispatched_at": "2026-07-14T03:15:08Z",
+      "last_dispatch_key": "7cd3d6af48f689f18edea8af",
+      "last_dispatched_at": "2026-07-14T03:35:28Z",
       "last_dispatched_kind": "runtime",
-      "last_dispatched_task_id": "proxy-anthropic-sse-cleanup"
+      "last_dispatched_task_id": "proxy-tools-debug-logging-cleanup"
     },
     "automation-executor-completion-reconciler-handoff": {
       "dispatch_generation": 1,
@@ -4001,6 +4001,14 @@
       "session_state": "COMPLETED",
       "state": "manifest_done"
     },
+    "proxy-tools-debug-logging-cleanup": {
+      "dispatch_generation": 1,
+      "dispatch_key": "7cd3d6af48f689f18edea8af",
+      "dispatch_requested_at": "2026-07-14T03:35:28Z",
+      "lease_expires_at": "2026-07-14T04:04:53Z",
+      "state": "dispatch_requested",
+      "task_fingerprint": "bda357e2d0771733abd87660"
+    },
     "proxy-upload-debug-logging-cleanup": {
       "dispatch_completed_at": "2026-07-14T00:23:36Z",
       "dispatch_generation": 1,
@@ -4026,7 +4034,7 @@
     },
     "str": {
       "current_evidence_fingerprint": "baf6f19eab43b98d90bbe8a9",
-      "last_observed_at": "2026-07-14T03:31:39Z",
+      "last_observed_at": "2026-07-14T03:35:12Z",
       "pr_number": null,
       "session_id": "18011490522809812243",
       "session_name": "sessions/18011490522809812243",
@@ -4034,5 +4042,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T03:32:08Z"
+  "updated_at": "2026-07-14T03:35:28Z"
 }
