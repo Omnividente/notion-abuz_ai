@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 WORKFLOW = ROOT / "workflows" / "jules_next_task.yml"
 RECONCILER_WORKFLOW = ROOT / "workflows" / "jules_unattended_monitor.yml"
+OBSERVER_WORKFLOW = ROOT / "workflows" / "jules_session_observer.yml"
 AUTOMERGE_WORKFLOW = ROOT / "workflows" / "jules_automerge.yml"
 META_AUTOMERGE_WORKFLOW = ROOT / "workflows" / "automation_meta_automerge.yml"
 BURST_WORKFLOW = ROOT / "workflows" / "jules_burst_monitor.yml"
@@ -24,6 +25,7 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         cls.text = WORKFLOW.read_text(encoding="utf-8")
         cls.executor = EXECUTOR.read_text(encoding="utf-8")
         cls.prompt = PROMPT.read_text(encoding="utf-8")
+        cls.observer = OBSERVER_WORKFLOW.read_text(encoding="utf-8")
 
     def test_executor_has_no_scheduler_or_recovery_wakeup(self) -> None:
         self.assertIn("workflow_dispatch:", self.text)
@@ -51,6 +53,24 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertIn("cancel-in-progress: false", self.text)
         reconciler = RECONCILER_WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("group: notion-abuz-autonomy-mutation", reconciler)
+
+    def test_executor_starts_one_bounded_observer_for_exact_session(self) -> None:
+        self.assertIn("steps.execute.outputs.session_id", self.text)
+        self.assertIn("gh workflow run jules_session_observer.yml", self.text)
+        self.assertIn('-f session_id="${SESSION_ID}"', self.text)
+        self.assertIn("actions: write", self.text)
+
+    def test_observer_is_read_only_bounded_and_wakes_only_reconciler(self) -> None:
+        self.assertIn("workflow_dispatch:", self.observer)
+        self.assertNotIn("schedule:", self.observer)
+        self.assertNotIn("workflow_run:", self.observer)
+        self.assertIn("contents: read", self.observer)
+        self.assertNotIn("contents: write", self.observer)
+        self.assertIn("group: notion-abuz-jules-observer-${{ inputs.session_id }}", self.observer)
+        self.assertIn("--max-watch-minutes 50", self.observer)
+        self.assertIn("steps.observe.outputs.reason == 'watch_deadline'", self.observer)
+        self.assertIn("gh workflow run jules_unattended_monitor.yml", self.observer)
+        self.assertNotIn("gh workflow run jules_next_task.yml", self.observer)
 
     def test_executor_precommits_before_create_and_rejects_duplicates(self) -> None:
         precommit = self.executor.index('"state": "session_create_requested"')
