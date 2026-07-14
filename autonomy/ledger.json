@@ -3050,7 +3050,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 74,
+  "revision": 75,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3739,8 +3739,11 @@
       "dispatch_generation": 1,
       "dispatch_key": "789d27b3dfc45bef8128500c",
       "dispatch_requested_at": "2026-07-14T00:23:02Z",
-      "lease_expires_at": "2026-07-14T00:52:17Z",
-      "state": "dispatch_requested",
+      "lease_expires_at": "2026-07-14T01:08:33Z",
+      "recovery_pr_head": null,
+      "recovery_pr_number": null,
+      "session_create_requested_at": "2026-07-14T00:23:33Z",
+      "state": "session_create_requested",
       "task_fingerprint": "f82cb48c3684588ae636db77"
     },
     "proxy-upload-request-context-cancellation": {
@@ -3766,5 +3769,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T00:23:04Z"
+  "updated_at": "2026-07-14T00:23:33Z"
 }
