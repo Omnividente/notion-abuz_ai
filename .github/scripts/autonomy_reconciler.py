@@ -62,8 +62,6 @@ def pr_recovery_fingerprints(
         "pr-recovery-evidence",
         pr_number,
         head_sha,
-        str(((pr.get("base") or {}).get("sha") or "")),
-        int(pr.get("behind_by") or 0),
         pr_mergeability(pr),
         checks.get("fingerprint"),
         task_fingerprint(task),
@@ -91,13 +89,6 @@ def pr_is_dirty(pr: dict[str, Any] | None) -> bool:
     """Return whether GitHub reports an open PR as conflicting with its base."""
 
     return pr_mergeability(pr) == "dirty"
-
-
-def pr_is_behind(pr: dict[str, Any] | None) -> bool:
-    try:
-        return int((pr or {}).get("behind_by") or 0) > 0
-    except (TypeError, ValueError):
-        return False
 
 
 def hydrate_pull_details(
@@ -147,83 +138,6 @@ def hydrate_pull_details(
     return hydrated, failures
 
 
-def hydrate_pull_divergence(
-    api: API,
-    repo: str,
-    pulls: list[dict[str, Any]],
-) -> tuple[list[dict[str, Any]], list[str]]:
-    """Add base/head divergence that pull details do not expose."""
-
-    hydrated: list[dict[str, Any]] = []
-    failures: list[str] = []
-    for pr in pulls:
-        number = int(pr.get("number") or 0)
-        base_sha = str(((pr.get("base") or {}).get("sha") or ""))
-        head_sha = str(((pr.get("head") or {}).get("sha") or ""))
-        if not base_sha or not head_sha:
-            failures.append(
-                f"cannot compare autonomous PR #{number}: base or head SHA is missing"
-            )
-            hydrated.append(pr)
-            continue
-        try:
-            _, comparison = api.gh(
-                f"/repos/{repo}/compare/{base_sha}...{head_sha}"
-            )
-            comparison = comparison if isinstance(comparison, dict) else {}
-            hydrated.append(
-                {
-                    **pr,
-                    "ahead_by": int(comparison.get("ahead_by") or 0),
-                    "behind_by": int(comparison.get("behind_by") or 0),
-                    "merge_base_sha": str(
-                        ((comparison.get("merge_base_commit") or {}).get("sha") or "")
-                    ),
-                }
-            )
-        except Exception as exc:
-            failures.append(
-                f"failed to compare autonomous PR #{number}: {sanitize(exc, 500)}"
-            )
-            hydrated.append(pr)
-    return hydrated, failures
-
-
-def update_pull_branch(
-    api: API,
-    repo: str,
-    pr: dict[str, Any],
-    *,
-    apply: bool,
-) -> tuple[int, Any]:
-    """Ask GitHub to merge current base into the exact expected PR head."""
-
-    number = int(pr.get("number") or 0)
-    head_sha = str(((pr.get("head") or {}).get("sha") or ""))
-    if not number or not head_sha:
-        raise RuntimeError("cannot update PR branch without number and head SHA")
-    if not apply:
-        return 0, {"message": "dry-run"}
-    return api.gh(
-        f"/repos/{repo}/pulls/{number}/update-branch",
-        method="PUT",
-        body={"expected_head_sha": head_sha},
-        allow=(409, 422),
-    )
-
-
-def pull_branch_update_outcome(status: int) -> str:
-    if status == 0:
-        return "dry_run"
-    if 200 <= status < 300:
-        return "accepted"
-    if status == 422:
-        return "head_raced"
-    if status == 409:
-        return "conflict"
-    return "error"
-
-
 def settle_terminal_manifest_task(
     task_state: dict[str, Any], manifest_status: str
 ) -> tuple[dict[str, Any], bool]:
@@ -255,9 +169,9 @@ def settle_terminal_manifest_task(
 
 
 def pr_requires_recovery(pr: dict[str, Any], checks: dict[str, Any]) -> bool:
-    """Treat branch divergence as actionable even without failed checks."""
+    """Treat a merge conflict as actionable even when GitHub creates no checks."""
 
-    return pr_is_dirty(pr) or pr_is_behind(pr) or bool(checks.get("failed"))
+    return pr_is_dirty(pr) or bool(checks.get("failed"))
 
 
 def open_pr_task_state(task_state: dict[str, Any], pr_number: int) -> dict[str, Any]:
@@ -458,8 +372,6 @@ def reconcile(args: argparse.Namespace) -> int:
         api, repo, [pr for pr in pulls if is_autonomous_pr(pr)]
     )
     errors.extend(hydration_errors)
-    autonomous, divergence_errors = hydrate_pull_divergence(api, repo, autonomous)
-    errors.extend(divergence_errors)
     pr_by_task = {task_id_from_pr(pr, list(tasks)): pr for pr in autonomous if task_id_from_pr(pr, list(tasks))}
     check_cache: dict[tuple[int, str], dict[str, Any]] = {}
 
@@ -494,8 +406,6 @@ def reconcile(args: argparse.Namespace) -> int:
         pr_fp = digest(
             (pr or {}).get("number"),
             ((pr or {}).get("head") or {}).get("sha"),
-            ((pr or {}).get("base") or {}).get("sha"),
-            int((pr or {}).get("behind_by") or 0),
             pr_mergeability(pr),
             checks.get("fingerprint"),
         )
@@ -897,8 +807,6 @@ def reconcile(args: argparse.Namespace) -> int:
         )
         pr_progress_fp = digest(
             ((pr.get("head") or {}).get("sha") or ""),
-            ((pr.get("base") or {}).get("sha") or ""),
-            int(pr.get("behind_by") or 0),
             checks.get("fingerprint"),
             pr_mergeability(pr),
         )
@@ -948,138 +856,12 @@ def reconcile(args: argparse.Namespace) -> int:
         if pr_delta or pr_initial_recent:
             task_state["last_progress_at"] = iso()
             progress.append({"task_id": task_id, "pr_number": pr_number, "kind": "pr_delta" if pr_delta else "initial_recent_pr"})
-        branch_sync_conflict = False
-        if pr_is_behind(pr):
-            head_sha = str(((pr.get("head") or {}).get("sha") or ""))
-            base_sha = str(((pr.get("base") or {}).get("sha") or ""))
-            sync_key = digest("pr-update-branch", pr_number, head_sha, base_sha)
-            sync_intent = ledger["messages"].setdefault(
-                sync_key,
-                {
-                    "kind": "pr_update_branch",
-                    "task_id": task_id,
-                    "pr_number": pr_number,
-                    "expected_head_sha": head_sha,
-                    "base_sha": base_sha,
-                    "sent_at": iso(),
-                    "verified_at": None,
-                    "delivery_attempts": 0,
-                },
-            )
-            sync_age = minutes_since(
-                sync_intent.get("verified_at") or sync_intent.get("sent_at"),
-                current,
-            )
-            delivery_attempts = int(sync_intent.get("delivery_attempts") or 0)
-            if sync_intent.get("conflict_at"):
-                branch_sync_conflict = True
-            elif sync_intent.get("verified_at") and sync_age < 5:
-                task_state.update(
-                    {
-                        "state": "pr_branch_update_requested",
-                        "branch_update_key": sync_key,
-                        "branch_update_requested_at": sync_intent.get("verified_at"),
-                    }
-                )
-                ledger["tasks"][task_id] = task_state
-                blocked.append(
-                    {
-                        "task_id": task_id,
-                        "pr_number": pr_number,
-                        "reason": "GitHub accepted PR branch update; waiting for a new head",
-                        "retry_condition": "PR head SHA changes or five-minute branch-update window expires",
-                        "evidence_requirement": "new PR head and checks from current master",
-                        "next_review_at": iso(current + timedelta(minutes=max(0, 5 - sync_age))),
-                    }
-                )
-                continue
-            elif sync_intent.get("verified_at") and delivery_attempts >= 2:
-                branch_sync_conflict = True
-                actions.append(
-                    {
-                        "action": "pr_branch_update_timeout",
-                        "task_id": task_id,
-                        "pr_number": pr_number,
-                        "expected_head_sha": head_sha,
-                    }
-                )
-            else:
-                sync_intent["delivery_attempts"] = delivery_attempts + 1
-                task_state.update(
-                    {
-                        "state": "pr_branch_update_requested",
-                        "branch_update_key": sync_key,
-                        "branch_update_requested_at": iso(),
-                    }
-                )
-                ledger["tasks"][task_id] = task_state
-                if not checkpoint(f"PR branch update {pr_number}"):
-                    continue
-                try:
-                    status, payload = update_pull_branch(
-                        api,
-                        repo,
-                        pr,
-                        apply=args.apply,
-                    )
-                    sync_intent["response_status"] = status
-                    sync_intent["response_message"] = sanitize(
-                        (payload or {}).get("message")
-                        if isinstance(payload, dict)
-                        else payload,
-                        300,
-                    )
-                    outcome = pull_branch_update_outcome(status)
-                    sync_intent["outcome"] = outcome
-                    if outcome in {"dry_run", "accepted"}:
-                        sync_intent["verified_at"] = iso()
-                        actions.append(
-                            {
-                                "action": "update_pr_branch",
-                                "task_id": task_id,
-                                "pr_number": pr_number,
-                                "expected_head_sha": head_sha,
-                                "base_sha": base_sha,
-                                "applied": bool(args.apply),
-                            }
-                        )
-                        continue
-                    if outcome == "head_raced":
-                        sync_intent["verified_at"] = iso()
-                        actions.append(
-                            {
-                                "action": "pr_branch_update_raced",
-                                "task_id": task_id,
-                                "pr_number": pr_number,
-                                "expected_head_sha": head_sha,
-                            }
-                        )
-                        continue
-                    branch_sync_conflict = True
-                    sync_intent["conflict_at"] = iso()
-                    actions.append(
-                        {
-                            "action": "pr_branch_update_conflict",
-                            "task_id": task_id,
-                            "pr_number": pr_number,
-                            "expected_head_sha": head_sha,
-                            "status": status,
-                        }
-                    )
-                except Exception as exc:
-                    sync_intent["delivery_error"] = sanitize(exc, 500)
-                    errors.append(
-                        f"PR branch update failed for #{pr_number}: {sanitize(exc, 600)}"
-                    )
-                    branch_sync_conflict = True
         if pr_requires_recovery(pr, checks):
-            dirty_pr = pr_is_dirty(pr) or pr_is_behind(pr) or branch_sync_conflict
+            dirty_pr = pr_is_dirty(pr)
             key = digest(
                 "pr-recovery",
                 pr_number,
                 ((pr.get("head") or {}).get("sha") or ""),
-                ((pr.get("base") or {}).get("sha") or ""),
-                int(pr.get("behind_by") or 0),
                 pr_mergeability(pr),
                 checks.get("fingerprint"),
             )
@@ -1289,15 +1071,7 @@ def reconcile(args: argparse.Namespace) -> int:
         errors.append("work exists but cycle produced no action or progress delta")
     source_fingerprint = digest(
         sorted((sid, row.get("session_state"), row.get("activity_fingerprint"), row.get("pr_fingerprint")) for sid, row in ledger["sessions"].items() if isinstance(row, dict)),
-        sorted(
-            (
-                int(pr.get("number") or 0),
-                ((pr.get("head") or {}).get("sha") or ""),
-                ((pr.get("base") or {}).get("sha") or ""),
-                int(pr.get("behind_by") or 0),
-            )
-            for pr in autonomous
-        ),
+        sorted((int(pr.get("number") or 0), ((pr.get("head") or {}).get("sha") or "")) for pr in autonomous),
         str((eligible or {}).get("id") or ""),
         pending_leases,
     )

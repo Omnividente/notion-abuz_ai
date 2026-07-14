@@ -9088,32 +9088,6 @@
         "mode": "live scheduler-gap repair",
         "summary": "A per-session read-only observer makes Jules terminal/wait/stale handoff event-driven while the single durable reconciler retains all mutation ownership."
       }
-    },
-    {
-      "id": "automation-github-pr-branch-sync-before-jules-recovery",
-      "status": "done",
-      "area": "automation",
-      "risk": "medium",
-      "title": "Synchronize behind autonomous PR branches before Jules recovery",
-      "description": "Live PR #620 remained based on 0b8e22a after automation observer changes reached master at 7f6cf7d. The quality gate correctly rejected the two-tree diff, but in-place recovery session 17485730698808344737 repeated the product commit instead of synchronizing master. Detect behind_by through the GitHub compare API and perform a race-safe native update-branch before spending a Jules recovery attempt.",
-      "allowed_paths": [
-        ".github/scripts/autonomy_reconciler.py",
-        ".github/scripts/autonomy_reconciler_test.py",
-        "docs/WORK_AUTONOMY_2026-07-13.md",
-        "agent_tasks.json"
-      ],
-      "acceptance": [
-        "The reconciler hydrates each open autonomous PR with base/head behind_by evidence.",
-        "A behind PR is updated through GitHub update-branch with expected_head_sha before any Jules in-place recovery is dispatched.",
-        "Accepted branch updates wait for a new head/check result, while 409 conflict, 422 head races, and bounded timeout have explicit outcomes.",
-        "Base SHA and behind_by participate in durable progress and recovery fingerprints.",
-        "Deterministic tests cover compare hydration, behind recovery classification, endpoint method/body, and ordering before Jules recovery."
-      ],
-      "source_reference": "PR #620; observer run 29305212868; reconciler run 29305414399; recovery executor 29305466166; recovery session 17485730698808344737",
-      "completion_evidence": {
-        "mode": "live behind-branch recovery failure",
-        "summary": "GitHub now performs the deterministic branch synchronization with expected-head race protection; Jules remains the bounded fallback for conflicts and semantic failures."
-      }
     }
   ]
 }
