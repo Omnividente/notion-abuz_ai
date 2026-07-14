@@ -8883,7 +8883,7 @@
     },
     {
       "id": "proxy-upload-debug-logging-cleanup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Clean up excessive debug logging in upload flow",
@@ -8922,6 +8922,21 @@
         "observed_at": "2026-07-13T23:08:00Z",
         "summary": "Missing lifecycle documentation in anthropic.go."
       }
+    },
+    {
+      "id": "proxy-anthropic-debug-logging-cleanup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Clean up excessive debug logging in anthropic.go",
+      "description": "anthropic.go has several log.Printf calls with '[debug]' or '[upload-debug]' prefixes. These should be conditionally enabled with DebugLoggingEnabled() or removed to maintain repository hygiene.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Debug log statements in internal/proxy/anthropic.go are removed or conditionally enabled to reduce log spam."
+      ]
     }
   ]
 }

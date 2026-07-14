@@ -35,7 +35,9 @@ func UploadFileToNotion(ctx context.Context, acc *Account, file *FileAttachment)
 	uuidFileName := generateUUIDv4() + ext
 
 	// Step 1: Get presigned upload URL
-	log.Printf("[upload-debug] Step 1: getUploadUrl for %s (%s, %d bytes)", file.FileName, file.ContentType, len(file.Data))
+	if DebugLoggingEnabled() {
+		log.Printf("[upload-debug] Step 1: getUploadUrl for %s (%s, %d bytes)", file.FileName, file.ContentType, len(file.Data))
+	}
 	uploadReq := NotionUploadURLRequest{
 		Name:         uuidFileName,
 		ContentType:  file.ContentType,
@@ -52,18 +54,26 @@ func UploadFileToNotion(ctx context.Context, acc *Account, file *FileAttachment)
 	if err != nil {
 		return nil, fmt.Errorf("step 1 getUploadUrl: %w", err)
 	}
-	log.Printf("[upload-debug] Step 1 OK: attachment URL = %s", uploadResp.URL)
+	if DebugLoggingEnabled() {
+		log.Printf("[upload-debug] Step 1 OK: attachment URL = %s", uploadResp.URL)
+	}
 
 	// Step 2: Upload file to S3
-	log.Printf("[upload-debug] Step 2: S3 upload to %s", uploadResp.SignedUploadPostURL)
+	if DebugLoggingEnabled() {
+		log.Printf("[upload-debug] Step 2: S3 upload to %s", uploadResp.SignedUploadPostURL)
+	}
 	err = uploadToS3(ctx, client, uploadResp.SignedUploadPostURL, uploadResp.Fields, file.Data, file.ContentType)
 	if err != nil {
 		return nil, fmt.Errorf("step 2 S3 upload: %w", err)
 	}
-	log.Printf("[upload-debug] Step 2 OK: S3 upload complete")
+	if DebugLoggingEnabled() {
+		log.Printf("[upload-debug] Step 2 OK: S3 upload complete")
+	}
 
 	// Step 3: Enqueue processing task
-	log.Printf("[upload-debug] Step 3: enqueueTask(processAgentAttachment)")
+	if DebugLoggingEnabled() {
+		log.Printf("[upload-debug] Step 3: enqueueTask(processAgentAttachment)")
+	}
 	taskReq := NotionEnqueueTaskRequest{
 		Task: NotionTask{
 			EventName: "processAgentAttachment",
@@ -94,15 +104,21 @@ func UploadFileToNotion(ctx context.Context, acc *Account, file *FileAttachment)
 	if err := json.Unmarshal(enqueueRespRaw, &enqueueResp); err != nil {
 		return nil, fmt.Errorf("step 3 parse taskId: %w (body: %s)", err, string(enqueueRespRaw[:min(len(enqueueRespRaw), 200)]))
 	}
-	log.Printf("[upload-debug] Step 3 OK: taskId = %s", enqueueResp.TaskID)
+	if DebugLoggingEnabled() {
+		log.Printf("[upload-debug] Step 3 OK: taskId = %s", enqueueResp.TaskID)
+	}
 
 	// Step 4: Poll task status and capture result metadata
-	log.Printf("[upload-debug] Step 4: polling task status")
+	if DebugLoggingEnabled() {
+		log.Printf("[upload-debug] Step 4: polling task status")
+	}
 	taskResult, err := pollTaskCompletion(ctx, client, acc, enqueueResp.TaskID, 15*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("step 4 poll task: %w", err)
 	}
-	log.Printf("[upload-debug] Step 4 OK: task completed")
+	if DebugLoggingEnabled() {
+		log.Printf("[upload-debug] Step 4 OK: task completed")
+	}
 
 	// Extract enriched metadata from task result if available.
 	// Task result structure: status.result.data.stepMetadata contains the enriched metadata.
@@ -166,10 +182,14 @@ func UploadFileToNotion(ctx context.Context, acc *Account, file *FileAttachment)
 				metadata.TruncatedContent = sm.TruncatedContent
 				metadata.WasTruncated = sm.WasTruncated
 			}
-			log.Printf("[upload-debug] extracted task metadata: size=%d, tokens=%v, guardrail=%v, width=%d, height=%d",
-				metadata.FileSizeBytes, metadata.EstimatedTokens, metadata.Guardrail, metadata.Width, metadata.Height)
+			if DebugLoggingEnabled() {
+				log.Printf("[upload-debug] extracted task metadata: size=%d, tokens=%v, guardrail=%v, width=%d, height=%d",
+					metadata.FileSizeBytes, metadata.EstimatedTokens, metadata.Guardrail, metadata.Width, metadata.Height)
+			}
 		} else if err != nil {
-			log.Printf("[upload-debug] failed to parse task result metadata: %v", err)
+			if DebugLoggingEnabled() {
+				log.Printf("[upload-debug] failed to parse task result metadata: %v", err)
+			}
 		}
 	}
 
@@ -317,7 +337,9 @@ func pollTaskCompletion(ctx context.Context, client *http.Client, acc *Account, 
 		tasksReq := NotionGetTasksRequest{TaskIDs: []string{taskID}}
 		raw, err := notionAPICallRaw(ctx, client, acc, "/getTasks", tasksReq)
 		if err != nil {
-			log.Printf("[upload-debug] poll error (will retry): %v", err)
+			if DebugLoggingEnabled() {
+				log.Printf("[upload-debug] poll error (will retry): %v", err)
+			}
 			continue
 		}
 
@@ -326,7 +348,9 @@ func pollTaskCompletion(ctx context.Context, client *http.Client, acc *Account, 
 			Results []json.RawMessage `json:"results"`
 		}
 		if err := json.Unmarshal(raw, &tasksResp); err != nil {
-			log.Printf("[upload-debug] poll parse error (will retry): %v", err)
+			if DebugLoggingEnabled() {
+				log.Printf("[upload-debug] poll parse error (will retry): %v", err)
+			}
 			continue
 		}
 
@@ -337,7 +361,9 @@ func pollTaskCompletion(ctx context.Context, client *http.Client, acc *Account, 
 			}
 			json.Unmarshal(rawResult, &t)
 			if t.ID == taskID || strings.HasPrefix(taskID, t.ID) || strings.HasPrefix(t.ID, taskID) {
-				log.Printf("[upload-debug] task %s state: %s", taskID, t.State)
+				if DebugLoggingEnabled() {
+					log.Printf("[upload-debug] task %s state: %s", taskID, t.State)
+				}
 				if t.State == "success" || t.State == "completed" {
 					return rawResult, nil
 				}
