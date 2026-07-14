@@ -671,6 +671,18 @@ class ReconcilerTests(unittest.TestCase):
         self.assertEqual(M.pull_branch_update_outcome(0), "dry_run")
         self.assertEqual(M.pull_branch_update_outcome(202), "accepted")
         self.assertEqual(M.pull_branch_update_outcome(422), "head_raced")
+        self.assertEqual(
+            M.pull_branch_update_outcome(
+                422, {"message": "merge conflict between base and head"}
+            ),
+            "conflict",
+        )
+        self.assertEqual(
+            M.pull_branch_update_outcome(
+                422, {"message": "Head branch was modified. Review and try again."}
+            ),
+            "head_raced",
+        )
         self.assertEqual(M.pull_branch_update_outcome(409), "conflict")
         self.assertEqual(M.pull_branch_update_outcome(500), "error")
 
