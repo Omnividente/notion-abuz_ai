@@ -1587,6 +1587,53 @@
       "run_attempt": "1",
       "run_id": "29305716180",
       "source_fingerprint": "d4c5b60d5c75c9e5882546a1"
+    },
+    {
+      "actions": [
+        {
+          "action": "terminate_terminal_task_session",
+          "manifest_status": "done",
+          "session_id": "17485730698808344737",
+          "task_id": "proxy-anthropic-sse-tests"
+        },
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "df1807da43b79f4fb2f590f7",
+          "generation": 1,
+          "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "proxy-anthropic-sse-tests"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T04:27:06Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 469,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "proxy-tools-add-unit-tests-for-debug-logging-toggle"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "17485730698808344737",
+          "task_id": "proxy-anthropic-sse-tests"
+        },
+        {
+          "kind": "observed_delta",
+          "session_id": "12983952770589851668",
+          "task_id": "runtime-fix"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29305964084",
+      "source_fingerprint": "fd444877e515e34ce9fa4015"
     }
   ],
   "messages": {
@@ -3514,7 +3561,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 115,
+  "revision": 116,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4304,11 +4351,9 @@
       "current_evidence_fingerprint": "6797cfdffab1ee46f0ad0e4b",
       "dispatch_completed_at": "2026-07-14T04:14:32Z",
       "dispatch_generation": 2,
-      "dispatch_key": "9c6492336a53f0bbc8450ced",
-      "dispatch_requested_at": "2026-07-14T04:13:56Z",
       "last_observed_at": "2026-07-14T04:20:37Z",
       "last_progress_at": "2026-07-14T04:13:54Z",
-      "lease_expires_at": "2026-07-14T04:59:32Z",
+      "manifest_status": "done",
       "pr_number": 620,
       "pr_recoveries": 1,
       "pr_recovery_evidence_key": "001ca51c1d23b4242d6ef73a",
@@ -4317,12 +4362,8 @@
       "progress_fingerprint": "79c0f95fc00b07a37d006deb",
       "recovery_pr_head": "f75d51d6dc155de73351d061510893ee72547f39",
       "recovery_pr_number": 620,
-      "recovery_reason": "failed checks: test-and-merge",
-      "session_create_requested_at": "2026-07-14T04:14:30Z",
-      "session_id": "17485730698808344737",
-      "session_name": "sessions/17485730698808344737",
       "session_state": "IN_PROGRESS",
-      "state": "active",
+      "state": "manifest_done",
       "task_fingerprint": "279d75a055015a2aa90b2db4"
     },
     "proxy-improve-rproxy-error-logging": {
@@ -4440,5 +4481,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:27:05Z"
+  "updated_at": "2026-07-14T04:27:06Z"
 }
