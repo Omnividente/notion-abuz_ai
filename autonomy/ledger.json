@@ -1655,6 +1655,14 @@
       "task_id": "proxy-improve-rproxy-timeout-handling",
       "verified_at": "2026-07-13T20:19:20Z"
     },
+    "4bacfeab889b1709164ab0ec": {
+      "kind": "terminal_manifest_session_cleanup",
+      "sent_at": "2026-07-14T04:26:36Z",
+      "session_id": "17485730698808344737",
+      "state_version": 4,
+      "task_id": "proxy-anthropic-sse-tests",
+      "verified_at": null
+    },
     "51bc0f215a62e07b371fe1d6": {
       "kind": "terminal_manifest_session_cleanup",
       "sent_at": "2026-07-13T23:51:58Z",
@@ -3506,7 +3514,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 113,
+  "revision": 114,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3806,20 +3814,20 @@
       "task_id": "proxy-audit-streaming-errors"
     },
     "17485730698808344737": {
-      "activity_fingerprint": "841f8d79249dbc59bda5ca4e",
-      "last_observed_at": "2026-07-14T04:20:34Z",
-      "last_progress_at": "2026-07-14T04:20:34Z",
+      "activity_fingerprint": "a48cf928d5b9f6951c2ad1de",
+      "last_observed_at": "2026-07-14T04:26:36Z",
+      "last_progress_at": "2026-07-14T04:26:36Z",
       "last_verified_message_key": "98a7daf9b8d359ee1d54bbb2",
       "lease_key": "9c6492336a53f0bbc8450ced",
       "post_send_activity_fingerprint": "f34ab99d8299d648ddba8905",
-      "pr_fingerprint": "a75d40ce094d2c1a999dc31e",
-      "progress_fingerprint": "6797cfdffab1ee46f0ad0e4b",
-      "recoveries_without_progress": 1,
+      "pr_fingerprint": "ccfc6431e25216c212945eb2",
+      "progress_fingerprint": "94354ba9542987d9732e43c0",
+      "recoveries_without_progress": 0,
       "recovery_pr_head": "f75d51d6dc155de73351d061510893ee72547f39",
       "recovery_pr_number": 620,
       "session_state": "IN_PROGRESS",
-      "session_update_at": "2026-07-14T04:19:37.485565Z",
-      "state_version": 3,
+      "session_update_at": "2026-07-14T04:25:42.870945Z",
+      "state_version": 4,
       "task_id": "proxy-anthropic-sse-tests"
     },
     "17569823767226973692": {
@@ -4414,5 +4422,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:21:03Z"
+  "updated_at": "2026-07-14T04:26:36Z"
 }
