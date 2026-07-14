@@ -3721,7 +3721,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 172,
+  "revision": 173,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4508,7 +4508,7 @@
       "dispatch_requested_at": "2026-07-14T07:30:28Z",
       "last_observed_at": "2026-07-14T07:30:24Z",
       "last_progress_at": "2026-07-14T07:30:24Z",
-      "lease_expires_at": "2026-07-14T07:59:50Z",
+      "lease_expires_at": "2026-07-14T08:15:57Z",
       "pr_number": 629,
       "pr_recoveries": 2,
       "pr_recovery_evidence_key": "9e32973df514da36e0ad9871",
@@ -4518,11 +4518,11 @@
       "recovery_pr_head": "8eda745873fd21447d9dc78165e2e245e6c4b539",
       "recovery_pr_number": 629,
       "recovery_reason": "dirty PR must sync current master",
-      "session_create_requested_at": "2026-07-14T05:46:55Z",
+      "session_create_requested_at": "2026-07-14T07:30:57Z",
       "session_id": null,
       "session_name": "sessions/13893740484827123621",
       "session_state": "COMPLETED",
-      "state": "pr_recovery_dispatch_requested",
+      "state": "session_create_requested",
       "task_fingerprint": "c1782c6fbea72e811492560c"
     },
     "docs-idempotency-replay-behavior": {
@@ -4748,5 +4748,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T07:30:30Z"
+  "updated_at": "2026-07-14T07:30:57Z"
 }
