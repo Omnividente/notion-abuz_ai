@@ -2030,10 +2030,14 @@
     },
     "c8bbf98bd3fa621a0cf6d452": {
       "base_sha": "426a44616c3f2b9dd8af86034f1d6869d32f07d3",
+      "conflict_at": "2026-07-14T05:46:27Z",
       "delivery_attempts": 1,
       "expected_head_sha": "3c635508f966e97f4c6ffe611592e60b8c24ecaa",
       "kind": "pr_update_branch",
+      "outcome": "conflict",
       "pr_number": 629,
+      "response_message": "merge conflict between base and head",
+      "response_status": 422,
       "sent_at": "2026-07-14T05:46:26Z",
       "task_id": "docs-ask-mode-override-wording",
       "verified_at": null
@@ -2056,6 +2060,14 @@
       "state_version": 8,
       "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
       "verified_at": "2026-07-14T05:31:41Z"
+    },
+    "f31c7ad1f71f4a40b843e5ea": {
+      "kind": "pr_recovery",
+      "packet_hash": "6434528575c7ef250267102e",
+      "pr_number": 629,
+      "sent_at": "2026-07-14T05:46:27Z",
+      "task_id": "docs-ask-mode-override-wording",
+      "verified_at": null
     },
     "f6a989281b2b3fde6225f4d5": {
       "kind": "pr_recovery",
@@ -2744,14 +2756,6 @@
       "source_key_hash": "66fdd5660e2ff39ea597d1b4",
       "type": "quality_fix_circuit_breaker",
       "verified_at": "2026-07-09T23:45:30Z"
-    },
-    "legacy-673df62e822f6226bfe00312": {
-      "kind": "legacy_router_action",
-      "reason": "PR #230 has unresolved needs-quality-fix",
-      "sent_at": "2026-07-02T19:24:26Z",
-      "source_key_hash": "673df62e822f6226bfe00312",
-      "type": "quality_fix_recovery",
-      "verified_at": "2026-07-02T19:24:26Z"
     },
     "legacy-689808531863d9c4d709aac8": {
       "kind": "legacy_router_action",
@@ -3741,7 +3745,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 159,
+  "revision": 160,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4509,16 +4513,19 @@
       "dispatch_generation": 1,
       "dispatch_key": "27ad877f8ef09d2d2a18c53c",
       "dispatch_requested_at": "2026-07-14T05:32:54Z",
-      "last_observed_at": "2026-07-14T05:46:08Z",
+      "last_observed_at": "2026-07-14T05:46:26Z",
+      "last_progress_at": "2026-07-14T05:46:26Z",
       "lease_expires_at": "2026-07-14T06:18:18Z",
       "pr_number": 629,
+      "pr_recoveries": 1,
+      "progress_fingerprint": "fbe20eabac008cb14551638e",
       "recovery_pr_head": null,
       "recovery_pr_number": null,
       "session_create_requested_at": "2026-07-14T05:33:16Z",
-      "session_id": "13893740484827123621",
+      "session_id": null,
       "session_name": "sessions/13893740484827123621",
       "session_state": "COMPLETED",
-      "state": "completed",
+      "state": "pr_open_without_active_session",
       "task_fingerprint": "c1782c6fbea72e811492560c"
     },
     "docs-idempotency-replay-behavior": {
@@ -4744,5 +4751,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T05:46:26Z"
+  "updated_at": "2026-07-14T05:46:27Z"
 }
