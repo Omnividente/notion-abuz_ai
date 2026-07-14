@@ -8925,7 +8925,7 @@
     },
     {
       "id": "proxy-anthropic-debug-logging-cleanup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Clean up excessive debug logging in anthropic.go",
@@ -8951,6 +8951,21 @@
       ],
       "acceptance": [
         "Duplicated SSE header logic in anthropic.go handleResearcherStream is documented or refactored cleanly."
+      ]
+    },
+    {
+      "id": "proxy-tools-debug-logging-cleanup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Clean up excessive debug logging in tools.go",
+      "description": "tools.go has several log.Printf calls for diagnostic data during tool conversion that are noisy on high-volume proxy boundaries. These should be conditionally enabled with DebugLoggingEnabled() or removed to maintain repository hygiene.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Debug log statements in internal/proxy/tools.go (e.g. detailed payload dumps, schema conversions, or fallback logs not related to context loss) are removed or conditionally enabled to reduce log spam."
       ]
     }
   ]
