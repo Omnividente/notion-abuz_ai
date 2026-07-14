@@ -62,8 +62,10 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["findings"], [])
         self.assertFalse(report["pause_loop"])
         self.assertFalse(report["create_meta_task"])
+        self.assertTrue(report["recovery_needed"])
         self.assertTrue(report["read_only"])
         self.assertIn("status=healthy", report["_github_output"])
+        self.assertIn("recovery_needed=true", report["_github_output"])
 
     def test_degraded_quality_failure(self) -> None:
         report = run_fixture("degraded-quality-failure")
@@ -81,12 +83,57 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["metrics"]["autonomous_prs"]["unresolved_labels"]["needs-quality-fix"], 0)
         self.assertNotIn("quality_failure", finding_codes(report))
 
+    def test_closed_unmerged_quality_labels_are_historical(self) -> None:
+        data = health.read_fixture(FIXTURE_ROOT / "merged-quality-fix-label-ignored")
+        pull = data["pulls"][0]
+        pull["merged"] = False
+        pull["merged_at"] = None
+        pull["closed_at"] = "2026-06-28T10:30:00Z"
+
+        report = health.analyze(data)
+
+        self.assertEqual(
+            report["metrics"]["autonomous_prs"]["unresolved_labels"]["needs-quality-fix"],
+            0,
+        )
+        self.assertNotIn("quality_failure", finding_codes(report))
+
     def test_critical_duplicate_active_sessions(self) -> None:
         report = run_fixture("critical-duplicate-active-sessions")
 
         self.assertEqual(report["status"], "critical")
         self.assertFalse(report["pause_loop"])
         self.assert_has_finding(report, "duplicate_active_product_sessions")
+
+    def test_active_product_session_does_not_request_idle_recovery(self) -> None:
+        data = health.read_fixture(FIXTURE_ROOT / "healthy")
+        data["jules_sessions"] = [
+            {"id": "active-runtime", "state": "IN_PROGRESS", "task_id": "runtime-task"}
+        ]
+
+        report = health.analyze(data)
+
+        self.assertEqual(report["metrics"]["jules_sessions"]["active_product_count"], 1)
+        self.assertFalse(report["recovery_needed"])
+
+    def test_recent_executor_run_owns_session_visibility_grace(self) -> None:
+        data = health.read_fixture(FIXTURE_ROOT / "healthy")
+        data["workflow_runs"].append(
+            {
+                "id": 1002,
+                "name": "2. Execute Leased Jules Task",
+                "status": "completed",
+                "conclusion": "success",
+                "updated_at": "2026-06-28T11:58:00Z",
+            }
+        )
+
+        report = health.analyze(data)
+
+        self.assertFalse(report["recovery_needed"])
+        self.assertEqual(
+            report["metrics"]["loop_ownership"]["recent_executor_run_ids"], [1002]
+        )
 
     def test_stopped_control_plane_sessions_are_not_active_product(self) -> None:
         report = run_fixture("stopped-control-plane-sessions")
@@ -178,6 +225,15 @@ class AutomationHealthReportTest(unittest.TestCase):
         self.assertEqual(report["status"], "critical")
         self.assert_has_finding(report, "repeated_failed_sessions_same_task")
 
+    def test_failed_session_history_for_done_task_is_not_actionable(self) -> None:
+        data = health.read_fixture(FIXTURE_ROOT / "failed-sessions-same-task")
+        data["manifest"]["tasks"][0]["status"] = "done"
+
+        report = health.analyze(data)
+
+        self.assertNotIn("repeated_failed_sessions_same_task", finding_codes(report))
+        self.assertNotIn("failed_session", finding_codes(report))
+
     def test_stale_awaiting_user_feedback_after_continue(self) -> None:
         report = run_fixture("stale-awaiting-user-feedback")
 
@@ -213,6 +269,18 @@ class AutomationHealthReportTest(unittest.TestCase):
         report = run_fixture("malformed-pr-metadata")
 
         self.assertEqual(report["status"], "healthy")
+
+    def test_health_workflow_has_deduplicated_idle_recovery(self) -> None:
+        workflow = (SCRIPT_PATH.parents[1] / "workflows" / "automation_health.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('recovery_needed: ${{ steps.health.outputs.recovery_needed }}', workflow)
+        self.assertIn("recover-idle-loop:", workflow)
+        self.assertIn("jules_unattended_monitor.yml/runs?per_page=20", workflow)
+        self.assertIn("jules_next_task.yml/runs?per_page=20", workflow)
+        self.assertIn("reconciler or task executor run already owns recovery", workflow)
+        self.assertIn("jules_unattended_monitor.yml/dispatches", workflow)
 
 
 if __name__ == "__main__":

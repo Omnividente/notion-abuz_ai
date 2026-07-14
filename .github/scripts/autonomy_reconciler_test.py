@@ -1,8 +1,11 @@
 import importlib.util
+import io
 import sys
 import unittest
+import urllib.error
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -20,6 +23,112 @@ E = load_module("executor", "jules_task_executor.py")
 
 
 class ReconcilerTests(unittest.TestCase):
+    def test_api_retries_safe_get_after_connection_reset(self):
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            @staticmethod
+            def read():
+                return b'{"ok": true}'
+
+        delays = []
+        api = M.API(
+            "token",
+            ["key"],
+            request_attempts=3,
+            retry_base_seconds=0.5,
+            sleep_fn=delays.append,
+        )
+        with mock.patch.object(
+            M.urllib.request,
+            "urlopen",
+            side_effect=[
+                urllib.error.URLError(ConnectionResetError(104, "reset")),
+                urllib.error.URLError(ConnectionResetError(104, "reset")),
+                Response(),
+            ],
+        ) as urlopen:
+            status, payload = api.request("https://example.invalid/state")
+
+        self.assertEqual(status, 200)
+        self.assertEqual(payload, {"ok": True})
+        self.assertEqual(urlopen.call_count, 3)
+        self.assertEqual(delays, [0.5, 1.0])
+
+    def test_api_does_not_retry_mutating_request_in_place(self):
+        api = M.API(
+            "token",
+            ["key"],
+            request_attempts=3,
+            retry_base_seconds=0,
+            sleep_fn=lambda _: None,
+        )
+        with mock.patch.object(
+            M.urllib.request,
+            "urlopen",
+            side_effect=urllib.error.URLError(ConnectionResetError(104, "reset")),
+        ) as urlopen:
+            with self.assertRaises(M.TransientAPIError):
+                api.request("https://example.invalid/dispatch", method="POST", body={})
+
+        self.assertEqual(urlopen.call_count, 1)
+
+    def test_api_retries_transient_http_status_and_honors_retry_after(self):
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            @staticmethod
+            def read():
+                return b'{"ok": true}'
+
+        transient = urllib.error.HTTPError(
+            "https://example.invalid/state",
+            503,
+            "unavailable",
+            {"Retry-After": "2"},
+            io.BytesIO(b'{"message":"retry later"}'),
+        )
+        delays = []
+        api = M.API("token", ["key"], sleep_fn=delays.append)
+        with mock.patch.object(
+            M.urllib.request,
+            "urlopen",
+            side_effect=[transient, Response()],
+        ):
+            status, payload = api.request("https://example.invalid/state")
+
+        self.assertEqual((status, payload), (200, {"ok": True}))
+        self.assertEqual(delays, [2.0])
+
+    def test_transient_boundary_uses_ex_tempfail_exit_code(self):
+        with mock.patch.object(
+            M,
+            "reconcile",
+            side_effect=M.TransientAPIError("connection reset by peer"),
+        ):
+            self.assertEqual(M.main([]), 75)
+
+    def test_reconciler_workflow_retries_only_transient_exit(self):
+        workflow = (
+            Path(__file__).parents[1] / "workflows" / "jules_unattended_monitor.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("for attempt in 1 2 3", workflow)
+        self.assertIn('if [ "$status" -ne 75 ]', workflow)
+        self.assertIn("Transient API failure; retrying the durable reconcile", workflow)
+
     def test_activity_summary_extracts_task_and_token(self):
         rows = [
             {"originator": "agent", "createTime": "2026-07-13T10:00:00Z", "message": "task_id: runtime-fix. Waiting."},

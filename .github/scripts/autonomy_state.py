@@ -34,6 +34,8 @@ LEDGER_MAX_MESSAGES = 240
 LEDGER_MAX_CYCLES = 50
 SESSION_INSPECTION_LIMIT = 40
 LEGACY_LEDGER_VARIABLE = "JULES_RECOVERY_ROUTER_LEDGER"
+TRANSIENT_HTTP_STATUSES = {408, 425, 429, 500, 502, 503, 504}
+RETRYABLE_HTTP_METHODS = {"GET", "HEAD", "OPTIONS"}
 TASK_RE = re.compile(r'(?ix)(?:selected\s+task\s+id|task_id|"task_id")\s*[:=]\s*"?([a-z0-9][a-z0-9_.-]{2,})')
 SECRET_PATTERNS = (
     (re.compile(r"(?i)\b(Bearer\s+)[A-Za-z0-9._~+/=-]{8,}"), r"\1[REDACTED]"),
@@ -332,29 +334,75 @@ def choose_task(manifest: dict[str, Any], ledger: dict[str, Any], current: datet
     return max(candidates, default=(0, 0, None), key=lambda item: (item[0], item[1]))[2]
 
 
+class TransientAPIError(RuntimeError):
+    """A retryable remote failure that exhausted bounded request attempts."""
+
+
 class API:
-    def __init__(self, github_token: str, jules_keys: list[str]):
+    def __init__(
+        self,
+        github_token: str,
+        jules_keys: list[str],
+        *,
+        request_attempts: int = 3,
+        retry_base_seconds: float = 1.0,
+        sleep_fn: Any = time.sleep,
+    ):
         self.github_token = github_token
         self.jules_keys = jules_keys
+        self.request_attempts = max(1, request_attempts)
+        self.retry_base_seconds = max(0.0, retry_base_seconds)
+        self.sleep_fn = sleep_fn
+
+    def retry_delay(self, attempt: int, error: Exception) -> float:
+        headers = getattr(error, "headers", None)
+        retry_after = headers.get("Retry-After") if headers else None
+        if retry_after:
+            try:
+                return min(30.0, max(0.0, float(retry_after)))
+            except ValueError:
+                pass
+        return min(30.0, self.retry_base_seconds * (2**attempt))
 
     def request(self, url: str, *, method: str = "GET", body: Any = None, headers: dict[str, str] | None = None, allow: tuple[int, ...] = ()) -> tuple[int, Any]:
+        method = method.upper()
         data = None if body is None else json.dumps(body).encode()
-        req = urllib.request.Request(url, data=data, method=method)
-        req.add_header("Accept", "application/vnd.github+json")
-        req.add_header("Content-Type", "application/json")
-        req.add_header("User-Agent", "notion-abuz-autonomy-reconciler")
-        for key, value in (headers or {}).items():
-            req.add_header(key, value)
-        try:
-            with urllib.request.urlopen(req, timeout=45) as response:
-                raw = response.read()
-                return response.status, json.loads(raw) if raw else {}
-        except urllib.error.HTTPError as exc:
-            raw = exc.read()
-            payload = json.loads(raw) if raw else {"message": str(exc)}
-            if exc.code in allow:
-                return exc.code, payload
-            raise RuntimeError(f"HTTP {exc.code} {method} {sanitize(url, 220)}: {sanitize(payload, 700)}") from exc
+        attempts = self.request_attempts if method in RETRYABLE_HTTP_METHODS else 1
+        for attempt in range(attempts):
+            req = urllib.request.Request(url, data=data, method=method)
+            req.add_header("Accept", "application/vnd.github+json")
+            req.add_header("Content-Type", "application/json")
+            req.add_header("User-Agent", "notion-abuz-autonomy-reconciler")
+            for key, value in (headers or {}).items():
+                req.add_header(key, value)
+            try:
+                with urllib.request.urlopen(req, timeout=45) as response:
+                    raw = response.read()
+                    return response.status, json.loads(raw) if raw else {}
+            except urllib.error.HTTPError as exc:
+                raw = exc.read()
+                try:
+                    payload = json.loads(raw) if raw else {"message": str(exc)}
+                except json.JSONDecodeError:
+                    payload = {"message": sanitize(raw.decode(errors="replace"), 500)}
+                if exc.code in allow:
+                    return exc.code, payload
+                message = f"HTTP {exc.code} {method} {sanitize(url, 220)}: {sanitize(payload, 700)}"
+                if exc.code not in TRANSIENT_HTTP_STATUSES:
+                    raise RuntimeError(message) from exc
+                error: Exception = TransientAPIError(message)
+                delay_source: Exception = exc
+            except (urllib.error.URLError, TimeoutError, ConnectionError, OSError, json.JSONDecodeError) as exc:
+                error = TransientAPIError(
+                    f"transient {method} {sanitize(url, 220)} failure: {sanitize(exc, 700)}"
+                )
+                delay_source = exc
+
+            if attempt + 1 >= attempts:
+                raise error
+            self.sleep_fn(self.retry_delay(attempt, delay_source))
+
+        raise AssertionError("request retry loop exited unexpectedly")
 
     def gh(self, path: str, *, method: str = "GET", body: Any = None, allow: tuple[int, ...] = ()) -> tuple[int, Any]:
         return self.request("https://api.github.com" + path, method=method, body=body, allow=allow, headers={"Authorization": f"Bearer {self.github_token}", "X-GitHub-Api-Version": "2022-11-28"})

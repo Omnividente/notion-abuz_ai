@@ -8967,6 +8967,36 @@
       "acceptance": [
         "Debug log statements in internal/proxy/tools.go (e.g. detailed payload dumps, schema conversions, or fallback logs not related to context loss) are removed or conditionally enabled to reduce log spam."
       ]
+    },
+    {
+      "id": "automation-durable-reconciler-transient-self-recovery",
+      "status": "done",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Recover the durable product loop after transient control-plane failures",
+      "description": "The durable reconciler stopped after run 29297732155 received a connection reset while five eligible product tasks remained. Automation Health run 29300070940 then reported a historical completed task as a current critical failure and did not restart the idle loop. Add bounded, idempotency-aware transient recovery and a deduplicated health fallback without creating a second state machine.",
+      "allowed_paths": [
+        ".github/scripts/autonomy_state.py",
+        ".github/scripts/autonomy_reconciler.py",
+        ".github/scripts/autonomy_reconciler_test.py",
+        ".github/scripts/automation-health-report.py",
+        ".github/scripts/automation-health-report-test.py",
+        ".github/workflows/jules_unattended_monitor.yml",
+        ".github/workflows/automation_health.yml",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Safe API reads retry bounded transient network and 408/425/429/5xx failures with backoff, while mutating requests are not retried in place.",
+        "An exhausted transient read exits with a distinct status and the durable reconciler workflow retries the full idempotent cycle at most twice.",
+        "Historical FAILED sessions for terminal manifest tasks and labels on closed PRs do not remain actionable health findings.",
+        "Automation Health detects an eligible idle queue and dispatches the authoritative reconciler only when no reconciler or leased-task executor run owns the loop.",
+        "Deterministic tests cover transient retry, mutation safety, terminal history filtering, closed PR labels, and workflow deduplication."
+      ],
+      "source_reference": "GitHub Actions runs 29297732155 and 29300070940 on master f1f73b025da5da8d6f4b8f51995d0d249802124a",
+      "completion_evidence": {
+        "mode": "human-requested automation repair",
+        "summary": "Bounded safe-read retries, transient cycle retries, corrected health semantics, and an independent deduplicated idle-loop wakeup are implemented together as one recovery failure class."
+      }
     }
   ]
 }
