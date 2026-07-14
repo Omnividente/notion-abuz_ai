@@ -958,7 +958,7 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 
 		// Convert Anthropic messages to internal ChatMessage format
 		messages, fileAttachments := convertAnthropicMessages(req.System, req.Messages)
-		if len(fileAttachments) > 0 {
+		if len(fileAttachments) > 0 && DebugLoggingEnabled() {
 			log.Printf("[upload-debug] extracted %d file attachment(s) from request", len(fileAttachments))
 		}
 		sessionSalt := extractAnthropicSessionSalt(req.Metadata)
@@ -1247,8 +1247,10 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 			var uploadedAttachments []UploadedAttachment
 			if !isResearcher && len(fileAttachments) > 0 {
 				for i, fa := range fileAttachments {
-					log.Printf("[upload-debug] %s: uploading attachment %d/%d: %s (%s, %d bytes)",
-						requestID, i+1, len(fileAttachments), fa.FileName, fa.ContentType, len(fa.Data))
+					if DebugLoggingEnabled() {
+						log.Printf("[upload-debug] %s: uploading attachment %d/%d: %s (%s, %d bytes)",
+							requestID, i+1, len(fileAttachments), fa.FileName, fa.ContentType, len(fa.Data))
+					}
 					uploaded, err := UploadFileToNotion(r.Context(), acc, &fa)
 					if err != nil {
 						log.Printf("[upload] %s: attachment %d upload failed: %v", requestID, i+1, err)
@@ -1256,7 +1258,9 @@ func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 						return
 					}
 					uploadedAttachments = append(uploadedAttachments, *uploaded)
-					log.Printf("[upload-debug] %s: attachment %d uploaded: %s", requestID, i+1, uploaded.AttachmentURL)
+					if DebugLoggingEnabled() {
+						log.Printf("[upload-debug] %s: attachment %d uploaded: %s", requestID, i+1, uploaded.AttachmentURL)
+					}
 				}
 			}
 
@@ -1976,10 +1980,12 @@ func handleAnthropicStreamWithContract(r *http.Request, w http.ResponseWriter, a
 	}
 
 	contentStr := fullContent.String()
-	log.Printf("[debug] %s: fullContent=%d bytes, hasTools=%v", requestID, len(contentStr), hasTools)
-	if len(contentStr) > 0 {
-		contentHead := truncateForLog(contentStr, 200)
-		log.Printf("[debug] %s HEAD: %s", requestID, contentHead)
+	if DebugLoggingEnabled() {
+		log.Printf("[debug] %s: fullContent=%d bytes, hasTools=%v", requestID, len(contentStr), hasTools)
+		if len(contentStr) > 0 {
+			contentHead := truncateForLog(contentStr, 200)
+			log.Printf("[debug] %s HEAD: %s", requestID, contentHead)
+		}
 	}
 
 	// Empty response: Notion returned 200 but produced no text — retry on next account
