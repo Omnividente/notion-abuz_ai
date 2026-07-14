@@ -1870,7 +1870,7 @@
       "pr_number": 622,
       "sent_at": "2026-07-14T04:53:08Z",
       "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
-      "verified_at": null
+      "verified_at": "2026-07-14T04:53:10Z"
     },
     "legacy-01fba5268ce233391de6bb86": {
       "kind": "legacy_router_action",
@@ -3628,7 +3628,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 132,
+  "revision": 133,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4507,27 +4507,27 @@
       "branch_update_requested_at": "2026-07-14T04:41:36Z",
       "current_evidence_fingerprint": "25e827a9c9f1d0bb7eefe0c2",
       "dispatch_completed_at": "2026-07-14T04:45:50Z",
-      "dispatch_generation": 2,
-      "dispatch_key": "c3c1b984940f8d90103c08c1",
-      "dispatch_requested_at": "2026-07-14T04:45:25Z",
+      "dispatch_generation": 3,
+      "dispatch_key": "abc03f168265a76deaebc97d",
+      "dispatch_requested_at": "2026-07-14T04:53:10Z",
       "duplicate_dispatch_suppressed_at": "2026-07-14T04:45:50Z",
       "last_observed_at": "2026-07-14T04:53:08Z",
       "last_progress_at": "2026-07-14T04:53:08Z",
-      "lease_expires_at": "2026-07-14T05:30:50Z",
+      "lease_expires_at": "2026-07-14T05:22:13Z",
       "pr_number": 622,
       "pr_recoveries": 2,
-      "pr_recovery_evidence_key": "f0a36feb895aa6820d32edce",
-      "pr_session_recoveries": 0,
-      "pr_session_recovery_key": "4300dd4b977195018d2b45d4",
+      "pr_recovery_evidence_key": "0c5c1d28a32369592e6ed95d",
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "badb848f371c034925013d25",
       "progress_fingerprint": "5e10c4e52013eeec7fe8baef",
-      "recovery_pr_head": "458d6e538bffc618531654a53bba15031cdb3bbe",
+      "recovery_pr_head": "59425436ad23da3c7782fe4677e7f21ef87ae55f",
       "recovery_pr_number": 622,
       "recovery_reason": "failed checks: test-and-merge",
       "session_create_requested_at": "2026-07-14T04:27:29Z",
       "session_id": null,
       "session_name": "sessions/14674460986994187107",
       "session_state": "COMPLETED",
-      "state": "pr_open_without_active_session",
+      "state": "pr_recovery_dispatch_requested",
       "task_fingerprint": "4dd0b9b1ef6afb28da4630a8"
     },
     "proxy-tools-debug-logging-cleanup": {
@@ -4585,5 +4585,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:53:08Z"
+  "updated_at": "2026-07-14T04:53:10Z"
 }
