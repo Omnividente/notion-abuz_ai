@@ -1284,6 +1284,54 @@
       "run_attempt": "1",
       "run_id": "29303547972",
       "source_fingerprint": "05e550796de78e73af5de324"
+    },
+    {
+      "actions": [
+        {
+          "action": "comment_pr_recovery",
+          "key": "121565c403ceb05797f53f75",
+          "pr_number": 616,
+          "task_id": "automation-executor-completion-reconciler-handoff"
+        },
+        {
+          "action": "dispatch_in_place_pr_recovery",
+          "dispatch_key": "1df51edb21c636823f52b948",
+          "generation": 1,
+          "pr_number": 616,
+          "task_id": "automation-executor-completion-reconciler-handoff"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "proxy-anthropic-sse-cleanup"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T03:32:08Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-tools-debug-logging-cleanup",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 466,
+      "open_autonomous_prs": 1,
+      "pending_leases": [
+        "automation-executor-completion-reconciler-handoff"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "7036873496572403975",
+          "task_id": "proxy-anthropic-sse-cleanup"
+        },
+        {
+          "kind": "initial_recent_pr",
+          "pr_number": 616,
+          "task_id": "automation-executor-completion-reconciler-handoff"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29303708556",
+      "source_fingerprint": "398f52bac73336fe68076527"
     }
   ],
   "messages": {
@@ -3162,7 +3210,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 91,
+  "revision": 92,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3892,18 +3940,13 @@
       "current_evidence_fingerprint": "44b49d2d4898d9ffb28a89e7",
       "dispatch_completed_at": "2026-07-14T03:15:38Z",
       "dispatch_generation": 1,
-      "dispatch_key": "e0a2714b9b432c9ab21e6028",
-      "dispatch_requested_at": "2026-07-14T03:15:08Z",
       "last_observed_at": "2026-07-14T03:27:34Z",
-      "lease_expires_at": "2026-07-14T04:00:38Z",
+      "manifest_status": "done",
       "pr_number": null,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_create_requested_at": "2026-07-14T03:15:36Z",
-      "session_id": "7036873496572403975",
-      "session_name": "sessions/7036873496572403975",
       "session_state": "IN_PROGRESS",
-      "state": "active",
+      "state": "manifest_done",
       "task_fingerprint": "9ee3c48afbef2d89c8d192ce"
     },
     "proxy-improve-rproxy-error-logging": {
@@ -3991,5 +4034,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T03:32:06Z"
+  "updated_at": "2026-07-14T03:32:08Z"
 }
