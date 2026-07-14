@@ -1384,6 +1384,42 @@
       "run_attempt": "1",
       "run_id": "29303905329",
       "source_fingerprint": "6cb1dfea3e7372b02a2c99c0"
+    },
+    {
+      "actions": [
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "a42dc843ee304193852082f3",
+          "generation": 1,
+          "task_id": "proxy-anthropic-sse-tests"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "proxy-tools-debug-logging-cleanup"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T04:01:53Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-anthropic-sse-tests",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 467,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "proxy-anthropic-sse-tests"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "10801129102183224850",
+          "task_id": "proxy-tools-debug-logging-cleanup"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29304895247",
+      "source_fingerprint": "38263450650bf740710dde4f"
     }
   ],
   "messages": {
@@ -3262,7 +3298,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 98,
+  "revision": 99,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4076,18 +4112,13 @@
       "current_evidence_fingerprint": "bcc14e7402ce520d6552666a",
       "dispatch_completed_at": "2026-07-14T03:35:54Z",
       "dispatch_generation": 1,
-      "dispatch_key": "7cd3d6af48f689f18edea8af",
-      "dispatch_requested_at": "2026-07-14T03:35:28Z",
       "last_observed_at": "2026-07-14T03:36:20Z",
-      "lease_expires_at": "2026-07-14T04:20:54Z",
+      "manifest_status": "done",
       "pr_number": null,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_create_requested_at": "2026-07-14T03:35:52Z",
-      "session_id": "10801129102183224850",
-      "session_name": "sessions/10801129102183224850",
       "session_state": "QUEUED",
-      "state": "active",
+      "state": "manifest_done",
       "task_fingerprint": "bda357e2d0771733abd87660"
     },
     "proxy-upload-debug-logging-cleanup": {
@@ -4123,5 +4154,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:01:50Z"
+  "updated_at": "2026-07-14T04:01:53Z"
 }
