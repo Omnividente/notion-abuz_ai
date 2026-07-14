@@ -1887,6 +1887,14 @@
       "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
       "verified_at": "2026-07-14T05:04:09Z"
     },
+    "4e8672a0d4ef1f1d5201af43": {
+      "kind": "terminal_manifest_session_cleanup",
+      "sent_at": "2026-07-14T05:32:30Z",
+      "session_id": "17208555400991546940",
+      "state_version": 9,
+      "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
+      "verified_at": null
+    },
     "51bc0f215a62e07b371fe1d6": {
       "kind": "terminal_manifest_session_cleanup",
       "sent_at": "2026-07-13T23:51:58Z",
@@ -2324,14 +2332,6 @@
       "source_key_hash": "2d755e1fc0571a3050006de0",
       "type": "quality_fix_recovery",
       "verified_at": "2026-07-08T02:35:24Z"
-    },
-    "legacy-2e99fb876c10a6afed3d695d": {
-      "kind": "legacy_router_action",
-      "reason": "PR #230 has unresolved needs-quality-fix",
-      "sent_at": "2026-07-02T18:57:07Z",
-      "source_key_hash": "2e99fb876c10a6afed3d695d",
-      "type": "quality_fix_recovery",
-      "verified_at": "2026-07-02T18:57:07Z"
     },
     "legacy-300a2b4bfcd88ce5214311dc": {
       "kind": "legacy_router_action",
@@ -3745,7 +3745,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 151,
+  "revision": 152,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4053,20 +4053,20 @@
       "task_id": ""
     },
     "17208555400991546940": {
-      "activity_fingerprint": "17e6390cf786c0c20537dafd",
-      "last_observed_at": "2026-07-14T05:31:39Z",
-      "last_progress_at": "2026-07-14T05:31:39Z",
+      "activity_fingerprint": "c8c74db843a8d0f17939c686",
+      "last_observed_at": "2026-07-14T05:32:30Z",
+      "last_progress_at": "2026-07-14T05:32:30Z",
       "last_verified_message_key": "e6e1de974750b4ddb91d0201",
       "lease_key": "abc03f168265a76deaebc97d",
       "post_send_activity_fingerprint": "885cfeb73f8076c70015f4d0",
-      "pr_fingerprint": "def7b723adb7d5c63caad873",
-      "progress_fingerprint": "8e09e06c6853fb7546ba4ff0",
-      "recoveries_without_progress": 1,
+      "pr_fingerprint": "06075848cfae5535457db59b",
+      "progress_fingerprint": "dced93833011987f9b724af4",
+      "recoveries_without_progress": 0,
       "recovery_pr_head": "59425436ad23da3c7782fe4677e7f21ef87ae55f",
       "recovery_pr_number": 622,
-      "session_state": "IN_PROGRESS",
-      "session_update_at": "2026-07-14T05:31:06.795947Z",
-      "state_version": 8,
+      "session_state": "AWAITING_USER_FEEDBACK",
+      "session_update_at": "2026-07-14T05:32:07.518621Z",
+      "state_version": 9,
       "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
     },
     "17237448907972893226": {
@@ -4720,5 +4720,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T05:31:59Z"
+  "updated_at": "2026-07-14T05:32:30Z"
 }
