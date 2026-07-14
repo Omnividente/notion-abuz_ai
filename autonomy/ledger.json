@@ -1500,7 +1500,7 @@
       "pr_number": 620,
       "sent_at": "2026-07-14T04:13:54Z",
       "task_id": "proxy-anthropic-sse-tests",
-      "verified_at": null
+      "verified_at": "2026-07-14T04:13:56Z"
     },
     "47a9203e09b4c48d400c6307": {
       "kind": "pr_recovery",
@@ -3350,7 +3350,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 104,
+  "revision": 105,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4118,22 +4118,26 @@
     "proxy-anthropic-sse-tests": {
       "current_evidence_fingerprint": "b6ee590b837b1e0e6e3bac0c",
       "dispatch_completed_at": "2026-07-14T04:02:33Z",
-      "dispatch_generation": 1,
-      "dispatch_key": "a42dc843ee304193852082f3",
-      "dispatch_requested_at": "2026-07-14T04:01:50Z",
+      "dispatch_generation": 2,
+      "dispatch_key": "9c6492336a53f0bbc8450ced",
+      "dispatch_requested_at": "2026-07-14T04:13:56Z",
       "last_observed_at": "2026-07-14T04:13:54Z",
       "last_progress_at": "2026-07-14T04:13:54Z",
-      "lease_expires_at": "2026-07-14T04:47:33Z",
+      "lease_expires_at": "2026-07-14T04:42:55Z",
       "pr_number": 620,
       "pr_recoveries": 1,
+      "pr_recovery_evidence_key": "001ca51c1d23b4242d6ef73a",
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "db4d80fb5c9c8b60eebee243",
       "progress_fingerprint": "79c0f95fc00b07a37d006deb",
-      "recovery_pr_head": null,
-      "recovery_pr_number": null,
+      "recovery_pr_head": "f75d51d6dc155de73351d061510893ee72547f39",
+      "recovery_pr_number": 620,
+      "recovery_reason": "failed checks: test-and-merge",
       "session_create_requested_at": "2026-07-14T04:02:31Z",
       "session_id": null,
       "session_name": "sessions/12983952770589851668",
       "session_state": "COMPLETED",
-      "state": "pr_open_without_active_session",
+      "state": "pr_recovery_dispatch_requested",
       "task_fingerprint": "279d75a055015a2aa90b2db4"
     },
     "proxy-improve-rproxy-error-logging": {
@@ -4234,5 +4238,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:13:54Z"
+  "updated_at": "2026-07-14T04:13:56Z"
 }
