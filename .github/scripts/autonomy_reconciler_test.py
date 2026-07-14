@@ -140,6 +140,20 @@ class ReconcilerTests(unittest.TestCase):
         self.assertIn("github.event.workflow_run.head_branch == 'master'", workflow)
         self.assertIn("github.event_name != 'pull_request'", workflow)
 
+    def test_session_observer_removes_schedule_from_critical_handoff_path(self):
+        executor = (
+            Path(__file__).parents[1] / "workflows" / "jules_next_task.yml"
+        ).read_text(encoding="utf-8")
+        observer = (
+            Path(__file__).parents[1] / "workflows" / "jules_session_observer.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("gh workflow run jules_session_observer.yml", executor)
+        self.assertIn("jules_session_observer.py", observer)
+        self.assertIn("gh workflow run jules_unattended_monitor.yml", observer)
+        self.assertNotIn("autonomy_reconciler.py", observer)
+        self.assertNotIn("contents: write", observer)
+
     def test_activity_summary_extracts_task_and_token(self):
         rows = [
             {"originator": "agent", "createTime": "2026-07-13T10:00:00Z", "message": "task_id: runtime-fix. Waiting."},

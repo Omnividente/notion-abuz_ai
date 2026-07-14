@@ -63,6 +63,7 @@ jobs:
     timeout-minutes: 10
     if: github.ref == 'refs/heads/master' && vars.JULES_LOOP_ENABLED != 'false'
     permissions:
+      actions: write
       contents: write
 
     steps:
@@ -101,6 +102,25 @@ jobs:
             --recovery-reason "${RECOVERY_REASON}" \
             --state-branch automation-state-v2 \
             --ledger-path autonomy/ledger.json
+
+      - name: Start bounded observer for the exact Jules session
+        env:
+          GH_TOKEN: ${{ secrets.PAT || github.token }}
+          SESSION_ID: ${{ steps.execute.outputs.session_id }}
+        run: |
+          set -euo pipefail
+          test -n "${SESSION_ID}"
+          for attempt in 1 2 3; do
+            if gh workflow run jules_session_observer.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref master \
+              -f session_id="${SESSION_ID}" \
+              -f stale_minutes=20; then
+              exit 0
+            fi
+            [ "$attempt" -lt 3 ] || exit 1
+            sleep "$((attempt * 10))"
+          done
 
       - name: Append executor summary
         if: always()
