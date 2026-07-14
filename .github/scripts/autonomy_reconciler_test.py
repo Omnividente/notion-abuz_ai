@@ -502,6 +502,7 @@ class ReconcilerTests(unittest.TestCase):
             def gh(self, path, **kwargs):
                 self.calls.append((path, kwargs))
                 return 200, {
+                    "base_commit": {"sha": "current-master"},
                     "ahead_by": 2,
                     "behind_by": 1,
                     "merge_base_commit": {"sha": "base-old"},
@@ -514,18 +515,75 @@ class ReconcilerTests(unittest.TestCase):
             [
                 {
                     "number": 620,
-                    "base": {"sha": "base-new"},
+                    "base": {"ref": "master", "sha": "stale-pr-base"},
                     "head": {"sha": "head"},
                 }
             ],
         )
         self.assertEqual(failures, [])
+        self.assertEqual(pulls[0]["current_base_sha"], "current-master")
+        self.assertEqual(M.pr_current_base_sha(pulls[0]), "current-master")
         self.assertEqual(pulls[0]["behind_by"], 1)
         self.assertTrue(M.pr_is_behind(pulls[0]))
         self.assertEqual(
             api.calls[0][0],
-            "/repos/o/r/compare/base-new...head",
+            "/repos/o/r/compare/master...head",
         )
+
+    def test_pull_divergence_uses_current_encoded_base_ref_not_snapshot_sha(self):
+        class FakeAPI:
+            def __init__(self):
+                self.paths = []
+
+            def gh(self, path, **kwargs):
+                self.paths.append(path)
+                return 200, {
+                    "base_commit": {"sha": "current-release-head"},
+                    "ahead_by": 1,
+                    "behind_by": 3,
+                    "merge_base_commit": {"sha": "old-snapshot"},
+                }
+
+        api = FakeAPI()
+        pulls, failures = M.hydrate_pull_divergence(
+            api,
+            "o/r",
+            [
+                {
+                    "number": 622,
+                    "base": {"ref": "release/next", "sha": "old-snapshot"},
+                    "head": {"sha": "product-head"},
+                }
+            ],
+        )
+
+        self.assertEqual(failures, [])
+        self.assertEqual(
+            api.paths,
+            ["/repos/o/r/compare/release%2Fnext...product-head"],
+        )
+        self.assertEqual(pulls[0]["current_base_sha"], "current-release-head")
+        self.assertEqual(pulls[0]["behind_by"], 3)
+
+    def test_pull_divergence_fails_closed_without_current_base_head(self):
+        class FakeAPI:
+            @staticmethod
+            def gh(path, **kwargs):
+                return 200, {"ahead_by": 1, "behind_by": 3}
+
+        original = {
+            "number": 622,
+            "base": {"ref": "master", "sha": "old-snapshot"},
+            "head": {"sha": "product-head"},
+        }
+        pulls, failures = M.hydrate_pull_divergence(
+            FakeAPI(), "o/r", [original]
+        )
+
+        self.assertEqual(pulls, [original])
+        self.assertEqual(len(failures), 1)
+        self.assertIn("cannot resolve current base head", failures[0])
+        self.assertFalse(M.pr_is_behind(pulls[0]))
 
     def test_update_pull_branch_is_bound_to_expected_head(self):
         class FakeAPI:
@@ -578,7 +636,8 @@ class ReconcilerTests(unittest.TestCase):
             {
                 "number": 622,
                 "head": {"sha": "expected-head"},
-                "base": {"sha": "current-base"},
+                "base": {"sha": "stale-pr-base"},
+                "current_base_sha": "current-base",
                 "behind_by": 1,
             },
             ledger,
@@ -591,6 +650,7 @@ class ReconcilerTests(unittest.TestCase):
         self.assertTrue(result["handled"])
         self.assertFalse(result["conflict"])
         self.assertEqual(result["action"]["action"], "update_pr_branch")
+        self.assertEqual(result["action"]["base_sha"], "current-base")
         self.assertEqual(events[0], ("checkpoint", "PR branch update 622"))
         self.assertEqual(events[1][0], "api")
         intent = ledger["messages"][result["key"]]

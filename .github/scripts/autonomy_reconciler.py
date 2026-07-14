@@ -10,6 +10,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import quote
 
 from autonomy_state import *  # noqa: F403 - workflow-local module with explicit __all__
 
@@ -62,7 +63,7 @@ def pr_recovery_fingerprints(
         "pr-recovery-evidence",
         pr_number,
         head_sha,
-        str(((pr.get("base") or {}).get("sha") or "")),
+        pr_current_base_sha(pr),
         int(pr.get("behind_by") or 0),
         pr_mergeability(pr),
         checks.get("fingerprint"),
@@ -98,6 +99,15 @@ def pr_is_behind(pr: dict[str, Any] | None) -> bool:
         return int((pr or {}).get("behind_by") or 0) > 0
     except (TypeError, ValueError):
         return False
+
+
+def pr_current_base_sha(pr: dict[str, Any] | None) -> str:
+    """Return the resolved current base head, not the PR creation snapshot."""
+
+    return str(
+        (pr or {}).get("current_base_sha")
+        or (((pr or {}).get("base") or {}).get("sha") or "")
+    )
 
 
 def hydrate_pull_details(
@@ -158,22 +168,32 @@ def hydrate_pull_divergence(
     failures: list[str] = []
     for pr in pulls:
         number = int(pr.get("number") or 0)
-        base_sha = str(((pr.get("base") or {}).get("sha") or ""))
+        base_ref = str(((pr.get("base") or {}).get("ref") or ""))
         head_sha = str(((pr.get("head") or {}).get("sha") or ""))
-        if not base_sha or not head_sha:
+        if not base_ref or not head_sha:
             failures.append(
-                f"cannot compare autonomous PR #{number}: base or head SHA is missing"
+                f"cannot compare autonomous PR #{number}: base ref or head SHA is missing"
             )
             hydrated.append(pr)
             continue
         try:
             _, comparison = api.gh(
-                f"/repos/{repo}/compare/{base_sha}...{head_sha}"
+                f"/repos/{repo}/compare/{quote(base_ref, safe='')}...{head_sha}"
             )
             comparison = comparison if isinstance(comparison, dict) else {}
+            current_base_sha = str(
+                ((comparison.get("base_commit") or {}).get("sha") or "")
+            )
+            if not current_base_sha:
+                failures.append(
+                    f"cannot resolve current base head for autonomous PR #{number}"
+                )
+                hydrated.append(pr)
+                continue
             hydrated.append(
                 {
                     **pr,
+                    "current_base_sha": current_base_sha,
                     "ahead_by": int(comparison.get("ahead_by") or 0),
                     "behind_by": int(comparison.get("behind_by") or 0),
                     "merge_base_sha": str(
@@ -250,7 +270,7 @@ def reconcile_pull_branch_update(
 
     pr_number = int(pr.get("number") or 0)
     head_sha = str(((pr.get("head") or {}).get("sha") or ""))
-    base_sha = str(((pr.get("base") or {}).get("sha") or ""))
+    base_sha = pr_current_base_sha(pr)
     sync_key = digest("pr-update-branch", pr_number, head_sha, base_sha)
     result["key"] = sync_key
     sync_intent = ledger["messages"].setdefault(
@@ -649,7 +669,7 @@ def reconcile(args: argparse.Namespace) -> int:
         pr_fp = digest(
             (pr or {}).get("number"),
             ((pr or {}).get("head") or {}).get("sha"),
-            ((pr or {}).get("base") or {}).get("sha"),
+            pr_current_base_sha(pr),
             int((pr or {}).get("behind_by") or 0),
             pr_mergeability(pr),
             checks.get("fingerprint"),
@@ -1087,7 +1107,7 @@ def reconcile(args: argparse.Namespace) -> int:
         )
         pr_progress_fp = digest(
             ((pr.get("head") or {}).get("sha") or ""),
-            ((pr.get("base") or {}).get("sha") or ""),
+            pr_current_base_sha(pr),
             int(pr.get("behind_by") or 0),
             checks.get("fingerprint"),
             pr_mergeability(pr),
@@ -1171,7 +1191,7 @@ def reconcile(args: argparse.Namespace) -> int:
                 "pr-recovery",
                 pr_number,
                 ((pr.get("head") or {}).get("sha") or ""),
-                ((pr.get("base") or {}).get("sha") or ""),
+                pr_current_base_sha(pr),
                 int(pr.get("behind_by") or 0),
                 pr_mergeability(pr),
                 checks.get("fingerprint"),
@@ -1386,7 +1406,7 @@ def reconcile(args: argparse.Namespace) -> int:
             (
                 int(pr.get("number") or 0),
                 ((pr.get("head") or {}).get("sha") or ""),
-                ((pr.get("base") or {}).get("sha") or ""),
+                pr_current_base_sha(pr),
                 int(pr.get("behind_by") or 0),
             )
             for pr in autonomous

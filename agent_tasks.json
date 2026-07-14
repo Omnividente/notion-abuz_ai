@@ -9165,6 +9165,32 @@
         "mode": "live active-session branch-sync gap",
         "summary": "The authoritative reconciler now performs one durable native branch update before any active-session recovery and leaves Jules only conflict or semantic work."
       }
+    },
+    {
+      "id": "automation-current-base-divergence-hydration",
+      "status": "done",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Measure PR divergence from the current base branch head",
+      "description": "Post-merge verification of #624 exposed that GitHub REST pull.base.sha for PR #622 remained a57b66b from the PR snapshot while master had advanced to 6b58840. Comparing that stale SHA to head a4a61c8 falsely returned behind_by=0, so reconciler run 29307525125 sent another Jules recovery and Jules produced an empty commit. Resolve divergence from the live base.ref, persist comparison.base_commit.sha as current_base_sha, and use it in every branch-sync and recovery fingerprint.",
+      "allowed_paths": [
+        ".github/scripts/autonomy_reconciler.py",
+        ".github/scripts/autonomy_reconciler_test.py",
+        "docs/WORK_AUTONOMY_2026-07-13.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Divergence hydration compares the URL-encoded current base branch ref to the exact PR head instead of comparing the PR snapshot base SHA.",
+        "The compare response base_commit SHA is stored as current_base_sha and is used by branch-update keys, task progress, recovery evidence, and cycle source fingerprints.",
+        "A missing base ref or unresolved current base head is reported as an explicit hydration error rather than silently yielding behind_by zero.",
+        "A regression fixture with stale pull.base.sha and newer comparison.base_commit detects the PR as behind and binds update-branch evidence to the newer base.",
+        "Live reconciliation of PR #622 performs native update-branch before any further Jules recovery."
+      ],
+      "source_reference": "PR #622 at a4a61c8; master 6b58840; reconciler run 29307525125; REST pull.base.sha a57b66b; compare master...a4a61c8 behind_by=2",
+      "completion_evidence": {
+        "mode": "post-merge live source-of-truth failure",
+        "summary": "Divergence, durable sync keys, and recovery fingerprints now follow the current base branch head rather than GitHub's stale PR base snapshot."
+      }
     }
   ]
 }
