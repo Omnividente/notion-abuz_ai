@@ -8904,7 +8904,7 @@
     },
     {
       "id": "proxy-anthropic-handler-refactor",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Document context cancellation flow in Anthropic Handler",
@@ -8936,6 +8936,21 @@
       ],
       "acceptance": [
         "Debug log statements in internal/proxy/anthropic.go are removed or conditionally enabled to reduce log spam."
+      ]
+    },
+    {
+      "id": "proxy-anthropic-sse-cleanup",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Clean up duplicated ensureHeaders logic in handleResearcherStream",
+      "description": "anthropic.go has duplicated inline definitions for SSE streaming and header management in handleResearcherStream that could be extracted or refactored for readability and maintenance.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Duplicated SSE header logic in anthropic.go handleResearcherStream is documented or refactored cleanly."
       ]
     }
   ]

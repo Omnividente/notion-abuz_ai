@@ -899,7 +899,12 @@ func applyStructuredOutputBridge(messages []ChatMessage, outputConfig *Anthropic
 
 // ========== Handler ==========
 
-// HandleAnthropicMessages returns an HTTP handler for the /v1/messages endpoint (Anthropic Messages API)
+// HandleAnthropicMessages returns an HTTP handler for the /v1/messages endpoint (Anthropic Messages API).
+// It manages long-lived requests (especially streaming and multi-turn Claude Code tool loops) where context cancellation is critical.
+// The http.Request context (r.Context()) is explicitly propagated down to all underlying helper functions
+// (e.g., UploadFileToNotion, handleAnthropicStreamWithContract, handleResearcherStream) to ensure that if a client
+// disconnects mid-stream or cancels the request, the corresponding upstream Notion API calls are aborted promptly,
+// preventing resource leaks and unnecessary pool quota consumption.
 func HandleAnthropicMessages(pool *AccountPool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		requestID := "msg_" + generateUUIDv4()
