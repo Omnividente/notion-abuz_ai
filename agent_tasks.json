@@ -9013,6 +9013,32 @@
       "acceptance": [
         "A unit test exists verifying writeAnthropicSSEMessageStart writes the correct headers and message_start/ping events."
       ]
+    },
+    {
+      "id": "automation-executor-completion-reconciler-handoff",
+      "status": "done",
+      "area": "automation",
+      "risk": "low",
+      "title": "Hand completed task executor runs back to the durable reconciler",
+      "description": "Live verification after PR #615 showed that Execute Leased Jules Task run 29303069912 created session 7036873496572403975 successfully, while no scheduled reconciler tick was delivered during the following nine minutes. Make executor completion an event-driven reconciler trigger so initial session ownership and executor failures do not depend on GitHub schedule delivery.",
+      "allowed_paths": [
+        ".github/workflows/jules_unattended_monitor.yml",
+        ".github/scripts/autonomy_reconciler_test.py",
+        ".github/scripts/jules-recovery-router-test.py",
+        "docs/WORK_AUTONOMY_2026-07-13.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Completion of 2. Execute Leased Jules Task triggers the authoritative durable reconciler for master.",
+        "Executor completion from a non-master branch cannot run the mutating reconcile job.",
+        "Pull-request validation remains read-only and the existing workflow concurrency/ledger continue to deduplicate overlapping triggers.",
+        "Deterministic workflow tests cover the exact executor-to-reconciler handoff and continue to reject broad CI/smoke/critic workflow_run subscriptions."
+      ],
+      "source_reference": "Live runs 29303039141 and 29303069912 after master 064508960209a4a74487e3c8af86f7abc33bd65b",
+      "completion_evidence": {
+        "mode": "live default-branch verification",
+        "summary": "The product session was created correctly, but expected schedule events were absent for nine minutes; workflow_run provides the missing event-driven handoff while the schedule remains a stale-session fallback."
+      }
     }
   ]
 }

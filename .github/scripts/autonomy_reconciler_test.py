@@ -129,6 +129,17 @@ class ReconcilerTests(unittest.TestCase):
         self.assertIn('if [ "$status" -ne 75 ]', workflow)
         self.assertIn("Transient API failure; retrying the durable reconcile", workflow)
 
+    def test_executor_completion_hands_control_back_to_reconciler(self):
+        workflow = (
+            Path(__file__).parents[1] / "workflows" / "jules_unattended_monitor.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn('workflows: ["2. Execute Leased Jules Task"]', workflow)
+        self.assertIn("types: [completed]", workflow)
+        self.assertIn("github.event_name == 'workflow_run'", workflow)
+        self.assertIn("github.event.workflow_run.head_branch == 'master'", workflow)
+        self.assertIn("github.event_name != 'pull_request'", workflow)
+
     def test_activity_summary_extracts_task_and_token(self):
         rows = [
             {"originator": "agent", "createTime": "2026-07-13T10:00:00Z", "message": "task_id: runtime-fix. Waiting."},

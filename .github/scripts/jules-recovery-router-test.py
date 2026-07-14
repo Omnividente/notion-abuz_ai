@@ -373,7 +373,10 @@ class RecoveryRouterTest(unittest.TestCase):
         self.assertNotIn('cron: "*/5 * * * *"', text)
         self.assertIn("workflow_dispatch:", text)
         self.assertIn("pull_request:", text)
-        self.assertNotIn("workflow_run:", text)
+        self.assertEqual(text.count("workflow_run:"), 1)
+        self.assertIn('workflows: ["2. Execute Leased Jules Task"]', text)
+        for broad_wake in ("CI", "RDSH Local Live Smoke", "4. Advisory Critic Review"):
+            self.assertNotIn(f'workflows: ["{broad_wake}"]', text)
         self.assertNotIn("pull_request_target:", text)
         self.assertIn("github.event_name == 'pull_request'", text)
         self.assertIn("github.event_name != 'pull_request'", text)
