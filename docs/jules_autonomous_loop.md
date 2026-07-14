@@ -8,33 +8,37 @@ deployment state, or broad unrelated code.
 ## Loop
 
 ```text
-manual dispatch or pull_request.closed
-  -> trigger Jules API session
-  -> scheduled unattended monitor continues waiting sessions when needed
+durable reconciler leases one exact task
+  -> leased executor creates one Jules API session
+  -> exact read-only observer attaches to that session
   -> Jules reads project rules
   -> Jules selects one safe task
   -> Jules implements a bounded change
   -> Jules updates tests and docs
   -> Jules marks the task done
   -> Jules opens one PR
+  -> observer wakes the authoritative reconciler on terminal, waiting, or stale state
   -> CI, live smoke, and autonomous PR quality gate validate the PR
   -> automerge merges only result-quality-passing PRs
-  -> pull_request.closed starts the next task
+  -> token-authenticated merge wakes the reconciler for the next task
 ```
 
-This is an event-driven loop. The GitHub workflow does not run forever; it
-starts a Jules session and exits. The loop continues when Jules opens a PR and
-the PR is merged.
+This is an event-driven loop. The executor starts a Jules session and exits.
+A read-only observer remains attached to that exact session in bounded
+50-minute windows and wakes the authoritative reconciler when the state becomes
+actionable. If the session is still active at the window boundary, the observer
+queues one successor under a per-session concurrency key.
 
 `AUTO_CREATE_PR` only tells Jules to create a PR when a patch is ready. It does
 not guarantee that Jules will never enter `AWAITING_USER_FEEDBACK`. The
-scheduled `Jules Unattended Monitor` workflow handles that state by sending a
-standard autonomous continuation message. It also approves unexpected plan
-approval waits and can dispatch a new task when the loop is idle.
+session observer detects that state immediately and wakes `Jules Durable
+Reconciler`, which sends a sanitized dynamic recovery packet. The reconciler
+also approves unexpected plan approval waits and can dispatch a new task when
+the loop is idle.
 
-The monitor runs every five minutes. In scheduled mode it waits at least
-15 minutes after the last Jules trigger before starting a replacement session,
-so a fast terminal failure does not leave the loop idle overnight.
+The reconciler still has a five-minute schedule and Automation Health fallback,
+but GitHub may delay or drop scheduled events. They are safety nets rather than
+the critical handoff path; the exact observer handles active-session progress.
 Open same-repository PR branches named `jules-*` or `jules/*` are treated as
 autonomous work even if Jules failed to add the `jules` label itself.
 If Jules pushes a ready `jules-*` or `jules/*` branch but does not open a PR, the

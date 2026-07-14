@@ -9055,6 +9055,39 @@
         "mode": "live default-branch verification",
         "summary": "The product session was created correctly, but expected schedule events were absent for nine minutes; workflow_run provides the missing event-driven handoff while the schedule remains a stale-session fallback."
       }
+    },
+    {
+      "id": "automation-exact-session-observer-handoff",
+      "status": "done",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Keep active Jules sessions moving without GitHub schedule delivery",
+      "description": "Live verification on master 460b803 showed session 10801129102183224850 remained active while the expected 03:43Z and 03:48Z reconciler schedules were not delivered. Attach a bounded read-only observer to every exact session created by the leased executor, and wake the authoritative reconciler on terminal, waiting, or genuinely stale state without restoring the former multi-router event storm.",
+      "allowed_paths": [
+        ".github/scripts/jules_session_observer.py",
+        ".github/scripts/jules_session_observer_test.py",
+        ".github/scripts/jules-next-task-workflow-test.py",
+        ".github/scripts/autonomy_reconciler_test.py",
+        ".github/workflows/jules_session_observer.yml",
+        ".github/workflows/jules_next_task.yml",
+        ".github/workflows/jules_unattended_monitor.yml",
+        ".github/workflows/ci.yml",
+        "docs/WORK_AUTONOMY_2026-07-13.md",
+        "docs/jules_autonomous_loop.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Every successfully created or adopted Jules session dispatches an observer bound to its exact session_id.",
+        "The observer has no content, PR, manifest, Jules mutation, or direct task-dispatch permission and wakes only the authoritative reconciler.",
+        "Terminal, plan approval, user feedback, and true agent-stale states wake reconciliation without waiting for a scheduled event.",
+        "A still-active session receives one bounded successor observer under a per-session concurrency key.",
+        "Deterministic tests cover sanitized snapshots, terminal/wait/stale classification, transient reads, bounded watch renewal, and workflow permissions."
+      ],
+      "source_reference": "Live runs 29303886422, 29303905329, and absent 03:43Z/03:48Z schedule delivery after master 460b8031c4cbfe0da1edc783c504499a59b5a9d7",
+      "completion_evidence": {
+        "mode": "live scheduler-gap repair",
+        "summary": "A per-session read-only observer makes Jules terminal/wait/stale handoff event-driven while the single durable reconciler retains all mutation ownership."
+      }
     }
   ]
 }

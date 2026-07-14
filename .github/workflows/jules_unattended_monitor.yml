@@ -26,8 +26,11 @@ on:
       - ".github/scripts/autonomy_reconciler.py"
       - ".github/scripts/autonomy_state.py"
       - ".github/scripts/jules_task_executor.py"
+      - ".github/scripts/jules_session_observer.py"
+      - ".github/scripts/jules_session_observer_test.py"
       - ".github/scripts/autonomy_reconciler_test.py"
       - ".github/workflows/jules_next_task.yml"
+      - ".github/workflows/jules_session_observer.yml"
       - ".github/workflows/jules_unattended_monitor.yml"
       - ".github/workflows/jules_recovery_router.yml"
       - ".github/workflows/jules_burst_monitor.yml"
@@ -37,8 +40,11 @@ on:
       - ".github/scripts/autonomy_reconciler.py"
       - ".github/scripts/autonomy_state.py"
       - ".github/scripts/jules_task_executor.py"
+      - ".github/scripts/jules_session_observer.py"
+      - ".github/scripts/jules_session_observer_test.py"
       - ".github/scripts/autonomy_reconciler_test.py"
       - ".github/workflows/jules_next_task.yml"
+      - ".github/workflows/jules_session_observer.yml"
       - ".github/workflows/jules_unattended_monitor.yml"
       - ".github/workflows/jules_recovery_router.yml"
       - ".github/workflows/jules_burst_monitor.yml"
@@ -63,11 +69,14 @@ jobs:
             .github/scripts/autonomy_state.py \
             .github/scripts/autonomy_reconciler.py \
             .github/scripts/jules_task_executor.py \
+            .github/scripts/jules_session_observer.py \
+            .github/scripts/jules_session_observer_test.py \
             .github/scripts/autonomy_reconciler_test.py
           python3 -m unittest discover \
             -s .github/scripts \
             -p 'autonomy_reconciler_test.py' \
             -v
+          python3 .github/scripts/jules_session_observer_test.py
 
   reconcile:
     if: >-

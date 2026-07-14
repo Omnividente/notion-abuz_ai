@@ -1,0 +1,111 @@
+name: 2b. Observe Leased Jules Session
+run-name: Observe Jules session ${{ inputs.session_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      session_id:
+        description: "Exact Jules session created by the leased executor"
+        required: true
+        type: string
+      stale_minutes:
+        description: "Minutes without Jules agent progress before reconcile"
+        required: false
+        default: "20"
+        type: string
+
+permissions:
+  contents: read
+  actions: write
+
+# Duplicate dispatch is safe: only one observer for a session can run, and a
+# replacement waits until the current bounded watch window has completed.
+concurrency:
+  group: notion-abuz-jules-observer-${{ inputs.session_id }}
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    if: github.ref == 'refs/heads/master' && vars.JULES_LOOP_ENABLED != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: master
+
+      - name: Validate read-only session observer
+        run: |
+          python3 -m py_compile \
+            .github/scripts/autonomy_state.py \
+            .github/scripts/jules_session_observer.py \
+            .github/scripts/jules_session_observer_test.py
+          python3 .github/scripts/jules_session_observer_test.py
+
+      - name: Observe until terminal, waiting, stale or bounded deadline
+        id: observe
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          JULES_API_KEY_BACKUP: ${{ secrets.JULES_API_KEY_BACKUP }}
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            python3 .github/scripts/jules_session_observer.py \
+              --session-id "${{ inputs.session_id }}" \
+              --stale-minutes "${{ inputs.stale_minutes || '20' }}" \
+              --poll-seconds 45 \
+              --max-watch-minutes 50 && exit 0
+            status=$?
+            if [ "$status" -ne 75 ] || [ "$attempt" -eq 3 ]; then
+              exit "$status"
+            fi
+            sleep "$((attempt * 15))"
+          done
+
+      - name: Continue observer after bounded watch window
+        if: steps.observe.outputs.reason == 'watch_deadline'
+        env:
+          GH_TOKEN: ${{ secrets.PAT || github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gh workflow run jules_session_observer.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref master \
+              -f session_id="${{ inputs.session_id }}" \
+              -f stale_minutes="${{ inputs.stale_minutes || '20' }}"; then
+              exit 0
+            fi
+            [ "$attempt" -lt 3 ] || exit 1
+            sleep "$((attempt * 10))"
+          done
+
+      - name: Wake authoritative reconciler
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.PAT || github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gh workflow run jules_unattended_monitor.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref master; then
+              exit 0
+            fi
+            [ "$attempt" -lt 3 ] || exit 1
+            sleep "$((attempt * 10))"
+          done
+
+      - name: Append observer summary
+        if: always()
+        env:
+          SUMMARY_JSON: ${{ steps.observe.outputs.summary }}
+        run: |
+          {
+            echo "## Jules Session Observer"
+            echo
+            echo '```json'
+            printf '%s\n' "${SUMMARY_JSON:-{}}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -46,6 +46,9 @@
 - recovery и dispatch используют один concurrency group `notion-abuz-autonomy-mutation`;
 - `jules_next_task.yml` больше не имеет собственного schedule, selector или recovery loop: он исполняет только точный `task_id` с валидным непросроченным `lease_key`;
 - завершение `2. Execute Leased Jules Task` является единственным `workflow_run` wake для authoritative reconciler: это фиксирует созданную session или executor failure без ожидания ненадёжного schedule, но не возвращает широкую подписку на CI/smoke/critic события;
+- после создания session executor запускает один `2b. Observe Leased Jules Session` с exact `session_id`; observer только читает sanitized state/activity metadata и не имеет `contents: write`, Jules mutation или task-dispatch полномочий;
+- observer ждёт terminal state, plan/user wait или фактические 20 минут без agent progress и затем через `workflow_dispatch` будит authoritative reconciler; 50-минутное окно заменяется следующим observer той же session под per-session concurrency lock;
+- `schedule` остаётся независимой страховкой, но terminal/stale handoff активной session больше не зависит от доставки cron;
 - executor повторно проверяет durable lease и отсутствие активной Jules session, затем создаёт session и CAS-записью связывает её с task;
 - operational intent сохраняется CAS-checkpoint до approve/sendMessage/comment/delete/session-create; потеря финального save не разрешает повтор side effect;
 - idempotency key строится из `session_id`, `state_version` и `activity_fingerprint`, но progress fingerprint учитывает только agent activity, PR head и checks — собственный recovery prompt не сбрасывает счётчик;
@@ -76,20 +79,21 @@
 
 В PR выполняются:
 
-- `python3 -m py_compile` для state, reconciler, leased executor и тестов;
+- `python3 -m py_compile` для state, reconciler, leased executor, session observer и тестов;
 - `python3 -m unittest -v .github/scripts/autonomy_reconciler_test.py`.
+- `python3 .github/scripts/jules_session_observer_test.py`.
 
 Покрыты state versioning, message idempotency, user-prompt-vs-agent-progress, sanitized packet, newest-check dedupe и failed-step context, bounded session inspection, evidence-bound deferred retry, bounded migration/pruning, control-plane blocker evidence, запрет двух control dispatch подряд, trusted scope expansion, stale-scope rejection, runtime priority, exact-task execution, lease mismatch и lease expiry. Legacy workflow tests проверяют отсутствие event storm и один mutation domain.
 
 ## Live acceptance
 
-Merge запускает первый reconciler cycle через `push`, затем schedule идёт каждые пять минут со смещением `3/5` (03, 08, 13, ...), чтобы не попадать на top-of-hour/common-boundary scheduler load. GitHub документирует, что `schedule` при высокой нагрузке может задерживаться или отбрасываться и рекомендует выбирать другое время внутри часа. Архитектурный PR не считается полностью доказанным до наблюдения минимум 12 последовательных unattended scheduled cycles. Каждый цикл должен оставить bounded durable ledger evidence и не может быть успешным no-op при наличии actionable work. Отдельно требуются два runtime task → Jules → code/test diff → PR → checks → merge цикла; RDSH Local Live Smoke остаётся PR-code evidence, а не production deployment evidence.
+Merge запускает первый reconciler cycle через `push`, а каждый executor запускает exact per-session observer. Observer должен самостоятельно передать terminal/wait/stale state reconciler без ручного dispatch и без ожидания cron. Schedule со смещением `3/5` (03, 08, 13, ...) и Automation Health остаются независимыми fallback: GitHub документирует, что `schedule` при высокой нагрузке может задерживаться или отбрасываться. Каждый handoff должен оставить bounded durable ledger evidence и не может быть успешным no-op при наличии actionable work. Отдельно требуются два runtime task → Jules → code/test diff → PR → checks → merge цикла; RDSH Local Live Smoke остаётся PR-code evidence, а не production deployment evidence.
 
 После merge #615 push-run `29303039141` штатно очистил terminal lease, выбрал `proxy-anthropic-sse-cleanup` и dispatch-нул executor `29303069912`; executor создал session `7036873496572403975`. За следующие девять минут ни один ожидаемый schedule event не был доставлен. Поэтому executor completion получил один exact event-driven handoff обратно в reconciler. Он закрывает первичное окно session visibility и failure handoff, но не заменяет schedule для последующего stale-session наблюдения и не отменяет 12-cycle acceptance.
 
 Post-merge run `29282405208`, attempt 2, дал дополнительный terminal fixture: recovery session `13525775686702804526` перешла в `COMPLETED`, но PR #596 сохранил прежний head и failed checks. Старый ключ, состоявший только из PR SHA и check fingerprint, не разрешал следующую bounded attempt. Этот live blocker является основанием для terminal-session fingerprint и теста `test_terminal_no_change_session_advances_bounded_pr_recovery_once`; сам manual rerun не засчитывается как scheduled acceptance cycle.
 
-Дополнительное scheduler evidence: после schedule-run `29282052280` в `20:21Z` активный workflow с `*/5` не создал ни одного нового schedule-run более 55 минут, хотя mutation concurrency был свободен, GitHub Actions Status показывал `operational`, а push/manual runs выполнялись нормально. Смещение cron не считается доказанным до новых фактических `event: schedule` runs и не заменяет требование 12 циклов.
+Дополнительное scheduler evidence: после schedule-run `29282052280` в `20:21Z` активный workflow с `*/5` не создал ни одного нового schedule-run более 55 минут, хотя mutation concurrency был свободен, GitHub Actions Status показывал `operational`, а push/manual runs выполнялись нормально. После master `460b8031c4cbfe0da1edc783c504499a59b5a9d7` session `10801129102183224850` также не получила ожидаемый `03:43Z` или `03:48Z` scheduled reconcile. Это подтверждает, что cron нельзя оставлять в critical path, и является live source для exact per-session observer.
 
 Schedule-run `29285703212` выявил order-dependent task owner: active recovery session `5079834960180138219` была корректно записана в `sessions`, но более старая completed session `13525775686702804526`, обработанная позже, перезаписала task-level `session_id`, оставив `session_name` от active session. Regression test фиксирует инвариант, что terminal history не меняет уже установленного active owner.
 
