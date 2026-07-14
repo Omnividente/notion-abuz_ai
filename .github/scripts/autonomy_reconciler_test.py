@@ -187,6 +187,65 @@ class ReconcilerTests(unittest.TestCase):
         self.assertEqual(len(selected), 5)
         self.assertIn("sessions/active", [row[1]["name"] for row in selected])
 
+    def test_active_session_inspection_orders_freshest_owner_first(self):
+        rows = [
+            (
+                "k",
+                {
+                    "name": "sessions/old",
+                    "state": "IN_PROGRESS",
+                    "updateTime": "2026-07-13T09:00:00Z",
+                },
+            ),
+            (
+                "k",
+                {
+                    "name": "sessions/new",
+                    "state": "AWAITING_USER_FEEDBACK",
+                    "updateTime": "2026-07-13T09:05:00Z",
+                },
+            ),
+        ]
+        selected = M.sessions_for_reconcile(
+            rows,
+            {"sessions": {}},
+            current=datetime(2026, 7, 13, 10, 0, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            [row[1]["name"] for row in selected],
+            ["sessions/new", "sessions/old"],
+        )
+
+    def test_freshest_active_session_claim_suppresses_task_duplicates(self):
+        owners = {}
+        self.assertEqual(
+            M.claim_active_task_session(owners, "runtime-fix", "new-session"),
+            "",
+        )
+        self.assertEqual(
+            M.claim_active_task_session(owners, "runtime-fix", "old-session"),
+            "new-session",
+        )
+        self.assertEqual(
+            M.claim_active_task_session(owners, "other-task", "other-session"),
+            "",
+        )
+        self.assertEqual(owners["runtime-fix"], "new-session")
+
+    def test_duplicate_active_cleanup_precedes_any_recovery_delivery(self):
+        source = Path(M.__file__).read_text(encoding="utf-8")
+        loop = source.split("for key, session in inspected_sessions:", 1)[1].split(
+            "for task_id, pr in pr_by_task.items():", 1
+        )[0]
+        cleanup = loop.index('"action": "terminate_duplicate_active_session"')
+        recovery = loop.index('"action": "send_recovery"')
+        self.assertLess(cleanup, recovery)
+        self.assertIn("not duplicate_owner", loop[cleanup:recovery])
+        self.assertIn('record.pop("pending_message_key", "")', loop[:cleanup])
+        self.assertIn('previous.get("superseded_by_session_id")', loop[:cleanup])
+        owner_update = loop.rindex('task_state.update({"state": "active"')
+        self.assertIn("and not duplicate_owner", loop[recovery:owner_update])
+
     def test_message_key_changes_with_state(self):
         self.assertNotEqual(M.message_key("s", 1, "a"), M.message_key("s", 2, "a"))
         self.assertNotEqual(M.message_key("s", 1, "a"), M.message_key("s", 1, "b"))
@@ -764,7 +823,7 @@ class ReconcilerTests(unittest.TestCase):
             helper.index("status, payload = update_pull_branch"),
         )
         active_loop = source.split(
-            "elif state in ACTIVE and not task_terminal_in_manifest:", 1
+            "for key, session in inspected_sessions:", 1
         )[1].split("if task_id and terminal_task_needs_outcome", 1)[0]
         self.assertLess(
             active_loop.index("reconcile_pull_branch_update("),
