@@ -65,6 +65,7 @@
 - каждый цикл читает все active sessions, но только bounded recent terminal tail, поэтому сотни исторических sessions не превращаются в сотни Jules API activity calls;
 - PR без активной session reconciler чинит через один deduplicated PR comment, не создавая дублирующий PR/session;
 - failed open project PR без active session получает bounded in-place recovery lease: executor проверяет номер и expected head SHA, стартует с существующей PR branch и запрещает новый PR; `blocked`/`deferred` manifest state не завершает такую recovery session;
+- open autonomous PR сначала получает GitHub-native branch update, если compare показывает `behind_by > 0`: `expected_head_sha` защищает от гонки, новый head/checks становятся progress evidence, а Jules in-place recovery запускается только при merge conflict, bounded update timeout или настоящем failed check после синхронизации;
 - eligible работа без action/progress завершает workflow ошибкой, а не ложным success;
 - selector предпочитает runtime/evidence tasks; control-plane task без конкретного failed run/check evidence не eligible;
 - scheduler запрещает две разные control-plane задачи подряд; после blocker repair следующий dispatch должен вернуться к project work;
@@ -98,3 +99,5 @@ Post-merge run `29282405208`, attempt 2, дал дополнительный ter
 Schedule-run `29285703212` выявил order-dependent task owner: active recovery session `5079834960180138219` была корректно записана в `sessions`, но более старая completed session `13525775686702804526`, обработанная позже, перезаписала task-level `session_id`, оставив `session_name` от active session. Regression test фиксирует инвариант, что terminal history не меняет уже установленного active owner.
 
 После восстановления owner push-run `29286325618` зафиксировал ту же session как `AWAITING_USER_FEEDBACK`. Это live evidence для немедленного автономного resolution: безопасный repository-local вопрос не может останавливать цикл до ручного ответа или общего stale timeout.
+
+Live acceptance observer выявил следующий control gap на PR #620. Session `12983952770589851668` завершилась, observer run `29305212868` сам dispatch-нул reconciler, а run `29305414399` создал in-place recovery session `17485730698808344737`. Ветка PR была основана на `0b8e22a`, тогда как base уже был `7f6cf7d`; quality gate поэтому корректно видел automation-файлы нового master в two-tree diff. Recovery session дважды повторила исходный test commit и не выполнила master sync. Этот evidence является основанием перенести механический behind-branch update из prompt в GitHub control plane, оставив Jules только conflict/semantic recovery.
