@@ -9114,6 +9114,31 @@
         "mode": "live behind-branch recovery failure",
         "summary": "GitHub now performs the deterministic branch synchronization with expected-head race protection; Jules remains the bounded fallback for conflicts and semantic failures."
       }
+    },
+    {
+      "id": "automation-protected-path-quality-recovery-routing",
+      "status": "done",
+      "area": "automation",
+      "risk": "low",
+      "title": "Route protected-path quality failures to durable recovery",
+      "description": "After native branch sync fixed behind_by on PR #622, quality run 29306599931 correctly detected forbidden temporary file pr_body.txt but exited in the early protected-path step. The shared quality stop, needs-quality-fix label, deduplicated comment, and reconciler dispatch were skipped, leaving the PR dependent on schedule delivery. Preserve the hard path rejection while routing its structured result through the existing durable recovery path.",
+      "allowed_paths": [
+        ".github/workflows/jules_automerge.yml",
+        ".github/scripts/jules-next-task-workflow-test.py",
+        "docs/WORK_AUTONOMY_2026-07-13.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Protected secret/data/binary/log/workflow/scratch paths remain merge-blocking.",
+        "The protected-path step emits structured passed/summary outputs and a sanitized quality report instead of exiting before recovery routing.",
+        "The shared weak-PR step handles either protected-path or semantic quality failure, labels/comments the same PR, and dispatches only the authoritative reconciler.",
+        "Deterministic workflow tests prove the early gate contains no direct exit and reaches the existing recovery dispatch."
+      ],
+      "source_reference": "PR #622; native-sync reconciler run 29306562700; protected-path quality run 29306599931",
+      "completion_evidence": {
+        "mode": "live early-quality-gate recovery gap",
+        "summary": "Protected path rejection remains hard-fail, but now reaches the same deduplicated recovery route as all other autonomous PR quality failures."
+      }
     }
   ]
 }
