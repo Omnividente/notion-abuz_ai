@@ -9,7 +9,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from autonomy_state import *  # noqa: F403 - workflow-local module with explicit __all__
 
@@ -222,6 +222,161 @@ def pull_branch_update_outcome(status: int) -> str:
     if status == 409:
         return "conflict"
     return "error"
+
+
+def reconcile_pull_branch_update(
+    api: API,
+    repo: str,
+    pr: dict[str, Any],
+    ledger: dict[str, Any],
+    task_id: str,
+    *,
+    current: datetime,
+    apply: bool,
+    checkpoint: Callable[[str], bool],
+) -> dict[str, Any]:
+    """Synchronize one behind PR, preserving a durable side-effect intent."""
+
+    result: dict[str, Any] = {
+        "handled": False,
+        "conflict": False,
+        "action": None,
+        "blocked": None,
+        "error": "",
+        "key": "",
+    }
+    if not pr_is_behind(pr):
+        return result
+
+    pr_number = int(pr.get("number") or 0)
+    head_sha = str(((pr.get("head") or {}).get("sha") or ""))
+    base_sha = str(((pr.get("base") or {}).get("sha") or ""))
+    sync_key = digest("pr-update-branch", pr_number, head_sha, base_sha)
+    result["key"] = sync_key
+    sync_intent = ledger["messages"].setdefault(
+        sync_key,
+        {
+            "kind": "pr_update_branch",
+            "task_id": task_id,
+            "pr_number": pr_number,
+            "expected_head_sha": head_sha,
+            "base_sha": base_sha,
+            "sent_at": iso(),
+            "verified_at": None,
+            "delivery_attempts": 0,
+        },
+    )
+    sync_age = minutes_since(
+        sync_intent.get("verified_at") or sync_intent.get("sent_at"),
+        current,
+    )
+    delivery_attempts = int(sync_intent.get("delivery_attempts") or 0)
+
+    if sync_intent.get("conflict_at"):
+        result["conflict"] = True
+        return result
+    if sync_intent.get("verified_at") and sync_age < 5:
+        result["handled"] = True
+        result["blocked"] = {
+            "task_id": task_id,
+            "pr_number": pr_number,
+            "reason": "GitHub accepted PR branch update; waiting for a new head",
+            "retry_condition": "PR head SHA changes or five-minute branch-update window expires",
+            "evidence_requirement": "new PR head and checks from current master",
+            "next_review_at": iso(
+                current + timedelta(minutes=max(0, 5 - sync_age))
+            ),
+        }
+        return result
+    if sync_intent.get("verified_at") and delivery_attempts >= 2:
+        result["conflict"] = True
+        result["action"] = {
+            "action": "pr_branch_update_timeout",
+            "task_id": task_id,
+            "pr_number": pr_number,
+            "expected_head_sha": head_sha,
+        }
+        return result
+
+    sync_intent["delivery_attempts"] = delivery_attempts + 1
+    if not checkpoint(f"PR branch update {pr_number}"):
+        result["handled"] = True
+        return result
+    try:
+        status, payload = update_pull_branch(api, repo, pr, apply=apply)
+        outcome = pull_branch_update_outcome(status)
+        sync_intent["response_status"] = status
+        sync_intent["response_message"] = sanitize(
+            (payload or {}).get("message") if isinstance(payload, dict) else payload,
+            300,
+        )
+        sync_intent["outcome"] = outcome
+        if outcome in {"dry_run", "accepted"}:
+            sync_intent["verified_at"] = iso()
+            result["handled"] = True
+            result["action"] = {
+                "action": "update_pr_branch",
+                "task_id": task_id,
+                "pr_number": pr_number,
+                "expected_head_sha": head_sha,
+                "base_sha": base_sha,
+                "applied": bool(apply),
+            }
+            return result
+        if outcome == "head_raced":
+            sync_intent["verified_at"] = iso()
+            result["handled"] = True
+            result["action"] = {
+                "action": "pr_branch_update_raced",
+                "task_id": task_id,
+                "pr_number": pr_number,
+                "expected_head_sha": head_sha,
+            }
+            return result
+        sync_intent["conflict_at"] = iso()
+        result["conflict"] = True
+        result["action"] = {
+            "action": "pr_branch_update_conflict",
+            "task_id": task_id,
+            "pr_number": pr_number,
+            "expected_head_sha": head_sha,
+            "status": status,
+        }
+        return result
+    except Exception as exc:
+        sync_intent["delivery_error"] = sanitize(exc, 500)
+        result["conflict"] = True
+        result["error"] = (
+            f"PR branch update failed for #{pr_number}: {sanitize(exc, 600)}"
+        )
+        return result
+
+
+def active_session_recovery_decision(
+    *,
+    failed_checks: bool,
+    dirty_pr: bool,
+    behind_pr: bool,
+    branch_sync_conflict: bool,
+    branch_sync_handled: bool,
+    previous_pr_fingerprint: Any,
+    current_pr_fingerprint: str,
+    stale: bool,
+    awaiting_user_feedback: bool,
+) -> tuple[bool, str]:
+    """Prefer a bounded GitHub branch update over an extra Jules message."""
+
+    recover_now, recovery_trigger = should_recover_session(
+        failed_checks=failed_checks,
+        blocked_pr=dirty_pr or behind_pr or branch_sync_conflict,
+        previous_pr_fingerprint=previous_pr_fingerprint,
+        current_pr_fingerprint=current_pr_fingerprint,
+        stale=stale,
+        awaiting_user_feedback=awaiting_user_feedback,
+    )
+    if branch_sync_handled:
+        return False, "pr_branch_update_in_progress"
+    return recover_now, recovery_trigger
 
 
 def settle_terminal_manifest_task(
@@ -729,12 +884,47 @@ def reconcile(args: argparse.Namespace) -> int:
                         except Exception as exc:
                             defer_intent["delivery_error"] = sanitize(exc, 500)
                             errors.append(f"defer request termination failed for {session_id}: {sanitize(exc, 600)}")
+            branch_sync = reconcile_pull_branch_update(
+                api,
+                repo,
+                pr or {},
+                ledger,
+                str(task_id),
+                current=current,
+                apply=args.apply,
+                checkpoint=checkpoint,
+            )
+            if branch_sync.get("action"):
+                actions.append(branch_sync["action"])
+            if branch_sync.get("blocked"):
+                blocked.append(branch_sync["blocked"])
+            if branch_sync.get("error"):
+                errors.append(str(branch_sync["error"]))
+            branch_sync_handled = bool(branch_sync.get("handled"))
+            branch_sync_conflict = bool(branch_sync.get("conflict"))
+            if branch_sync_handled:
+                fresh_current_work = True
+                task_state = dict(ledger["tasks"].get(task_state_id, {}))
+                task_state.update(
+                    {
+                        "state": "pr_branch_update_requested",
+                        "session_id": session_id,
+                        "pr_number": int((pr or {}).get("number") or 0),
+                        "branch_update_key": branch_sync.get("key"),
+                        "branch_update_requested_at": iso(),
+                    }
+                )
+                ledger["tasks"][task_state_id] = task_state
+
             latest = latest_observed
             stale = minutes_since(latest, current) >= args.stale_minutes
             failed = bool(checks.get("failed"))
-            recover_now, recovery_trigger = should_recover_session(
+            recover_now, recovery_trigger = active_session_recovery_decision(
                 failed_checks=failed,
-                blocked_pr=pr_is_dirty(pr),
+                dirty_pr=pr_is_dirty(pr),
+                behind_pr=pr_is_behind(pr),
+                branch_sync_conflict=branch_sync_conflict,
+                branch_sync_handled=branch_sync_handled,
                 previous_pr_fingerprint=previous.get("pr_fingerprint"),
                 current_pr_fingerprint=pr_fp,
                 stale=stale,
@@ -948,130 +1138,33 @@ def reconcile(args: argparse.Namespace) -> int:
         if pr_delta or pr_initial_recent:
             task_state["last_progress_at"] = iso()
             progress.append({"task_id": task_id, "pr_number": pr_number, "kind": "pr_delta" if pr_delta else "initial_recent_pr"})
-        branch_sync_conflict = False
-        if pr_is_behind(pr):
-            head_sha = str(((pr.get("head") or {}).get("sha") or ""))
-            base_sha = str(((pr.get("base") or {}).get("sha") or ""))
-            sync_key = digest("pr-update-branch", pr_number, head_sha, base_sha)
-            sync_intent = ledger["messages"].setdefault(
-                sync_key,
+        branch_sync = reconcile_pull_branch_update(
+            api,
+            repo,
+            pr,
+            ledger,
+            task_id,
+            current=current,
+            apply=args.apply,
+            checkpoint=checkpoint,
+        )
+        if branch_sync.get("action"):
+            actions.append(branch_sync["action"])
+        if branch_sync.get("blocked"):
+            blocked.append(branch_sync["blocked"])
+        if branch_sync.get("error"):
+            errors.append(str(branch_sync["error"]))
+        branch_sync_conflict = bool(branch_sync.get("conflict"))
+        if branch_sync.get("handled"):
+            task_state.update(
                 {
-                    "kind": "pr_update_branch",
-                    "task_id": task_id,
-                    "pr_number": pr_number,
-                    "expected_head_sha": head_sha,
-                    "base_sha": base_sha,
-                    "sent_at": iso(),
-                    "verified_at": None,
-                    "delivery_attempts": 0,
-                },
+                    "state": "pr_branch_update_requested",
+                    "branch_update_key": branch_sync.get("key"),
+                    "branch_update_requested_at": iso(),
+                }
             )
-            sync_age = minutes_since(
-                sync_intent.get("verified_at") or sync_intent.get("sent_at"),
-                current,
-            )
-            delivery_attempts = int(sync_intent.get("delivery_attempts") or 0)
-            if sync_intent.get("conflict_at"):
-                branch_sync_conflict = True
-            elif sync_intent.get("verified_at") and sync_age < 5:
-                task_state.update(
-                    {
-                        "state": "pr_branch_update_requested",
-                        "branch_update_key": sync_key,
-                        "branch_update_requested_at": sync_intent.get("verified_at"),
-                    }
-                )
-                ledger["tasks"][task_id] = task_state
-                blocked.append(
-                    {
-                        "task_id": task_id,
-                        "pr_number": pr_number,
-                        "reason": "GitHub accepted PR branch update; waiting for a new head",
-                        "retry_condition": "PR head SHA changes or five-minute branch-update window expires",
-                        "evidence_requirement": "new PR head and checks from current master",
-                        "next_review_at": iso(current + timedelta(minutes=max(0, 5 - sync_age))),
-                    }
-                )
-                continue
-            elif sync_intent.get("verified_at") and delivery_attempts >= 2:
-                branch_sync_conflict = True
-                actions.append(
-                    {
-                        "action": "pr_branch_update_timeout",
-                        "task_id": task_id,
-                        "pr_number": pr_number,
-                        "expected_head_sha": head_sha,
-                    }
-                )
-            else:
-                sync_intent["delivery_attempts"] = delivery_attempts + 1
-                task_state.update(
-                    {
-                        "state": "pr_branch_update_requested",
-                        "branch_update_key": sync_key,
-                        "branch_update_requested_at": iso(),
-                    }
-                )
-                ledger["tasks"][task_id] = task_state
-                if not checkpoint(f"PR branch update {pr_number}"):
-                    continue
-                try:
-                    status, payload = update_pull_branch(
-                        api,
-                        repo,
-                        pr,
-                        apply=args.apply,
-                    )
-                    sync_intent["response_status"] = status
-                    sync_intent["response_message"] = sanitize(
-                        (payload or {}).get("message")
-                        if isinstance(payload, dict)
-                        else payload,
-                        300,
-                    )
-                    outcome = pull_branch_update_outcome(status)
-                    sync_intent["outcome"] = outcome
-                    if outcome in {"dry_run", "accepted"}:
-                        sync_intent["verified_at"] = iso()
-                        actions.append(
-                            {
-                                "action": "update_pr_branch",
-                                "task_id": task_id,
-                                "pr_number": pr_number,
-                                "expected_head_sha": head_sha,
-                                "base_sha": base_sha,
-                                "applied": bool(args.apply),
-                            }
-                        )
-                        continue
-                    if outcome == "head_raced":
-                        sync_intent["verified_at"] = iso()
-                        actions.append(
-                            {
-                                "action": "pr_branch_update_raced",
-                                "task_id": task_id,
-                                "pr_number": pr_number,
-                                "expected_head_sha": head_sha,
-                            }
-                        )
-                        continue
-                    branch_sync_conflict = True
-                    sync_intent["conflict_at"] = iso()
-                    actions.append(
-                        {
-                            "action": "pr_branch_update_conflict",
-                            "task_id": task_id,
-                            "pr_number": pr_number,
-                            "expected_head_sha": head_sha,
-                            "status": status,
-                        }
-                    )
-                except Exception as exc:
-                    sync_intent["delivery_error"] = sanitize(exc, 500)
-                    errors.append(
-                        f"PR branch update failed for #{pr_number}: {sanitize(exc, 600)}"
-                    )
-                    branch_sync_conflict = True
+            ledger["tasks"][task_id] = task_state
+            continue
         if pr_requires_recovery(pr, checks):
             dirty_pr = pr_is_dirty(pr) or pr_is_behind(pr) or branch_sync_conflict
             key = digest(
