@@ -1172,6 +1172,36 @@
       "run_attempt": "1",
       "run_id": "29295725785",
       "source_fingerprint": "6b1896d234b4a9591c0d96e9"
+    },
+    {
+      "actions": [
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "9324b0fc0acb5dbcc8da67e8",
+          "generation": 1,
+          "task_id": "proxy-anthropic-handler-refactor"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "proxy-upload-debug-logging-cleanup"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T00:38:30Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-anthropic-handler-refactor",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 463,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "proxy-anthropic-handler-refactor"
+      ],
+      "progress": [],
+      "run_attempt": "1",
+      "run_id": "29296430513",
+      "source_fingerprint": "ecc26e099698745b6d2daf37"
     }
   ],
   "messages": {
@@ -3050,7 +3080,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 77,
+  "revision": 78,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3759,16 +3789,11 @@
     "proxy-upload-debug-logging-cleanup": {
       "dispatch_completed_at": "2026-07-14T00:23:36Z",
       "dispatch_generation": 1,
-      "dispatch_key": "789d27b3dfc45bef8128500c",
-      "dispatch_requested_at": "2026-07-14T00:23:02Z",
-      "lease_expires_at": "2026-07-14T01:08:36Z",
+      "manifest_status": "done",
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_create_requested_at": "2026-07-14T00:23:33Z",
-      "session_id": "9281838579526649140",
-      "session_name": "sessions/9281838579526649140",
       "session_state": "STATE_UNSPECIFIED",
-      "state": "session_created",
+      "state": "manifest_done",
       "task_fingerprint": "f82cb48c3684588ae636db77"
     },
     "proxy-upload-request-context-cancellation": {
@@ -3794,5 +3819,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T00:38:29Z"
+  "updated_at": "2026-07-14T00:38:30Z"
 }
