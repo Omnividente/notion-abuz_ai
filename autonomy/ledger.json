@@ -1293,7 +1293,7 @@
       "pr_number": 616,
       "sent_at": "2026-07-14T03:32:04Z",
       "task_id": "automation-executor-completion-reconciler-handoff",
-      "verified_at": null
+      "verified_at": "2026-07-14T03:32:06Z"
     },
     "1e2a8a7d2727e5b3f752729b": {
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
@@ -3162,7 +3162,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 90,
+  "revision": 91,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3808,13 +3808,23 @@
       "last_dispatched_task_id": "proxy-anthropic-sse-cleanup"
     },
     "automation-executor-completion-reconciler-handoff": {
+      "dispatch_generation": 1,
+      "dispatch_key": "1df51edb21c636823f52b948",
+      "dispatch_requested_at": "2026-07-14T03:32:06Z",
       "last_observed_at": "2026-07-14T03:32:04Z",
       "last_progress_at": "2026-07-14T03:32:04Z",
+      "lease_expires_at": "2026-07-14T04:01:14Z",
       "pr_number": 616,
       "pr_recoveries": 1,
+      "pr_recovery_evidence_key": "ce352e67c9a245f297b75312",
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "5899afe1086d3eeab9c4e7bc",
       "progress_fingerprint": "b4ff724aba3798d7ebc32325",
+      "recovery_pr_head": "4c9edbad203170312ebbefc8e87be8fbd2f5919a",
+      "recovery_pr_number": 616,
+      "recovery_reason": "dirty PR must sync current master",
       "session_id": null,
-      "state": "pr_open_without_active_session"
+      "state": "pr_recovery_dispatch_requested"
     },
     "docs-idempotency-replay-behavior": {
       "current_evidence_fingerprint": "325d6bf4b25b60fbb083a4de",
@@ -3981,5 +3991,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T03:32:04Z"
+  "updated_at": "2026-07-14T03:32:06Z"
 }
