@@ -149,6 +149,7 @@ GENERATED_ARTIFACT_FILE_RE = re.compile(
     r"\.(?:py[cod]|coverage)$",
     re.IGNORECASE,
 )
+TEST_GOAL_RE = re.compile(r"\btests?\b|\btest[- ]coverage\b", re.IGNORECASE)
 
 
 @dataclass
@@ -433,6 +434,30 @@ def is_audit_task(task: dict[str, Any]) -> bool:
 def is_operational_task(task: dict[str, Any]) -> bool:
     text = task_goal_text(task)
     return any(keyword in text for keyword in OPERATIONAL_KEYWORDS)
+
+
+def is_explicit_test_only_task(task: dict[str, Any]) -> bool:
+    """Recognize manifest contracts whose complete deliverable is test code."""
+
+    allowed_paths = task.get("allowed_paths")
+    if not isinstance(allowed_paths, list):
+        return False
+    scoped_files = [
+        str(path) for path in allowed_paths if not is_manifest_path(str(path))
+    ]
+    if not scoped_files or not all(is_test_path(path) for path in scoped_files):
+        return False
+
+    goal = "\n".join(
+        str(task.get(field) or "") for field in ("title", "description")
+    )
+    acceptance = task.get("acceptance")
+    return bool(
+        TEST_GOAL_RE.search(goal)
+        and isinstance(acceptance, list)
+        and acceptance
+        and all(TEST_GOAL_RE.search(str(item)) for item in acceptance)
+    )
 
 
 def requires_observability_proof(task: dict[str, Any]) -> bool:
@@ -867,7 +892,12 @@ def evaluate_quality(
                 "legacy/offline lab, smoke, artifact, runner-label, rollback, or workflow_dispatch evidence."
             )
 
-        if operational and not is_audit_task(task) and only_tests_manifest(changed_files):
+        if (
+            operational
+            and not is_audit_task(task)
+            and not is_explicit_test_only_task(task)
+            and only_tests_manifest(changed_files)
+        ):
             reasons.append(
                 f"Task {change.task_id} is operational/diagnostic but the PR changed only tests and agent_tasks.json."
             )
