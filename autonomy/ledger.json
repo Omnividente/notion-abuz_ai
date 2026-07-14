@@ -1906,7 +1906,7 @@
       "session_id": "14386652575089485622",
       "state_version": 2,
       "task_id": "docs-ask-mode-override-wording",
-      "verified_at": null
+      "verified_at": "2026-07-14T07:31:30Z"
     },
     "721278a883e5ed060da9636b": {
       "kind": "pr_recovery",
@@ -1926,6 +1926,14 @@
       "state_version": 5,
       "task_id": "proxy-improve-rproxy-timeout-handling",
       "verified_at": "2026-07-13T21:31:38Z"
+    },
+    "8627971b14ec3b7490141ffd": {
+      "canonical_session_id": "14386652575089485622",
+      "kind": "duplicate_active_task_session_cleanup",
+      "sent_at": "2026-07-14T07:31:31Z",
+      "session_id": "13893740484827123621",
+      "task_id": "docs-ask-mode-override-wording",
+      "verified_at": null
     },
     "8c42901eea8c08112668fa7d": {
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
@@ -3504,14 +3512,6 @@
       "type": "quality_fix_recovery",
       "verified_at": "2026-07-05T23:17:31Z"
     },
-    "legacy-e07ceb96355fc7cb7924b799": {
-      "kind": "legacy_router_action",
-      "reason": "PR #230 is dirty/conflicting with master",
-      "sent_at": "2026-07-02T22:17:58Z",
-      "source_key_hash": "e07ceb96355fc7cb7924b799",
-      "type": "conflict_recovery",
-      "verified_at": "2026-07-02T22:17:58Z"
-    },
     "legacy-e0a797b65c3dae0c3dde2e30": {
       "kind": "legacy_router_action",
       "reason": "PR #335 has unresolved needs-quality-fix",
@@ -3724,7 +3724,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 175,
+  "revision": 176,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3875,17 +3875,18 @@
     },
     "13893740484827123621": {
       "activity_fingerprint": "525dfc9c7e02895f415fa44a",
-      "last_observed_at": "2026-07-14T07:30:06Z",
-      "last_progress_at": "2026-07-14T07:30:06Z",
+      "last_observed_at": "2026-07-14T07:31:31Z",
+      "last_progress_at": "2026-07-14T07:31:31Z",
       "lease_key": "27ad877f8ef09d2d2a18c53c",
       "pr_fingerprint": "1b652a4a855d7a0f77179e00",
-      "progress_fingerprint": "19c382aa2f8f359d78d8a7ed",
+      "progress_fingerprint": "95c42e629188a6b953951432",
       "recoveries_without_progress": 0,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_state": "COMPLETED",
-      "session_update_at": "2026-07-14T06:08:52.499889Z",
-      "state_version": 8,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-14T07:31:05.086165Z",
+      "state_version": 9,
+      "superseded_by_session_id": "14386652575089485622",
       "task_id": "docs-ask-mode-override-wording"
     },
     "14012698769106055432": {
@@ -3902,11 +3903,12 @@
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
       "last_observed_at": "2026-07-14T07:31:28Z",
       "last_progress_at": "2026-07-14T07:31:28Z",
+      "last_verified_message_key": "6f06425c1ac32228e1f1743e",
       "lease_key": "397a63b7ca5a38967b781f3b",
-      "pending_message_key": "6f06425c1ac32228e1f1743e",
+      "post_send_activity_fingerprint": "ad59d57ba276bf128e8fdb28",
       "pr_fingerprint": "1b652a4a855d7a0f77179e00",
       "progress_fingerprint": "170451c727bbf1830e1ca6fe",
-      "recoveries_without_progress": 0,
+      "recoveries_without_progress": 1,
       "recovery_pr_head": "8eda745873fd21447d9dc78165e2e245e6c4b539",
       "recovery_pr_number": 629,
       "session_state": "IN_PROGRESS",
@@ -4520,12 +4522,12 @@
       "state": "manifest_done"
     },
     "docs-ask-mode-override-wording": {
-      "current_evidence_fingerprint": "19c382aa2f8f359d78d8a7ed",
+      "current_evidence_fingerprint": "170451c727bbf1830e1ca6fe",
       "dispatch_completed_at": "2026-07-14T07:30:59Z",
       "dispatch_generation": 3,
       "dispatch_key": "397a63b7ca5a38967b781f3b",
       "dispatch_requested_at": "2026-07-14T07:30:28Z",
-      "last_observed_at": "2026-07-14T07:30:24Z",
+      "last_observed_at": "2026-07-14T07:31:30Z",
       "last_progress_at": "2026-07-14T07:30:24Z",
       "lease_expires_at": "2026-07-14T08:15:59Z",
       "pr_number": 629,
@@ -4540,8 +4542,8 @@
       "session_create_requested_at": "2026-07-14T07:30:57Z",
       "session_id": "14386652575089485622",
       "session_name": "sessions/14386652575089485622",
-      "session_state": "STATE_UNSPECIFIED",
-      "state": "session_created",
+      "session_state": "IN_PROGRESS",
+      "state": "active",
       "task_fingerprint": "c1782c6fbea72e811492560c"
     },
     "docs-idempotency-replay-behavior": {
@@ -4767,5 +4769,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T07:31:28Z"
+  "updated_at": "2026-07-14T07:31:31Z"
 }
