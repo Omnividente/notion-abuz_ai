@@ -3393,7 +3393,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 106,
+  "revision": 107,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4166,7 +4166,7 @@
       "dispatch_requested_at": "2026-07-14T04:13:56Z",
       "last_observed_at": "2026-07-14T04:13:54Z",
       "last_progress_at": "2026-07-14T04:13:54Z",
-      "lease_expires_at": "2026-07-14T04:42:55Z",
+      "lease_expires_at": "2026-07-14T04:59:30Z",
       "pr_number": 620,
       "pr_recoveries": 1,
       "pr_recovery_evidence_key": "001ca51c1d23b4242d6ef73a",
@@ -4176,11 +4176,11 @@
       "recovery_pr_head": "f75d51d6dc155de73351d061510893ee72547f39",
       "recovery_pr_number": 620,
       "recovery_reason": "failed checks: test-and-merge",
-      "session_create_requested_at": "2026-07-14T04:02:31Z",
+      "session_create_requested_at": "2026-07-14T04:14:30Z",
       "session_id": null,
       "session_name": "sessions/12983952770589851668",
       "session_state": "COMPLETED",
-      "state": "pr_recovery_dispatch_requested",
+      "state": "session_create_requested",
       "task_fingerprint": "279d75a055015a2aa90b2db4"
     },
     "proxy-improve-rproxy-error-logging": {
@@ -4281,5 +4281,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:13:58Z"
+  "updated_at": "2026-07-14T04:14:30Z"
 }
