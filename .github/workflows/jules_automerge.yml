@@ -102,36 +102,19 @@ jobs:
           echo "base_ref=${base_ref}" >> "$GITHUB_OUTPUT"
           echo "head_ref=${head_ref}" >> "$GITHUB_OUTPUT"
 
-      - name: Detect protected runtime and workflow paths
-        id: protected-paths
+      - name: Reject protected runtime and workflow paths
         run: |
           set -euo pipefail
           git diff --name-only \
             "${{ steps.quality-refs.outputs.base_ref }}" \
             "${{ steps.quality-refs.outputs.head_ref }}" \
             | tee /tmp/pr-files.txt
-          protected_files="$(grep -E '(^|/)(config\.yaml|token\.txt|pass\.txt|.*\.log|.*\.(orig|rej|diff|patch)|notion-manager(\.exe)?$)$|^(data|accounts)/|^(my_.*\.go|run_test\.go)$|^((plan|scratch|tmp|jules-notes)[a-zA-Z0-9_-]*|pr[-_]?body[a-zA-Z0-9_-]*|pull[-_]?request[-_]?body[a-zA-Z0-9_-]*)\.(md|txt)$' /tmp/pr-files.txt || true)"
-          if [ -n "$protected_files" ]; then
-            summary="PR changes protected runtime, secret, binary, log, data, account, workflow, or temporary scratch files."
-            echo "passed=false" >> "$GITHUB_OUTPUT"
-            echo "summary=${summary}" >> "$GITHUB_OUTPUT"
-            {
-              echo "# Autonomous PR quality"
-              echo
-              echo "$summary"
-              echo
-              echo '```text'
-              printf '%s\n' "$protected_files"
-              echo '```'
-            } > /tmp/autonomous-pr-quality.md
-            echo "::warning::${summary} Recovery will be routed through the authoritative reconciler."
-          else
-            echo "passed=true" >> "$GITHUB_OUTPUT"
-            echo "summary=No protected paths detected." >> "$GITHUB_OUTPUT"
+          if grep -E '(^|/)(config\.yaml|token\.txt|pass\.txt|.*\.log|.*\.(orig|rej|diff|patch)|notion-manager(\.exe)?$)$|^(data|accounts)/|^(my_.*\.go|run_test\.go)$|^((plan|scratch|tmp|jules-notes)[a-zA-Z0-9_-]*|pr[-_]?body[a-zA-Z0-9_-]*|pull[-_]?request[-_]?body[a-zA-Z0-9_-]*)\.(md|txt)$' /tmp/pr-files.txt; then
+            echo "::error::PR changes protected runtime, secret, binary, log, data, account, workflow, or temporary scratch files."
+            exit 1
           fi
 
       - name: Read durable scope approvals
-        if: steps.protected-paths.outputs.passed == 'true'
         env:
           GH_TOKEN: ${{ secrets.PAT || github.token }}
         run: |
@@ -150,7 +133,6 @@ jobs:
           fi
 
       - name: Review autonomous PR quality
-        if: steps.protected-paths.outputs.passed == 'true'
         id: quality
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
@@ -202,14 +184,12 @@ jobs:
           echo "Persisted synthesized AUTONOMOUS_TASK_EVIDENCE in PR body."
 
       - name: Stop weak autonomous PR before merge
-        if: >-
-          steps.protected-paths.outputs.passed != 'true' ||
-          steps.quality.outputs.passed != 'true'
+        if: steps.quality.outputs.passed != 'true'
         env:
           GH_TOKEN: ${{ secrets.PAT || github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          QUALITY_SUMMARY: ${{ steps.protected-paths.outputs.passed != 'true' && steps.protected-paths.outputs.summary || steps.quality.outputs.summary }}
+          QUALITY_SUMMARY: ${{ steps.quality.outputs.summary }}
         run: |
           set -euo pipefail
 

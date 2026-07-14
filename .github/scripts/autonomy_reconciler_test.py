@@ -502,7 +502,6 @@ class ReconcilerTests(unittest.TestCase):
             def gh(self, path, **kwargs):
                 self.calls.append((path, kwargs))
                 return 200, {
-                    "base_commit": {"sha": "current-master"},
                     "ahead_by": 2,
                     "behind_by": 1,
                     "merge_base_commit": {"sha": "base-old"},
@@ -515,75 +514,18 @@ class ReconcilerTests(unittest.TestCase):
             [
                 {
                     "number": 620,
-                    "base": {"ref": "master", "sha": "stale-pr-base"},
+                    "base": {"sha": "base-new"},
                     "head": {"sha": "head"},
                 }
             ],
         )
         self.assertEqual(failures, [])
-        self.assertEqual(pulls[0]["current_base_sha"], "current-master")
-        self.assertEqual(M.pr_current_base_sha(pulls[0]), "current-master")
         self.assertEqual(pulls[0]["behind_by"], 1)
         self.assertTrue(M.pr_is_behind(pulls[0]))
         self.assertEqual(
             api.calls[0][0],
-            "/repos/o/r/compare/master...head",
+            "/repos/o/r/compare/base-new...head",
         )
-
-    def test_pull_divergence_uses_current_encoded_base_ref_not_snapshot_sha(self):
-        class FakeAPI:
-            def __init__(self):
-                self.paths = []
-
-            def gh(self, path, **kwargs):
-                self.paths.append(path)
-                return 200, {
-                    "base_commit": {"sha": "current-release-head"},
-                    "ahead_by": 1,
-                    "behind_by": 3,
-                    "merge_base_commit": {"sha": "old-snapshot"},
-                }
-
-        api = FakeAPI()
-        pulls, failures = M.hydrate_pull_divergence(
-            api,
-            "o/r",
-            [
-                {
-                    "number": 622,
-                    "base": {"ref": "release/next", "sha": "old-snapshot"},
-                    "head": {"sha": "product-head"},
-                }
-            ],
-        )
-
-        self.assertEqual(failures, [])
-        self.assertEqual(
-            api.paths,
-            ["/repos/o/r/compare/release%2Fnext...product-head"],
-        )
-        self.assertEqual(pulls[0]["current_base_sha"], "current-release-head")
-        self.assertEqual(pulls[0]["behind_by"], 3)
-
-    def test_pull_divergence_fails_closed_without_current_base_head(self):
-        class FakeAPI:
-            @staticmethod
-            def gh(path, **kwargs):
-                return 200, {"ahead_by": 1, "behind_by": 3}
-
-        original = {
-            "number": 622,
-            "base": {"ref": "master", "sha": "old-snapshot"},
-            "head": {"sha": "product-head"},
-        }
-        pulls, failures = M.hydrate_pull_divergence(
-            FakeAPI(), "o/r", [original]
-        )
-
-        self.assertEqual(pulls, [original])
-        self.assertEqual(len(failures), 1)
-        self.assertIn("cannot resolve current base head", failures[0])
-        self.assertFalse(M.pr_is_behind(pulls[0]))
 
     def test_update_pull_branch_is_bound_to_expected_head(self):
         class FakeAPI:
@@ -615,160 +557,12 @@ class ReconcilerTests(unittest.TestCase):
         self.assertEqual(M.pull_branch_update_outcome(409), "conflict")
         self.assertEqual(M.pull_branch_update_outcome(500), "error")
 
-    def test_reconcile_pull_branch_update_checkpoints_before_put(self):
-        events = []
-
-        class FakeAPI:
-            def gh(self, path, **kwargs):
-                events.append(("api", path, kwargs))
-                return 202, {"message": "Updating pull request branch."}
-
-        ledger = {"messages": {}}
-        current = M.now()
-
-        def checkpoint(reason):
-            events.append(("checkpoint", reason))
-            return True
-
-        result = M.reconcile_pull_branch_update(
-            FakeAPI(),
-            "o/r",
-            {
-                "number": 622,
-                "head": {"sha": "expected-head"},
-                "base": {"sha": "stale-pr-base"},
-                "current_base_sha": "current-base",
-                "behind_by": 1,
-            },
-            ledger,
-            "runtime-tests",
-            current=current,
-            apply=True,
-            checkpoint=checkpoint,
-        )
-
-        self.assertTrue(result["handled"])
-        self.assertFalse(result["conflict"])
-        self.assertEqual(result["action"]["action"], "update_pr_branch")
-        self.assertEqual(result["action"]["base_sha"], "current-base")
-        self.assertEqual(events[0], ("checkpoint", "PR branch update 622"))
-        self.assertEqual(events[1][0], "api")
-        intent = ledger["messages"][result["key"]]
-        self.assertEqual(intent["delivery_attempts"], 1)
-        self.assertIsNotNone(intent["verified_at"])
-
-    def test_reconcile_pull_branch_update_waits_before_retry(self):
-        class FakeAPI:
-            def __init__(self):
-                self.calls = 0
-
-            def gh(self, path, **kwargs):
-                self.calls += 1
-                return 202, {"message": "Updating pull request branch."}
-
-        api = FakeAPI()
-        ledger = {"messages": {}}
-        current = M.now()
-        pr = {
-            "number": 622,
-            "head": {"sha": "expected-head"},
-            "base": {"sha": "current-base"},
-            "behind_by": 1,
-        }
-        first = M.reconcile_pull_branch_update(
-            api,
-            "o/r",
-            pr,
-            ledger,
-            "runtime-tests",
-            current=current,
-            apply=True,
-            checkpoint=lambda _: True,
-        )
-        repeated = M.reconcile_pull_branch_update(
-            api,
-            "o/r",
-            pr,
-            ledger,
-            "runtime-tests",
-            current=current + timedelta(minutes=4),
-            apply=True,
-            checkpoint=lambda _: True,
-        )
-
-        self.assertTrue(first["handled"])
-        self.assertTrue(repeated["handled"])
-        self.assertEqual(api.calls, 1)
-        self.assertIn("waiting for a new head", repeated["blocked"]["reason"])
-
-    def test_reconcile_pull_branch_update_reports_conflict(self):
-        class FakeAPI:
-            @staticmethod
-            def gh(path, **kwargs):
-                return 409, {"message": "Merge conflict"}
-
-        result = M.reconcile_pull_branch_update(
-            FakeAPI(),
-            "o/r",
-            {
-                "number": 622,
-                "head": {"sha": "expected-head"},
-                "base": {"sha": "current-base"},
-                "behind_by": 1,
-            },
-            {"messages": {}},
-            "runtime-tests",
-            current=M.now(),
-            apply=True,
-            checkpoint=lambda _: True,
-        )
-
-        self.assertFalse(result["handled"])
-        self.assertTrue(result["conflict"])
-        self.assertEqual(result["action"]["action"], "pr_branch_update_conflict")
-
-    def test_active_session_branch_sync_suppresses_extra_recovery(self):
-        decision = M.active_session_recovery_decision(
-            failed_checks=True,
-            dirty_pr=False,
-            behind_pr=True,
-            branch_sync_conflict=False,
-            branch_sync_handled=True,
-            previous_pr_fingerprint="old",
-            current_pr_fingerprint="new",
-            stale=True,
-            awaiting_user_feedback=True,
-        )
-        self.assertEqual(decision, (False, "pr_branch_update_in_progress"))
-
-        conflict = M.active_session_recovery_decision(
-            failed_checks=False,
-            dirty_pr=False,
-            behind_pr=True,
-            branch_sync_conflict=True,
-            branch_sync_handled=False,
-            previous_pr_fingerprint="old",
-            current_pr_fingerprint="new",
-            stale=False,
-            awaiting_user_feedback=False,
-        )
-        self.assertEqual(conflict, (True, "new_pr_blocker_evidence"))
-
     def test_branch_update_precedes_in_place_jules_recovery(self):
         source = Path(M.__file__).read_text(encoding="utf-8")
-        helper = source.split("def reconcile_pull_branch_update", 1)[1].split(
-            "def active_session_recovery_decision", 1
-        )[0]
+        pr_loop = source.split("branch_sync_conflict = False", 1)[1]
         self.assertLess(
-            helper.index('checkpoint(f"PR branch update'),
-            helper.index("status, payload = update_pull_branch"),
-        )
-        active_loop = source.split(
-            "elif state in ACTIVE and not task_terminal_in_manifest:", 1
-        )[1].split("if task_id and terminal_task_needs_outcome", 1)[0]
-        self.assertLess(
-            active_loop.index("reconcile_pull_branch_update("),
-            active_loop.index("active_session_recovery_decision("),
+            pr_loop.index('checkpoint(f"PR branch update'),
+            pr_loop.index("status, payload = update_pull_branch"),
         )
         self.assertLess(
             source.index('"action": "update_pr_branch"'),

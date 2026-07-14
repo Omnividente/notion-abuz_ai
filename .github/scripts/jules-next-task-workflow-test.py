@@ -101,23 +101,6 @@ class JulesNextTaskWorkflowTest(unittest.TestCase):
         self.assertNotIn("actions/workflows/jules_next_task.yml/dispatches", text)
         self.assertNotIn("actions/workflows/jules_recovery_router.yml/dispatches", text)
 
-    def test_protected_path_failure_routes_through_quality_recovery(self) -> None:
-        text = AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
-        protected = text.split("      - name: Detect protected runtime", 1)[1].split(
-            "      - name: Read durable scope approvals", 1
-        )[0]
-        stop = text.split("      - name: Stop weak autonomous PR", 1)[1].split(
-            "      - name: Clear resolved quality-fix label", 1
-        )[0]
-
-        self.assertIn("id: protected-paths", protected)
-        self.assertIn('echo "passed=false"', protected)
-        self.assertIn("/tmp/autonomous-pr-quality.md", protected)
-        self.assertNotIn("exit 1", protected)
-        self.assertIn("steps.protected-paths.outputs.passed != 'true'", stop)
-        self.assertIn("steps.protected-paths.outputs.summary", stop)
-        self.assertIn("jules_unattended_monitor.yml/dispatches", stop)
-
     def test_meta_automerge_wakes_reconciler_not_executor(self) -> None:
         text = META_AUTOMERGE_WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("Wake and verify authoritative reconciler after queue mutation", text)
