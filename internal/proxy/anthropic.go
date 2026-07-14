@@ -1673,27 +1673,11 @@ func streamAnthropicTextResponse(r *http.Request, w http.ResponseWriter, acc *Ac
 			return
 		}
 		headersSent = true
-		SetSSEHeaders(w)
-		w.WriteHeader(http.StatusOK)
-
 		inputTokens := 0
 		if finalUsage != nil {
 			inputTokens = finalUsage.PromptTokens
 		}
-		sendAnthropicSSE(w, flusher, "message_start", map[string]interface{}{
-			"type": "message_start",
-			"message": map[string]interface{}{
-				"id":            requestID,
-				"type":          "message",
-				"role":          "assistant",
-				"content":       []interface{}{},
-				"model":         model,
-				"stop_reason":   nil,
-				"stop_sequence": nil,
-				"usage":         map[string]interface{}{"input_tokens": inputTokens, "output_tokens": 0},
-			},
-		})
-		sendAnthropicSSE(w, flusher, "ping", map[string]string{"type": "ping"})
+		writeAnthropicSSEMessageStart(w, flusher, requestID, model, inputTokens)
 	}
 
 	closeThinkingBlock := func(signature string) {
@@ -2041,26 +2025,8 @@ func handleAnthropicStreamWithContract(r *http.Request, w http.ResponseWriter, a
 		return nil
 	}
 
-	SetSSEHeaders(w)
-	w.WriteHeader(http.StatusOK)
-
 	// message_start
-	sendAnthropicSSE(w, flusher, "message_start", map[string]interface{}{
-		"type": "message_start",
-		"message": map[string]interface{}{
-			"id":            requestID,
-			"type":          "message",
-			"role":          "assistant",
-			"content":       []interface{}{},
-			"model":         model,
-			"stop_reason":   nil,
-			"stop_sequence": nil,
-			"usage":         map[string]interface{}{"input_tokens": aUsage.InputTokens, "output_tokens": 0},
-		},
-	})
-
-	// ping
-	sendAnthropicSSE(w, flusher, "ping", map[string]string{"type": "ping"})
+	writeAnthropicSSEMessageStart(w, flusher, requestID, model, aUsage.InputTokens)
 
 	// Emit thinking blocks from Notion (real thinking from Sonnet 4.6 etc.)
 	blockIndex := 0
@@ -2472,6 +2438,26 @@ func sendAnthropicSSE(w http.ResponseWriter, flusher http.Flusher, eventType str
 	flusher.Flush()
 }
 
+func writeAnthropicSSEMessageStart(w http.ResponseWriter, flusher http.Flusher, requestID, model string, inputTokens int) {
+	SetSSEHeaders(w)
+	w.WriteHeader(http.StatusOK)
+
+	sendAnthropicSSE(w, flusher, "message_start", map[string]interface{}{
+		"type": "message_start",
+		"message": map[string]interface{}{
+			"id":            requestID,
+			"type":          "message",
+			"role":          "assistant",
+			"content":       []interface{}{},
+			"model":         model,
+			"stop_reason":   nil,
+			"stop_sequence": nil,
+			"usage":         map[string]interface{}{"input_tokens": inputTokens, "output_tokens": 0},
+		},
+	})
+	sendAnthropicSSE(w, flusher, "ping", map[string]string{"type": "ping"})
+}
+
 // truncateForLog truncates by rune count to avoid splitting UTF-8 sequences.
 func truncateForLog(s string, maxRunes int) string {
 	if s == "" || maxRunes <= 0 {
@@ -2646,23 +2632,7 @@ func handleResearcherStream(r *http.Request, w http.ResponseWriter, acc *Account
 			return
 		}
 		headersSent = true
-		SetSSEHeaders(w)
-		w.WriteHeader(http.StatusOK)
-
-		sendAnthropicSSE(w, flusher, "message_start", map[string]interface{}{
-			"type": "message_start",
-			"message": map[string]interface{}{
-				"id":            requestID,
-				"type":          "message",
-				"role":          "assistant",
-				"content":       []interface{}{},
-				"model":         model,
-				"stop_reason":   nil,
-				"stop_sequence": nil,
-				"usage":         map[string]interface{}{"input_tokens": 500, "output_tokens": 0},
-			},
-		})
-		sendAnthropicSSE(w, flusher, "ping", map[string]string{"type": "ping"})
+		writeAnthropicSSEMessageStart(w, flusher, requestID, model, 500)
 	}
 
 	closeTextBlock := func() {
