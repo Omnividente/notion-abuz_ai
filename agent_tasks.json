@@ -9191,6 +9191,58 @@
         "mode": "post-merge live source-of-truth failure",
         "summary": "Divergence, durable sync keys, and recovery fingerprints now follow the current base branch head rather than GitHub's stale PR base snapshot."
       }
+    },
+    {
+      "id": "automation-explicit-test-only-quality-gate",
+      "status": "done",
+      "area": "automation",
+      "risk": "low",
+      "title": "Allow explicit test-only tasks through the autonomous quality gate",
+      "description": "After PR #622 was correctly synchronized to master, quality run 29307880351 rejected its exact requested deliverable because task text mentioned debug logging and the generic operational classifier prohibited every test-only diff. The task title, description, allowed_paths, and both acceptance criteria explicitly require only unit tests. Distinguish that complete test-only contract from an operational task that substitutes tests for missing runtime work.",
+      "allowed_paths": [
+        ".github/scripts/review-autonomous-pr-quality.py",
+        ".github/scripts/review-autonomous-pr-quality-test.py",
+        "docs/WORK_AUTONOMY_2026-07-13.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A done task may pass with only tests and agent_tasks.json when every non-manifest allowed_path is a test path, its goal explicitly names tests, and every acceptance criterion is test-specific.",
+        "Mentioning logging or diagnostics does not by itself turn an explicit test-coverage task into a runtime implementation task.",
+        "A task with any runtime acceptance criterion remains blocked when its PR changes only tests and agent_tasks.json.",
+        "The exact PR #622 refs, body evidence, and diff pass the updated quality evaluator without evidence autofill.",
+        "Deterministic positive and negative tests preserve the anti-formal-completion guard."
+      ],
+      "source_reference": "PR #622 head 2687154; quality run 29307880351; task proxy-tools-add-unit-tests-for-debug-logging-toggle",
+      "completion_evidence": {
+        "mode": "live synchronized product PR quality false positive",
+        "summary": "The quality gate now evaluates the manifest's complete allowed-path and acceptance contract before rejecting a test-only diff as missing runtime work."
+      }
+    },
+    {
+      "id": "automation-deduplicate-active-task-sessions",
+      "status": "done",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Keep one active Jules session owner per task",
+      "description": "Reconciler run 29307892758 observed two active sessions, 14674460986994187107 and 17208555400991546940, for the same PR #622 task and sent the same new_failed_checks recovery to both. Multiple agents can then race on one branch even though executor creation is deduplicated. Use the existing freshest-first active session order to claim one canonical owner, durably terminate later duplicates, and prevent duplicate plan approval, recovery delivery, or task ownership.",
+      "allowed_paths": [
+        ".github/scripts/autonomy_reconciler.py",
+        ".github/scripts/autonomy_reconciler_test.py",
+        "docs/WORK_AUTONOMY_2026-07-13.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "For each task_id, the first active session in the reconciler's freshest-update-first inspection order is the canonical owner.",
+        "Every later active session for that task receives a durable checkpointed DELETE intent with the canonical session id before the mutation.",
+        "A duplicate session cannot receive plan approval, scope decisions, recovery retries, or new recovery messages and cannot replace task-level ownership.",
+        "Any pending duplicate recovery intent is cancelled; a failed delete remains explicitly blocking and reports an error without allowing duplicate mutation.",
+        "Deterministic tests cover owner claiming and prove duplicate cleanup precedes recovery delivery; live reconciliation reduces PR #622 to one active owner."
+      ],
+      "source_reference": "PR #622; reconciler run 29307892758; sessions 14674460986994187107 and 17208555400991546940",
+      "completion_evidence": {
+        "mode": "live duplicate recovery delivery",
+        "summary": "The authoritative reconciler now selects one freshest active owner per task and durably retires every duplicate before any session mutation logic."
+      }
     }
   ]
 }
