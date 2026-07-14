@@ -1,38 +1,6 @@
 {
   "cycles": [
     {
-      "actions": [],
-      "active_sessions": 1,
-      "at": "2026-07-13T22:32:50Z",
-      "blocked": [
-        {
-          "evidence_requirement": "new reproducible task evidence, a corrected task definition, or a project-relevant commit/PR",
-          "next_review_at": "2026-07-13T23:25:02Z",
-          "reason": "Jules session ended in FAILED without an open PR",
-          "retry_condition": "task definition, terminal session, PR or check evidence changes after next_review_at",
-          "session_id": "251585469516720548",
-          "task_id": "proxy-improve-rproxy-error-logging",
-          "terminal_state": "FAILED"
-        }
-      ],
-      "eligible_task_id": "docs-idempotency-replay-behavior",
-      "errors": [],
-      "inspected_sessions": 40,
-      "listed_sessions": 461,
-      "open_autonomous_prs": 0,
-      "pending_leases": [],
-      "progress": [
-        {
-          "kind": "observed_delta",
-          "session_id": "2103514512702002509",
-          "task_id": "docs-routing-contract-behavior"
-        }
-      ],
-      "run_attempt": "3",
-      "run_id": "29289794593",
-      "source_fingerprint": "ee8d2d2330ccc752a0bb8149"
-    },
-    {
       "actions": [
         {
           "action": "send_recovery",
@@ -1744,6 +1712,56 @@
       "run_attempt": "1",
       "run_id": "29309018205",
       "source_fingerprint": "d93a8f8a25bafc8c923ce8ee"
+    },
+    {
+      "actions": [
+        {
+          "action": "pr_branch_update_conflict",
+          "expected_head_sha": "3c635508f966e97f4c6ffe611592e60b8c24ecaa",
+          "pr_number": 629,
+          "status": 422,
+          "task_id": "docs-ask-mode-override-wording"
+        },
+        {
+          "action": "comment_pr_recovery",
+          "key": "f31c7ad1f71f4a40b843e5ea",
+          "pr_number": 629,
+          "task_id": "docs-ask-mode-override-wording"
+        },
+        {
+          "action": "dispatch_in_place_pr_recovery",
+          "dispatch_key": "d850b2222dac0497f073cc7d",
+          "generation": 2,
+          "pr_number": 629,
+          "task_id": "docs-ask-mode-override-wording"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T05:46:30Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-admin-settings-tests-isolation",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 470,
+      "open_autonomous_prs": 1,
+      "pending_leases": [
+        "docs-ask-mode-override-wording"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "13893740484827123621",
+          "task_id": "docs-ask-mode-override-wording"
+        },
+        {
+          "kind": "initial_recent_pr",
+          "pr_number": 629,
+          "task_id": "docs-ask-mode-override-wording"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29309385859",
+      "source_fingerprint": "39efff42f249377efd5ff7a6"
     }
   ],
   "messages": {
@@ -3745,7 +3763,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 161,
+  "revision": 162,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4755,5 +4773,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T05:46:29Z"
+  "updated_at": "2026-07-14T05:46:30Z"
 }
