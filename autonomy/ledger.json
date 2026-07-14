@@ -1,37 +1,6 @@
 {
   "cycles": [
     {
-      "actions": [
-        {
-          "action": "send_recovery",
-          "key": "1e2a8a7d2727e5b3f752729b",
-          "session_id": "5079834960180138219",
-          "task_id": "proxy-improve-rproxy-timeout-handling",
-          "verified": true,
-          "wait_reason": "new_failed_checks"
-        }
-      ],
-      "active_sessions": 1,
-      "at": "2026-07-13T21:08:11Z",
-      "blocked": [],
-      "eligible_task_id": "docs-routing-contract-behavior",
-      "errors": [],
-      "inspected_sessions": 40,
-      "listed_sessions": 459,
-      "open_autonomous_prs": 1,
-      "pending_leases": [],
-      "progress": [
-        {
-          "kind": "initial_recent_activity",
-          "session_id": "5079834960180138219",
-          "task_id": "proxy-improve-rproxy-timeout-handling"
-        }
-      ],
-      "run_attempt": "2",
-      "run_id": "29284820147",
-      "source_fingerprint": "b93c21046e021a8ff0e79e5e"
-    },
-    {
       "actions": [],
       "active_sessions": 1,
       "at": "2026-07-13T21:16:50Z",
@@ -1628,6 +1597,49 @@
       "run_attempt": "1",
       "run_id": "29306677785",
       "source_fingerprint": "252bad7aefa6375ab1dbb0a7"
+    },
+    {
+      "actions": [
+        {
+          "action": "comment_pr_recovery",
+          "key": "cdd6da940c9c8021f6a5477f",
+          "pr_number": 622,
+          "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
+        },
+        {
+          "action": "dispatch_in_place_pr_recovery",
+          "dispatch_key": "c3c1b984940f8d90103c08c1",
+          "generation": 2,
+          "pr_number": 622,
+          "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T04:45:27Z",
+      "blocked": [],
+      "eligible_task_id": "docs-ask-mode-override-wording",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 469,
+      "open_autonomous_prs": 1,
+      "pending_leases": [
+        "proxy-tools-add-unit-tests-for-debug-logging-toggle"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "14674460986994187107",
+          "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
+        },
+        {
+          "kind": "pr_delta",
+          "pr_number": 622,
+          "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29306711207",
+      "source_fingerprint": "79236a1912e79ff488d447b3"
     }
   ],
   "messages": {
@@ -3576,7 +3588,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 126,
+  "revision": 127,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4530,5 +4542,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:45:25Z"
+  "updated_at": "2026-07-14T04:45:27Z"
 }
