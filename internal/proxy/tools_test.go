@@ -3686,3 +3686,78 @@ func TestFallbackCollapse_ReadNarrowing(t *testing.T) {
 		t.Errorf("Expected log %q, got:\n%s", expectedLog, buf.String())
 	}
 }
+
+func TestDebugLoggingMuted_ToolSchemaSimplification(t *testing.T) {
+	originalDebug := DebugLoggingEnabled()
+	originalLogOutput := globalLogWriter.out
+	originalLogStd := log.Writer()
+	defer func() {
+		SetDebugLoggingEnabled(originalDebug)
+		globalLogWriter.out = originalLogOutput
+		log.SetOutput(originalLogStd)
+	}()
+
+	var buf bytes.Buffer
+	globalLogWriter.out = &buf
+	log.SetOutput(globalLogWriter)
+
+	SetDebugLoggingEnabled(false)
+
+	longDesc := strings.Repeat("A", 300)
+	schema := map[string]interface{}{
+		"properties": map[string]interface{}{
+			"test_prop": map[string]interface{}{
+				"description": longDesc,
+			},
+		},
+	}
+
+	_ = simplifyToolSchema(schema)
+
+	output := buf.String()
+	if strings.Contains(output, "simplifyToolSchema truncated large description") {
+		t.Errorf("Expected debug log to be muted, but it was written: %q", output)
+	}
+
+	buf.Reset()
+	SetDebugLoggingEnabled(true)
+	_ = simplifyToolSchema(schema)
+	output = buf.String()
+	if !strings.Contains(output, "simplifyToolSchema truncated large description") {
+		t.Errorf("Expected debug log to be written when enabled, but it was absent: %q", output)
+	}
+}
+
+func TestDebugLoggingMuted_JSONToolModeFallback(t *testing.T) {
+	originalDebug := DebugLoggingEnabled()
+	originalLogOutput := globalLogWriter.out
+	originalLogStd := log.Writer()
+	defer func() {
+		SetDebugLoggingEnabled(originalDebug)
+		globalLogWriter.out = originalLogOutput
+		log.SetOutput(originalLogStd)
+	}()
+
+	var buf bytes.Buffer
+	globalLogWriter.out = &buf
+	log.SetOutput(globalLogWriter)
+
+	SetDebugLoggingEnabled(false)
+
+	contentDirect := "<tool_call>{\"name\":\"Bash\",\"arguments\":{}}</tool_call>"
+	_, _, _ = parseToolCalls(contentDirect, "auto")
+
+	output := buf.String()
+	if strings.Contains(output, "JSON tool-call mode loss explicitly tracked") {
+		t.Errorf("Expected fallback log to be muted, but it was written: %q", output)
+	}
+
+	buf.Reset()
+	SetDebugLoggingEnabled(true)
+
+	_, _, _ = parseToolCalls(contentDirect, "auto")
+	output = buf.String()
+	if !strings.Contains(output, "JSON tool-call mode loss explicitly tracked") {
+		t.Errorf("Expected fallback log to be written when enabled, but it was absent: %q", output)
+	}
+}
