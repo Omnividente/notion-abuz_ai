@@ -1136,6 +1136,42 @@
       "run_attempt": "1",
       "run_id": "29295031822",
       "source_fingerprint": "3c18a960028508d0980948bf"
+    },
+    {
+      "actions": [
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "789d27b3dfc45bef8128500c",
+          "generation": 1,
+          "task_id": "proxy-upload-debug-logging-cleanup"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "proxy-upload-request-context-cancellation"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T00:23:04Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-upload-debug-logging-cleanup",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 462,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "proxy-upload-debug-logging-cleanup"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "4049942339598013592",
+          "task_id": "proxy-upload-request-context-cancellation"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29295725785",
+      "source_fingerprint": "6b1896d234b4a9591c0d96e9"
     }
   ],
   "messages": {
@@ -3014,7 +3050,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 73,
+  "revision": 74,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3711,18 +3747,13 @@
       "current_evidence_fingerprint": "ba784164df2a54e05f9f8d75",
       "dispatch_completed_at": "2026-07-13T23:52:53Z",
       "dispatch_generation": 1,
-      "dispatch_key": "36a44ae87b4db33259b50014",
-      "dispatch_requested_at": "2026-07-13T23:52:24Z",
       "last_observed_at": "2026-07-14T00:07:26Z",
-      "lease_expires_at": "2026-07-14T00:37:53Z",
+      "manifest_status": "done",
       "pr_number": null,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_create_requested_at": "2026-07-13T23:52:51Z",
-      "session_id": "4049942339598013592",
-      "session_name": "sessions/4049942339598013592",
       "session_state": "IN_PROGRESS",
-      "state": "active",
+      "state": "manifest_done",
       "task_fingerprint": "30806b084bfdeb963d7809b7"
     },
     "str": {
@@ -3735,5 +3766,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T00:23:02Z"
+  "updated_at": "2026-07-14T00:23:04Z"
 }
