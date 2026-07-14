@@ -1897,6 +1897,17 @@
       "task_id": "docs-routing-contract-behavior",
       "verified_at": "2026-07-13T23:02:57Z"
     },
+    "6f06425c1ac32228e1f1743e": {
+      "activity_fingerprint": "cf1cbb66a638b4860a516671",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-14T07:36:14Z",
+      "packet_hash": "c5b1e82ad45d0cecfaef657e",
+      "sent_at": "2026-07-14T07:31:28Z",
+      "session_id": "14386652575089485622",
+      "state_version": 2,
+      "task_id": "docs-ask-mode-override-wording",
+      "verified_at": null
+    },
     "721278a883e5ed060da9636b": {
       "kind": "pr_recovery",
       "packet_hash": "807cbc6144e8dd20522ac679",
@@ -2220,14 +2231,6 @@
       "source_key_hash": "1ca09e646523464198986a3a",
       "type": "add_label",
       "verified_at": "2026-07-06T09:24:26Z"
-    },
-    "legacy-1d6eeb19aa8f29dce802e367": {
-      "kind": "legacy_router_action",
-      "reason": "PR #230 is dirty/conflicting with master",
-      "sent_at": "2026-07-02T21:36:53Z",
-      "source_key_hash": "1d6eeb19aa8f29dce802e367",
-      "type": "conflict_recovery",
-      "verified_at": "2026-07-02T21:36:53Z"
     },
     "legacy-1e0ddd0aaa8fed12daeef748": {
       "kind": "legacy_router_action",
@@ -3721,7 +3724,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 174,
+  "revision": 175,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3896,12 +3899,19 @@
       "task_id": "proxy-audit-context-loss-read-narrowing-followup"
     },
     "14386652575089485622": {
-      "last_observed_at": "2026-07-14T07:30:59Z",
+      "activity_fingerprint": "cf1cbb66a638b4860a516671",
+      "last_observed_at": "2026-07-14T07:31:28Z",
+      "last_progress_at": "2026-07-14T07:31:28Z",
       "lease_key": "397a63b7ca5a38967b781f3b",
+      "pending_message_key": "6f06425c1ac32228e1f1743e",
+      "pr_fingerprint": "1b652a4a855d7a0f77179e00",
+      "progress_fingerprint": "170451c727bbf1830e1ca6fe",
+      "recoveries_without_progress": 0,
       "recovery_pr_head": "8eda745873fd21447d9dc78165e2e245e6c4b539",
       "recovery_pr_number": 629,
-      "session_state": "STATE_UNSPECIFIED",
-      "state_version": 1,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-14T07:31:14.843293Z",
+      "state_version": 2,
       "task_id": "docs-ask-mode-override-wording"
     },
     "14639527114573508776": {
@@ -4757,5 +4767,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T07:30:59Z"
+  "updated_at": "2026-07-14T07:31:28Z"
 }
