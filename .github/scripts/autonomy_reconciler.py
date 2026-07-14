@@ -232,12 +232,22 @@ def update_pull_branch(
     )
 
 
-def pull_branch_update_outcome(status: int) -> str:
+def pull_branch_update_outcome(status: int, payload: Any = None) -> str:
     if status == 0:
         return "dry_run"
     if 200 <= status < 300:
         return "accepted"
     if status == 422:
+        message = str(
+            (payload or {}).get("message")
+            if isinstance(payload, dict)
+            else payload or ""
+        ).lower()
+        if (
+            "merge conflict" in message
+            or "conflict between base and head" in message
+        ):
+            return "conflict"
         return "head_raced"
     if status == 409:
         return "conflict"
@@ -324,7 +334,7 @@ def reconcile_pull_branch_update(
         return result
     try:
         status, payload = update_pull_branch(api, repo, pr, apply=apply)
-        outcome = pull_branch_update_outcome(status)
+        outcome = pull_branch_update_outcome(status, payload)
         sync_intent["response_status"] = status
         sync_intent["response_message"] = sanitize(
             (payload or {}).get("message") if isinstance(payload, dict) else payload,
