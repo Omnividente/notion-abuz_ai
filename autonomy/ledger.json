@@ -1464,6 +1464,49 @@
       "run_attempt": "1",
       "run_id": "29305197730",
       "source_fingerprint": "8bd2a6e407487824bb89892b"
+    },
+    {
+      "actions": [
+        {
+          "action": "comment_pr_recovery",
+          "key": "47880495602e5c9b1df580e5",
+          "pr_number": 620,
+          "task_id": "proxy-anthropic-sse-tests"
+        },
+        {
+          "action": "dispatch_in_place_pr_recovery",
+          "dispatch_key": "9c6492336a53f0bbc8450ced",
+          "generation": 2,
+          "pr_number": 620,
+          "task_id": "proxy-anthropic-sse-tests"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T04:13:58Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 468,
+      "open_autonomous_prs": 1,
+      "pending_leases": [
+        "proxy-anthropic-sse-tests"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "12983952770589851668",
+          "task_id": "proxy-anthropic-sse-tests"
+        },
+        {
+          "kind": "initial_recent_pr",
+          "pr_number": 620,
+          "task_id": "proxy-anthropic-sse-tests"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29305414399",
+      "source_fingerprint": "f6a301efc9548a98c6006712"
     }
   ],
   "messages": {
@@ -3350,7 +3393,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 105,
+  "revision": 106,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4238,5 +4281,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T04:13:56Z"
+  "updated_at": "2026-07-14T04:13:58Z"
 }
