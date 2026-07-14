@@ -1202,6 +1202,36 @@
       "run_attempt": "1",
       "run_id": "29296430513",
       "source_fingerprint": "ecc26e099698745b6d2daf37"
+    },
+    {
+      "actions": [
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "1c5a5a935d1889259ccb98c9",
+          "generation": 1,
+          "task_id": "proxy-anthropic-debug-logging-cleanup"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "proxy-anthropic-handler-refactor"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-14T00:52:53Z",
+      "blocked": [],
+      "eligible_task_id": "proxy-anthropic-debug-logging-cleanup",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 464,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "proxy-anthropic-debug-logging-cleanup"
+      ],
+      "progress": [],
+      "run_attempt": "1",
+      "run_id": "29297078286",
+      "source_fingerprint": "53f2f9b55ae4c64ae3970e5f"
     }
   ],
   "messages": {
@@ -3080,7 +3110,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 81,
+  "revision": 82,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3750,16 +3780,11 @@
     "proxy-anthropic-handler-refactor": {
       "dispatch_completed_at": "2026-07-14T00:38:59Z",
       "dispatch_generation": 1,
-      "dispatch_key": "9324b0fc0acb5dbcc8da67e8",
-      "dispatch_requested_at": "2026-07-14T00:38:29Z",
-      "lease_expires_at": "2026-07-14T01:23:59Z",
+      "manifest_status": "done",
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_create_requested_at": "2026-07-14T00:38:57Z",
-      "session_id": "5105037652831498568",
-      "session_name": "sessions/5105037652831498568",
       "session_state": "STATE_UNSPECIFIED",
-      "state": "session_created",
+      "state": "manifest_done",
       "task_fingerprint": "1b53299d1bef5e7f3df399e4"
     },
     "proxy-improve-rproxy-error-logging": {
@@ -3847,5 +3872,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T00:52:51Z"
+  "updated_at": "2026-07-14T00:52:53Z"
 }
