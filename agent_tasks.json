@@ -8940,7 +8940,7 @@
     },
     {
       "id": "proxy-anthropic-sse-cleanup",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Clean up duplicated ensureHeaders logic in handleResearcherStream",
@@ -8997,6 +8997,22 @@
         "mode": "human-requested automation repair",
         "summary": "Bounded safe-read retries, transient cycle retries, corrected health semantics, and an independent deduplicated idle-loop wakeup are implemented together as one recovery failure class."
       }
+    },
+    {
+      "id": "proxy-anthropic-sse-tests",
+      "status": "todo",
+      "area": "proxy",
+      "risk": "low",
+      "title": "Add test coverage for writeAnthropicSSEMessageStart",
+      "description": "Add dedicated tests for the newly created writeAnthropicSSEMessageStart helper function in anthropic.go to ensure SSE headers and initial events are formatted correctly.",
+      "allowed_paths": [
+        "internal/proxy/anthropic.go",
+        "internal/proxy/anthropic_test.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "A unit test exists verifying writeAnthropicSSEMessageStart writes the correct headers and message_start/ping events."
+      ]
     }
   ]
 }
