@@ -240,6 +240,16 @@ class ReconcilerTests(unittest.TestCase):
             live_terminal, task["id"], task, changed_pr, checks
         )
         self.assertNotEqual(evidence_after, changed_evidence)
+        changed_base = {
+            "number": 596,
+            "head": {"sha": "1144d"},
+            "base": {"sha": "new-master"},
+            "behind_by": 1,
+        }
+        changed_base_evidence, _ = M.pr_recovery_fingerprints(
+            live_terminal, task["id"], task, changed_base, checks
+        )
+        self.assertNotEqual(evidence_after, changed_base_evidence)
 
     def test_failed_and_stopped_sessions_become_actionable_deferred_tasks(self):
         task = {
@@ -377,6 +387,9 @@ class ReconcilerTests(unittest.TestCase):
         self.assertTrue(M.pr_requires_recovery(dirty, checks))
         self.assertTrue(M.pr_requires_recovery(conflict_without_state, checks))
         self.assertFalse(M.pr_requires_recovery(clean, checks))
+        self.assertTrue(
+            M.pr_requires_recovery({**clean, "behind_by": 1}, checks)
+        )
         self.assertEqual(
             M.should_recover_session(
                 failed_checks=False,
@@ -480,6 +493,87 @@ class ReconcilerTests(unittest.TestCase):
         self.assertEqual(api.calls, 3)
         self.assertEqual(len(failures), 1)
         self.assertIn("mergeability unresolved", failures[0])
+
+    def test_pull_divergence_hydration_marks_behind_branch(self):
+        class FakeAPI:
+            def __init__(self):
+                self.calls = []
+
+            def gh(self, path, **kwargs):
+                self.calls.append((path, kwargs))
+                return 200, {
+                    "ahead_by": 2,
+                    "behind_by": 1,
+                    "merge_base_commit": {"sha": "base-old"},
+                }
+
+        api = FakeAPI()
+        pulls, failures = M.hydrate_pull_divergence(
+            api,
+            "o/r",
+            [
+                {
+                    "number": 620,
+                    "base": {"sha": "base-new"},
+                    "head": {"sha": "head"},
+                }
+            ],
+        )
+        self.assertEqual(failures, [])
+        self.assertEqual(pulls[0]["behind_by"], 1)
+        self.assertTrue(M.pr_is_behind(pulls[0]))
+        self.assertEqual(
+            api.calls[0][0],
+            "/repos/o/r/compare/base-new...head",
+        )
+
+    def test_update_pull_branch_is_bound_to_expected_head(self):
+        class FakeAPI:
+            def __init__(self):
+                self.calls = []
+
+            def gh(self, path, **kwargs):
+                self.calls.append((path, kwargs))
+                return 202, {"message": "Updating pull request branch."}
+
+        api = FakeAPI()
+        status, _ = M.update_pull_branch(
+            api,
+            "o/r",
+            {"number": 620, "head": {"sha": "expected-head"}},
+            apply=True,
+        )
+        self.assertEqual(status, 202)
+        path, kwargs = api.calls[0]
+        self.assertEqual(path, "/repos/o/r/pulls/620/update-branch")
+        self.assertEqual(kwargs["method"], "PUT")
+        self.assertEqual(kwargs["body"], {"expected_head_sha": "expected-head"})
+        self.assertEqual(kwargs["allow"], (409, 422))
+
+    def test_pull_branch_update_outcomes_are_explicit(self):
+        self.assertEqual(M.pull_branch_update_outcome(0), "dry_run")
+        self.assertEqual(M.pull_branch_update_outcome(202), "accepted")
+        self.assertEqual(M.pull_branch_update_outcome(422), "head_raced")
+        self.assertEqual(M.pull_branch_update_outcome(409), "conflict")
+        self.assertEqual(M.pull_branch_update_outcome(500), "error")
+
+    def test_branch_update_precedes_in_place_jules_recovery(self):
+        source = Path(M.__file__).read_text(encoding="utf-8")
+        pr_loop = source.split("branch_sync_conflict = False", 1)[1]
+        self.assertLess(
+            pr_loop.index('checkpoint(f"PR branch update'),
+            pr_loop.index("status, payload = update_pull_branch"),
+        )
+        self.assertLess(
+            source.index('"action": "update_pr_branch"'),
+            source.index('"action": "dispatch_in_place_pr_recovery"'),
+        )
+        for outcome in (
+            "pr_branch_update_raced",
+            "pr_branch_update_conflict",
+            "pr_branch_update_timeout",
+        ):
+            self.assertIn(outcome, source)
 
     def test_terminal_manifest_task_retires_stale_dispatch_lease(self):
         stale = {
