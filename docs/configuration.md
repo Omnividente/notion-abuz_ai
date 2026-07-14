@@ -36,7 +36,7 @@ environment variables > config.yaml > code defaults
 | `proxy.disable_notion_prompt` | `true` | `false` | Removes Notion's ~33k system prompt for leaner API usage |
 | `proxy.enable_web_search` | `true` | `true` | Global web-search toggle (overridable per-request) |
 | `proxy.enable_workspace_search` | `false` | `false` | Global workspace-search toggle (overridable per-request) |
-| `proxy.ask_mode_default` | unset | `false` | When `true`, every chat runs with `useReadOnlyMode=true` (Notion's "Ask" toggle) — the per-request `-ask` suffix overrides this |
+| `proxy.ask_mode_default` | unset | `false` | When `true`, every chat runs with `useReadOnlyMode=true` (Notion's "Ask" toggle) — the per-request `-ask` suffix enables it for one request but cannot disable it if globally true |
 | `proxy.notion_proxy` | empty | empty | Upstream proxy (`http`/`https`/`socks5`/`socks5h`) used for **all** Notion-bound dials, including bulk register, `/ai`, and `/v1/messages` |
 
 ## Timeouts / refresh

@@ -84,7 +84,7 @@ A dedicated panel below the token statistics reading `GET /admin/models`. Shows:
 Editable knobs persisted into `config.yaml`:
 
 - `enable_web_search`, `enable_workspace_search`
-- `ask_mode_default` — when ON, every request behaves as if the user toggled Notion's "Ask" (read-only). The per-request `-ask` model suffix overrides this for one call
+- `ask_mode_default` — when ON, every request behaves as if the user toggled Notion's "Ask" (read-only). The per-request `-ask` model suffix enables this for one call but cannot disable an ON global default
 - `debug_logging`
 - `notion_proxy` — paste an `http`/`https`/`socks5`/`socks5h` URL to tunnel **all** Notion-bound traffic. Bad schemes are rejected with a 400; clearing the field reverts to direct dial. Idle pooled connections are dropped on save so the next dial picks up the new upstream
 
