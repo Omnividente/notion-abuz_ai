@@ -1848,6 +1848,17 @@
       "task_id": "proxy-improve-rproxy-timeout-handling",
       "verified_at": "2026-07-13T20:21:57Z"
     },
+    "56a4987da1c1a23c6c402f74": {
+      "activity_fingerprint": "75762a41aa1982225ec63b8e",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-14T05:17:01Z",
+      "packet_hash": "1396756ffd57971d0077d7f3",
+      "sent_at": "2026-07-14T05:12:25Z",
+      "session_id": "14674460986994187107",
+      "state_version": 16,
+      "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
+      "verified_at": null
+    },
     "68bbb3ffd3847e7c8bb1740d": {
       "kind": "terminal_manifest_session_cleanup",
       "sent_at": "2026-07-13T23:02:55Z",
@@ -3402,14 +3413,6 @@
       "type": "add_label",
       "verified_at": "2026-07-12T20:07:59Z"
     },
-    "legacy-d96c1e0dc048ea754a91b365": {
-      "kind": "legacy_router_action",
-      "reason": "PR #205 has unresolved needs-quality-fix",
-      "sent_at": "2026-07-01T10:32:13Z",
-      "source_key_hash": "d96c1e0dc048ea754a91b365",
-      "type": "quality_fix_recovery",
-      "verified_at": "2026-07-01T10:32:13Z"
-    },
     "legacy-dad1bf070e7d6340d439aefe": {
       "kind": "legacy_router_action",
       "reason": "Autonomous PR #249 is missing jules label",
@@ -3686,7 +3689,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 144,
+  "revision": 145,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3858,21 +3861,22 @@
       "task_id": "proxy-tools-mode-loss-documentation"
     },
     "14674460986994187107": {
-      "activity_fingerprint": "09172b449dea6275f27c761e",
+      "activity_fingerprint": "75762a41aa1982225ec63b8e",
       "ignored_reason": "superseded_by_active_session:17208555400991546940",
-      "last_observed_at": "2026-07-14T05:11:27Z",
-      "last_progress_at": "2026-07-14T05:11:27Z",
+      "last_observed_at": "2026-07-14T05:12:25Z",
+      "last_progress_at": "2026-07-14T05:12:25Z",
       "last_verified_message_key": "11863f6666f261f0d5749505",
       "lease_key": "c3c1b984940f8d90103c08c1",
+      "pending_message_key": "56a4987da1c1a23c6c402f74",
       "post_send_activity_fingerprint": "dc014b033dec2afea4558311",
-      "pr_fingerprint": "293176f9791dab1289b7af33",
-      "progress_fingerprint": "a0b11a1dc0cd098359220e64",
+      "pr_fingerprint": "65594f5baa1bce6b89fc94fc",
+      "progress_fingerprint": "baed4b6a5ea09e1455bf744a",
       "recoveries_without_progress": 0,
       "recovery_pr_head": "458d6e538bffc618531654a53bba15031cdb3bbe",
       "recovery_pr_number": 622,
       "session_state": "IN_PROGRESS",
-      "session_update_at": "2026-07-14T05:11:09.746225Z",
-      "state_version": 15,
+      "session_update_at": "2026-07-14T05:12:01.721809Z",
+      "state_version": 16,
       "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
     },
     "15264337504110031935": {
@@ -4661,5 +4665,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T05:11:48Z"
+  "updated_at": "2026-07-14T05:12:25Z"
 }
