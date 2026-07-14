@@ -3080,7 +3080,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 78,
+  "revision": 79,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3730,8 +3730,11 @@
       "dispatch_generation": 1,
       "dispatch_key": "9324b0fc0acb5dbcc8da67e8",
       "dispatch_requested_at": "2026-07-14T00:38:29Z",
-      "lease_expires_at": "2026-07-14T01:07:44Z",
-      "state": "dispatch_requested",
+      "lease_expires_at": "2026-07-14T01:23:57Z",
+      "recovery_pr_head": null,
+      "recovery_pr_number": null,
+      "session_create_requested_at": "2026-07-14T00:38:57Z",
+      "state": "session_create_requested",
       "task_fingerprint": "1b53299d1bef5e7f3df399e4"
     },
     "proxy-improve-rproxy-error-logging": {
@@ -3819,5 +3822,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-14T00:38:30Z"
+  "updated_at": "2026-07-14T00:38:57Z"
 }
