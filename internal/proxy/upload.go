@@ -23,7 +23,7 @@ import (
 //	Step 5: (optional) getSignedFileUrls → get accessible URL
 //
 // Returns an UploadedAttachment with the attachment:UUID:filename URL for transcript injection.
-func UploadFileToNotion(acc *Account, file *FileAttachment) (*UploadedAttachment, error) {
+func UploadFileToNotion(ctx context.Context, acc *Account, file *FileAttachment) (*UploadedAttachment, error) {
 	sessionID := generateUUIDv4()
 	client := getChromeHTTPClient(30 * time.Second)
 
@@ -48,7 +48,7 @@ func UploadFileToNotion(acc *Account, file *FileAttachment) (*UploadedAttachment
 		},
 	}
 
-	uploadResp, err := notionAPICall[NotionUploadURLResponse](client, acc, "/getUploadFileUrlForAssistantChatTranscriptUpload", uploadReq)
+	uploadResp, err := notionAPICall[NotionUploadURLResponse](ctx, client, acc, "/getUploadFileUrlForAssistantChatTranscriptUpload", uploadReq)
 	if err != nil {
 		return nil, fmt.Errorf("step 1 getUploadUrl: %w", err)
 	}
@@ -56,7 +56,7 @@ func UploadFileToNotion(acc *Account, file *FileAttachment) (*UploadedAttachment
 
 	// Step 2: Upload file to S3
 	log.Printf("[upload-debug] Step 2: S3 upload to %s", uploadResp.SignedUploadPostURL)
-	err = uploadToS3(client, uploadResp.SignedUploadPostURL, uploadResp.Fields, file.Data, file.ContentType)
+	err = uploadToS3(ctx, client, uploadResp.SignedUploadPostURL, uploadResp.Fields, file.Data, file.ContentType)
 	if err != nil {
 		return nil, fmt.Errorf("step 2 S3 upload: %w", err)
 	}
@@ -87,7 +87,7 @@ func UploadFileToNotion(acc *Account, file *FileAttachment) (*UploadedAttachment
 	var enqueueResp struct {
 		TaskID string `json:"taskId"`
 	}
-	enqueueRespRaw, err := notionAPICallRaw(client, acc, "/enqueueTask", taskReq)
+	enqueueRespRaw, err := notionAPICallRaw(ctx, client, acc, "/enqueueTask", taskReq)
 	if err != nil {
 		return nil, fmt.Errorf("step 3 enqueueTask: %w", err)
 	}
@@ -98,7 +98,7 @@ func UploadFileToNotion(acc *Account, file *FileAttachment) (*UploadedAttachment
 
 	// Step 4: Poll task status and capture result metadata
 	log.Printf("[upload-debug] Step 4: polling task status")
-	taskResult, err := pollTaskCompletion(client, acc, enqueueResp.TaskID, 15*time.Second)
+	taskResult, err := pollTaskCompletion(ctx, client, acc, enqueueResp.TaskID, 15*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("step 4 poll task: %w", err)
 	}
@@ -220,8 +220,8 @@ func BuildAttachmentTranscript(uploaded *UploadedAttachment) AttachmentTranscrip
 // ── Internal helpers ──
 
 // notionAPICall makes a POST to a Notion API endpoint with JSON body and returns parsed response.
-func notionAPICall[T any](client *http.Client, acc *Account, endpoint string, body interface{}) (*T, error) {
-	raw, err := notionAPICallRaw(client, acc, endpoint, body)
+func notionAPICall[T any](ctx context.Context, client *http.Client, acc *Account, endpoint string, body interface{}) (*T, error) {
+	raw, err := notionAPICallRaw(ctx, client, acc, endpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -233,13 +233,13 @@ func notionAPICall[T any](client *http.Client, acc *Account, endpoint string, bo
 }
 
 // notionAPICallRaw makes a POST to a Notion API endpoint and returns raw response bytes.
-func notionAPICallRaw(client *http.Client, acc *Account, endpoint string, body interface{}) ([]byte, error) {
+func notionAPICallRaw(ctx context.Context, client *http.Client, acc *Account, endpoint string, body interface{}) ([]byte, error) {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(context.Background(), "POST", NotionAPIBase+endpoint, bytes.NewReader(bodyBytes))
+	req, err := http.NewRequestWithContext(ctx, "POST", NotionAPIBase+endpoint, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -260,7 +260,7 @@ func notionAPICallRaw(client *http.Client, acc *Account, endpoint string, body i
 
 // uploadToS3 uploads file data to S3 using presigned POST fields.
 // Uses a plain http.Client (not Chrome TLS) because S3 presigned POST requires HTTP/1.1.
-func uploadToS3(_ *http.Client, postURL string, fields map[string]string, data []byte, contentType string) error {
+func uploadToS3(ctx context.Context, _ *http.Client, postURL string, fields map[string]string, data []byte, contentType string) error {
 	s3Client := &http.Client{Timeout: 30 * time.Second}
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
@@ -282,7 +282,7 @@ func uploadToS3(_ *http.Client, postURL string, fields map[string]string, data [
 	}
 	writer.Close()
 
-	req, err := http.NewRequestWithContext(context.Background(), "POST", postURL, &buf)
+	req, err := http.NewRequestWithContext(ctx, "POST", postURL, &buf)
 	if err != nil {
 		return fmt.Errorf("create S3 request: %w", err)
 	}
@@ -303,15 +303,19 @@ func uploadToS3(_ *http.Client, postURL string, fields map[string]string, data [
 
 // pollTaskCompletion polls getTasks until the task completes or times out.
 // Returns the raw task result JSON on success (contains enriched metadata).
-func pollTaskCompletion(client *http.Client, acc *Account, taskID string, timeout time.Duration) (json.RawMessage, error) {
+func pollTaskCompletion(ctx context.Context, client *http.Client, acc *Account, taskID string, timeout time.Duration) (json.RawMessage, error) {
 	deadline := time.Now().Add(timeout)
 	interval := 1 * time.Second
 
 	for time.Now().Before(deadline) {
-		time.Sleep(interval)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(interval):
+		}
 
 		tasksReq := NotionGetTasksRequest{TaskIDs: []string{taskID}}
-		raw, err := notionAPICallRaw(client, acc, "/getTasks", tasksReq)
+		raw, err := notionAPICallRaw(ctx, client, acc, "/getTasks", tasksReq)
 		if err != nil {
 			log.Printf("[upload-debug] poll error (will retry): %v", err)
 			continue
