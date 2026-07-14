@@ -9217,6 +9217,32 @@
         "mode": "live synchronized product PR quality false positive",
         "summary": "The quality gate now evaluates the manifest's complete allowed-path and acceptance contract before rejecting a test-only diff as missing runtime work."
       }
+    },
+    {
+      "id": "automation-deduplicate-active-task-sessions",
+      "status": "done",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Keep one active Jules session owner per task",
+      "description": "Reconciler run 29307892758 observed two active sessions, 14674460986994187107 and 17208555400991546940, for the same PR #622 task and sent the same new_failed_checks recovery to both. Multiple agents can then race on one branch even though executor creation is deduplicated. Use the existing freshest-first active session order to claim one canonical owner, durably terminate later duplicates, and prevent duplicate plan approval, recovery delivery, or task ownership.",
+      "allowed_paths": [
+        ".github/scripts/autonomy_reconciler.py",
+        ".github/scripts/autonomy_reconciler_test.py",
+        "docs/WORK_AUTONOMY_2026-07-13.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "For each task_id, the first active session in the reconciler's freshest-update-first inspection order is the canonical owner.",
+        "Every later active session for that task receives a durable checkpointed DELETE intent with the canonical session id before the mutation.",
+        "A duplicate session cannot receive plan approval, scope decisions, recovery retries, or new recovery messages and cannot replace task-level ownership.",
+        "Any pending duplicate recovery intent is cancelled; a failed delete remains explicitly blocking and reports an error without allowing duplicate mutation.",
+        "Deterministic tests cover owner claiming and prove duplicate cleanup precedes recovery delivery; live reconciliation reduces PR #622 to one active owner."
+      ],
+      "source_reference": "PR #622; reconciler run 29307892758; sessions 14674460986994187107 and 17208555400991546940",
+      "completion_evidence": {
+        "mode": "live duplicate recovery delivery",
+        "summary": "The authoritative reconciler now selects one freshest active owner per task and durably retires every duplicate before any session mutation logic."
+      }
     }
   ]
 }

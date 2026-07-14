@@ -399,6 +399,17 @@ def active_session_recovery_decision(
     return recover_now, recovery_trigger
 
 
+def claim_active_task_session(
+    owners: dict[str, str], task_id: str, session_id: str
+) -> str:
+    """Claim the freshest active session and return its id for duplicates."""
+
+    if not task_id or not session_id:
+        return ""
+    owner = owners.setdefault(task_id, session_id)
+    return owner if owner != session_id else ""
+
+
 def settle_terminal_manifest_task(
     task_state: dict[str, Any], manifest_status: str
 ) -> tuple[dict[str, Any], bool]:
@@ -648,6 +659,7 @@ def reconcile(args: argparse.Namespace) -> int:
         return check_cache[cache_key]
 
     active_task_ids: set[str] = set()
+    active_session_owners: dict[str, str] = {}
     blocking_active = 0
 
     source = f"sources/github/{repo}"
@@ -699,7 +711,84 @@ def reconcile(args: argparse.Namespace) -> int:
         task_terminal_in_manifest = bool(
             task and task.get("status") not in {"todo", "doing"} and not recovering_open_pr
         )
-        if state in ACTIVE and task_terminal_in_manifest:
+        persisted_duplicate_owner = str(
+            previous.get("superseded_by_session_id") or ""
+        )
+        duplicate_owner = ""
+        if state in ACTIVE:
+            duplicate_owner = persisted_duplicate_owner or claim_active_task_session(
+                active_session_owners, str(task_id), session_id
+            )
+        if duplicate_owner:
+            record["superseded_by_session_id"] = duplicate_owner
+            duplicate_pending_key = str(record.pop("pending_message_key", ""))
+            if duplicate_pending_key:
+                pending_intent = ledger["messages"].setdefault(
+                    duplicate_pending_key,
+                    {
+                        "session_id": session_id,
+                        "task_id": task_id,
+                        "sent_at": iso(),
+                        "verified_at": None,
+                    },
+                )
+                pending_intent["cancelled_at"] = iso()
+                pending_intent["cancellation_reason"] = (
+                    f"session superseded by {duplicate_owner}"
+                )
+            cleanup_key = digest(
+                "duplicate-active-task-session",
+                task_id,
+                session_id,
+                duplicate_owner,
+            )
+            cleanup_intent = ledger["messages"].setdefault(
+                cleanup_key,
+                {
+                    "kind": "duplicate_active_task_session_cleanup",
+                    "session_id": session_id,
+                    "task_id": task_id,
+                    "canonical_session_id": duplicate_owner,
+                    "sent_at": iso(),
+                    "verified_at": None,
+                },
+            )
+            if cleanup_intent.get("verified_at"):
+                terminated = True
+            elif checkpoint(f"duplicate active session cleanup {session_id}"):
+                try:
+                    if args.apply:
+                        api.jules(
+                            key,
+                            session_name,
+                            method="DELETE",
+                            body=None,
+                            allow=(404,),
+                        )
+                    cleanup_intent["verified_at"] = iso()
+                    actions.append(
+                        {
+                            "action": "terminate_duplicate_active_session",
+                            "session_id": session_id,
+                            "task_id": task_id,
+                            "canonical_session_id": duplicate_owner,
+                            "key": cleanup_key,
+                        }
+                    )
+                    terminated = True
+                except Exception as exc:
+                    cleanup_intent["delivery_error"] = sanitize(exc, 500)
+                    errors.append(
+                        f"duplicate active session cleanup failed for {session_id}: "
+                        f"{sanitize(exc, 600)}"
+                    )
+            if not terminated:
+                blocking_active += 1
+                active_task_ids.add(str(task_id))
+            record["ignored_reason"] = (
+                f"duplicate_active_session:{duplicate_owner}"
+            )
+        elif state in ACTIVE and task_terminal_in_manifest:
             cleanup_key = digest("terminal-manifest-session", session_id, task_id, task.get("status"), version)
             cleanup_intent = ledger["messages"].setdefault(
                 cleanup_key,
@@ -734,7 +823,12 @@ def reconcile(args: argparse.Namespace) -> int:
             fresh_current_work = fresh_current_work or minutes_since(latest_observed, current) < args.stale_minutes
             if task_id:
                 active_task_ids.add(str(task_id))
-        if state == "AWAITING_PLAN_APPROVAL" and not task_terminal_in_manifest:
+        if (
+            not duplicate_owner
+            and not terminated
+            and state == "AWAITING_PLAN_APPROVAL"
+            and not task_terminal_in_manifest
+        ):
             approval_key = digest("approve-plan", session_id, version, summary.get("agent_fingerprint"))
             approval_intent = ledger["messages"].setdefault(
                 approval_key,
@@ -756,7 +850,12 @@ def reconcile(args: argparse.Namespace) -> int:
                     except Exception as exc:
                         approval_intent["delivery_error"] = sanitize(exc, 500)
                         errors.append(f"plan approval failed for {session_id}: {sanitize(exc, 600)}")
-        elif state in ACTIVE and not task_terminal_in_manifest:
+        elif (
+            not duplicate_owner
+            and not terminated
+            and state in ACTIVE
+            and not task_terminal_in_manifest
+        ):
             pending_key = str(record.get("pending_message_key") or "")
             if pending_key:
                 try:
@@ -1078,7 +1177,12 @@ def reconcile(args: argparse.Namespace) -> int:
                     )
                 terminated = True
         ledger["sessions"][session_id] = record
-        if task_id and not terminated and not task_terminal_in_manifest:
+        if (
+            task_id
+            and not terminated
+            and not duplicate_owner
+            and not task_terminal_in_manifest
+        ):
             task_state = dict(ledger["tasks"].get(task_state_id, {}))
             if terminal_session_is_superseded(
                 task_state,
