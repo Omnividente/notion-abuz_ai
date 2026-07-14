@@ -102,7 +102,7 @@
   "tasks": [
     {
       "id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
-      "status": "todo",
+      "status": "done",
       "area": "proxy",
       "risk": "low",
       "title": "Add unit tests to verify tools.go debug logging obeys DebugLoggingEnabled",
