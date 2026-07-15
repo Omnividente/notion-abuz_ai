@@ -1555,6 +1555,15 @@
       "task_id": "automation-executor-completion-reconciler-handoff",
       "verified_at": "2026-07-14T03:32:06Z"
     },
+    "1227af4a2a605086e4bce0f5": {
+      "canonical_pr_number": 636,
+      "duplicate_head": "6ce79542f1d2322b49e4182ee828c5f049b293b5",
+      "duplicate_pr_number": 638,
+      "kind": "close_duplicate_task_pr",
+      "sent_at": "2026-07-15T15:58:17Z",
+      "task_id": "audit-proxy-context-loss-logging",
+      "verified_at": null
+    },
     "12e2d8b58ba3500f7a8a9f4c": {
       "base_sha": "a57b66b667bf5c53a9a32e8184c58d79e2818f12",
       "delivery_attempts": 1,
@@ -2492,14 +2501,6 @@
       "source_key_hash": "542261e52e2e38b0c907bfc9",
       "type": "failed_check_recovery",
       "verified_at": "2026-07-09T11:39:53Z"
-    },
-    "legacy-54dde809e00ef184559f896c": {
-      "kind": "legacy_router_action",
-      "reason": "Autonomous PR #270 is missing jules label",
-      "sent_at": "2026-07-03T22:07:46Z",
-      "source_key_hash": "54dde809e00ef184559f896c",
-      "type": "add_label",
-      "verified_at": "2026-07-03T22:07:46Z"
     },
     "legacy-54fa617c5c3886e9c15131bb": {
       "kind": "legacy_router_action",
@@ -3553,7 +3554,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 260,
+  "revision": 261,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4784,5 +4785,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T14:37:55Z"
+  "updated_at": "2026-07-15T15:58:17Z"
 }
