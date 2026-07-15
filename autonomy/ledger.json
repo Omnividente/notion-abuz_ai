@@ -1534,6 +1534,17 @@
     }
   ],
   "messages": {
+    "07b004f2523cdf0a73af6454": {
+      "activity_fingerprint": "cf1cbb66a638b4860a516671",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-15T14:10:01Z",
+      "packet_hash": "7447e13c74d009746afbba8f",
+      "sent_at": "2026-07-15T14:05:31Z",
+      "session_id": "4238447108364092746",
+      "state_version": 2,
+      "task_id": "audit-proxy-context-loss-logging",
+      "verified_at": null
+    },
     "11863f6666f261f0d5749505": {
       "activity_fingerprint": "9107d468ea9ec14442077e03",
       "delivery_attempts": 1,
@@ -3294,14 +3305,6 @@
       "type": "add_label",
       "verified_at": "2026-07-04T08:22:05Z"
     },
-    "legacy-d7e349c9038756a56d64a61e": {
-      "kind": "legacy_router_action",
-      "reason": "Autonomous PR #252 is missing jules label",
-      "sent_at": "2026-07-03T13:29:20Z",
-      "source_key_hash": "d7e349c9038756a56d64a61e",
-      "type": "add_label",
-      "verified_at": "2026-07-03T13:29:20Z"
-    },
     "legacy-d7e6410ad9e12b947123b028": {
       "kind": "legacy_router_action",
       "reason": "Autonomous PR #555 is missing jules label",
@@ -3554,7 +3557,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 247,
+  "revision": 248,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4213,12 +4216,19 @@
       "task_id": "docs-dashboard-registration-audit"
     },
     "4238447108364092746": {
-      "last_observed_at": "2026-07-15T14:04:38Z",
+      "activity_fingerprint": "cf1cbb66a638b4860a516671",
+      "last_observed_at": "2026-07-15T14:05:31Z",
+      "last_progress_at": "2026-07-15T14:05:31Z",
       "lease_key": "deb8d3e0fc58a7b394558337",
+      "pending_message_key": "07b004f2523cdf0a73af6454",
+      "pr_fingerprint": "8c0df010a6c5b58899684dd3",
+      "progress_fingerprint": "a9c7ce42f0d8409e42da87d1",
+      "recoveries_without_progress": 0,
       "recovery_pr_head": "1b9cf3e1a270357ebb3539b68857b15dde3eec7a",
       "recovery_pr_number": 636,
-      "session_state": "STATE_UNSPECIFIED",
-      "state_version": 1,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-15T14:04:53.884120Z",
+      "state_version": 2,
       "task_id": "audit-proxy-context-loss-logging"
     },
     "4839394328109958585": {
@@ -4759,5 +4769,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T14:04:38Z"
+  "updated_at": "2026-07-15T14:05:31Z"
 }
