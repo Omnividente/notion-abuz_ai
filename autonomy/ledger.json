@@ -1863,6 +1863,17 @@
       "task_id": "docs-ask-mode-override-wording",
       "verified_at": null
     },
+    "c97780a2bf52f43013b5fa7f": {
+      "activity_fingerprint": "0124003bc17b942981c36b16",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-15T13:28:21Z",
+      "packet_hash": "b2f829f51d0b45e7d042c2c5",
+      "sent_at": "2026-07-15T13:23:38Z",
+      "session_id": "7840991574256565065",
+      "state_version": 4,
+      "task_id": "audit-proxy-context-loss-logging",
+      "verified_at": null
+    },
     "cdd6da940c9c8021f6a5477f": {
       "kind": "pr_recovery",
       "packet_hash": "d0dfcb7b3b0160738fac92a5",
@@ -2712,14 +2723,6 @@
       "type": "add_label",
       "verified_at": "2026-07-08T18:50:10Z"
     },
-    "legacy-7f907828f343f63605e9d12d": {
-      "kind": "legacy_router_action",
-      "reason": "PR #230 is dirty/conflicting with master",
-      "sent_at": "2026-07-02T22:41:43Z",
-      "source_key_hash": "7f907828f343f63605e9d12d",
-      "type": "conflict_recovery",
-      "verified_at": "2026-07-02T22:41:43Z"
-    },
     "legacy-80fa74e8eed89153a69da1e5": {
       "kind": "legacy_router_action",
       "reason": "PR #300 has unresolved needs-quality-fix",
@@ -3532,7 +3535,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 222,
+  "revision": 223,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4278,18 +4281,19 @@
       "task_id": "scripts-audit-python-lint-automation-health"
     },
     "7840991574256565065": {
-      "activity_fingerprint": "1e9979074f2e982e5cbe6da3",
-      "last_observed_at": "2026-07-15T13:22:53Z",
-      "last_progress_at": "2026-07-15T13:22:53Z",
+      "activity_fingerprint": "0124003bc17b942981c36b16",
+      "last_observed_at": "2026-07-15T13:23:38Z",
+      "last_progress_at": "2026-07-15T13:23:38Z",
       "lease_key": "b266821a66ae209bb8a01eb9",
-      "pr_fingerprint": "80bf1816b0ad6ce8619d2ed4",
-      "progress_fingerprint": "3de068a2ad141e197a7958b6",
+      "pending_message_key": "c97780a2bf52f43013b5fa7f",
+      "pr_fingerprint": "99026eebca1a24c437e1aeb9",
+      "progress_fingerprint": "f08e3127c4166111f214fecb",
       "recoveries_without_progress": 0,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_state": "COMPLETED",
-      "session_update_at": "2026-07-15T13:22:12.752655Z",
-      "state_version": 3,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-15T13:23:09.804761Z",
+      "state_version": 4,
       "task_id": "audit-proxy-context-loss-logging"
     },
     "7875485511166516611": {
@@ -4685,5 +4689,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T13:23:11Z"
+  "updated_at": "2026-07-15T13:23:38Z"
 }
