@@ -1934,6 +1934,17 @@
       "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
       "verified_at": "2026-07-14T04:53:10Z"
     },
+    "f8dc4346fdb8cc6d69abe51d": {
+      "activity_fingerprint": "ce1bd9c682141e19e007ed7f",
+      "delivery_attempts": 1,
+      "next_retry_at": "2026-07-15T13:43:18Z",
+      "packet_hash": "a1887686ab99399b6a3aa8fa",
+      "sent_at": "2026-07-15T13:38:39Z",
+      "session_id": "12805609275939829923",
+      "state_version": 3,
+      "task_id": "audit-proxy-context-loss-logging",
+      "verified_at": null
+    },
     "legacy-01fba5268ce233391de6bb86": {
       "kind": "legacy_router_action",
       "reason": "Create diagnostic task for stopped conflict-recovery loop on PR #502",
@@ -2485,14 +2496,6 @@
       "source_key_hash": "58abe5a04c3f62a8bbbef571",
       "type": "add_label",
       "verified_at": "2026-07-06T20:47:57Z"
-    },
-    "legacy-5a90fdc54948b4aad2af01f3": {
-      "kind": "legacy_router_action",
-      "reason": "PR #230 is dirty/conflicting with master",
-      "sent_at": "2026-07-02T23:20:32Z",
-      "source_key_hash": "5a90fdc54948b4aad2af01f3",
-      "type": "conflict_recovery",
-      "verified_at": "2026-07-02T23:20:32Z"
     },
     "legacy-5b5745cfa2ef7714bb54231b": {
       "kind": "legacy_router_action",
@@ -3530,7 +3533,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 231,
+  "revision": 232,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3620,20 +3623,21 @@
       "task_id": ""
     },
     "12805609275939829923": {
-      "activity_fingerprint": "cf1cbb66a638b4860a516671",
-      "last_observed_at": "2026-07-15T13:35:47Z",
-      "last_progress_at": "2026-07-15T13:35:47Z",
+      "activity_fingerprint": "ce1bd9c682141e19e007ed7f",
+      "last_observed_at": "2026-07-15T13:38:39Z",
+      "last_progress_at": "2026-07-15T13:38:39Z",
       "last_verified_message_key": "83fbb630c51a3719235c3cb1",
       "lease_key": "808d997ac973f265766b1d99",
+      "pending_message_key": "f8dc4346fdb8cc6d69abe51d",
       "post_send_activity_fingerprint": "ce1bd9c682141e19e007ed7f",
-      "pr_fingerprint": "d25a39225aef9706e12ec106",
-      "progress_fingerprint": "3b1aab03b38b733bc1c2a22f",
-      "recoveries_without_progress": 1,
+      "pr_fingerprint": "602a592cdf7f6385f419871f",
+      "progress_fingerprint": "78d6b362870972d15ba4bf11",
+      "recoveries_without_progress": 0,
       "recovery_pr_head": "4076c52aa8beadc1827e8233bc28d957276564c5",
       "recovery_pr_number": 636,
       "session_state": "IN_PROGRESS",
-      "session_update_at": "2026-07-15T13:35:29.172306Z",
-      "state_version": 2,
+      "session_update_at": "2026-07-15T13:38:14.144925Z",
+      "state_version": 3,
       "task_id": "audit-proxy-context-loss-logging"
     },
     "12983952770589851668": {
@@ -4708,5 +4712,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T13:36:09Z"
+  "updated_at": "2026-07-15T13:38:39Z"
 }
