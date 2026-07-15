@@ -3530,6 +3530,10 @@ func TestBuildSessionChainContinuation_ReadNarrowing(t *testing.T) {
 	contextLossMetrics = make(map[string]int)
 	contextLossMetricsMu.Unlock()
 
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(log.Writer())
+
 	messages := []ChatMessage{
 		{Role: "user", Content: "Read the file"},
 		{Role: "assistant", Content: "", ToolCalls: []ToolCall{{ID: "call_1", Type: "function", Function: ToolCallFunction{Name: "Read", Arguments: "{}"}}}},
@@ -3544,6 +3548,11 @@ func TestBuildSessionChainContinuation_ReadNarrowing(t *testing.T) {
 
 	if !exists || count != 1 {
 		t.Errorf("Expected session_continuation_read_narrowing metric to be 1, got count=%d, exists=%v", count, exists)
+	}
+
+	expectedLog := "Read tool output exceeded token limit, triggering read narrowing guard"
+	if !strings.Contains(buf.String(), expectedLog) {
+		t.Errorf("Expected log %q, got:\n%s", expectedLog, buf.String())
 	}
 }
 
