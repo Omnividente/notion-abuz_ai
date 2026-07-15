@@ -8881,7 +8881,7 @@
     },
     {
       "id": "docs-ask-mode-override-wording",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Align ASK mode override wording with OR semantics",
@@ -9268,7 +9268,58 @@
       "completion_evidence": {
         "mode": "live GitHub update-branch response",
         "summary": "The durable reconciler now uses GitHub's response message to separate merge conflicts from expected-head races under the shared 422 status."
-      }
+      },
+      "id": "docs-audit-cookie-forwarding",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Document cookie forwarding behavior in the Notion proxy",
+      "description": "The current codebase extracts the active account's FullCookie and injects it into upstream Notion API requests (handled in reverseproxy.go). This behavior should be explicitly documented for operators and developers so they understand how API authentication is managed by the proxy.",
+      "allowed_paths": [
+        "docs/api.md",
+        "docs/configuration.md",
+        "internal/proxy/proxy.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Documentation clearly states that the proxy extracts FullCookie from the targeted account and injects it into upstream Notion requests.",
+        "The logic for cookie injection is referenced or explained so developers understand how backend Notion API calls are authenticated."
+      ]
+    },
+    {
+      "id": "docs-idempotency-cache-behavior",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Document idempotency cache metrics and sanitization",
+      "description": "The proxy implements an idempotency cache (idempotency.go) that strips sensitive headers (Authorization, Set-Cookie) to prevent leaking credentials across identical requests, and tracks metrics like first_execution and completed_replay. This needs to be documented so operators understand the security and observability of cached responses.",
+      "allowed_paths": [
+        "docs/api.md",
+        "docs/configuration.md",
+        "internal/proxy/proxy.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Documentation explains the idempotency cache's behavior, including the sanitization of sensitive headers like Set-Cookie and Authorization.",
+        "Documentation mentions the metrics exposed by the cache (e.g., first_execution, completed_replay, in_flight_conflict)."
+      ]
+    },
+    {
+      "id": "audit-proxy-context-loss-logging",
+      "status": "todo",
+      "area": "audit",
+      "risk": "low",
+      "title": "Audit diagnostic logs for context loss metrics in proxy",
+      "description": "In the proxy (tools.go), calls to recordContextLossMetric for read narrowing (e.g., session_continuation_read_narrowing) must be accompanied by a log.Printf('[bridge] diagnostic: ...') statement. Audit the code to ensure this rule is consistently applied.",
+      "allowed_paths": [
+        "internal/proxy/tools.go",
+        "internal/proxy/proxy.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "All instances of recordContextLossMetric related to read narrowing in tools.go are accompanied by a corresponding '[bridge] diagnostic:' log statement.",
+        "If the logging is missing, it is added. If it is already present, the task is marked as done with completion_mode: verified_no_change."
+      ]
     }
   ]
 }
