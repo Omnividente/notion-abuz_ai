@@ -15,6 +15,9 @@ from urllib.parse import quote
 from autonomy_state import *  # noqa: F403 - workflow-local module with explicit __all__
 
 
+STOPPED_AUTONOMOUS_LABELS = {"human-review", "no-automerge", "stop-loop"}
+
+
 def latest_terminal_recovery_fingerprint(
     ledger: dict[str, Any], task_id: str, pr_number: int
 ) -> str:
@@ -420,6 +423,122 @@ def claim_active_task_session(
     return owner if owner != session_id else ""
 
 
+def pull_labels(pr: dict[str, Any]) -> set[str]:
+    return {
+        str(label.get("name") if isinstance(label, dict) else label)
+        for label in (pr.get("labels") or [])
+        if str(label.get("name") if isinstance(label, dict) else label)
+    }
+
+
+def is_stopped_autonomous_pull(pr: dict[str, Any]) -> bool:
+    return bool(pull_labels(pr) & STOPPED_AUTONOMOUS_LABELS)
+
+
+def select_task_pull_owners(
+    pulls: list[dict[str, Any]],
+    known_tasks: list[str],
+    default_branch: str,
+) -> tuple[
+    dict[str, dict[str, Any]],
+    list[tuple[str, dict[str, Any], dict[str, Any]]],
+    list[dict[str, Any]],
+]:
+    """Choose one deterministic PR owner per task and expose duplicates."""
+
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    unowned: list[dict[str, Any]] = []
+    for pr in pulls:
+        task_id = task_id_from_pr(pr, known_tasks)
+        if not task_id:
+            unowned.append(pr)
+            continue
+        grouped.setdefault(task_id, []).append(pr)
+
+    owners: dict[str, dict[str, Any]] = {}
+    duplicates: list[tuple[str, dict[str, Any], dict[str, Any]]] = []
+    for task_id, candidates in grouped.items():
+        ranked = sorted(
+            candidates,
+            key=lambda pr: (
+                str(((pr.get("base") or {}).get("ref") or "")) != default_branch,
+                int(pr.get("number") or 0),
+            ),
+        )
+        owner = ranked[0]
+        owners[task_id] = owner
+        duplicates.extend((task_id, owner, duplicate) for duplicate in ranked[1:])
+    return owners, duplicates, unowned
+
+
+def close_duplicate_task_pulls(
+    api: API,
+    repo: str,
+    ledger: dict[str, Any],
+    duplicates: list[tuple[str, dict[str, Any], dict[str, Any]]],
+    *,
+    apply: bool,
+    checkpoint: Callable[[str], bool],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Close duplicate task PRs behind a durable, idempotent intent."""
+
+    actions: list[dict[str, Any]] = []
+    errors: list[str] = []
+    messages = ledger.setdefault("messages", {})
+    for task_id, owner, duplicate in duplicates:
+        owner_number = int(owner.get("number") or 0)
+        duplicate_number = int(duplicate.get("number") or 0)
+        duplicate_head = str(((duplicate.get("head") or {}).get("sha") or ""))
+        key = digest(
+            "close-duplicate-task-pr",
+            task_id,
+            owner_number,
+            duplicate_number,
+            duplicate_head,
+            duplicate.get("updated_at"),
+        )
+        intent = messages.setdefault(
+            key,
+            {
+                "kind": "close_duplicate_task_pr",
+                "task_id": task_id,
+                "canonical_pr_number": owner_number,
+                "duplicate_pr_number": duplicate_number,
+                "duplicate_head": duplicate_head,
+                "sent_at": iso(),
+                "verified_at": None,
+            },
+        )
+        if intent.get("verified_at"):
+            continue
+        if not checkpoint(f"duplicate task PR closure {duplicate_number}"):
+            continue
+        try:
+            if apply:
+                api.gh(
+                    f"/repos/{repo}/pulls/{duplicate_number}",
+                    method="PATCH",
+                    body={"state": "closed"},
+                )
+            intent["verified_at"] = iso()
+            actions.append(
+                {
+                    "action": "close_duplicate_task_pr",
+                    "task_id": task_id,
+                    "canonical_pr_number": owner_number,
+                    "duplicate_pr_number": duplicate_number,
+                    "key": key,
+                }
+            )
+        except Exception as exc:
+            intent["delivery_error"] = sanitize(exc, 500)
+            errors.append(
+                f"duplicate task PR closure failed for #{duplicate_number}: "
+                f"{sanitize(exc, 600)}"
+            )
+    return actions, errors
+
+
 def settle_terminal_manifest_task(
     task_state: dict[str, Any], manifest_status: str
 ) -> tuple[dict[str, Any], bool]:
@@ -651,12 +770,39 @@ def reconcile(args: argparse.Namespace) -> int:
 
     pulls = paginate_gh(api, f"/repos/{repo}/pulls?state=open")
     autonomous, hydration_errors = hydrate_pull_details(
-        api, repo, [pr for pr in pulls if is_autonomous_pr(pr)]
+        api,
+        repo,
+        [
+            pr
+            for pr in pulls
+            if is_autonomous_pr(pr) and not is_stopped_autonomous_pull(pr)
+        ],
     )
     errors.extend(hydration_errors)
     autonomous, divergence_errors = hydrate_pull_divergence(api, repo, autonomous)
     errors.extend(divergence_errors)
-    pr_by_task = {task_id_from_pr(pr, list(tasks)): pr for pr in autonomous if task_id_from_pr(pr, list(tasks))}
+    pr_by_task, duplicate_task_pulls, unowned_autonomous = select_task_pull_owners(
+        autonomous, list(tasks), default_branch
+    )
+    duplicate_actions, duplicate_errors = close_duplicate_task_pulls(
+        api,
+        repo,
+        ledger,
+        duplicate_task_pulls,
+        apply=args.apply,
+        checkpoint=checkpoint,
+    )
+    actions.extend(duplicate_actions)
+    errors.extend(duplicate_errors)
+    progress.extend(
+        {
+            "task_id": action["task_id"],
+            "pr_number": action["duplicate_pr_number"],
+            "kind": "duplicate_task_pr_closed",
+        }
+        for action in duplicate_actions
+    )
+    autonomous = [*pr_by_task.values(), *unowned_autonomous]
     check_cache: dict[tuple[int, str], dict[str, Any]] = {}
 
     def checks_for(pr: dict[str, Any] | None) -> dict[str, Any]:

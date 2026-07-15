@@ -27,11 +27,25 @@ class ValidationError(ValueError):
     """Raised when the manifest violates the expected schema."""
 
 
+def reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Build a JSON object while rejecting keys that would be overwritten."""
+
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValidationError(f"duplicate JSON object key: {key}")
+        result[key] = value
+    return result
+
+
 def load_manifest(path: Path) -> dict[str, Any]:
     """Load a JSON manifest from disk."""
     try:
         with path.open("r", encoding="utf-8") as manifest_file:
-            data = json.load(manifest_file)
+            data = json.load(
+                manifest_file,
+                object_pairs_hook=reject_duplicate_json_keys,
+            )
     except json.JSONDecodeError as exc:
         raise ValidationError(f"{path}: invalid JSON: {exc}") from exc
 

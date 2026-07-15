@@ -9268,7 +9268,9 @@
       "completion_evidence": {
         "mode": "live GitHub update-branch response",
         "summary": "The durable reconciler now uses GitHub's response message to separate merge conflicts from expected-head races under the shared 422 status."
-      },
+      }
+    },
+    {
       "id": "docs-audit-cookie-forwarding",
       "status": "todo",
       "area": "docs",
@@ -9320,6 +9322,34 @@
         "All instances of recordContextLossMetric related to read narrowing in tools.go are accompanied by a corresponding '[bridge] diagnostic:' log statement.",
         "If the logging is missing, it is added. If it is already present, the task is marked as done with completion_mode: verified_no_change."
       ]
+    },
+    {
+      "id": "automation-reconcile-duplicate-task-prs",
+      "status": "done",
+      "area": "automation",
+      "risk": "medium",
+      "title": "Choose and enforce one canonical autonomous PR per task",
+      "description": "PRs #629, #630 and #631 represented the same docs-ask-mode-override-wording task, with two PRs stacked on the first branch. The reconciler collapsed them through a last-write-wins dictionary, recovered an arbitrary PR, and eventually deferred forever. Choose one deterministic owner and durably close duplicate task PRs before session or PR recovery. The clean recovery also exposed duplicate JSON object keys that the manifest validator must reject instead of silently overwriting a task.",
+      "allowed_paths": [
+        ".github/scripts/autonomy_reconciler.py",
+        ".github/scripts/autonomy_reconciler_test.py",
+        "scripts/validate_agent_tasks.py",
+        "scripts/validate_agent_tasks_test.py",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Open autonomous PRs are grouped by exact task_id and one canonical owner is selected deterministically, preferring a PR based directly on the default branch and then the oldest PR number.",
+        "Every additional active PR for that task receives a durable checkpointed close intent before any Jules session inspection or in-place PR recovery.",
+        "Stopped human-review/no-automerge/stop-loop PRs are excluded from active ownership and do not block dispatch forever.",
+        "The canonical PR remains the only PR used for check context, branch synchronization, recovery attempts, open-PR gating, and source fingerprints.",
+        "Manifest loading rejects duplicate object keys so a conflict resolution cannot silently overwrite id or another field while still passing JSON parsing.",
+        "Deterministic tests reproduce the #629-#631 topology, verify idempotent duplicate closure, and reject duplicate JSON keys."
+      ],
+      "source_reference": "PRs #629-#631; reconciler run 29410703328; health run 29410137163",
+      "completion_evidence": {
+        "mode": "live duplicate/stacked PR deadlock",
+        "summary": "The three task PRs were consolidated into merged PR #632; the reconciler now enforces the same one-owner invariant automatically and the manifest parser rejects duplicate JSON keys."
+      }
     }
   ]
 }

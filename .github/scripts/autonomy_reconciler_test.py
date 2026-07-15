@@ -232,6 +232,103 @@ class ReconcilerTests(unittest.TestCase):
         )
         self.assertEqual(owners["runtime-fix"], "new-session")
 
+    def test_task_pull_owner_prefers_direct_base_and_oldest_pr(self):
+        def pull(number, base_ref, *, task_id="docs-task"):
+            return {
+                "number": number,
+                "body": f"task_id: {task_id}",
+                "base": {"ref": base_ref},
+                "head": {"ref": f"branch-{number}", "sha": f"sha-{number}"},
+            }
+
+        owners, duplicates, unowned = M.select_task_pull_owners(
+            [
+                pull(631, "branch-629"),
+                pull(630, "branch-629"),
+                pull(629, "master"),
+                {"number": 700, "body": "no task id", "base": {"ref": "master"}},
+            ],
+            ["docs-task"],
+            "master",
+        )
+
+        self.assertEqual(owners["docs-task"]["number"], 629)
+        self.assertEqual([row[2]["number"] for row in duplicates], [630, 631])
+        self.assertEqual([row["number"] for row in unowned], [700])
+
+    def test_stopped_autonomous_pull_is_not_an_active_owner(self):
+        self.assertTrue(
+            M.is_stopped_autonomous_pull(
+                {"labels": [{"name": "jules"}, {"name": "stop-loop"}]}
+            )
+        )
+        self.assertFalse(
+            M.is_stopped_autonomous_pull({"labels": [{"name": "jules"}]})
+        )
+
+    def test_duplicate_task_pull_closure_is_durable_and_idempotent(self):
+        class FakeApi:
+            def __init__(self):
+                self.calls = []
+
+            def gh(self, path, *, method="GET", body=None):
+                self.calls.append((path, method, body))
+                return 200, {"state": "closed"}
+
+        owner = {"number": 629, "head": {"sha": "owner"}}
+        duplicate = {
+            "number": 630,
+            "head": {"sha": "duplicate"},
+            "updated_at": "2026-07-14T07:33:20Z",
+        }
+        api = FakeApi()
+        ledger = {"messages": {}}
+        checkpoints = []
+        args = (
+            api,
+            "Omnividente/notion-abuz_ai",
+            ledger,
+            [("docs-task", owner, duplicate)],
+        )
+
+        actions, errors = M.close_duplicate_task_pulls(
+            *args,
+            apply=True,
+            checkpoint=lambda reason: checkpoints.append(reason) or True,
+        )
+
+        self.assertEqual(errors, [])
+        self.assertEqual(actions[0]["action"], "close_duplicate_task_pr")
+        self.assertEqual(actions[0]["canonical_pr_number"], 629)
+        self.assertEqual(
+            api.calls,
+            [
+                (
+                    "/repos/Omnividente/notion-abuz_ai/pulls/630",
+                    "PATCH",
+                    {"state": "closed"},
+                )
+            ],
+        )
+        self.assertEqual(checkpoints, ["duplicate task PR closure 630"])
+        self.assertTrue(next(iter(ledger["messages"].values()))["verified_at"])
+
+        repeated, repeated_errors = M.close_duplicate_task_pulls(
+            *args,
+            apply=True,
+            checkpoint=lambda _: True,
+        )
+        self.assertEqual((repeated, repeated_errors), ([], []))
+        self.assertEqual(len(api.calls), 1)
+
+    def test_duplicate_pr_cleanup_precedes_session_and_pr_recovery(self):
+        source = Path(M.__file__).read_text(encoding="utf-8")
+        cleanup = source.index("close_duplicate_task_pulls(", source.index("def reconcile"))
+        sessions = source.index("for key, session in inspected_sessions:", cleanup)
+        recovery = source.index("for task_id, pr in pr_by_task.items():", sessions)
+        self.assertLess(cleanup, sessions)
+        self.assertLess(cleanup, recovery)
+
     def test_duplicate_active_cleanup_precedes_any_recovery_delivery(self):
         source = Path(M.__file__).read_text(encoding="utf-8")
         loop = source.split("for key, session in inspected_sessions:", 1)[1].split(
