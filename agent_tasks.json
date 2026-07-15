@@ -9322,7 +9322,16 @@
         "All instances of recordContextLossMetric related to read narrowing in tools.go are accompanied by a corresponding '[bridge] diagnostic:' log statement.",
         "If the logging is missing, it is added. If it is already present, the task is marked as done with completion_mode: verified_no_change."
       ],
-      "completion_mode": "verified_no_change"
+      "completion_mode": "verified_no_change",
+      "completion_evidence": {
+        "mode": "verified_no_change",
+        "summary": "Verified that all instances of recordContextLossMetric related to read narrowing (session_continuation_read_narrowing and legacy_collapse_read_narrowing) are accompanied by a corresponding [bridge] diagnostic: log statement in tools.go.",
+        "paths": [
+          "internal/proxy/tools.go:857-858",
+          "internal/proxy/tools.go:1311-1312"
+        ],
+        "evidence": "grep -B 2 -A 2 -n \"recordContextLossMetric\" internal/proxy/tools.go verified presence of [bridge] diagnostic logs."
+      }
     },
     {
       "id": "automation-reconcile-duplicate-task-prs",
