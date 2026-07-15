@@ -3,28 +3,6 @@
     {
       "actions": [],
       "active_sessions": 1,
-      "at": "2026-07-14T04:29:19Z",
-      "blocked": [],
-      "eligible_task_id": "docs-ask-mode-override-wording",
-      "errors": [],
-      "inspected_sessions": 40,
-      "listed_sessions": 469,
-      "open_autonomous_prs": 0,
-      "pending_leases": [],
-      "progress": [
-        {
-          "kind": "observed_delta",
-          "session_id": "14674460986994187107",
-          "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
-        }
-      ],
-      "run_attempt": "1",
-      "run_id": "29306060669",
-      "source_fingerprint": "d7ab01c2f4b38cd34faac9c3"
-    },
-    {
-      "actions": [],
-      "active_sessions": 1,
       "at": "2026-07-14T04:32:28Z",
       "blocked": [],
       "eligible_task_id": "docs-ask-mode-override-wording",
@@ -1515,6 +1493,42 @@
       "run_attempt": "1",
       "run_id": "29416981694",
       "source_fingerprint": "002f3f2fb58038628d8033fc"
+    },
+    {
+      "actions": [
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "6a4f100de037354775c9ee8d",
+          "generation": 1,
+          "task_id": "docs-idempotency-cache-behavior"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "docs-audit-cookie-forwarding"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-15T12:56:21Z",
+      "blocked": [],
+      "eligible_task_id": "docs-idempotency-cache-behavior",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 472,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "docs-idempotency-cache-behavior"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "15802417934975239728",
+          "task_id": "docs-audit-cookie-forwarding"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29417080534",
+      "source_fingerprint": "42daef2bc28603863cf09ec8"
     }
   ],
   "messages": {
@@ -3528,7 +3542,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 211,
+  "revision": 212,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4382,20 +4396,15 @@
       "current_evidence_fingerprint": "71729ad445d700ce83f9fa1c",
       "dispatch_completed_at": "2026-07-15T12:39:43Z",
       "dispatch_generation": 1,
-      "dispatch_key": "23b6ace4a0ce0b02bfb92dea",
-      "dispatch_requested_at": "2026-07-15T12:39:07Z",
       "last_observed_at": "2026-07-15T12:54:34Z",
       "last_progress_at": "2026-07-15T12:54:34Z",
-      "lease_expires_at": "2026-07-15T13:24:43Z",
+      "manifest_status": "done",
       "pr_number": 634,
       "progress_fingerprint": "8bbdf0364bc1b53d0763ef8b",
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_create_requested_at": "2026-07-15T12:39:41Z",
-      "session_id": null,
-      "session_name": "sessions/15802417934975239728",
       "session_state": "COMPLETED",
-      "state": "pr_open_without_active_session",
+      "state": "manifest_done",
       "task_fingerprint": "2b7bbe075297c57e22cae6f8"
     },
     "docs-idempotency-cache-behavior": {
@@ -4629,5 +4638,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T12:56:19Z"
+  "updated_at": "2026-07-15T12:56:21Z"
 }
