@@ -3,49 +3,6 @@
     {
       "actions": [
         {
-          "action": "comment_pr_recovery",
-          "key": "47880495602e5c9b1df580e5",
-          "pr_number": 620,
-          "task_id": "proxy-anthropic-sse-tests"
-        },
-        {
-          "action": "dispatch_in_place_pr_recovery",
-          "dispatch_key": "9c6492336a53f0bbc8450ced",
-          "generation": 2,
-          "pr_number": 620,
-          "task_id": "proxy-anthropic-sse-tests"
-        }
-      ],
-      "active_sessions": 0,
-      "at": "2026-07-14T04:13:58Z",
-      "blocked": [],
-      "eligible_task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle",
-      "errors": [],
-      "inspected_sessions": 40,
-      "listed_sessions": 468,
-      "open_autonomous_prs": 1,
-      "pending_leases": [
-        "proxy-anthropic-sse-tests"
-      ],
-      "progress": [
-        {
-          "kind": "observed_delta",
-          "session_id": "12983952770589851668",
-          "task_id": "proxy-anthropic-sse-tests"
-        },
-        {
-          "kind": "initial_recent_pr",
-          "pr_number": 620,
-          "task_id": "proxy-anthropic-sse-tests"
-        }
-      ],
-      "run_attempt": "1",
-      "run_id": "29305414399",
-      "source_fingerprint": "f6a301efc9548a98c6006712"
-    },
-    {
-      "actions": [
-        {
           "action": "send_recovery",
           "key": "33cab464b35567979dd1b94d",
           "session_id": "17485730698808344737",
@@ -1579,6 +1536,47 @@
       "run_attempt": "1",
       "run_id": "29410703328",
       "source_fingerprint": "01797911417201612f0c4021"
+    },
+    {
+      "actions": [
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "23b6ace4a0ce0b02bfb92dea",
+          "generation": 1,
+          "task_id": "docs-audit-cookie-forwarding"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "docs-ask-mode-override-wording"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-15T12:39:09Z",
+      "blocked": [],
+      "eligible_task_id": "docs-audit-cookie-forwarding",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 471,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "docs-audit-cookie-forwarding"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "152614223489349908",
+          "task_id": "docs-ask-mode-override-wording"
+        },
+        {
+          "kind": "observed_delta",
+          "session_id": "14386652575089485622",
+          "task_id": "docs-ask-mode-override-wording"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29415953025",
+      "source_fingerprint": "58facafe00a1fd6982cc7aa4"
     }
   ],
   "messages": {
@@ -3592,7 +3590,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 203,
+  "revision": 204,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4412,11 +4410,9 @@
       "current_evidence_fingerprint": "f33a5c9cfddb296ea00340f0",
       "dispatch_completed_at": "2026-07-14T07:34:36Z",
       "dispatch_generation": 4,
-      "dispatch_key": "d74173cbf52262cd766c4308",
-      "dispatch_requested_at": "2026-07-14T07:34:09Z",
       "last_observed_at": "2026-07-15T11:11:11Z",
       "last_progress_at": "2026-07-14T07:30:24Z",
-      "lease_expires_at": "2026-07-14T08:19:36Z",
+      "manifest_status": "done",
       "pr_number": 629,
       "pr_recoveries": 2,
       "pr_recovery_evidence_key": "9e32973df514da36e0ad9871",
@@ -4425,12 +4421,8 @@
       "progress_fingerprint": "81c4066ea53970c3b1824c04",
       "recovery_pr_head": "8eda745873fd21447d9dc78165e2e245e6c4b539",
       "recovery_pr_number": 629,
-      "recovery_reason": "dirty PR must sync current master",
-      "session_create_requested_at": "2026-07-14T07:34:34Z",
-      "session_id": null,
-      "session_name": "sessions/14386652575089485622",
       "session_state": "COMPLETED",
-      "state": "deferred",
+      "state": "manifest_done",
       "task_fingerprint": "c1782c6fbea72e811492560c"
     },
     "docs-audit-cookie-forwarding": {
@@ -4664,5 +4656,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T12:39:07Z"
+  "updated_at": "2026-07-15T12:39:09Z"
 }
