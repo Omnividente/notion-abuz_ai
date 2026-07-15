@@ -9272,7 +9272,7 @@
     },
     {
       "id": "docs-audit-cookie-forwarding",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Document cookie forwarding behavior in the Notion proxy",
@@ -9350,6 +9350,21 @@
         "mode": "live duplicate/stacked PR deadlock",
         "summary": "The three task PRs were consolidated into merged PR #632; the reconciler now enforces the same one-owner invariant automatically and the manifest parser rejects duplicate JSON keys."
       }
+    },
+    {
+      "id": "docs-audit-full-cookie-env",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Document FULL_COOKIE environment variable fallback behavior",
+      "description": "Ensure the proxy configuration documentation correctly mentions any fallback or override behavior when FULL_COOKIE environment variable is used.",
+      "allowed_paths": [
+        "docs/configuration.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Documentation reflects FULL_COOKIE environment variable overrides if applicable."
+      ]
     }
   ]
 }
