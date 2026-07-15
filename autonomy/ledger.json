@@ -1922,7 +1922,7 @@
       "pr_number": 636,
       "sent_at": "2026-07-15T13:50:15Z",
       "task_id": "audit-proxy-context-loss-logging",
-      "verified_at": null
+      "verified_at": "2026-07-15T13:50:16Z"
     },
     "e2eb9f8e8fd1dc92bc8d0ef0": {
       "base_sha": "426a44616c3f2b9dd8af86034f1d6869d32f07d3",
@@ -3548,7 +3548,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 235,
+  "revision": 236,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4417,26 +4417,26 @@
     "audit-proxy-context-loss-logging": {
       "current_evidence_fingerprint": "4c53e0dc55735bac0637b614",
       "dispatch_completed_at": "2026-07-15T13:35:12Z",
-      "dispatch_generation": 2,
-      "dispatch_key": "808d997ac973f265766b1d99",
-      "dispatch_requested_at": "2026-07-15T13:34:42Z",
+      "dispatch_generation": 3,
+      "dispatch_key": "77a83530d30da5a84e70d062",
+      "dispatch_requested_at": "2026-07-15T13:50:16Z",
       "last_observed_at": "2026-07-15T13:50:15Z",
       "last_progress_at": "2026-07-15T13:50:15Z",
-      "lease_expires_at": "2026-07-15T14:20:12Z",
+      "lease_expires_at": "2026-07-15T14:19:22Z",
       "pr_number": 636,
       "pr_recoveries": 2,
-      "pr_recovery_evidence_key": "5a8177d76894c56be6daaa53",
-      "pr_session_recoveries": 0,
-      "pr_session_recovery_key": "809a245ab3f3a38345647efd",
+      "pr_recovery_evidence_key": "c844772c5c9a1ee3f0493846",
+      "pr_session_recoveries": 1,
+      "pr_session_recovery_key": "0a9f177b53bc8c67fc46ccbc",
       "progress_fingerprint": "54b78e8f003836f080e75e2f",
-      "recovery_pr_head": "4076c52aa8beadc1827e8233bc28d957276564c5",
+      "recovery_pr_head": "0460c3c5c9db330e55d52977c582d01a1d3f5e3f",
       "recovery_pr_number": 636,
       "recovery_reason": "failed checks: test-and-merge",
       "session_create_requested_at": "2026-07-15T13:35:10Z",
       "session_id": null,
       "session_name": "sessions/7840991574256565065",
       "session_state": "COMPLETED",
-      "state": "pr_open_without_active_session",
+      "state": "pr_recovery_dispatch_requested",
       "task_fingerprint": "6d52ad47c7cd5f175fdd6d98"
     },
     "automation-executor-completion-reconciler-handoff": {
@@ -4726,5 +4726,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T13:50:15Z"
+  "updated_at": "2026-07-15T13:50:16Z"
 }
