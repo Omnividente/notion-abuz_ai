@@ -158,7 +158,7 @@ notion-manager/
 ## Notes
 
 - `admin_password` left empty auto-generates a random password printed to the console, then hashes and writes it back. Save the plaintext shown on first startup — it cannot be recovered.
-- Reverse proxy works best with account files that include `full_cookie`; Microsoft-SSO registrations come with a working `full_cookie` out of the box.
+- Reverse proxy works best with account files that include `full_cookie`; Microsoft-SSO registrations come with a working `full_cookie` out of the box. The proxy extracts the active account's `full_cookie` and injects it into upstream Notion API requests to authenticate properly.
 - Free accounts can stay exhausted indefinitely; paid accounts make a more stable pool.
 - If you change the dashboard source under `web/`, run `npm run build` inside `web/` and copy the output into `internal/web/dist/`.
 - `accounts/.register_inputs/<job_id>.json` contains plaintext credentials and **must not be checked into version control** — `.gitignore` already excludes the directory.

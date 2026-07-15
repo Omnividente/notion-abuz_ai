@@ -34,6 +34,10 @@ If a coding assistant request is detected, the proxy explicitly bypasses generic
 
 The project maintains test coverage for this contract (e.g., in `internal/proxy/routing_live_fixtures_test.go`), using real-world session transcripts as fixtures. These automated assertions ensure that complex multi-turn inputs reliably trigger the correct routing logic and prevent unexpected regressions.
 
+## Cookie Forwarding
+
+The reverse proxy handles cookie forwarding by extracting the targeted Notion account's `FullCookie` from the active proxy session (identified by the `np_session` cookie). It then injects this `FullCookie` into all upstream requests to Notion (handled primarily in `reverseproxy.go`). This ensures that client requests are properly authenticated as the assigned pooled account without exposing the raw Notion tokens to the client.
+
 ## Authentication
 
 For API endpoints such as `/v1/messages` and `/v1/chat/completions`, send the API key the same way you would talk to Anthropic or OpenAI:
