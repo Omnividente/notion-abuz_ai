@@ -3542,7 +3542,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 213,
+  "revision": 214,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3570,6 +3570,15 @@
       "session_update_at": "2026-07-10T06:09:15.727663Z",
       "state_version": 5,
       "task_id": ""
+    },
+    "10467885298000784512": {
+      "last_observed_at": "2026-07-15T12:56:53Z",
+      "lease_key": "6a4f100de037354775c9ee8d",
+      "recovery_pr_head": null,
+      "recovery_pr_number": null,
+      "session_state": "STATE_UNSPECIFIED",
+      "state_version": 1,
+      "task_id": "docs-idempotency-cache-behavior"
     },
     "10525268165109519448": {
       "activity_fingerprint": "7c0fd0461b576167fd81847f",
@@ -4408,14 +4417,18 @@
       "task_fingerprint": "2b7bbe075297c57e22cae6f8"
     },
     "docs-idempotency-cache-behavior": {
+      "dispatch_completed_at": "2026-07-15T12:56:53Z",
       "dispatch_generation": 1,
       "dispatch_key": "6a4f100de037354775c9ee8d",
       "dispatch_requested_at": "2026-07-15T12:56:19Z",
-      "lease_expires_at": "2026-07-15T13:41:51Z",
+      "lease_expires_at": "2026-07-15T13:41:53Z",
       "recovery_pr_head": null,
       "recovery_pr_number": null,
       "session_create_requested_at": "2026-07-15T12:56:51Z",
-      "state": "session_create_requested",
+      "session_id": "10467885298000784512",
+      "session_name": "sessions/10467885298000784512",
+      "session_state": "STATE_UNSPECIFIED",
+      "state": "session_created",
       "task_fingerprint": "60ffe2866070093833eed065"
     },
     "docs-idempotency-replay-behavior": {
@@ -4641,5 +4654,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T12:56:51Z"
+  "updated_at": "2026-07-15T12:56:53Z"
 }
