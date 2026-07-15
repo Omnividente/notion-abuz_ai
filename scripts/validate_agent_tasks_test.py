@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
 import validate_agent_tasks
 
@@ -54,6 +56,17 @@ def task(*, status: str, blocked_reason: str | None = None) -> dict:
 
 
 class ValidateAgentTasksTest(unittest.TestCase):
+    def test_duplicate_json_object_key_is_rejected_during_load(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "agent_tasks.json"
+            path.write_text('{"schema_version": 1, "schema_version": 1}', encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                validate_agent_tasks.ValidationError,
+                "duplicate JSON object key: schema_version",
+            ):
+                validate_agent_tasks.load_manifest(path)
+
     def test_blocked_task_without_reason_warns(self) -> None:
         warnings = validate_agent_tasks.validate_manifest(base_manifest(task(status="blocked")))
 
