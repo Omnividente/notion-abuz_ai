@@ -9308,7 +9308,7 @@
     },
     {
       "id": "audit-proxy-context-loss-logging",
-      "status": "todo",
+      "status": "done",
       "area": "audit",
       "risk": "low",
       "title": "Audit diagnostic logs for context loss metrics in proxy",
@@ -9321,7 +9321,8 @@
       "acceptance": [
         "All instances of recordContextLossMetric related to read narrowing in tools.go are accompanied by a corresponding '[bridge] diagnostic:' log statement.",
         "If the logging is missing, it is added. If it is already present, the task is marked as done with completion_mode: verified_no_change."
-      ]
+      ],
+      "completion_mode": "verified_no_change"
     },
     {
       "id": "automation-reconcile-duplicate-task-prs",
@@ -9380,6 +9381,24 @@
       ],
       "acceptance": [
         "Documentation details the refresh loop and cooldown mechanics for exhausted accounts."
+      ]
+    },
+    {
+      "id": "audit-proxy-admin-settings-validation",
+      "status": "todo",
+      "area": "audit",
+      "risk": "low",
+      "title": "Audit admin settings endpoint for strict JSON decoding",
+      "description": "In the proxy (handler.go), HandleAdminSettings and other admin endpoints must use DisallowUnknownFields() on the json.Decoder to strictly reject unrecognized fields, preventing silent dropping of user typos. Audit the endpoints and ensure strict decoding is applied.",
+      "allowed_paths": [
+        "internal/proxy/handler.go",
+        "internal/proxy/admin_accounts.go",
+        "internal/proxy/admin_register.go",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "All JSON decoding in admin endpoints uses DisallowUnknownFields() to prevent silent typos.",
+        "Missing strict decoding is added if needed."
       ]
     }
   ]
