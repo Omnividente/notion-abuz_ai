@@ -9290,7 +9290,7 @@
     },
     {
       "id": "docs-idempotency-cache-behavior",
-      "status": "todo",
+      "status": "done",
       "area": "docs",
       "risk": "low",
       "title": "Document idempotency cache metrics and sanitization",
@@ -9364,6 +9364,22 @@
       ],
       "acceptance": [
         "Documentation reflects FULL_COOKIE environment variable overrides if applicable."
+      ]
+    },
+    {
+      "id": "docs-explain-session-refresh",
+      "status": "todo",
+      "area": "docs",
+      "risk": "low",
+      "title": "Document session refresh background behavior",
+      "description": "The proxy handles background token refreshing in `refresh.go` and `account_pool.go` (e.g. quota check intervals). Documentation currently does not elaborate on how exhausted accounts are placed in cooldown and rechecked. Expand configuration.md or api.md to clearly document how `refresh.quota_recheck_minutes` impacts retry loops.",
+      "allowed_paths": [
+        "docs/configuration.md",
+        "docs/api.md",
+        "agent_tasks.json"
+      ],
+      "acceptance": [
+        "Documentation details the refresh loop and cooldown mechanics for exhausted accounts."
       ]
     }
   ]

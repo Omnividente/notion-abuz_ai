@@ -6,6 +6,13 @@
 // injects this FullCookie into all upstream requests to Notion. This ensures
 // that client requests are properly authenticated as the assigned pooled account
 // without exposing the raw Notion tokens to the client.
+//
+// Idempotency Cache:
+// The proxy implements an idempotency cache for inference endpoints. Sensitive
+// headers such as Authorization and Set-Cookie are sanitized from cached
+// responses to prevent credential leaks across identical requests. The cache
+// exposes metrics including first_execution, completed_replay, in_flight_conflict,
+// streaming_non_replay, and expiry.
 package proxy
 
 import (
