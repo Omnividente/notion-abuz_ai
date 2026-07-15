@@ -9316,7 +9316,8 @@
       "allowed_paths": [
         "internal/proxy/tools.go",
         "internal/proxy/proxy.go",
-        "agent_tasks.json"
+        "agent_tasks.json",
+        "internal/proxy/tools_test.go"
       ],
       "acceptance": [
         "All instances of recordContextLossMetric related to read narrowing in tools.go are accompanied by a corresponding '[bridge] diagnostic:' log statement.",
