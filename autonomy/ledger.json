@@ -3542,7 +3542,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 212,
+  "revision": 213,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4411,8 +4411,11 @@
       "dispatch_generation": 1,
       "dispatch_key": "6a4f100de037354775c9ee8d",
       "dispatch_requested_at": "2026-07-15T12:56:19Z",
-      "lease_expires_at": "2026-07-15T13:25:21Z",
-      "state": "dispatch_requested",
+      "lease_expires_at": "2026-07-15T13:41:51Z",
+      "recovery_pr_head": null,
+      "recovery_pr_number": null,
+      "session_create_requested_at": "2026-07-15T12:56:51Z",
+      "state": "session_create_requested",
       "task_fingerprint": "60ffe2866070093833eed065"
     },
     "docs-idempotency-replay-behavior": {
@@ -4638,5 +4641,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T12:56:21Z"
+  "updated_at": "2026-07-15T12:56:51Z"
 }
