@@ -3572,7 +3572,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 237,
+  "revision": 238,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4446,7 +4446,7 @@
       "dispatch_requested_at": "2026-07-15T13:50:16Z",
       "last_observed_at": "2026-07-15T13:50:15Z",
       "last_progress_at": "2026-07-15T13:50:15Z",
-      "lease_expires_at": "2026-07-15T14:19:22Z",
+      "lease_expires_at": "2026-07-15T14:35:43Z",
       "pr_number": 636,
       "pr_recoveries": 2,
       "pr_recovery_evidence_key": "c844772c5c9a1ee3f0493846",
@@ -4456,11 +4456,11 @@
       "recovery_pr_head": "0460c3c5c9db330e55d52977c582d01a1d3f5e3f",
       "recovery_pr_number": 636,
       "recovery_reason": "failed checks: test-and-merge",
-      "session_create_requested_at": "2026-07-15T13:35:10Z",
+      "session_create_requested_at": "2026-07-15T13:50:43Z",
       "session_id": null,
       "session_name": "sessions/7840991574256565065",
       "session_state": "COMPLETED",
-      "state": "pr_recovery_dispatch_requested",
+      "state": "session_create_requested",
       "task_fingerprint": "6d52ad47c7cd5f175fdd6d98"
     },
     "automation-executor-completion-reconciler-handoff": {
@@ -4750,5 +4750,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T13:50:18Z"
+  "updated_at": "2026-07-15T13:50:43Z"
 }
