@@ -1,33 +1,6 @@
 {
   "cycles": [
     {
-      "actions": [],
-      "active_sessions": 0,
-      "at": "2026-07-14T04:44:34Z",
-      "blocked": [],
-      "eligible_task_id": "docs-ask-mode-override-wording",
-      "errors": [],
-      "inspected_sessions": 40,
-      "listed_sessions": 469,
-      "open_autonomous_prs": 1,
-      "pending_leases": [],
-      "progress": [
-        {
-          "kind": "observed_delta",
-          "session_id": "14674460986994187107",
-          "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
-        },
-        {
-          "kind": "pr_delta",
-          "pr_number": 622,
-          "task_id": "proxy-tools-add-unit-tests-for-debug-logging-toggle"
-        }
-      ],
-      "run_attempt": "1",
-      "run_id": "29306677785",
-      "source_fingerprint": "252bad7aefa6375ab1dbb0a7"
-    },
-    {
       "actions": [
         {
           "action": "comment_pr_recovery",
@@ -1526,6 +1499,42 @@
       "run_attempt": "1",
       "run_id": "29417829231",
       "source_fingerprint": "772b338063552cebdc75153d"
+    },
+    {
+      "actions": [
+        {
+          "action": "dispatch_task",
+          "dispatch_key": "b266821a66ae209bb8a01eb9",
+          "generation": 1,
+          "task_id": "audit-proxy-context-loss-logging"
+        },
+        {
+          "action": "settle_terminal_manifest_task",
+          "manifest_status": "done",
+          "task_id": "docs-idempotency-cache-behavior"
+        }
+      ],
+      "active_sessions": 0,
+      "at": "2026-07-15T13:09:17Z",
+      "blocked": [],
+      "eligible_task_id": "audit-proxy-context-loss-logging",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 473,
+      "open_autonomous_prs": 0,
+      "pending_leases": [
+        "audit-proxy-context-loss-logging"
+      ],
+      "progress": [
+        {
+          "kind": "observed_delta",
+          "session_id": "10467885298000784512",
+          "task_id": "docs-idempotency-cache-behavior"
+        }
+      ],
+      "run_attempt": "1",
+      "run_id": "29417955249",
+      "source_fingerprint": "7d7b6a0f0bbead5f41e94fc3"
     }
   ],
   "messages": {
@@ -3539,7 +3548,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 217,
+  "revision": 218,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4431,20 +4440,15 @@
       "current_evidence_fingerprint": "48ab59a4eeb835da0d18a68c",
       "dispatch_completed_at": "2026-07-15T12:56:53Z",
       "dispatch_generation": 1,
-      "dispatch_key": "6a4f100de037354775c9ee8d",
-      "dispatch_requested_at": "2026-07-15T12:56:19Z",
       "last_observed_at": "2026-07-15T13:07:08Z",
       "last_progress_at": "2026-07-15T13:07:08Z",
-      "lease_expires_at": "2026-07-15T13:41:53Z",
+      "manifest_status": "done",
       "pr_number": 635,
       "progress_fingerprint": "a650c82ee83d065c983f70dc",
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_create_requested_at": "2026-07-15T12:56:51Z",
-      "session_id": null,
-      "session_name": "sessions/10467885298000784512",
       "session_state": "COMPLETED",
-      "state": "pr_open_without_active_session",
+      "state": "manifest_done",
       "task_fingerprint": "60ffe2866070093833eed065"
     },
     "docs-idempotency-replay-behavior": {
@@ -4670,5 +4674,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T13:09:15Z"
+  "updated_at": "2026-07-15T13:09:17Z"
 }
