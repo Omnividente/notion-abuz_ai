@@ -1647,9 +1647,10 @@
     },
     "2ec965f591693bdcc3dc74fa": {
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
-      "delivery_attempts": 1,
+      "delivery_attempts": 2,
       "delivery_error": "transient POST https://jules.googleapis.com/v1alpha/sessions/18128346101163820506:sendMessage failure: <urlopen error [Errno 104] Connection reset by peer>",
-      "next_retry_at": "2026-07-15T14:26:34Z",
+      "last_attempt_at": "2026-07-15T14:37:31Z",
+      "next_retry_at": "2026-07-15T14:41:56Z",
       "packet_hash": "7447e13c74d009746afbba8f",
       "sent_at": "2026-07-15T14:21:59Z",
       "session_id": "18128346101163820506",
@@ -3573,7 +3574,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 258,
+  "revision": 259,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4082,19 +4083,19 @@
       "terminal_reason": "Jules session completed without a PR or structured verified-no-change evidence"
     },
     "18128346101163820506": {
-      "activity_fingerprint": "cf1cbb66a638b4860a516671",
-      "last_observed_at": "2026-07-15T14:25:41Z",
-      "last_progress_at": "2026-07-15T14:25:41Z",
+      "activity_fingerprint": "c30da68d06bc8f4e83eb52ce",
+      "last_observed_at": "2026-07-15T14:37:23Z",
+      "last_progress_at": "2026-07-15T14:37:23Z",
       "lease_key": "15437abc33540f808f2610eb",
       "pending_message_key": "2ec965f591693bdcc3dc74fa",
       "pr_fingerprint": "8c0df010a6c5b58899684dd3",
-      "progress_fingerprint": "a9c7ce42f0d8409e42da87d1",
+      "progress_fingerprint": "b2971c20d114461e1c0a8985",
       "recoveries_without_progress": 0,
       "recovery_pr_head": "1b9cf3e1a270357ebb3539b68857b15dde3eec7a",
       "recovery_pr_number": 636,
-      "session_state": "IN_PROGRESS",
-      "session_update_at": "2026-07-15T14:25:17.998280Z",
-      "state_version": 3,
+      "session_state": "AWAITING_USER_FEEDBACK",
+      "session_update_at": "2026-07-15T14:36:22.468152Z",
+      "state_version": 4,
       "task_id": "audit-proxy-context-loss-logging"
     },
     "2103514512702002509": {
@@ -4804,5 +4805,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T14:26:11Z"
+  "updated_at": "2026-07-15T14:37:31Z"
 }
