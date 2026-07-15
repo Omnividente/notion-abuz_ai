@@ -1543,7 +1543,7 @@
       "session_id": "4238447108364092746",
       "state_version": 2,
       "task_id": "audit-proxy-context-loss-logging",
-      "verified_at": null
+      "verified_at": "2026-07-15T14:05:36Z"
     },
     "11863f6666f261f0d5749505": {
       "activity_fingerprint": "9107d468ea9ec14442077e03",
@@ -1809,6 +1809,14 @@
       "state_version": 2,
       "task_id": "docs-ask-mode-override-wording",
       "verified_at": "2026-07-14T07:35:15Z"
+    },
+    "8b8eaf61757d3bf283a7edc2": {
+      "canonical_session_id": "4238447108364092746",
+      "kind": "duplicate_active_task_session_cleanup",
+      "sent_at": "2026-07-15T14:05:37Z",
+      "session_id": "7840991574256565065",
+      "task_id": "audit-proxy-context-loss-logging",
+      "verified_at": null
     },
     "8c42901eea8c08112668fa7d": {
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
@@ -2176,14 +2184,6 @@
       "source_key_hash": "1f60bb8e6cfc9a05ce7a1033",
       "type": "quality_fix_recovery",
       "verified_at": "2026-07-05T19:58:08Z"
-    },
-    "legacy-209456fa8b3761125c4355d3": {
-      "kind": "legacy_router_action",
-      "reason": "PR #258 has unresolved needs-quality-fix",
-      "sent_at": "2026-07-03T17:50:12Z",
-      "source_key_hash": "209456fa8b3761125c4355d3",
-      "type": "quality_fix_recovery",
-      "verified_at": "2026-07-03T17:50:12Z"
     },
     "legacy-218f3705e2c0ac4ab1299c41": {
       "kind": "legacy_router_action",
@@ -3557,7 +3557,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 248,
+  "revision": 249,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -4219,11 +4219,12 @@
       "activity_fingerprint": "cf1cbb66a638b4860a516671",
       "last_observed_at": "2026-07-15T14:05:31Z",
       "last_progress_at": "2026-07-15T14:05:31Z",
+      "last_verified_message_key": "07b004f2523cdf0a73af6454",
       "lease_key": "deb8d3e0fc58a7b394558337",
-      "pending_message_key": "07b004f2523cdf0a73af6454",
+      "post_send_activity_fingerprint": "1396a8841f83d1c1e1a947bc",
       "pr_fingerprint": "8c0df010a6c5b58899684dd3",
       "progress_fingerprint": "a9c7ce42f0d8409e42da87d1",
-      "recoveries_without_progress": 0,
+      "recoveries_without_progress": 1,
       "recovery_pr_head": "1b9cf3e1a270357ebb3539b68857b15dde3eec7a",
       "recovery_pr_number": 636,
       "session_state": "IN_PROGRESS",
@@ -4356,19 +4357,20 @@
     "7840991574256565065": {
       "activity_fingerprint": "47da6eb2344a2c325e6eb092",
       "ignored_reason": "superseded_by_active_session:12805609275939829923",
-      "last_observed_at": "2026-07-15T14:03:18Z",
-      "last_progress_at": "2026-07-15T14:03:18Z",
+      "last_observed_at": "2026-07-15T14:05:37Z",
+      "last_progress_at": "2026-07-15T14:05:37Z",
       "last_verified_message_key": "c97780a2bf52f43013b5fa7f",
       "lease_key": "b266821a66ae209bb8a01eb9",
       "post_send_activity_fingerprint": "4cf66ab32c8553126d6acf71",
-      "pr_fingerprint": "6e4cecc7a3c1b57eb143c6f5",
-      "progress_fingerprint": "2c967f9a1800e89041ad88c8",
+      "pr_fingerprint": "8c0df010a6c5b58899684dd3",
+      "progress_fingerprint": "1c8001b438619a4467822f2f",
       "recoveries_without_progress": 0,
       "recovery_pr_head": null,
       "recovery_pr_number": null,
-      "session_state": "COMPLETED",
-      "session_update_at": "2026-07-15T14:02:33.574975Z",
-      "state_version": 11,
+      "session_state": "IN_PROGRESS",
+      "session_update_at": "2026-07-15T14:04:50.361546Z",
+      "state_version": 12,
+      "superseded_by_session_id": "4238447108364092746",
       "task_id": "audit-proxy-context-loss-logging"
     },
     "7875485511166516611": {
@@ -4458,12 +4460,12 @@
       "last_dispatched_task_id": "audit-proxy-context-loss-logging"
     },
     "audit-proxy-context-loss-logging": {
-      "current_evidence_fingerprint": "f62c8afe0077922f4f0847a5",
+      "current_evidence_fingerprint": "a9c7ce42f0d8409e42da87d1",
       "dispatch_completed_at": "2026-07-15T14:04:38Z",
       "dispatch_generation": 4,
       "dispatch_key": "deb8d3e0fc58a7b394558337",
       "dispatch_requested_at": "2026-07-15T14:03:56Z",
-      "last_observed_at": "2026-07-15T14:03:54Z",
+      "last_observed_at": "2026-07-15T14:05:36Z",
       "last_progress_at": "2026-07-15T14:03:54Z",
       "lease_expires_at": "2026-07-15T14:49:38Z",
       "pr_number": 636,
@@ -4478,8 +4480,8 @@
       "session_create_requested_at": "2026-07-15T14:04:35Z",
       "session_id": "4238447108364092746",
       "session_name": "sessions/4238447108364092746",
-      "session_state": "STATE_UNSPECIFIED",
-      "state": "session_created",
+      "session_state": "IN_PROGRESS",
+      "state": "active",
       "task_fingerprint": "6d52ad47c7cd5f175fdd6d98"
     },
     "automation-executor-completion-reconciler-handoff": {
@@ -4769,5 +4771,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-15T14:05:31Z"
+  "updated_at": "2026-07-15T14:05:37Z"
 }
