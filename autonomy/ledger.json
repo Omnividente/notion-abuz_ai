@@ -3,49 +3,6 @@
     {
       "actions": [
         {
-          "action": "comment_pr_recovery",
-          "key": "9ec01019b8b359d348805cd5",
-          "pr_number": 636,
-          "task_id": "audit-proxy-context-loss-logging"
-        },
-        {
-          "action": "dispatch_in_place_pr_recovery",
-          "dispatch_key": "808d997ac973f265766b1d99",
-          "generation": 2,
-          "pr_number": 636,
-          "task_id": "audit-proxy-context-loss-logging"
-        }
-      ],
-      "active_sessions": 0,
-      "at": "2026-07-15T13:34:45Z",
-      "blocked": [],
-      "eligible_task_id": "docs-audit-full-cookie-env",
-      "errors": [],
-      "inspected_sessions": 40,
-      "listed_sessions": 474,
-      "open_autonomous_prs": 1,
-      "pending_leases": [
-        "audit-proxy-context-loss-logging"
-      ],
-      "progress": [
-        {
-          "kind": "observed_delta",
-          "session_id": "7840991574256565065",
-          "task_id": "audit-proxy-context-loss-logging"
-        },
-        {
-          "kind": "pr_delta",
-          "pr_number": 636,
-          "task_id": "audit-proxy-context-loss-logging"
-        }
-      ],
-      "run_attempt": "1",
-      "run_id": "29419704622",
-      "source_fingerprint": "b0e317b30ccec3dd8a256c26"
-    },
-    {
-      "actions": [
-        {
           "action": "send_recovery",
           "key": "83fbb630c51a3719235c3cb1",
           "session_id": "12805609275939829923",
@@ -1437,6 +1394,31 @@
       "progress": [],
       "run_attempt": "1",
       "run_id": "29614732916",
+      "source_fingerprint": "dc862df03ceddb74ae47e839"
+    },
+    {
+      "actions": [],
+      "active_sessions": 0,
+      "at": "2026-07-17T22:12:42Z",
+      "blocked": [
+        {
+          "evidence_requirement": "new commit or check evidence on the existing PR",
+          "next_review_at": null,
+          "pr_number": 636,
+          "reason": "bounded in-place PR recovery exhausted",
+          "retry_condition": "new PR, check or task evidence",
+          "task_id": "audit-proxy-context-loss-logging"
+        }
+      ],
+      "eligible_task_id": "audit-proxy-context-loss-logging",
+      "errors": [],
+      "inspected_sessions": 40,
+      "listed_sessions": 477,
+      "open_autonomous_prs": 1,
+      "pending_leases": [],
+      "progress": [],
+      "run_attempt": "1",
+      "run_id": "29617144083",
       "source_fingerprint": "dc862df03ceddb74ae47e839"
     }
   ],
@@ -3473,7 +3455,7 @@
     "source_session_count": 16,
     "status": "migrated"
   },
-  "revision": 303,
+  "revision": 304,
   "schema": 2,
   "sessions": {
     "10084739906341150041": {
@@ -3494,7 +3476,7 @@
     },
     "10318837510805541745": {
       "activity_fingerprint": "419480cbc36620b19f8b0c28",
-      "last_observed_at": "2026-07-17T21:27:22Z",
+      "last_observed_at": "2026-07-17T22:12:41Z",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "9e14154142390aa0bf7f4166",
       "session_state": "COMPLETED",
@@ -3504,7 +3486,7 @@
     },
     "10467885298000784512": {
       "activity_fingerprint": "b68f338bbc8fb94177f0dce2",
-      "last_observed_at": "2026-07-17T21:27:05Z",
+      "last_observed_at": "2026-07-17T22:12:26Z",
       "last_progress_at": "2026-07-15T13:08:46Z",
       "lease_key": "6a4f100de037354775c9ee8d",
       "pr_fingerprint": "06075848cfae5535457db59b",
@@ -3529,7 +3511,7 @@
     },
     "10801129102183224850": {
       "activity_fingerprint": "23cfe608304301d0862db756",
-      "last_observed_at": "2026-07-17T21:27:08Z",
+      "last_observed_at": "2026-07-17T22:12:29Z",
       "last_progress_at": "2026-07-14T04:01:20Z",
       "lease_key": "7cd3d6af48f689f18edea8af",
       "pr_fingerprint": "06075848cfae5535457db59b",
@@ -3565,7 +3547,7 @@
     "12805609275939829923": {
       "activity_fingerprint": "606c62caaa85f22fe83babbb",
       "ignored_reason": "superseded_by_active_session:9943893190285491101",
-      "last_observed_at": "2026-07-17T21:27:04Z",
+      "last_observed_at": "2026-07-17T22:12:26Z",
       "last_progress_at": "2026-07-15T14:05:41Z",
       "last_verified_message_key": "f8dc4346fdb8cc6d69abe51d",
       "lease_key": "808d997ac973f265766b1d99",
@@ -3583,7 +3565,7 @@
     "12983952770589851668": {
       "activity_fingerprint": "3fd9511149f0c6683620872b",
       "ignored_reason": "superseded_by_active_session:17485730698808344737",
-      "last_observed_at": "2026-07-17T21:27:08Z",
+      "last_observed_at": "2026-07-17T22:12:29Z",
       "last_progress_at": "2026-07-14T04:26:39Z",
       "last_verified_message_key": "25f6bc49e0ec0df4b7a4b471",
       "lease_key": "a42dc843ee304193852082f3",
@@ -3600,7 +3582,7 @@
     },
     "13325415678216530585": {
       "activity_fingerprint": "0c565a1ffa452f4611abf986",
-      "last_observed_at": "2026-07-17T21:27:16Z",
+      "last_observed_at": "2026-07-17T22:12:35Z",
       "legacy_value_hash": "61f63dc4e7c4be31e36ae1da",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "2d125c0fa5bd9594231e4119",
@@ -3640,7 +3622,7 @@
     "13525775686702804526": {
       "activity_fingerprint": "a67d4901494c128c7089c372",
       "ignored_reason": "superseded_by_active_session:5079834960180138219",
-      "last_observed_at": "2026-07-17T21:27:13Z",
+      "last_observed_at": "2026-07-17T22:12:33Z",
       "last_progress_at": "2026-07-13T21:50:34Z",
       "last_verified_message_key": "538844c6914b17e70064e0fe",
       "lease_key": "407c00e6d03af2dd3cfbcd72",
@@ -3685,7 +3667,7 @@
     "14386652575089485622": {
       "activity_fingerprint": "e215a5a86039d7987b9bf5e3",
       "ignored_reason": "superseded_by_active_session:152614223489349908",
-      "last_observed_at": "2026-07-17T21:27:06Z",
+      "last_observed_at": "2026-07-17T22:12:27Z",
       "last_progress_at": "2026-07-15T12:38:35Z",
       "last_verified_message_key": "6f06425c1ac32228e1f1743e",
       "lease_key": "397a63b7ca5a38967b781f3b",
@@ -3702,7 +3684,7 @@
     },
     "14639527114573508776": {
       "activity_fingerprint": "76a72898ab60773f6f4960c2",
-      "last_observed_at": "2026-07-17T21:27:15Z",
+      "last_observed_at": "2026-07-17T22:12:35Z",
       "legacy_value_hash": "bbad0c0fec5dfd69833ef9f0",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "9b462110bdb6689b3fabbee5",
@@ -3715,7 +3697,7 @@
     "14674460986994187107": {
       "activity_fingerprint": "a62bd272d502bfa7e509d3b4",
       "ignored_reason": "superseded_by_active_session:17208555400991546940",
-      "last_observed_at": "2026-07-17T21:27:07Z",
+      "last_observed_at": "2026-07-17T22:12:28Z",
       "last_progress_at": "2026-07-14T05:32:32Z",
       "last_verified_message_key": "56a4987da1c1a23c6c402f74",
       "lease_key": "c3c1b984940f8d90103c08c1",
@@ -3732,7 +3714,7 @@
     },
     "152614223489349908": {
       "activity_fingerprint": "284c310be82dba30f0f8ac26",
-      "last_observed_at": "2026-07-17T21:27:06Z",
+      "last_observed_at": "2026-07-17T22:12:27Z",
       "last_progress_at": "2026-07-15T12:38:34Z",
       "last_verified_message_key": "883ccf6aa8d6302cf40601ed",
       "lease_key": "d74173cbf52262cd766c4308",
@@ -3769,7 +3751,7 @@
     },
     "15579014809854553056": {
       "activity_fingerprint": "95053d95960c25c43e8ebb40",
-      "last_observed_at": "2026-07-17T21:27:18Z",
+      "last_observed_at": "2026-07-17T22:12:37Z",
       "legacy_value_hash": "7756e4e05022e600923e4264",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "43dcbe528d824f0b4d77c084",
@@ -3798,7 +3780,7 @@
     },
     "15802417934975239728": {
       "activity_fingerprint": "41cc4bcd261d605cfe6378d6",
-      "last_observed_at": "2026-07-17T21:27:05Z",
+      "last_observed_at": "2026-07-17T22:12:26Z",
       "last_progress_at": "2026-07-15T12:55:47Z",
       "lease_key": "23b6ace4a0ce0b02bfb92dea",
       "pr_fingerprint": "06075848cfae5535457db59b",
@@ -3813,7 +3795,7 @@
     },
     "15943345035899781060": {
       "activity_fingerprint": "550c333a66be469705178e60",
-      "last_observed_at": "2026-07-17T21:27:22Z",
+      "last_observed_at": "2026-07-17T22:12:40Z",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "f9ddec00063d538f301df541",
       "session_state": "COMPLETED",
@@ -3823,7 +3805,7 @@
     },
     "16020061950734644024": {
       "activity_fingerprint": "3cf585d0ce633f14cb8af442",
-      "last_observed_at": "2026-07-17T21:27:17Z",
+      "last_observed_at": "2026-07-17T22:12:36Z",
       "legacy_value_hash": "451d4355b1a683b1bfed5a8c",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "932f96a10dad184baa6bd79a",
@@ -3855,7 +3837,7 @@
     },
     "16561484705343060553": {
       "activity_fingerprint": "b73c2fc4bbb219623b0dfcf4",
-      "last_observed_at": "2026-07-17T21:27:14Z",
+      "last_observed_at": "2026-07-17T22:12:33Z",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "e0a9b5ca54c38bdd6d372231",
       "session_state": "COMPLETED",
@@ -3865,7 +3847,7 @@
     },
     "17021511161889099852": {
       "activity_fingerprint": "856e4164b0ef12d039d4d104",
-      "last_observed_at": "2026-07-17T21:27:21Z",
+      "last_observed_at": "2026-07-17T22:12:40Z",
       "legacy_value_hash": "a27efc77a6d1b7d2c74d7638",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "510a54232dd7229527b8342f",
@@ -3877,7 +3859,7 @@
     },
     "17049109501742459791": {
       "activity_fingerprint": "2f9398b1c590781f1f70ee40",
-      "last_observed_at": "2026-07-17T21:27:16Z",
+      "last_observed_at": "2026-07-17T22:12:35Z",
       "legacy_value_hash": "5ccd42d8558148624b9d0ee7",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "098187287874b23ae0f14efa",
@@ -3917,7 +3899,7 @@
     },
     "17237448907972893226": {
       "activity_fingerprint": "42741c6103091bf49d596096",
-      "last_observed_at": "2026-07-17T21:27:23Z",
+      "last_observed_at": "2026-07-17T22:12:41Z",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "487aa6548e067db23adc40e2",
       "session_state": "COMPLETED",
@@ -3945,7 +3927,7 @@
     },
     "17569823767226973692": {
       "activity_fingerprint": "7a59b07ce4bdd08c711d17e3",
-      "last_observed_at": "2026-07-17T21:27:20Z",
+      "last_observed_at": "2026-07-17T22:12:39Z",
       "legacy_value_hash": "92a85064b9011e39f1cd4354",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "d2629a753c7f04dcfa573218",
@@ -3967,7 +3949,7 @@
     },
     "18011490522809812243": {
       "activity_fingerprint": "eec135a6a8feaeeda9528e4e",
-      "last_observed_at": "2026-07-17T21:27:12Z",
+      "last_observed_at": "2026-07-17T22:12:32Z",
       "last_progress_at": "2026-07-13T23:52:00Z",
       "lease_key": "84a1ed014b2e2201dbdbbb37",
       "pr_fingerprint": "06075848cfae5535457db59b",
@@ -3984,7 +3966,7 @@
     "18128346101163820506": {
       "activity_fingerprint": "91c116e4a3105ac1e174f8f3",
       "ignored_reason": "superseded_by_active_session:9943893190285491101",
-      "last_observed_at": "2026-07-17T21:27:04Z",
+      "last_observed_at": "2026-07-17T22:12:25Z",
       "last_progress_at": "2026-07-15T15:58:38Z",
       "last_verified_message_key": "2ec965f591693bdcc3dc74fa",
       "lease_key": "15437abc33540f808f2610eb",
@@ -4029,7 +4011,7 @@
     },
     "2434856474857685191": {
       "activity_fingerprint": "eb9c95b03481c148c670aa16",
-      "last_observed_at": "2026-07-17T21:27:18Z",
+      "last_observed_at": "2026-07-17T22:12:37Z",
       "legacy_value_hash": "e10929240111a0d64351f76e",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "539f7600ce3cf23e642bb4f4",
@@ -4041,7 +4023,7 @@
     },
     "251585469516720548": {
       "activity_fingerprint": "f38b0ff35a0e98d65c8ba799",
-      "last_observed_at": "2026-07-17T21:27:12Z",
+      "last_observed_at": "2026-07-17T22:12:32Z",
       "last_progress_at": "2026-07-13T23:10:11Z",
       "lease_key": "3f98ff9b9b9fceea224f0ad1",
       "pr_fingerprint": "06075848cfae5535457db59b",
@@ -4057,7 +4039,7 @@
     },
     "2807867894850292189": {
       "activity_fingerprint": "db6d8fa99f931a30ef2a7969",
-      "last_observed_at": "2026-07-17T21:27:17Z",
+      "last_observed_at": "2026-07-17T22:12:36Z",
       "legacy_value_hash": "e4092cff16cd48c190b01718",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "110f19e1135689b9c1d9d937",
@@ -4086,7 +4068,7 @@
     },
     "3291409405775447211": {
       "activity_fingerprint": "f995f4ed70ef90411796b054",
-      "last_observed_at": "2026-07-17T21:27:14Z",
+      "last_observed_at": "2026-07-17T22:12:34Z",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "ae3500794da9dddf5dc3dc5f",
       "session_state": "COMPLETED",
@@ -4113,7 +4095,7 @@
     },
     "4049942339598013592": {
       "activity_fingerprint": "55602941f08aa10afd26dae9",
-      "last_observed_at": "2026-07-17T21:27:11Z",
+      "last_observed_at": "2026-07-17T22:12:31Z",
       "last_progress_at": "2026-07-14T00:22:38Z",
       "lease_key": "36a44ae87b4db33259b50014",
       "pr_fingerprint": "06075848cfae5535457db59b",
@@ -4128,7 +4110,7 @@
     },
     "4114921831374104713": {
       "activity_fingerprint": "fde989f34af4fa5067a6254d",
-      "last_observed_at": "2026-07-17T21:27:19Z",
+      "last_observed_at": "2026-07-17T22:12:38Z",
       "legacy_value_hash": "83fa8fee9e1123782d303e6a",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "cb2c5ee148f84d28ed68c11b",
@@ -4151,7 +4133,7 @@
     "4238447108364092746": {
       "activity_fingerprint": "7e44034468ce1f2654faf684",
       "ignored_reason": "superseded_by_active_session:9943893190285491101",
-      "last_observed_at": "2026-07-17T21:27:04Z",
+      "last_observed_at": "2026-07-17T22:12:25Z",
       "last_progress_at": "2026-07-15T14:20:08Z",
       "last_verified_message_key": "07b004f2523cdf0a73af6454",
       "lease_key": "deb8d3e0fc58a7b394558337",
@@ -4168,7 +4150,7 @@
     },
     "4839394328109958585": {
       "activity_fingerprint": "9602c2e1570200c6cf733962",
-      "last_observed_at": "2026-07-17T21:27:23Z",
+      "last_observed_at": "2026-07-17T22:12:42Z",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "ef70da58802cde9897922586",
       "session_state": "COMPLETED",
@@ -4187,7 +4169,7 @@
     },
     "5079834960180138219": {
       "activity_fingerprint": "12b7fe8a5b3cdd3b38ba02ba",
-      "last_observed_at": "2026-07-17T21:27:13Z",
+      "last_observed_at": "2026-07-17T22:12:32Z",
       "last_progress_at": "2026-07-13T21:50:34Z",
       "last_verified_message_key": "7c7b11315778c2fd1dfba80e",
       "lease_key": "1acade129ff933f6244aefb9",
@@ -4205,7 +4187,7 @@
     },
     "5105037652831498568": {
       "activity_fingerprint": "6fcc402d48213cbf2dd25412",
-      "last_observed_at": "2026-07-17T21:27:10Z",
+      "last_observed_at": "2026-07-17T22:12:30Z",
       "lease_key": "9324b0fc0acb5dbcc8da67e8",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "e6a4a9bee33cf58f3a532168",
@@ -4218,7 +4200,7 @@
     },
     "6154148538781043324": {
       "activity_fingerprint": "477af033507cb8dc89eaf2c9",
-      "last_observed_at": "2026-07-17T21:27:09Z",
+      "last_observed_at": "2026-07-17T22:12:30Z",
       "lease_key": "1c5a5a935d1889259ccb98c9",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "cde05c2a4fe19e5c518d6eb5",
@@ -4231,7 +4213,7 @@
     },
     "6888614032956265246": {
       "activity_fingerprint": "43465356d695efe137bc3d02",
-      "last_observed_at": "2026-07-17T21:27:21Z",
+      "last_observed_at": "2026-07-17T22:12:40Z",
       "legacy_value_hash": "f0d698f1c900cef45daecaef",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "8d379c31ef85e59cd37d2f38",
@@ -4243,7 +4225,7 @@
     },
     "6896838294581498680": {
       "activity_fingerprint": "83d444d27238a0564d2bdda3",
-      "last_observed_at": "2026-07-17T21:27:15Z",
+      "last_observed_at": "2026-07-17T22:12:34Z",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "2f5f3920e9b7c7d1cdab9062",
       "session_state": "COMPLETED",
@@ -4253,7 +4235,7 @@
     },
     "7036873496572403975": {
       "activity_fingerprint": "76e9daaa55cd592db4b6b28d",
-      "last_observed_at": "2026-07-17T21:27:09Z",
+      "last_observed_at": "2026-07-17T22:12:30Z",
       "last_progress_at": "2026-07-14T03:31:36Z",
       "lease_key": "e0a2714b9b432c9ab21e6028",
       "pr_fingerprint": "06075848cfae5535457db59b",
@@ -4268,7 +4250,7 @@
     },
     "7180636042113331429": {
       "activity_fingerprint": "1007656cbb46587e629ca378",
-      "last_observed_at": "2026-07-17T21:27:20Z",
+      "last_observed_at": "2026-07-17T22:12:39Z",
       "legacy_value_hash": "61cf464769107d9963971d2b",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "1fb6047bc30501b65754435c",
@@ -4309,7 +4291,7 @@
     },
     "7875485511166516611": {
       "activity_fingerprint": "ef7c37a91a5b773f1f4cee55",
-      "last_observed_at": "2026-07-17T21:27:19Z",
+      "last_observed_at": "2026-07-17T22:12:38Z",
       "legacy_value_hash": "083284ba0a801028febcacaf",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "d05f1b603bbb000a0a76807a",
@@ -4347,7 +4329,7 @@
     },
     "9281838579526649140": {
       "activity_fingerprint": "b6f610d500d6a304fb38ef55",
-      "last_observed_at": "2026-07-17T21:27:11Z",
+      "last_observed_at": "2026-07-17T22:12:31Z",
       "lease_key": "789d27b3dfc45bef8128500c",
       "pr_fingerprint": "06075848cfae5535457db59b",
       "progress_fingerprint": "f66dd4241eec700ca9acbca1",
@@ -4380,7 +4362,7 @@
     },
     "9943893190285491101": {
       "activity_fingerprint": "67fc82ea100fb776579e8062",
-      "last_observed_at": "2026-07-17T21:27:03Z",
+      "last_observed_at": "2026-07-17T22:12:24Z",
       "last_progress_at": "2026-07-15T16:27:04Z",
       "last_verified_message_key": "1a661fb770941a98381463cd",
       "lease_key": "167e4c1537833abdd7d6e1f9",
@@ -4416,7 +4398,7 @@
       "dispatch_generation": 6,
       "dispatch_key": "167e4c1537833abdd7d6e1f9",
       "dispatch_requested_at": "2026-07-15T15:59:00Z",
-      "last_observed_at": "2026-07-17T21:27:23Z",
+      "last_observed_at": "2026-07-17T22:12:42Z",
       "last_progress_at": "2026-07-15T14:20:35Z",
       "lease_expires_at": "2026-07-15T16:44:31Z",
       "pr_number": 636,
@@ -4705,7 +4687,7 @@
     },
     "runtime-fix": {
       "current_evidence_fingerprint": "36700556f7ac7282af5b0f7c",
-      "last_observed_at": "2026-07-17T21:27:08Z",
+      "last_observed_at": "2026-07-17T22:12:29Z",
       "pr_number": null,
       "session_id": "12983952770589851668",
       "session_name": "sessions/12983952770589851668",
@@ -4714,7 +4696,7 @@
     },
     "str": {
       "current_evidence_fingerprint": "baf6f19eab43b98d90bbe8a9",
-      "last_observed_at": "2026-07-17T21:27:12Z",
+      "last_observed_at": "2026-07-17T22:12:32Z",
       "pr_number": null,
       "session_id": "18011490522809812243",
       "session_name": "sessions/18011490522809812243",
@@ -4722,5 +4704,5 @@
       "state": "completed"
     }
   },
-  "updated_at": "2026-07-17T21:27:23Z"
+  "updated_at": "2026-07-17T22:12:42Z"
 }
